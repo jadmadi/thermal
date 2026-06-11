@@ -1,4 +1,4 @@
-module mimo-streak
+module thermal
 
 go 1.26
 

@@ -1,70 +1,107 @@
-# mimo-streak
+# Thermal
 
-GitHub-style contribution heatmap for [MiMoCode](https://github.com/xiaomi/mimo-code) usage.
+> Don't break the streak.
 
-See your coding streaks, daily token activity, and usage patterns rendered as a beautiful terminal heatmap.
+GitHub-style contribution heatmap for AI coding tools.
+
+See your coding streaks, daily activity, and usage patterns rendered as a beautiful terminal heatmap. Default mode shows a **leaderboard** ranking all your installed tools.
+
+## Supported Tools
+
+| Tool | Data Source | Metrics |
+|------|-------------|---------|
+| **MiMoCode** | SQLite DB | Token usage, sessions, cost |
+| **OpenCode** | SQLite DB | Token usage, sessions, cost |
+| **Codex** | JSONL history | Command activity |
+| **Agy** | Transcript JSONL | Conversation steps |
+| **command-code** | JSONL history | Command activity |
+| **codewhale** | JSON sessions | Session activity |
 
 ## Install
 
 ```bash
-go install github.com/user/mimo-streak@latest
+go install github.com/user/thermal@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/user/mimo-streak
-cd mimo-streak
-go build -o mimo-streak .
+git clone https://github.com/user/thermal
+cd thermal
+go build -o thermal .
 ```
 
 ## Usage
 
 ```bash
-# Default: show 52-week heatmap
-mimo-streak
+# Default: leaderboard showing all installed tools
+thermal
+
+# Show a specific tool's heatmap
+thermal --tool opencode
+thermal --tool codex
 
 # Show last 26 weeks
-mimo-streak --weeks 26
+thermal --weeks 26
 
 # Output raw JSON
-mimo-streak --json
+thermal --json
 
 # Disable colors
-mimo-streak --no-color
-
-# Use a custom database path
-mimo-streak --db /path/to/mimocode.db
+thermal --no-color
 ```
 
-## Example Output
+## Example: Leaderboard
 
 ```
-  MiMoCode activity  324M tokens / 12 weeks  ~/.local/share/mimocode/mimocode.db
+  THERMAL — Don't break the streak.
+  Thursday, June 11 2026
 
-      MaApr May  J
-      □□□□□□□□□□□□
-  Mon □□□□□□□□□□□□
-      □□□□□□□□□□□□
-  Wed □□□□□□□□░░░░
-      □□░░□□□□████
-  Fri □□□□□□□□□□□□
-      □□□□□□□□□□□□
+  #  Tool            Streak    Best      Active    Activity
+  ──────────────────────────────────────────────────────────────
+  🥇 OpenCode        4d        13d       40d       1.6B tok
+     ████████████████████ 🔥🔥
+  🥈 command-code    2d        9d        23d       374 cmd
+     ██████████
+  🥉 MiMoCode        2d        2d        3d        339M tok
+     ██████████
+     Codex           0d        2d        4d        62 msg
+     Agy             0d        1d        1d        57 step
+     codewhale       0d        0d        0d        0 sess
+
+  🏆 OpenCode is on fire with a 4-day streak!
+
+  Keep the heat going. Don't break the streak.
+```
+
+## Example: Single Tool
+
+```
+  OpenCode activity  1.2B tokens / 8 weeks  ~/.local/share/opencode/opencode.db
+
+      ApMay  J
+      ░░█▒░░░░
+  Mon ░░█▓░░▒
+      ░░▒░░░░█
+  Wed █▒▒▒░░░█
+      ▓█▓░░░░▓
+  Fri ░▒░░░░▓
+      ░█▓░░░▒
       Less □░▒▓█ More
 
-  3 active days  |  2 day streak  |  2 best  |  324M all-time
+  28 active days  |  4 day streak  |  13 best  |  1.6B all-time
 ```
 
 ## How It Works
 
-mimo-streak reads your MiMoCode SQLite database (stored at `~/.local/share/mimocode/mimocode.db`) and:
+Thermal reads usage data from installed AI coding tools:
 
-1. Queries all assistant messages for token usage and cost data
-2. Groups activity by calendar day
-3. Computes current and longest streaks (consecutive active days)
-4. Renders a GitHub-style heatmap with intensity based on relative token usage
+- **MiMoCode / OpenCode**: Queries SQLite databases for assistant message token usage
+- **Codex / command-code**: Parses JSONL command history for activity timestamps
+- **Agy**: Reads transcript JSONL files from conversation logs
+- **codewhale**: Reads JSON session files
 
-The database is opened **read-only** — mimo-streak never modifies your MiMoCode data.
+Databases are opened **read-only** — Thermal never modifies your data.
 
 ## Requirements
 
