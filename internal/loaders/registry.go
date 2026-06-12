@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 type ToolInfo struct {

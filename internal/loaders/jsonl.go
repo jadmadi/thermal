@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, error) {

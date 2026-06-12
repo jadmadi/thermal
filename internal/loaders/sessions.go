@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {

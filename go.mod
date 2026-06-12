@@ -1,4 +1,4 @@
-module thermal
+module github.com/jadmadi/thermal
 
 go 1.26
 

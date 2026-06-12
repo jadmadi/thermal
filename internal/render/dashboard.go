@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool) string {

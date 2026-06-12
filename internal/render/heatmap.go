@@ -3,7 +3,7 @@ package render
 import (
 	"strings"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func heatCell(level int, colors bool) string {

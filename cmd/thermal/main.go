@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"thermal/internal/loaders"
-	"thermal/internal/render"
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/loaders"
+	"github.com/jadmadi/thermal/internal/render"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func usage() string {

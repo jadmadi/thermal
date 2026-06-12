@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func medals(rank int, colors bool) string {

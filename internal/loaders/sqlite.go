@@ -3,7 +3,7 @@ package loaders
 import (
 	"database/sql"
 
-	"thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/thermal"
 
 	_ "modernc.org/sqlite"
 )
