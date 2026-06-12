@@ -20,6 +20,12 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 ## Install
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/jadmadi/thermal/main/install.sh | sh
+```
+
+Or with Go:
+
+```bash
 go install github.com/jadmadi/thermal@latest
 ```
 
