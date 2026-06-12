@@ -20,13 +20,13 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 ## Install
 
 ```bash
-go install github.com/user/thermal@latest
+go install github.com/jadmadi/thermal@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/user/thermal
+git clone https://github.com/jadmadi/thermal
 cd thermal
 go build -o thermal ./cmd/thermal
 ```
@@ -107,6 +107,16 @@ Databases are opened **read-only** — Thermal never modifies your data.
 
 - Go >= 1.21
 
+## Author
+
+**Jafar Madi** — [jadmadi.net](https://jadmadi.net) · [@jadmadi](https://x.com/jadmadi) · [jadmadi@gmail.com](mailto:jadmadi@gmail.com)
+
+## Support
+
+If you find Thermal useful, consider supporting:
+
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://paypal.me/Madise)
+
 ## License
 
-MIT
+[MIT](LICENSE)
