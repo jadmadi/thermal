@@ -22,7 +22,7 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 With Go:
 
 ```bash
-go install github.com/jadmadi/thermal@latest
+go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
