@@ -20,7 +20,7 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 ## Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jadmadi/thermal/main/install.sh | sh
+curl -sSL https://gobinaries.com/jadmadi/thermal | sh
 ```
 
 Or with Go:
