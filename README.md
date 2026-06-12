@@ -28,7 +28,7 @@ Or build from source:
 ```bash
 git clone https://github.com/user/thermal
 cd thermal
-go build -o thermal .
+go build -o thermal ./cmd/thermal
 ```
 
 ## Usage
