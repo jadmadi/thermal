@@ -113,7 +113,7 @@ Databases are opened **read-only** — Thermal never modifies your data.
 
 ## Author
 
-**Jafar Madi** — [jadmadi.net](https://jadmadi.net) · [@jadmadi](https://x.com/jadmadi) · [jadmadi@gmail.com](mailto:jadmadi@gmail.com)
+**Jad Madi** — [jadmadi.net](https://jadmadi.net) · [@jadmadi](https://x.com/jadmadi) · [jadmadi@gmail.com](mailto:jadmadi@gmail.com)
 
 ## Support
 
