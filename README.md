@@ -6,6 +6,8 @@ GitHub-style contribution heatmap for AI coding tools.
 
 See your coding streaks, daily activity, and usage patterns rendered as a beautiful terminal heatmap. Default mode shows a **leaderboard** ranking all your installed tools.
 
+![Thermal leaderboard](screenshot.webp)
+
 ## Supported Tools
 
 | Tool | Data Source | Metrics |
@@ -13,9 +15,12 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 | **MiMoCode** | SQLite DB | Token usage, sessions, cost |
 | **OpenCode** | SQLite DB | Token usage, sessions, cost |
 | **Codex** | JSONL history | Command activity |
+| **Devin** | SQLite DB (sessions) | Session activity |
 | **Agy** | Transcript JSONL | Conversation steps |
 | **command-code** | JSONL history | Command activity |
 | **codewhale** | JSON sessions | Session activity |
+
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`.
 
 ## Install
 
@@ -44,8 +49,15 @@ thermal
 # Show a specific tool's heatmap
 thermal --tool opencode
 thermal --tool codex
+thermal --tool devin
 
-# Show last 26 weeks
+# Auto-detect the first installed tool
+thermal --tool auto
+
+# Override the data path for a tool
+thermal --tool opencode --db /path/to/opencode.db
+
+# Show last 26 weeks (default: 52, range: 4-104)
 thermal --weeks 26
 
 # Output raw JSON
@@ -101,6 +113,7 @@ thermal --no-color
 Thermal reads usage data from installed AI coding tools:
 
 - **MiMoCode / OpenCode**: Queries SQLite databases for assistant message token usage
+- **Devin**: Queries the Devin CLI sessions SQLite database for session activity
 - **Codex / command-code**: Parses JSONL command history for activity timestamps
 - **Agy**: Reads transcript JSONL files from conversation logs
 - **codewhale**: Reads JSON session files
@@ -109,7 +122,7 @@ Databases are opened **read-only** — Thermal never modifies your data.
 
 ## Requirements
 
-- Go >= 1.21
+- Go >= 1.26
 
 ## Author
 
