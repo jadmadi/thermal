@@ -17,8 +17,15 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/jadmadi/thermal/internal/version.Version={{ .Version }}
-      - -X github.com/jadmadi/thermal/internal/version.Commit={{ .Short_commit }}
+      - -X github.com/jadmadi/thermal/internal/version.Commit={{ .ShortCommit }}
       - -X github.com/jadmadi/thermal/internal/version.Date={{ .Date }}
+
+upx:
+  - enabled: true
+    compress: "9"
+    goos:
+      - linux
+      - windows
 
 archives:
   - format: tar.gz
