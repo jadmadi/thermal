@@ -1,24 +1,32 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/version"
 )
 
 func usage() string {
-	return `Usage: thermal [options]
+	return `Usage: thermal [options] [command]
 
 Don't break the streak.
 Terminal usage profile for AI coding tools.
+
+Commands:
+  upgrade        Self-upgrade to the latest release
+  version        Show version info
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -40,12 +48,29 @@ Options:
 }
 
 func parseArgs() thermal.Options {
+	if len(os.Args) == 2 {
+		arg := os.Args[1]
+		if arg == "-v" || arg == "--version" || arg == "version" {
+			fmt.Printf("thermal %s\n", version.String())
+			if version.Commit != "unknown" {
+				fmt.Printf("  commit: %s\n", version.Commit)
+			}
+			if version.Date != "unknown" {
+				fmt.Printf("  built:  %s\n", version.Date)
+			}
+			os.Exit(0)
+		}
+	}
+
 	var opts thermal.Options
 	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, agy, command-code, codewhale")
 	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
+	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
+	flag.BoolVar(&opts.Verbose, "v", false, "Enable verbose warning diagnostics on stderr (shorthand)")
+	flag.BoolVar(&opts.Verbose, "d", false, "Enable verbose warning diagnostics on stderr (shorthand)")
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, usage())
 	}
@@ -96,7 +121,26 @@ func parseArgs() thermal.Options {
 }
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	_ = ctx
+
 	opts := parseArgs()
+
+	// Subcommands that don't go through the normal tool flow.
+	switch opts.Tool {
+	case "upgrade":
+		os.Exit(runUpgrade())
+	case "version", "--version", "-v":
+		fmt.Printf("thermal %s\n", version.String())
+		if version.Commit != "unknown" {
+			fmt.Printf("  commit: %s\n", version.Commit)
+		}
+		if version.Date != "unknown" {
+			fmt.Printf("  built:  %s\n", version.Date)
+		}
+		return
+	}
 
 	if opts.Tool == "all" {
 		tools := loaders.AllTools()
@@ -119,6 +163,9 @@ func main() {
 
 			summary, daily, dataPath, err := loaders.LoadToolData(t, info, "")
 			if err != nil {
+				if opts.Verbose {
+					fmt.Fprintf(os.Stderr, "thermal: warning: failed loading %s: %v\n", info.Name, err)
+				}
 				continue
 			}
 

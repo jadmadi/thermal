@@ -20,6 +20,7 @@ type Options struct {
 	Weeks   int
 	JSON    bool
 	NoColor bool
+	Verbose bool
 }
 
 type Summary struct {
@@ -32,6 +33,12 @@ type Summary struct {
 	CacheTokens      int64   `json:"cacheTokens"`
 	Cost             float64 `json:"cost"`
 	LongestSessionMs int64   `json:"longestSessionMs"`
+	// New analytics fields — populated by tools that have them; 0/nil otherwise.
+	LinesAdded       int64             `json:"linesAdded"`
+	LinesDeleted     int64             `json:"linesDeleted"`
+	FilesTouched     int64             `json:"filesTouched"`
+	AgentBreakdown   map[string]int    `json:"agentBreakdown,omitempty"`
+	ModelBreakdown   map[string]int64  `json:"modelBreakdown,omitempty"`
 }
 
 type DailyRow struct {

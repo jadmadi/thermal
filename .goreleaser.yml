@@ -12,8 +12,13 @@ builds:
     goarch:
       - amd64
       - arm64
+    flags:
+      - -trimpath
     ldflags:
       - -s -w
+      - -X github.com/jadmadi/thermal/internal/version.Version={{ .Version }}
+      - -X github.com/jadmadi/thermal/internal/version.Commit={{ .Short_commit }}
+      - -X github.com/jadmadi/thermal/internal/version.Date={{ .Date }}
 
 archives:
   - format: tar.gz

@@ -10,10 +10,11 @@ import (
 )
 
 type ToolInfo struct {
-	DBPath  string
-	DataDir string
-	Name    string
-	Loader  func(string) (thermal.Summary, []thermal.DailyRow, error)
+	DBPath     string
+	DataDir    string
+	Name       string
+	DataSubdir string // e.g. "history.jsonl", "brain", "sessions", "projects"
+	Loader     func(string) (thermal.Summary, []thermal.DailyRow, error)
 }
 
 func AllTools() map[thermal.Tool]ToolInfo {
@@ -23,18 +24,19 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			DBPath:  filepath.Join(home, ".local", "share", "mimocode", "mimocode.db"),
 			DataDir: filepath.Join(home, ".local", "share", "mimocode"),
 			Name:    "MiMoCode",
-			Loader:  LoadSqliteData,
+			Loader:  LoadMiMoCodeData,
 		},
 		thermal.ToolOpenCode: {
 			DBPath:  filepath.Join(home, ".local", "share", "opencode", "opencode.db"),
 			DataDir: filepath.Join(home, ".local", "share", "opencode"),
 			Name:    "OpenCode",
-			Loader:  LoadSqliteData,
+			Loader:  LoadOpenCodeData,
 		},
 		thermal.ToolCodex: {
-			DataDir: filepath.Join(home, ".codex"),
-			Name:    "Codex",
-			Loader:  LoadCodexData,
+			DataDir:    filepath.Join(home, ".codex"),
+			Name:       "Codex",
+			DataSubdir: "sessions",
+			Loader:     LoadCodexData,
 		},
 		thermal.ToolDevin: {
 			DBPath:  filepath.Join(home, ".local", "share", "devin", "cli", "sessions.db"),
@@ -43,40 +45,43 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Loader:  LoadDevinData,
 		},
 		thermal.ToolAgy: {
-			DataDir: filepath.Join(home, ".gemini", "antigravity"),
-			Name:    "Agy",
-			Loader:  LoadAgyData,
+			DataDir:    filepath.Join(home, ".gemini", "antigravity"),
+			Name:       "Agy",
+			DataSubdir: "brain",
+			Loader:     LoadAgyData,
 		},
 		thermal.ToolCommandCode: {
-			DataDir: filepath.Join(home, ".commandcode"),
-			Name:    "command-code",
-			Loader:  LoadCommandCodeData,
+			DataDir:    filepath.Join(home, ".commandcode"),
+			Name:       "command-code",
+			DataSubdir: "projects",
+			Loader:     LoadCommandCodeData,
 		},
 		thermal.ToolCodewhale: {
-			DataDir: filepath.Join(home, ".codewhale"),
-			Name:    "codewhale",
-			Loader:  LoadCodewhaleData,
+			DataDir:    filepath.Join(home, ".codewhale"),
+			Name:       "codewhale",
+			DataSubdir: "sessions",
+			Loader:     LoadCodewhaleData,
 		},
 	}
 }
 
 var toolAliases = map[string]thermal.Tool{
-	"mimo":        thermal.ToolMiMoCode,
-	"mimo-":       thermal.ToolMiMoCode,
-	"mimocode":    thermal.ToolMiMoCode,
-	"oc":          thermal.ToolOpenCode,
-	"opencode":    thermal.ToolOpenCode,
-	"codex":       thermal.ToolCodex,
-	"devin":       thermal.ToolDevin,
-	"agy":         thermal.ToolAgy,
-	"cmd":         thermal.ToolCommandCode,
-	"cc":          thermal.ToolCommandCode,
-	"commandcode": thermal.ToolCommandCode,
+	"mimo":         thermal.ToolMiMoCode,
+	"mimo-":        thermal.ToolMiMoCode,
+	"mimocode":     thermal.ToolMiMoCode,
+	"oc":           thermal.ToolOpenCode,
+	"opencode":     thermal.ToolOpenCode,
+	"codex":        thermal.ToolCodex,
+	"devin":        thermal.ToolDevin,
+	"agy":          thermal.ToolAgy,
+	"cmd":          thermal.ToolCommandCode,
+	"cc":           thermal.ToolCommandCode,
+	"commandcode":  thermal.ToolCommandCode,
 	"command-code": thermal.ToolCommandCode,
-	"whale":       thermal.ToolCodewhale,
-	"codewhale":   thermal.ToolCodewhale,
-	"all":         thermal.ToolAll,
-	"auto":        thermal.ToolAuto,
+	"whale":        thermal.ToolCodewhale,
+	"codewhale":    thermal.ToolCodewhale,
+	"all":          thermal.ToolAll,
+	"auto":         thermal.ToolAuto,
 }
 
 func ResolveTool(name string) (thermal.Tool, bool) {
@@ -115,11 +120,9 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (thermal.Summary
 		}
 		s, d, err := info.Loader(dir)
 		s.Tool = info.Name
-		dataPath := filepath.Join(dir, "history.jsonl")
-		if t == thermal.ToolAgy {
-			dataPath = filepath.Join(dir, "brain")
-		} else if t == thermal.ToolCodewhale {
-			dataPath = filepath.Join(dir, "sessions")
+		dataPath := filepath.Join(dir, info.DataSubdir)
+		if info.DataSubdir == "" {
+			dataPath = filepath.Join(dir, "history.jsonl")
 		}
 		return s, d, dataPath, err
 	}

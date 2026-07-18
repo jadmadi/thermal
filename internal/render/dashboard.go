@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -50,12 +51,6 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	tokenLabel := "tokens"
 	switch toolName {
 	case "command-code":
-		tokenLabel = "commands"
-	case "codewhale":
-		tokenLabel = "sessions"
-	case "Devin":
-		tokenLabel = "sessions"
-	case "Codex":
 		tokenLabel = "messages"
 	case "Agy":
 		tokenLabel = "steps"
@@ -79,6 +74,47 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	sb.WriteString(fmt.Sprintf("  %d active days  %s  %d day streak  %s  %d best  %s  %s all-time\n",
 		visibleActive, muted("|"), current, muted("|"), longest, muted("|"), thermal.CompactNumber(allTime),
 	))
+
+	// Extra analytics line: cost, code changes, sessions, agent breakdown.
+	var extra []string
+	if summary.Cost > 0 {
+		extra = append(extra, fmt.Sprintf("$%.2f spent", summary.Cost))
+	}
+	if summary.LinesAdded > 0 || summary.LinesDeleted > 0 {
+		extra = append(extra, fmt.Sprintf("%s+ / %s- lines", thermal.CompactNumber(summary.LinesAdded), thermal.CompactNumber(summary.LinesDeleted)))
+	}
+	if summary.FilesTouched > 0 {
+		extra = append(extra, fmt.Sprintf("%s files", thermal.CompactNumber(summary.FilesTouched)))
+	}
+	if summary.Sessions > 0 && summary.LongestSessionMs > 0 {
+		extra = append(extra, fmt.Sprintf("%d sessions", summary.Sessions))
+	}
+	if len(extra) > 0 {
+		sb.WriteString(fmt.Sprintf("  %s\n", strings.Join(extra, muted("  ·  "))))
+	}
+
+	// Agent breakdown line (top 3 agents by count).
+	if len(summary.AgentBreakdown) > 0 {
+		type agentCount struct {
+			agent string
+			n     int
+		}
+		var agents []agentCount
+		for a, n := range summary.AgentBreakdown {
+			agents = append(agents, agentCount{a, n})
+		}
+		sort.Slice(agents, func(i, j int) bool { return agents[i].n > agents[j].n })
+		limit := 3
+		if len(agents) < limit {
+			limit = len(agents)
+		}
+		var parts []string
+		for i := 0; i < limit; i++ {
+			parts = append(parts, fmt.Sprintf("%s: %d", agents[i].agent, agents[i].n))
+		}
+		sb.WriteString(fmt.Sprintf("  %s agents  %s\n", muted("·"), strings.Join(parts, muted("  "))))
+	}
+
 	sb.WriteString("\n")
 
 	return sb.String()

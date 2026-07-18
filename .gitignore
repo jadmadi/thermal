@@ -1,5 +1,6 @@
 # Binaries
 thermal
+/dist/
 *.exe
 
 # Go

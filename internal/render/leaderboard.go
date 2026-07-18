@@ -79,7 +79,7 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 	activityResults := make([]thermal.ToolResult, 0)
 	for _, r := range results {
 		switch r.Tool {
-		case thermal.ToolMiMoCode, thermal.ToolOpenCode:
+		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolCodex, thermal.ToolCodewhale:
 			tokenResults = append(tokenResults, r)
 		default:
 			activityResults = append(activityResults, r)
@@ -125,10 +125,10 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 
 	if len(tokenResults) > 0 {
 		sb.WriteString(fmt.Sprintf("  %s\n", highlight("Token Warriors")))
-		sb.WriteString(fmt.Sprintf("   %s  %s %s  %s  %s   %s\n",
-			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6), thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), "Tokens",
+		sb.WriteString(fmt.Sprintf("   %s  %s %s  %s  %s   %s  %s\n",
+			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6), thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), thermal.PadRight("Tokens", 10), "Cost",
 		))
-		sb.WriteString(fmt.Sprintf("   %s\n", dim(strings.Repeat("─", 55))))
+		sb.WriteString(fmt.Sprintf("   %s\n", dim(strings.Repeat("─", 65))))
 
 		for i, r := range tokenResults {
 			rank := i + 1
@@ -147,10 +147,19 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 
 			bestStr := thermal.PadLeft(fmt.Sprintf("%dd", r.LongestStreak), 6)
 			activeStr := thermal.PadLeft(fmt.Sprintf("%dd", r.ActiveDays), 6)
-			activityStr := fmt.Sprintf("%s tok", thermal.CompactNumber(r.TotalActivity))
+			activityStr := thermal.PadRight(fmt.Sprintf("%s tok", thermal.CompactNumber(r.TotalActivity)), 10)
 
-			sb.WriteString(fmt.Sprintf("  %s %s %s  %s  %s   %s\n",
-				medal, nameStr, streakStr, bestStr, activeStr, activityStr,
+			costStr := "—"
+			if r.Summary.Cost > 0 {
+				if r.Summary.Cost < 0.01 {
+					costStr = fmt.Sprintf("$%.4f", r.Summary.Cost)
+				} else {
+					costStr = fmt.Sprintf("$%.2f", r.Summary.Cost)
+				}
+			}
+
+			sb.WriteString(fmt.Sprintf("  %s %s %s  %s  %s   %s  %s\n",
+				medal, nameStr, streakStr, bestStr, activeStr, activityStr, costStr,
 			))
 		}
 		sb.WriteString("\n")
@@ -183,11 +192,7 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 
 			var actLabel string
 			switch r.Tool {
-			case thermal.ToolDevin, thermal.ToolCodewhale:
-				actLabel = "sess"
 			case thermal.ToolCommandCode:
-				actLabel = "cmd"
-			case thermal.ToolCodex:
 				actLabel = "msg"
 			case thermal.ToolAgy:
 				actLabel = "step"

@@ -12,13 +12,15 @@ See your coding streaks, daily activity, and usage patterns rendered as a beauti
 
 | Tool | Data Source | Metrics |
 |------|-------------|---------|
-| **MiMoCode** | SQLite DB | Token usage, sessions, cost |
+| **Devin** | SQLite DB (sessions + message_nodes) | Token usage, sessions, cost |
 | **OpenCode** | SQLite DB | Token usage, sessions, cost |
-| **Codex** | JSONL history | Command activity |
-| **Devin** | SQLite DB (sessions) | Session activity |
-| **Agy** | Transcript JSONL | Conversation steps |
-| **command-code** | JSONL history | Command activity |
-| **codewhale** | JSON sessions | Session activity |
+| **MiMoCode** | SQLite DB | Token usage, sessions, cost |
+| **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
+| **codewhale** | JSON sessions | Token usage, sessions, cost |
+| **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
+| **Agy** | Overview logs (JSONL) | Step activity, sessions, model breakdown |
+
+Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
 Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`.
 
@@ -32,12 +34,40 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
 
-Or build from source:
+Or build from source using the included build script:
 
 ```bash
 git clone https://github.com/jadmadi/thermal
 cd thermal
-go build -o thermal ./cmd/thermal
+./build.sh --release   # Builds stripped production binary (~9.8MB) with embedded version tags
+```
+
+You can run `./build.sh --help` to explore available build modes (`--release`, `--dev`, `--upx`) and cross-compilation targets. Or build manually with Go:
+
+```bash
+CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o thermal ./cmd/thermal
+```
+
+## Update
+
+If you installed via binary or `go install`:
+
+```bash
+thermal upgrade
+```
+
+This checks GitHub for a newer release, downloads the matching binary for your OS/arch, and atomically replaces the running binary.
+
+If you installed via `go install`, you can also update with:
+
+```bash
+go install github.com/jadmadi/thermal/cmd/thermal@latest
+```
+
+Check your current version:
+
+```bash
+thermal version
 ```
 
 ## Usage
@@ -63,6 +93,9 @@ thermal --weeks 26
 # Output raw JSON
 thermal --json
 
+# Enable verbose diagnostic warnings (outputs non-fatal loading errors to stderr)
+thermal --verbose
+
 # Disable colors
 thermal --no-color
 ```
@@ -70,22 +103,24 @@ thermal --no-color
 ## Example: Leaderboard
 
 ```
-  THERMAL — Don't break the streak.
-  Thursday, June 11 2026
+  THERMAL  — Don't break the streak.
 
-  #  Tool            Streak    Best      Active    Activity
-  ──────────────────────────────────────────────────────────────
-  🥇 OpenCode        4d        13d       40d       1.6B tok
-     ████████████████████ 🔥🔥
-  🥈 command-code    2d        9d        23d       374 cmd
-     ██████████
-  🥉 MiMoCode        2d        2d        3d        339M tok
-     ██████████
-     Codex           0d        2d        4d        62 msg
-     Agy             0d        1d        1d        57 step
-     codewhale       0d        0d        0d        0 sess
+  Token Warriors
+   #    Tool           Strk    Best    Days     Tokens      Cost
+   ─────────────────────────────────────────────────────────────────
+   1. Devin             38d     38d     67d   57.2B tok   —
+   2. OpenCode           2d     10d     46d   1.8B tok    $234.37
+   3. MiMoCode           1d      7d     23d   1.7B tok    $419.00
+   4. Codex              1d      2d      9d   44.0M tok   —
+   5. codewhale          1d      1d      1d   22.7K tok   $0.0032
 
-  🏆 OpenCode is on fire with a 4-day streak!
+  Activity Hunters
+   #    Tool           Strk    Best    Days     Activity
+   ───────────────────────────────────────────────────────
+   1. command-code       1d      9d     28d   5.6K msg
+   2. Agy                1d      1d      2d   304 step
+
+  >> Devin is on fire with a 38-day streak!
 
   Keep the heat going. Don't break the streak.
 ```
@@ -112,13 +147,14 @@ thermal --no-color
 
 Thermal reads usage data from installed AI coding tools:
 
-- **MiMoCode / OpenCode**: Queries SQLite databases for assistant message token usage
-- **Devin**: Queries the Devin CLI sessions SQLite database for session activity
-- **Codex / command-code**: Parses JSONL command history for activity timestamps
-- **Agy**: Reads transcript JSONL files from conversation logs
-- **codewhale**: Reads JSON session files
+- **Devin**: Queries the Devin CLI SQLite database, joining `message_nodes` (assistant `metadata.metrics` for real input/output/cache token counts) against `sessions` (duration, count) and `prompt_history` (engagement)
+- **OpenCode / MiMoCode**: Queries SQLite databases for pre-aggregated token usage, cost, and code diff stats
+- **Codex**: Reads `state_5.sqlite` (`threads.tokens_used`, model, source, reasoning_effort) as the primary source, supplements with rollout JSONL for the input/output/reasoning/cache token breakdown
+- **codewhale**: Reads JSON session files for `metadata.total_tokens`, `metadata.cost.session_cost_usd`, model, and mode
+- **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
+- **Agy**: Reads `overview.txt` logs from all brain sessions for step activity, supplements with `transcript.jsonl` for model info
 
-Databases are opened **read-only** — Thermal never modifies your data.
+All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 
 ## Requirements
 

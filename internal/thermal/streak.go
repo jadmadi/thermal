@@ -18,7 +18,7 @@ func ComputeStreaks(days map[string]bool) (current int, longest int) {
 	var prev time.Time
 	for _, d := range sorted {
 		t, _ := time.Parse("2006-01-02", d)
-		if !prev.IsZero() && t.Sub(prev) == 24*time.Hour {
+		if !prev.IsZero() && prev.AddDate(0, 0, 1).Equal(t) {
 			run++
 		} else {
 			run = 1
@@ -37,7 +37,7 @@ func ComputeStreaks(days map[string]bool) (current int, longest int) {
 				break
 			}
 			current++
-			cursor = cursor.Add(-24 * time.Hour)
+			cursor = cursor.AddDate(0, 0, -1)
 		}
 	}
 
@@ -59,7 +59,14 @@ func ActivityThresholds(activity map[string]DayActivity) [3]int64 {
 		idx := int(math.Floor(float64(len(nonzero)-1) * q))
 		return nonzero[idx]
 	}
-	return [3]int64{at(0.25), at(0.5), at(0.75)}
+	t1, t2, t3 := at(0.25), at(0.5), at(0.75)
+	if t2 <= t1 && t1 < nonzero[len(nonzero)-1] {
+		t2 = t1 + 1
+	}
+	if t3 <= t2 && t2 < nonzero[len(nonzero)-1] {
+		t3 = t2 + 1
+	}
+	return [3]int64{t1, t2, t3}
 }
 
 func ActivityLevel(a DayActivity, thresholds [3]int64) int {

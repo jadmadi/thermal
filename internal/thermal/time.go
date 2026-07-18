@@ -14,6 +14,13 @@ func LocalDay(t time.Time) string {
 	return t.Format("2006-01-02")
 }
 
+// UnixDay converts a Unix timestamp (in seconds) to a local "YYYY-MM-DD" day
+// string. Used by the Devin loader to bucket message_nodes rows by day without
+// round-tripping through SQLite's date() function per row.
+func UnixDay(unixSec int64) string {
+	return time.Unix(unixSec, 0).Format("2006-01-02")
+}
+
 func StartOfToday() time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
