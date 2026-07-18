@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/jadmadi/thermal/compare/v0.1.0...v0.2.0) (2026-07-18)
+
+
+### Features
+
+* add open source release plan and config ([61c9449](https://github.com/jadmadi/thermal/commit/61c9449d6baab5945e7a1a540217e5405cbc41b8))
+* optimize loaders with memory-mapped SQLite and parallel workers, add build.sh automation, and integrate release-please ([bdf5b2d](https://github.com/jadmadi/thermal/commit/bdf5b2da63d0270b466802250804df5b21e0a330))
+
+
+### Bug Fixes
+
+* update author name in readme ([19e2c54](https://github.com/jadmadi/thermal/commit/19e2c5448949c306a7cb65b815aa3ac2f17031cd))
+
 ## [Unreleased]
 
 ### Added
