@@ -6,7 +6,7 @@ GitHub-style contribution heatmap for AI coding tools.
 
 See your coding streaks, daily activity, and usage patterns rendered as a beautiful terminal heatmap. Default mode shows a **leaderboard** ranking all your installed tools.
 
-![Thermal leaderboard](screenshot.webp)
+![Thermal leaderboard](thermal.webp)
 
 ## Supported Tools
 
@@ -126,6 +126,12 @@ thermal --no-color
 ```
 
 ## Example: Single Tool
+
+![Devin heatmap](devin.webp)
+![MiMoCode heatmap](mimo.webp)
+![Codex heatmap](codex.webp)
+![command-code heatmap](cmd.webp)
+![codewhale heatmap](codewhale.webp)
 
 ```
   OpenCode activity  1.2B tokens / 8 weeks  ~/.local/share/opencode/opencode.db
