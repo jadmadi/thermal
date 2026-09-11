@@ -6,6 +6,13 @@ GitHub-style contribution heatmap for AI coding tools.
 
 See your coding streaks, daily activity, and usage patterns rendered as a beautiful terminal heatmap. Default mode shows a **leaderboard** ranking all your installed tools.
 
+Unlike `git log`, which only shows committed code, thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed.
+
+```bash
+go install github.com/jadmadi/thermal/cmd/thermal@latest
+thermal
+```
+
 ![Thermal leaderboard](thermal.webp)
 
 ## Supported Tools
