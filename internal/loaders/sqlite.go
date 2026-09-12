@@ -10,12 +10,15 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// LoadOpenCodeData reads the OpenCode SQLite DB. OpenCode has pre-aggregated
-// token columns on the session table (tokens_input, tokens_output, etc.) plus
+// LoadOpenCodeData reads the OpenCode SQLite DB. Since the v2 storage
+// migration, new sessions land in session_v2 and the legacy session table
+// stops receiving writes, so session_v2 is the primary source. Both tables
+// carry pre-aggregated token columns (tokens_input, tokens_output, etc.) plus
 // cost, agent, model, and code-change summaries (summary_additions/deletions/
-// files). Using the session columns is faster than re-aggregating from
-// message.data JSON and surfaces cost + code changes that were previously
-// hidden.
+// files). Legacy rows whose ids are absent from session_v2 are folded in so
+// pre-migration history is not dropped. For DBs predating session_v2, fall
+// back to the session table, and to message.data JSON aggregation when the
+// session table has no token columns.
 func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
@@ -25,6 +28,79 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
 
 	var summary thermal.Summary
+
+	// OpenCode v2 moved sessions into session_v2; the legacy session table
+	// keeps only pre-migration rows. Read v2 when present.
+	var hasV2 bool
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_v2'`).Scan(&hasV2); err != nil {
+		return thermal.Summary{}, nil, err
+	}
+	if hasV2 {
+		src := "(" + opencodeV2Source(db) + ")"
+
+		err = db.QueryRow(`
+			SELECT
+				COUNT(*),
+				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
+				COALESCE(SUM(tokens_input), 0),
+				COALESCE(SUM(tokens_output), 0),
+				COALESCE(SUM(tokens_reasoning), 0),
+				COALESCE(SUM(tokens_cache_read + tokens_cache_write), 0),
+				COALESCE(SUM(cost), 0),
+				COALESCE(SUM(summary_additions), 0),
+				COALESCE(SUM(summary_deletions), 0),
+				COALESCE(SUM(summary_files), 0),
+				COALESCE(MAX(time_updated - time_created), 0)
+			FROM `+src).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
+			&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens,
+			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
+			&summary.FilesTouched, &summary.LongestSessionMs)
+		if err != nil {
+			return thermal.Summary{}, nil, err
+		}
+
+		// Agent breakdown from session.agent column.
+		agentRows, err := db.Query(`SELECT agent, COUNT(*) FROM ` + src + ` WHERE agent != '' GROUP BY agent`)
+		if err == nil {
+			summary.AgentBreakdown = make(map[string]int)
+			for agentRows.Next() {
+				var agent string
+				var n int
+				agentRows.Scan(&agent, &n)
+				summary.AgentBreakdown[agent] = n
+			}
+			agentRows.Close()
+		}
+
+		// Daily aggregation from pre-agg columns (one row per session, far
+		// fewer rows than message-level).
+		rows, err := db.Query(`
+			SELECT
+				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
+				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
+				COUNT(*)
+			FROM ` + src + `
+			GROUP BY day
+			ORDER BY day
+		`)
+		if err != nil {
+			return thermal.Summary{}, nil, err
+		}
+		defer rows.Close()
+
+		var daily []thermal.DailyRow
+		for rows.Next() {
+			var r thermal.DailyRow
+			if err := rows.Scan(&r.Day, &r.Tokens, &r.Turns); err != nil {
+				return thermal.Summary{}, nil, err
+			}
+			daily = append(daily, r)
+		}
+		return summary, daily, nil
+	}
+
+	// Check whether the session table has the pre-agg token columns (newer
+	// schemas). Fall back to message-level aggregation if not.
 	// Check whether the session table has the pre-agg token columns (newer
 	// schemas). Fall back to message-level aggregation if not.
 	var hasSessionCols bool
@@ -100,6 +176,28 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	// Fallback: older schema without session token columns — aggregate from
 	// message.data JSON (same as MiMo).
 	return loadMessageLevelData(db)
+}
+
+// opencodeV2Source builds a session row source covering session_v2 plus any
+// legacy session rows that were never migrated (ids absent from session_v2).
+// Child/subagent sessions carry their own token totals, so every row counts
+// real usage exactly once. The legacy arm is skipped when the session table
+// lacks an id or token columns.
+func opencodeV2Source(db *sql.DB) string {
+	const cols = `SELECT id, tokens_input, tokens_output, tokens_reasoning,
+			tokens_cache_read, tokens_cache_write, cost,
+			summary_additions, summary_deletions, summary_files,
+			agent, time_created, time_updated`
+	source := cols + `
+		FROM session_v2`
+	var colsSeen int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`).Scan(&colsSeen); err == nil && colsSeen == 2 {
+		source += `
+		UNION ALL ` + cols + `
+		FROM session
+		WHERE id NOT IN (SELECT id FROM session_v2)`
+	}
+	return source
 }
 
 // LoadMiMoCodeData reads the MiMoCode SQLite DB. MiMo has no pre-aggregated
