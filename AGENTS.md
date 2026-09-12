@@ -40,7 +40,7 @@ thermal/
 
 ### B. Tool-Specific Loader Quirks
 * **Devin (`devin.go`)**: Queries the SQLite DB joining `message_nodes` against `sessions`. Always check `metadata.metrics` for true input/output/cache token counts (`input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`). Check `prompt_history` (`updated_at` fallback to `created_at`) for accurate streak calculations across sessions without messages.
-* **OpenCode / MiMoCode (`opencode.go`, `mimocode.go`)**: Read pre-aggregated `session_summary` or `sessions` tables containing token counts, costs, and diff lines.
+* **OpenCode / MiMoCode (`internal/loaders/sqlite.go`)**: Read pre-aggregated token columns (`tokens_input`, `tokens_output`, `tokens_reasoning`, `tokens_cache_read/write`) plus `cost` and diff summaries. OpenCode v2 writes sessions to `session_v2` and abandons the legacy `session` table; probe for `session_v2` first and fold in legacy-only rows. Never assume a table stays the primary source across tool upgrades.
 * **Codex (`codex.go`)**: Reads `state_5.sqlite` (`threads.tokens_used`, reasoning effort, source/model breakdown) as the primary source. Supplements with rollout JSONL logs (`~/.codex/sessions/**/*.jsonl`) for granular token breakdowns when available.
 * **codewhale (`codewhale.go`)**: Reads `~/.codewhale/sessions/*.json` files for `metadata.total_tokens` and `metadata.cost.session_cost_usd`.
 * **command-code (`commandcode.go`)**: Scans `~/.commandcode/sessions/*/transcript.jsonl` for message activity and `.meta.json` sidecars for model distributions.
