@@ -20,7 +20,7 @@ thermal
 | Tool | Data Source | Metrics |
 |------|-------------|---------|
 | **Devin** | SQLite DB (sessions + message_nodes) | Token usage, sessions, cost |
-| **OpenCode** | SQLite DB | Token usage, sessions, cost |
+| **OpenCode** | SQLite DB (v1 and v2 storage) | Token usage, sessions, cost |
 | **MiMoCode** | SQLite DB | Token usage, sessions, cost |
 | **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
 | **codewhale** | JSON sessions | Token usage, sessions, cost |
@@ -161,7 +161,7 @@ thermal --no-color
 Thermal reads usage data from installed AI coding tools:
 
 - **Devin**: Queries the Devin CLI SQLite database, joining `message_nodes` (assistant `metadata.metrics` for real input/output/cache token counts) against `sessions` (duration, count) and `prompt_history` (engagement)
-- **OpenCode / MiMoCode**: Queries SQLite databases for pre-aggregated token usage, cost, and code diff stats
+- **OpenCode / MiMoCode**: Queries SQLite databases for pre-aggregated token usage, cost, and code diff stats. OpenCode v2 storage reads the `session_v2` table with fallback to the legacy schema
 - **Codex**: Reads `state_5.sqlite` (`threads.tokens_used`, model, source, reasoning_effort) as the primary source, supplements with rollout JSONL for the input/output/reasoning/cache token breakdown
 - **codewhale**: Reads JSON session files for `metadata.total_tokens`, `metadata.cost.session_cost_usd`, model, and mode
 - **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
