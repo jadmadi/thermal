@@ -14,20 +14,94 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
+// resolveAgyBrainDir accepts either the Antigravity data root (containing
+// brain/) or the brain dir itself. The active root moved from
+// ~/.gemini/antigravity to ~/.gemini/antigravity-cli, so a missing brain/
+// falls back to the sibling root before failing.
+func resolveAgyBrainDir(dataDir string) string {
+	if filepath.Base(dataDir) == "brain" {
+		return dataDir
+	}
+	primary := filepath.Join(dataDir, "brain")
+	if st, err := os.Stat(primary); err == nil && st.IsDir() {
+		return primary
+	}
+	switch filepath.Base(dataDir) {
+	case "antigravity":
+		if st, err := os.Stat(filepath.Join(filepath.Dir(dataDir), "antigravity-cli", "brain")); err == nil && st.IsDir() {
+			return filepath.Join(filepath.Dir(dataDir), "antigravity-cli", "brain")
+		}
+	case "antigravity-cli":
+		if st, err := os.Stat(filepath.Join(filepath.Dir(dataDir), "antigravity", "brain")); err == nil && st.IsDir() {
+			return filepath.Join(filepath.Dir(dataDir), "antigravity", "brain")
+		}
+	}
+	return primary
+}
+
+type sessionResult struct {
+	steps       int
+	firstTs     time.Time
+	lastTs      time.Time
+	dayCounts   map[string]int
+	modelCounts map[string]int64
+}
+
+// countAgySteps parses one JSONL log (overview.txt or transcript.jsonl — same
+// schema) and folds step counts, per-day buckets, and session bounds into res.
+// It returns the number of steps counted in this file.
+func countAgySteps(path string, res *sessionResult) int {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+
+	counted := 0
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		var rec struct {
+			CreatedAt string `json:"created_at"`
+			Source    string `json:"source"`
+			Type      string `json:"type"`
+			Content   string `json:"content"`
+		}
+		if json.Unmarshal([]byte(line), &rec) != nil {
+			continue
+		}
+		if rec.CreatedAt == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, rec.CreatedAt)
+		if err != nil {
+			continue
+		}
+		day := thermal.LocalDay(t)
+		res.dayCounts[day]++
+		res.steps++
+		counted++
+
+		if res.firstTs.IsZero() || t.Before(res.firstTs) {
+			res.firstTs = t
+		}
+		if t.After(res.lastTs) {
+			res.lastTs = t
+		}
+	}
+	return counted
+}
+
 // LoadAgyData reads Google Antigravity session data in parallel using a bounded worker pool.
 func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
-	brainDir := filepath.Join(dataDir, "brain")
+	brainDir := resolveAgyBrainDir(dataDir)
 	entries, err := os.ReadDir(brainDir)
 	if err != nil {
 		return thermal.Summary{}, nil, fmt.Errorf("cannot read %s: %w", brainDir, err)
-	}
-
-	type sessionResult struct {
-		steps       int
-		firstTs     time.Time
-		lastTs      time.Time
-		dayCounts   map[string]int
-		modelCounts map[string]int64
 	}
 
 	results := make(chan sessionResult, len(entries))
@@ -53,44 +127,12 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 
 			logsDir := filepath.Join(sDir, ".system_generated", "logs")
 
-			// 1. Process overview.txt
-			overviewPath := filepath.Join(logsDir, "overview.txt")
-			if f, err := os.Open(overviewPath); err == nil {
-				scanner := bufio.NewScanner(f)
-				scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
-				for scanner.Scan() {
-					line := strings.TrimSpace(scanner.Text())
-					if line == "" {
-						continue
-					}
-					var rec struct {
-						CreatedAt string `json:"created_at"`
-						Source    string `json:"source"`
-						Type      string `json:"type"`
-						Content   string `json:"content"`
-					}
-					if json.Unmarshal([]byte(line), &rec) != nil {
-						continue
-					}
-					if rec.CreatedAt == "" {
-						continue
-					}
-					t, err := time.Parse(time.RFC3339, rec.CreatedAt)
-					if err != nil {
-						continue
-					}
-					day := thermal.LocalDay(t)
-					res.dayCounts[day]++
-					res.steps++
-
-					if res.firstTs.IsZero() || t.Before(res.firstTs) {
-						res.firstTs = t
-					}
-					if t.After(res.lastTs) {
-						res.lastTs = t
-					}
-				}
-				f.Close()
+			// 1. Process overview.txt (legacy) and transcript.jsonl (current).
+			// Old sessions carry overview.txt, new ones only transcript.jsonl;
+			// both share the same JSON schema, so one parser covers both.
+			// If both exist, overview wins to avoid double counting.
+			if countAgySteps(filepath.Join(logsDir, "overview.txt"), &res) == 0 {
+				countAgySteps(filepath.Join(logsDir, "transcript.jsonl"), &res)
 			}
 
 			// 2. Process transcript.jsonl for model extraction

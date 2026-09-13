@@ -44,7 +44,7 @@ thermal/
 * **Codex (`codex.go`)**: Reads `state_5.sqlite` (`threads.tokens_used`, reasoning effort, source/model breakdown) as the primary source. Supplements with rollout JSONL logs (`~/.codex/sessions/**/*.jsonl`) for granular token breakdowns when available.
 * **codewhale (`codewhale.go`)**: Reads `~/.codewhale/sessions/*.json` files for `metadata.total_tokens` and `metadata.cost.session_cost_usd`.
 * **command-code (`commandcode.go`)**: Scans `~/.commandcode/sessions/*/transcript.jsonl` for message activity and `.meta.json` sidecars for model distributions.
-* **Agy (`agy.go`)**: Scans `~/.gemini/antigravity-cli/brain/*/overview.txt` (`Step <id>:` step count activity) and `.system_generated/logs/transcript.jsonl` (`MODEL` step entries) for model distribution.
+* **Agy (`agy.go`)**: Scans `~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl` for step activity and model distribution (`Model Selection` entries); falls back to legacy `overview.txt` (same schema) and legacy root `~/.gemini/antigravity` when the `-cli` root is absent.
 
 ---
 
