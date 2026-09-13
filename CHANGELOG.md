@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3](https://github.com/jadmadi/thermal/compare/v0.2.2...v0.2.3) (2026-09-13)
+
+
+### Bug Fixes
+
+* **agy:** read live antigravity-cli transcripts for step activity ([#4](https://github.com/jadmadi/thermal/issues/4)) ([c7f4fa6](https://github.com/jadmadi/thermal/commit/c7f4fa631d5020dc2647644a7bfd26b3ae5ea3d3))
+
 ## [0.2.2](https://github.com/jadmadi/thermal/compare/v0.2.1...v0.2.2) (2026-09-12)
 
 
