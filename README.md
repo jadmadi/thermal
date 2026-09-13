@@ -25,7 +25,7 @@ thermal
 | **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
 | **codewhale** | JSON sessions | Token usage, sessions, cost |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
-| **Agy** | Overview logs (JSONL) | Step activity, sessions, model breakdown |
+| **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
@@ -124,8 +124,8 @@ thermal --no-color
   Activity Hunters
    #    Tool           Strk    Best    Days     Activity
    ───────────────────────────────────────────────────────
-   1. command-code       1d      9d     28d   5.6K msg
-   2. Agy                1d      1d      2d   304 step
+   1. Agy               32d     32d     39d   56.9K step
+   2. command-code       1d      9d     28d   5.6K msg
 
   >> Devin is on fire with a 38-day streak!
 
@@ -165,7 +165,7 @@ Thermal reads usage data from installed AI coding tools:
 - **Codex**: Reads `state_5.sqlite` (`threads.tokens_used`, model, source, reasoning_effort) as the primary source, supplements with rollout JSONL for the input/output/reasoning/cache token breakdown
 - **codewhale**: Reads JSON session files for `metadata.total_tokens`, `metadata.cost.session_cost_usd`, model, and mode
 - **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
-- **Agy**: Reads `overview.txt` logs from all brain sessions for step activity, supplements with `transcript.jsonl` for model info
+- **Agy**: Reads `transcript.jsonl` logs from all brain sessions for step activity and model info, with fallback to legacy `overview.txt`
 
 All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 

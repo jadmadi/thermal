@@ -45,7 +45,7 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Loader:  LoadDevinData,
 		},
 		thermal.ToolAgy: {
-			DataDir:    filepath.Join(home, ".gemini", "antigravity"),
+			DataDir:    filepath.Join(home, ".gemini", "antigravity-cli"),
 			Name:       "Agy",
 			DataSubdir: "brain",
 			Loader:     LoadAgyData,
