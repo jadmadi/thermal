@@ -68,6 +68,12 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Name:    "ZCode",
 			Loader:  LoadZCodeData,
 		},
+		thermal.ToolGrok: {
+			DataDir:    grokHomeDir(home),
+			Name:       "Grok",
+			DataSubdir: "sessions",
+			Loader:     LoadGrokData,
+		},
 		thermal.ToolMuse: {
 			DBPath:  filepath.Join(home, ".local", "share", "muse", "session-index.db"),
 			DataDir: filepath.Join(home, ".local", "share", "muse"),
@@ -75,6 +81,13 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Loader:  LoadMuseData,
 		},
 	}
+}
+
+func grokHomeDir(home string) string {
+	if env := os.Getenv("GROK_HOME"); env != "" {
+		return env
+	}
+	return filepath.Join(home, ".grok")
 }
 
 var toolAliases = map[string]thermal.Tool{
@@ -94,6 +107,7 @@ var toolAliases = map[string]thermal.Tool{
 	"codewhale":    thermal.ToolCodewhale,
 	"zc":           thermal.ToolZCode,
 	"zcode":        thermal.ToolZCode,
+	"grok":         thermal.ToolGrok,
 	"muse":         thermal.ToolMuse,
 	"all":          thermal.ToolAll,
 	"auto":         thermal.ToolAuto,
@@ -157,6 +171,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  command-code, cmd    command-code-ai")
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
+			fmt.Fprintln(os.Stderr, "  grok                 Grok CLI")
 			fmt.Fprintln(os.Stderr, "  muse                 Muse")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
@@ -165,7 +180,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolMuse} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {
