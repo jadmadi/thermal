@@ -68,7 +68,20 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Name:    "ZCode",
 			Loader:  LoadZCodeData,
 		},
+		thermal.ToolGrok: {
+			DataDir:    grokHomeDir(home),
+			Name:       "Grok",
+			DataSubdir: "sessions",
+			Loader:     LoadGrokData,
+		},
 	}
+}
+
+func grokHomeDir(home string) string {
+	if env := os.Getenv("GROK_HOME"); env != "" {
+		return env
+	}
+	return filepath.Join(home, ".grok")
 }
 
 var toolAliases = map[string]thermal.Tool{
@@ -88,6 +101,8 @@ var toolAliases = map[string]thermal.Tool{
 	"codewhale":    thermal.ToolCodewhale,
 	"zc":           thermal.ToolZCode,
 	"zcode":        thermal.ToolZCode,
+	"grok":         thermal.ToolGrok,
+	"muse":         thermal.ToolGrok,
 	"all":          thermal.ToolAll,
 	"auto":         thermal.ToolAuto,
 }
@@ -150,6 +165,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  command-code, cmd    command-code-ai")
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
+			fmt.Fprintln(os.Stderr, "  grok, muse           Grok (Muse)")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -157,7 +173,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {
