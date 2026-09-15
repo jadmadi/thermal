@@ -102,7 +102,6 @@ var toolAliases = map[string]thermal.Tool{
 	"zc":           thermal.ToolZCode,
 	"zcode":        thermal.ToolZCode,
 	"grok":         thermal.ToolGrok,
-	"muse":         thermal.ToolGrok,
 	"all":          thermal.ToolAll,
 	"auto":         thermal.ToolAuto,
 }
@@ -165,7 +164,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  command-code, cmd    command-code-ai")
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
-			fmt.Fprintln(os.Stderr, "  grok, muse           Grok (Muse)")
+			fmt.Fprintln(os.Stderr, "  grok                 Grok CLI")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}

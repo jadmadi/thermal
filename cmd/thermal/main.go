@@ -38,7 +38,7 @@ Supported tools:
   command-code  command-code-ai
   codewhale     codewhale
   zcode         ZCode
-  grok          Grok (Muse)
+  grok          Grok CLI
 
 Options:
   --tool <name>   Tool to show (default: all)

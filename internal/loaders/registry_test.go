@@ -18,7 +18,6 @@ func TestResolveTool_Aliases(t *testing.T) {
 		{"zcode", thermal.ToolZCode, true},
 		{"zc", thermal.ToolZCode, true},
 		{"grok", thermal.ToolGrok, true},
-		{"muse", thermal.ToolGrok, true},
 		{"nonexistent", "", false},
 	}
 	for _, tc := range tests {

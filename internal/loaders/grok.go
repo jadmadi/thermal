@@ -33,7 +33,7 @@ type grokUsage struct {
 	} `json:"modelUsage"`
 }
 
-// LoadGrokData scans Grok (Muse) session logs in parallel using a bounded
+// LoadGrokData scans Grok CLI session logs in parallel using a bounded
 // worker pool. The primary source is updates.jsonl: only turn_completed
 // updates carry usable per-turn usage. summary.json sidecars supply the agent
 // name and session duration. Sessions killed mid-turn never record usage and
