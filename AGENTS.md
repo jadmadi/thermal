@@ -46,6 +46,7 @@ thermal/
 * **command-code (`commandcode.go`)**: Scans `~/.commandcode/sessions/*/transcript.jsonl` for message activity and `.meta.json` sidecars for model distributions.
 * **Agy (`agy.go`)**: Scans `~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl` for step activity and model distribution (`Model Selection` entries); falls back to legacy `overview.txt` (same schema) and legacy root `~/.gemini/antigravity` when the `-cli` root is absent.
 * **ZCode (`zcode.go`)**: Reads `~/.zcode/cli/db/db.sqlite` `model_usage` (per-request tokens, model, agent; `status = 'completed'` only) and `turn_usage` for turn counts. The DB records no cost, so Cost stays 0.
+* **Grok (`grok.go`)**: Scans `<grok-home>/sessions/*/*/updates.jsonl` (`GROK_HOME` env or `~/.grok`) for `turn_completed` usage only. `costUsdTicks` converts at 1e-10 USD; `inputTokens` already includes cache, `reasoningTokens` is a subset of output, lifetime uses recorded `totalTokens`. Bounded worker pool like command-code.
 
 ---
 

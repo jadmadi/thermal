@@ -25,12 +25,13 @@ thermal
 | **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
 | **codewhale** | JSON sessions | Token usage, sessions, cost |
 | **ZCode** | SQLite DB (`model_usage` telemetry) | Token usage, sessions, model/agent breakdown |
+| **Grok** | JSONL session logs (`turn_completed` usage) | Token usage, sessions, cost, model breakdown |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
 | **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`, `zc`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`, `zc`, `muse`.
 
 ## Install
 
@@ -168,6 +169,7 @@ Thermal reads usage data from installed AI coding tools:
 - **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
 - **Agy**: Reads `transcript.jsonl` logs from all brain sessions for step activity and model info, with fallback to legacy `overview.txt`
 - **ZCode**: Reads the `model_usage` telemetry table (per-request tokens, model, agent; completed runs only) and `turn_usage` for turn counts. The database records no cost figures
+- **Grok**: Scans `sessions/*/*/updates.jsonl` for `turn_completed` usage (input/output/reasoning/cache tokens, `costUsdTicks` at 1e-10 USD, per-model `modelCalls`). Input already includes cache reads, reasoning is a subset of output; lifetime uses the recorded `totalTokens`. Honors `GROK_HOME`, falls back to `~/.grok`
 
 All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 
