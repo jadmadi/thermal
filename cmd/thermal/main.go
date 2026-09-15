@@ -38,6 +38,7 @@ Supported tools:
   command-code  command-code-ai
   codewhale     codewhale
   zcode         ZCode
+  muse          Muse
 
 Options:
   --tool <name>   Tool to show (default: all)
@@ -64,7 +65,7 @@ func parseArgs() thermal.Options {
 	}
 
 	var opts thermal.Options
-	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, agy, command-code, codewhale, zcode")
+	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, agy, command-code, codewhale, zcode, muse")
 	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
@@ -147,7 +148,7 @@ func main() {
 		tools := loaders.AllTools()
 		var results []thermal.ToolResult
 
-		toolOrder := []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode}
+		toolOrder := []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolMuse}
 		for _, t := range toolOrder {
 			info := tools[t]
 			if info.DBPath != "" {
