@@ -192,4 +192,5 @@ elif [[ -n "$TARGET_OS_ARCH" ]]; then
     build_single "$goos" "$goarch" "$OUTPUT"
 else
     build_single "$(go env GOOS)" "$(go env GOARCH)" "$OUTPUT"
+    echo -e "${YELLOW}→ To use it:${RESET} cp ${OUTPUT:-thermal} ~/.local/bin/thermal  (or run: ${BOLD}thermal upgrade${RESET})"
 fi
