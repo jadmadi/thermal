@@ -48,6 +48,8 @@ thermal/
 * **ZCode (`zcode.go`)**: Reads `~/.zcode/cli/db/db.sqlite` `model_usage` (per-request tokens, model, agent; `status = 'completed'` only) and `turn_usage` for turn counts. The DB records no cost, so Cost stays 0.
 * **Grok (`grok.go`)**: Scans `<grok-home>/sessions/*/*/updates.jsonl` (`GROK_HOME` env or `~/.grok`) for `turn_completed` usage only. `costUsdTicks` converts at 1e-10 USD; `inputTokens` already includes cache, `reasoningTokens` is a subset of output, lifetime uses recorded `totalTokens`. Bounded worker pool like command-code.
 * **Muse (`muse.go`)**: Reads `~/.local/share/muse/session-index.db` (sessions, prompt counts, model ids, microsecond timestamps). Activity-only: no token or cost columns exist. Prompt counts stand in for activity; upgrade to per-session `session.jsonl` when model-call frames accumulate.
+* **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for assistant `message.usage` (input/output/cache tokens) and model ids; one file per session. No cost fields, so Cost stays 0. Bounded worker pool like command-code.
+* **Droid (`droid.go`)**: Scans `~/.factory/sessions/*/*.jsonl` message records for activity; session files carry no token or cost telemetry. Bounded worker pool like command-code.
 
 ---
 
