@@ -15,6 +15,8 @@ const (
 	ToolZCode       Tool = "zcode"
 	ToolGrok        Tool = "grok"
 	ToolMuse        Tool = "muse"
+	ToolClaude      Tool = "claude"
+	ToolDroid       Tool = "droid"
 )
 
 type Options struct {

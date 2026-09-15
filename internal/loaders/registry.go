@@ -80,6 +80,18 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Name:    "Muse",
 			Loader:  LoadMuseData,
 		},
+		thermal.ToolClaude: {
+			DataDir:    filepath.Join(home, ".claude"),
+			Name:       "Claude",
+			DataSubdir: "projects",
+			Loader:     LoadClaudeData,
+		},
+		thermal.ToolDroid: {
+			DataDir:    filepath.Join(home, ".factory"),
+			Name:       "Droid",
+			DataSubdir: "sessions",
+			Loader:     LoadDroidData,
+		},
 	}
 }
 
@@ -109,6 +121,10 @@ var toolAliases = map[string]thermal.Tool{
 	"zcode":        thermal.ToolZCode,
 	"grok":         thermal.ToolGrok,
 	"muse":         thermal.ToolMuse,
+	"claude":       thermal.ToolClaude,
+	"ccode":        thermal.ToolClaude,
+	"droid":        thermal.ToolDroid,
+	"factory":      thermal.ToolDroid,
 	"all":          thermal.ToolAll,
 	"auto":         thermal.ToolAuto,
 }
@@ -173,6 +189,8 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
 			fmt.Fprintln(os.Stderr, "  grok                 Grok CLI")
 			fmt.Fprintln(os.Stderr, "  muse                 Muse")
+			fmt.Fprintln(os.Stderr, "  claude               Claude Code")
+			fmt.Fprintln(os.Stderr, "  droid                Droid (Factory)")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -180,7 +198,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {

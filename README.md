@@ -27,6 +27,8 @@ thermal
 | **ZCode** | SQLite DB (`model_usage` telemetry) | Token usage, sessions, model/agent breakdown |
 | **Grok** | JSONL session logs (`turn_completed` usage) | Token usage, sessions, cost, model breakdown |
 | **Muse** | SQLite session index | Prompt activity, sessions, model breakdown |
+| **Claude** | JSONL session transcripts | Token usage, sessions, model breakdown |
+| **Droid** | JSONL session transcripts | Message activity, sessions |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
 | **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 
@@ -172,6 +174,8 @@ Thermal reads usage data from installed AI coding tools:
 - **ZCode**: Reads the `model_usage` telemetry table (per-request tokens, model, agent; completed runs only) and `turn_usage` for turn counts. The database records no cost figures
 - **Grok**: Scans `sessions/*/*/updates.jsonl` for `turn_completed` usage (input/output/reasoning/cache tokens, `costUsdTicks` at 1e-10 USD, per-model `modelCalls`). Input already includes cache reads, reasoning is a subset of output; lifetime uses the recorded `totalTokens`. Honors `GROK_HOME`, falls back to `~/.grok`
 - **Muse**: Reads the `session-index.db` session index (prompt counts, model ids, timestamps). Activity-only: the index carries no token or cost telemetry
+- **Claude**: Scans `projects/*/*.jsonl` for assistant `message.usage` token counts and model ids. No cost fields exist in transcripts
+- **Droid**: Scans `sessions/*/*.jsonl` message records for activity. Session files carry no token or cost telemetry
 
 All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 
