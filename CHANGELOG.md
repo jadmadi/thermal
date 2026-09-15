@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/jadmadi/thermal/compare/v0.2.3...v0.3.0) (2026-09-15)
+
+
+### Features
+
+* **zcode:** add ZCode loader with model usage telemetry ([#6](https://github.com/jadmadi/thermal/issues/6)) ([54cd9d7](https://github.com/jadmadi/thermal/commit/54cd9d7bee17fec079c9b0999af202994d5410b4))
+
 ## [0.2.3](https://github.com/jadmadi/thermal/compare/v0.2.2...v0.2.3) (2026-09-13)
 
 
