@@ -24,6 +24,7 @@ thermal
 | **MiMoCode** | SQLite DB | Token usage, sessions, cost |
 | **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
 | **codewhale** | JSON sessions | Token usage, sessions, cost |
+| **ZCode** | SQLite DB (`model_usage` telemetry) | Token usage, sessions, model/agent breakdown |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
 | **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 

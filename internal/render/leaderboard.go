@@ -79,7 +79,7 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 	activityResults := make([]thermal.ToolResult, 0)
 	for _, r := range results {
 		switch r.Tool {
-		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolCodex, thermal.ToolCodewhale:
+		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolCodex, thermal.ToolCodewhale, thermal.ToolZCode:
 			tokenResults = append(tokenResults, r)
 		default:
 			activityResults = append(activityResults, r)
