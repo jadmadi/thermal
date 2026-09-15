@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/jadmadi/thermal/compare/v0.4.0...v0.5.0) (2026-09-15)
+
+
+### Features
+
+* **claude,droid:** add Claude Code token loader and Droid activity loader ([#13](https://github.com/jadmadi/thermal/issues/13)) ([e3254d1](https://github.com/jadmadi/thermal/commit/e3254d10a3741013f9dbae74510749fb45e88a57))
+
 ## [0.4.0](https://github.com/jadmadi/thermal/compare/v0.3.0...v0.4.0) (2026-09-15)
 
 
