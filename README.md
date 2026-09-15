@@ -30,7 +30,7 @@ thermal
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`, `zc`.
 
 ## Install
 
@@ -167,6 +167,7 @@ Thermal reads usage data from installed AI coding tools:
 - **codewhale**: Reads JSON session files for `metadata.total_tokens`, `metadata.cost.session_cost_usd`, model, and mode
 - **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
 - **Agy**: Reads `transcript.jsonl` logs from all brain sessions for step activity and model info, with fallback to legacy `overview.txt`
+- **ZCode**: Reads the `model_usage` telemetry table (per-request tokens, model, agent; completed runs only) and `turn_usage` for turn counts. The database records no cost figures
 
 All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 
