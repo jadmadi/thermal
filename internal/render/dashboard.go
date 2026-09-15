@@ -54,6 +54,8 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		tokenLabel = "messages"
 	case "Agy":
 		tokenLabel = "steps"
+	case "Muse":
+		tokenLabel = "prompts"
 	}
 
 	sb.WriteString(fmt.Sprintf("  %s  %s %s / %d weeks  %s\n",

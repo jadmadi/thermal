@@ -14,6 +14,7 @@ const (
 	ToolCodewhale   Tool = "codewhale"
 	ToolZCode       Tool = "zcode"
 	ToolGrok        Tool = "grok"
+	ToolMuse        Tool = "muse"
 )
 
 type Options struct {

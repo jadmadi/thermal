@@ -196,6 +196,8 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 				actLabel = "msg"
 			case thermal.ToolAgy:
 				actLabel = "step"
+			case thermal.ToolMuse:
+				actLabel = "prompt"
 			default:
 				actLabel = "act"
 			}

@@ -74,6 +74,12 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			DataSubdir: "sessions",
 			Loader:     LoadGrokData,
 		},
+		thermal.ToolMuse: {
+			DBPath:  filepath.Join(home, ".local", "share", "muse", "session-index.db"),
+			DataDir: filepath.Join(home, ".local", "share", "muse"),
+			Name:    "Muse",
+			Loader:  LoadMuseData,
+		},
 	}
 }
 
@@ -102,6 +108,7 @@ var toolAliases = map[string]thermal.Tool{
 	"zc":           thermal.ToolZCode,
 	"zcode":        thermal.ToolZCode,
 	"grok":         thermal.ToolGrok,
+	"muse":         thermal.ToolMuse,
 	"all":          thermal.ToolAll,
 	"auto":         thermal.ToolAuto,
 }
@@ -115,7 +122,7 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 
 func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (thermal.Summary, []thermal.DailyRow, string, error) {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse:
 		p := dbPath
 		if p == "" {
 			p = info.DBPath
@@ -165,6 +172,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
 			fmt.Fprintln(os.Stderr, "  grok                 Grok CLI")
+			fmt.Fprintln(os.Stderr, "  muse                 Muse")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -172,7 +180,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {
