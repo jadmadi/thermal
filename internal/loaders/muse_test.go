@@ -39,7 +39,7 @@ func TestLoadMuseData_SessionIndex(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadMuseData(dbPath)
+	sum, daily, _, err := LoadMuseData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadMuseData error: %v", err)
 	}

@@ -19,14 +19,14 @@ import (
 // cache_creation_input_tokens); each file under projects/ is one session and
 // assistant messages are the countable turns. No cost fields exist in the
 // transcripts, so Cost stays 0.
-func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
 	summary.Tool = "Claude"
 
 	pattern := filepath.Join(dataDir, "projects", "*", "*.jsonl")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		return summary, nil, err
+		return summary, nil, nil, err
 	}
 
 	type msgAgg struct {
@@ -36,6 +36,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 		cacheRead  int64
 		cacheWrite int64
 		model      string
+		project    string
 	}
 	type fileResult struct {
 		msgs     []msgAgg
@@ -73,6 +74,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 				var rec struct {
 					Type      string `json:"type"`
 					Timestamp string `json:"timestamp"`
+					Cwd       string `json:"cwd"`
 					Message   struct {
 						Model string `json:"model"`
 						Usage struct {
@@ -110,7 +112,8 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 					output:     rec.Message.Usage.OutputTokens,
 					cacheRead:  rec.Message.Usage.CacheReadInputTokens,
 					cacheWrite: rec.Message.Usage.CacheCreationInputTokens,
-					model:      rec.Message.Model,
+					model:      modelName(rec.Message.Model),
+					project:    thermal.ProjectKey(rec.Cwd),
 				})
 			}
 			f.Close()
@@ -134,6 +137,8 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 		models                map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
+	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
+	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	modelCounts := make(map[string]int64)
 
 	for res := range results {
@@ -170,6 +175,33 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 					CacheWrite: m.cacheWrite,
 				})
 			}
+
+			if m.project == "" {
+				continue
+			}
+			key := projectDayKey{m.day, m.project}
+			pd := byProjectDay[key]
+			if pd == nil {
+				pd = &thermal.ProjectDay{Project: m.project, Day: m.day}
+				byProjectDay[key] = pd
+			}
+			pd.Input += m.input
+			pd.Output += m.output
+			pd.CacheRead += m.cacheRead
+			pd.CacheWrite += m.cacheWrite
+			pd.Tokens += m.input + m.output + m.cacheRead + m.cacheWrite
+			pd.Turns++
+			if m.model != "" && (m.input+m.output+m.cacheRead+m.cacheWrite) > 0 {
+				if projectModels[key] == nil {
+					projectModels[key] = make(map[string]thermal.ModelTokens)
+				}
+				projectModels[key][m.model] = projectModels[key][m.model].Add(thermal.ModelTokens{
+					Input:      m.input,
+					Output:     m.output,
+					CacheRead:  m.cacheRead,
+					CacheWrite: m.cacheWrite,
+				})
+			}
 		}
 	}
 
@@ -187,9 +219,21 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
+	projects := make([]thermal.ProjectDay, 0, len(byProjectDay))
+	for key, pd := range byProjectDay {
+		pd.Models = projectModels[key]
+		projects = append(projects, *pd)
+	}
+	sort.Slice(projects, func(i, j int) bool {
+		if projects[i].Day != projects[j].Day {
+			return projects[i].Day < projects[j].Day
+		}
+		return projects[i].Project < projects[j].Project
+	})
+
 	if len(modelCounts) > 0 {
 		summary.ModelBreakdown = modelCounts
 	}
 
-	return summary, daily, nil
+	return summary, daily, projects, nil
 }

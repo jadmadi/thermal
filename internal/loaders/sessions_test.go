@@ -22,7 +22,7 @@ func TestLoadCodewhaleData_SessionMetadata(t *testing.T) {
 		t.Fatalf("write error: %v", err)
 	}
 
-	sum, daily, err := LoadCodewhaleData(dir)
+	sum, daily, _, err := LoadCodewhaleData(dir)
 	if err != nil {
 		t.Fatalf("LoadCodewhaleData error: %v", err)
 	}

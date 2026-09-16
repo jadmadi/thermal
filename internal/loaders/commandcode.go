@@ -14,7 +14,7 @@ import (
 )
 
 // LoadCommandCodeData reads command-code session transcripts in parallel using a bounded worker pool.
-func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	projectsDir := filepath.Join(dataDir, "projects")
 
 	var summary thermal.Summary
@@ -23,7 +23,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, e
 	pattern := filepath.Join(projectsDir, "*", "*.jsonl")
 	allFiles, err := filepath.Glob(pattern)
 	if err != nil {
-		return summary, nil, err
+		return summary, nil, nil, err
 	}
 
 	var sessionFiles []string
@@ -36,12 +36,12 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, e
 	}
 
 	type fileResult struct {
-		day         string
-		msgCount    int
-		model       string
-		durationMs  int64
-		hasSession  bool
-		dayCounts   map[string]int
+		day        string
+		msgCount   int
+		model      string
+		durationMs int64
+		hasSession bool
+		dayCounts  map[string]int
 	}
 
 	results := make(chan fileResult, len(sessionFiles))
@@ -139,7 +139,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, e
 			summary.LongestSessionMs = res.durationMs
 		}
 		if res.model != "" && res.day != "" {
-			modelCounts[res.model]++
+			modelCounts[modelName(res.model)]++
 		}
 		for day, count := range res.dayCounts {
 			byDay[day] += count
@@ -165,5 +165,5 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, e
 		return loadJsonlData(dataDir, "t", true)
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

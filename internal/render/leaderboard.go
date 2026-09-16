@@ -67,7 +67,10 @@ func fireEmoji(streak int) string {
 	}
 }
 
-func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) string {
+// RenderLeaderboard ranks tools. sortKey picks the primary ranking: "streak"
+// (default) keeps the contribution-streak order, "tokens" ranks by token
+// volume, and "cost" by recorded cost. Streak remains the tiebreaker.
+func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string) string {
 	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
 
 	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
@@ -86,25 +89,30 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool) st
 		}
 	}
 
-	sort.Slice(tokenResults, func(i, j int) bool {
-		if tokenResults[i].CurrentStreak != tokenResults[j].CurrentStreak {
-			return tokenResults[i].CurrentStreak > tokenResults[j].CurrentStreak
-		}
-		if tokenResults[i].LongestStreak != tokenResults[j].LongestStreak {
-			return tokenResults[i].LongestStreak > tokenResults[j].LongestStreak
-		}
-		return tokenResults[i].TotalActivity > tokenResults[j].TotalActivity
-	})
-
-	sort.Slice(activityResults, func(i, j int) bool {
-		if activityResults[i].CurrentStreak != activityResults[j].CurrentStreak {
-			return activityResults[i].CurrentStreak > activityResults[j].CurrentStreak
-		}
-		if activityResults[i].LongestStreak != activityResults[j].LongestStreak {
-			return activityResults[i].LongestStreak > activityResults[j].LongestStreak
-		}
-		return activityResults[i].TotalActivity > activityResults[j].TotalActivity
-	})
+	rankBy := func(list []thermal.ToolResult) {
+		sort.Slice(list, func(i, j int) bool {
+			a, b := list[i], list[j]
+			switch strings.ToLower(sortKey) {
+			case "tokens":
+				if a.TotalActivity != b.TotalActivity {
+					return a.TotalActivity > b.TotalActivity
+				}
+			case "cost":
+				if a.Summary.Cost != b.Summary.Cost {
+					return a.Summary.Cost > b.Summary.Cost
+				}
+			}
+			if a.CurrentStreak != b.CurrentStreak {
+				return a.CurrentStreak > b.CurrentStreak
+			}
+			if a.LongestStreak != b.LongestStreak {
+				return a.LongestStreak > b.LongestStreak
+			}
+			return a.TotalActivity > b.TotalActivity
+		})
+	}
+	rankBy(tokenResults)
+	rankBy(activityResults)
 
 	maxTokenStreak := 0
 	for _, r := range tokenResults {

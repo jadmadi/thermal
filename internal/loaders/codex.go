@@ -18,7 +18,7 @@ import (
 
 // LoadCodexData reads Codex session data from state_5.sqlite primary source
 // or falls back to history.jsonl if stateDB doesn't exist.
-func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	stateDB := filepath.Join(dataDir, "state_5.sqlite")
 	if _, err := os.Stat(stateDB); err == nil {
 		return loadCodexFromStateDB(dataDir, stateDB)
@@ -26,22 +26,27 @@ func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) 
 	return loadJsonlData(dataDir, "ts", false)
 }
 
-func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
 	}
 	defer db.Close()
 
+	// Older Codex schemas lack the cwd column.
+	cwdExpr := "''"
+	if hasColumn(db, "threads", "cwd") {
+		cwdExpr = "cwd"
+	}
 	rows, err := db.Query(`
 		SELECT id, tokens_used, model, source, reasoning_effort, agent_role,
-		       created_at, updated_at, rollout_path
+		       created_at, updated_at, rollout_path, ` + cwdExpr + `
 		FROM threads
 		WHERE archived = 0
 		ORDER BY created_at
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot query threads: %w", err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot query threads: %w", err)
 	}
 	defer rows.Close()
 
@@ -55,6 +60,8 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		models    map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
+	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
+	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	modelCounts := make(map[string]int64)
 	sourceCounts := make(map[string]int)
 	reasoningCounts := make(map[string]int)
@@ -68,20 +75,22 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		rolloutPath string
 		day         string
 		model       string
+		project     string
 	}
 	var threads []threadInfo
 
 	for rows.Next() {
 		var t threadInfo
-		var model, source, reasoning, agentRole, rolloutPath sql.NullString
+		var model, source, reasoning, agentRole, rolloutPath, cwd sql.NullString
 		var createdAt, updatedAt int64
 
 		if err := rows.Scan(&t.id, &t.tokensUsed, &model, &source, &reasoning,
-			&agentRole, &createdAt, &updatedAt, &rolloutPath); err != nil {
+			&agentRole, &createdAt, &updatedAt, &rolloutPath, &cwd); err != nil {
 			continue
 		}
 
 		t.day = thermal.LocalDay(time.Unix(createdAt, 0).Local())
+		t.project = thermal.ProjectKey(cwd.String)
 
 		durationMs := (updatedAt - createdAt) * 1000
 		if durationMs > summary.LongestSessionMs {
@@ -96,12 +105,23 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		agg.tokens += t.tokensUsed
 		agg.turns++
 
+		if t.project != "" {
+			key := projectDayKey{t.day, t.project}
+			pd := byProjectDay[key]
+			if pd == nil {
+				pd = &thermal.ProjectDay{Project: t.project, Day: t.day}
+				byProjectDay[key] = pd
+			}
+			pd.Tokens += t.tokensUsed
+			pd.Turns++
+		}
+
 		summary.Sessions++
 		summary.LifetimeTokens += t.tokensUsed
 
 		if model.Valid && model.String != "" {
-			t.model = model.String
-			modelCounts[model.String]++
+			t.model = modelName(model.String)
+			modelCounts[t.model]++
 		}
 		if source.Valid && source.String != "" {
 			sourceCounts[source.String]++
@@ -185,6 +205,30 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 				CacheRead: scaled.cache,
 			})
 		}
+
+		if t.project == "" {
+			continue
+		}
+		key := projectDayKey{t.day, t.project}
+		pd := byProjectDay[key]
+		if pd == nil {
+			continue
+		}
+		pd.Input += scaled.input
+		pd.Output += scaled.output
+		pd.Reasoning += scaled.reasoning
+		pd.CacheRead += scaled.cache
+		if t.model != "" {
+			if projectModels[key] == nil {
+				projectModels[key] = make(map[string]thermal.ModelTokens)
+			}
+			projectModels[key][t.model] = projectModels[key][t.model].Add(thermal.ModelTokens{
+				Input:     scaled.input,
+				Output:    scaled.output,
+				Reasoning: scaled.reasoning,
+				CacheRead: scaled.cache,
+			})
+		}
 	}
 
 	breakdownTotal := summary.InputTokens + summary.OutputTokens +
@@ -218,7 +262,19 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
-	return summary, daily, nil
+	projects := make([]thermal.ProjectDay, 0, len(byProjectDay))
+	for key, pd := range byProjectDay {
+		pd.Models = projectModels[key]
+		projects = append(projects, *pd)
+	}
+	sort.Slice(projects, func(i, j int) bool {
+		if projects[i].Day != projects[j].Day {
+			return projects[i].Day < projects[j].Day
+		}
+		return projects[i].Project < projects[j].Project
+	})
+
+	return summary, daily, projects, nil
 }
 
 type tokenBreakdown struct {

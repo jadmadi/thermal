@@ -10,7 +10,7 @@ import (
 
 // devinCacheVersion bumps whenever the cached snapshot shape changes, so an
 // old cache file is ignored instead of decoded into stale zero fields.
-const devinCacheVersion = 2
+const devinCacheVersion = 3
 
 // DevinCache is a disk-backed snapshot of the expensive message_nodes
 // aggregation. Invalidation is keyed on MAX(row_id) (covers new appends —
@@ -18,11 +18,12 @@ const devinCacheVersion = 2
 // (covers hidden/unhidden sessions). Both probes hit PK/stat indexes and
 // complete in <2ms, so a warm `thermal` run skips the ~11s full scan.
 type DevinCache struct {
-	Version      int                `json:"version"`
-	MaxRowID     int64              `json:"maxRowId"`
-	SessionCount int                `json:"sessionCount"`
-	Summary      thermal.Summary    `json:"summary"`
-	Daily        []thermal.DailyRow `json:"daily"`
+	Version      int                  `json:"version"`
+	MaxRowID     int64                `json:"maxRowId"`
+	SessionCount int                  `json:"sessionCount"`
+	Summary      thermal.Summary      `json:"summary"`
+	Daily        []thermal.DailyRow   `json:"daily"`
+	Projects     []thermal.ProjectDay `json:"projects,omitempty"`
 }
 
 func devinCachePath() (string, error) {

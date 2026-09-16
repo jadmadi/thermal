@@ -21,7 +21,7 @@ func TestLoadAgyData_MockSession(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, daily, err := LoadAgyData(dir)
+	sum, daily, _, err := LoadAgyData(dir)
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}
@@ -31,7 +31,8 @@ func TestLoadAgyData_MockSession(t *testing.T) {
 	if len(daily) != 1 {
 		t.Errorf("expected 1 daily row, got %d", len(daily))
 	}
-	if sum.ModelBreakdown["Gemini 3.1 Pro (High)"] != 1 {
+	// Model names are lowercased so the same model merges across tools.
+	if sum.ModelBreakdown["gemini 3.1 pro (high)"] != 1 {
 		t.Errorf("expected model breakdown for Gemini 3.1 Pro (High), got %v", sum.ModelBreakdown)
 	}
 }
@@ -49,7 +50,7 @@ func TestLoadAgyData_TranscriptOnly(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, daily, err := LoadAgyData(dir)
+	sum, daily, _, err := LoadAgyData(dir)
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}
@@ -72,7 +73,7 @@ func TestLoadAgyData_LegacyRootFallback(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, _, err := LoadAgyData(filepath.Join(dir, "antigravity"))
+	sum, _, _, err := LoadAgyData(filepath.Join(dir, "antigravity"))
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}

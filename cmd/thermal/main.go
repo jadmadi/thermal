@@ -29,11 +29,16 @@ Commands:
   daily          Daily report (tokens and cost per day)
   weekly         Weekly report
   monthly        Monthly report
+  projects       Tokens and cost per project, ranked
+  models         Tokens and estimated cost per model, ranked
   upgrade        Self-upgrade to the latest release
   version        Show version info
 
 Reports accept an optional tool: "thermal opencode weekly",
 "thermal weekly" (all tools). Tool defaults to all.
+Projects collapse to the nearest git root and merge across tools.
+--sort picks the ranking: streak|tokens|cost for the leaderboard,
+tokens|cost|days|recent for projects, tokens|cost for models.
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -58,7 +63,9 @@ Options:
   --until <date>     Report window end
   --last <num>       Last num days/weeks/months; excludes --since/--until
   --order <dir>      Report sort order: asc or desc (default: desc)
-  --breakdown        Show per-model rows in reports
+  --sort <key>       Ranking key; see Commands above for valid keys per command
+  --top <num>        Project or model rows to print, 0 for all (default: 0)
+  --breakdown        Show per-model rows in reports, per-project detail for projects
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
   --no-estimate      Report stored cost only, skip pricing estimates
@@ -90,6 +97,8 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
 	flag.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
 	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
+	flag.StringVar(&opts.Sort, "sort", "", "Ranking: streak|tokens|cost for the leaderboard, tokens|cost|days|recent for projects, tokens|cost for models")
+	flag.IntVar(&opts.Top, "top", 0, "Project or model rows to print, 0 for all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
@@ -181,6 +190,16 @@ func parseArgs() thermal.Options {
 			if v, ok := takeValue(); ok {
 				opts.Order = v
 			}
+		case "--sort":
+			if v, ok := takeValue(); ok {
+				opts.Sort = v
+			}
+		case "--top":
+			if v, ok := takeValue(); ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					opts.Top = n
+				}
+			}
 		case "--start-of-week":
 			if v, ok := takeValue(); ok {
 				opts.StartOfWeek = v
@@ -217,7 +236,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly":
+	case "daily", "weekly", "monthly", "projects", "models":
 		return true
 	}
 	return false
@@ -238,19 +257,16 @@ func isNegativeNumber(s string) bool {
 }
 
 // validateReportFlags rejects report options that would otherwise be silently
-// ignored, and checks the values themselves.
+// ignored, and checks the values themselves. Sort defaults depend on the
+// command: the leaderboard ranks by streak, projects and models by tokens.
 func validateReportFlags(opts thermal.Options) error {
-	reportOnlyUsed := opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
-		opts.Breakdown || opts.Offline || opts.NoEstimate ||
-		opts.Order != "desc" || opts.StartOfWeek != "sunday"
-	if opts.Report == "" {
-		if reportOnlyUsed {
-			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, or monthly")
-		}
-		return nil
-	}
+	sortKey := strings.ToLower(opts.Sort)
+
 	if opts.Last < 0 {
 		return fmt.Errorf("--last cannot be negative")
+	}
+	if opts.Top < 0 {
+		return fmt.Errorf("--top cannot be negative")
 	}
 	if opts.Last > 0 && (opts.Since != "" || opts.Until != "") {
 		return fmt.Errorf("--last cannot be combined with --since or --until")
@@ -269,6 +285,44 @@ func validateReportFlags(opts thermal.Options) error {
 	if opts.Until != "" {
 		if _, ok := thermal.ParseDay(opts.Until); !ok {
 			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD")
+		}
+	}
+
+	if opts.Report == "" {
+		// Leaderboard flags. Sort is optional here and means streak when unset.
+		if sortKey != "" && sortKey != "streak" && sortKey != "tokens" && sortKey != "cost" {
+			return fmt.Errorf("--sort must be streak, tokens, or cost for the leaderboard")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
+		}
+		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
+			opts.Breakdown || opts.Offline || opts.NoEstimate ||
+			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, monthly, projects, or models")
+		}
+		return nil
+	}
+
+	switch opts.Report {
+	case "projects":
+		switch sortKey {
+		case "", "tokens", "cost", "days", "recent":
+		default:
+			return fmt.Errorf("--sort must be tokens, cost, days, or recent for projects")
+		}
+	case "models":
+		switch sortKey {
+		case "", "tokens", "cost":
+		default:
+			return fmt.Errorf("--sort must be tokens or cost for models")
+		}
+	default:
+		if sortKey != "" {
+			return fmt.Errorf("--sort only applies to the leaderboard, projects, and models")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
 		}
 	}
 	return nil
@@ -297,7 +351,14 @@ func main() {
 	}
 
 	if opts.Report != "" {
-		runReport(opts)
+		switch opts.Report {
+		case "projects":
+			runProjectReport(opts)
+		case "models":
+			runModelReport(opts)
+		default:
+			runReport(opts)
+		}
 		return
 	}
 
@@ -311,7 +372,7 @@ func main() {
 				continue
 			}
 
-			summary, daily, dataPath, err := loaders.LoadToolData(t, info, "")
+			data, err := loaders.LoadToolData(t, info, "")
 			if err != nil {
 				if opts.Verbose {
 					fmt.Fprintf(os.Stderr, "thermal: warning: failed loading %s: %v\n", info.Name, err)
@@ -320,7 +381,7 @@ func main() {
 			}
 
 			activeDays := make(map[string]bool)
-			for _, d := range daily {
+			for _, d := range data.Daily {
 				if d.Turns > 0 {
 					activeDays[d.Day] = true
 				}
@@ -330,13 +391,13 @@ func main() {
 			results = append(results, thermal.ToolResult{
 				Tool:          t,
 				Name:          info.Name,
-				Summary:       summary,
-				Daily:         daily,
+				Summary:       data.Summary,
+				Daily:         data.Daily,
 				CurrentStreak: current,
 				LongestStreak: longest,
 				ActiveDays:    len(activeDays),
-				TotalActivity: summary.LifetimeTokens,
-				DataPath:      dataPath,
+				TotalActivity: data.Summary.LifetimeTokens,
+				DataPath:      data.Path,
 			})
 		}
 
@@ -369,7 +430,7 @@ func main() {
 			return
 		}
 
-		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor))
+		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort))
 		return
 	}
 
@@ -387,14 +448,14 @@ func main() {
 	tools := loaders.AllTools()
 	info := tools[tool]
 
-	summary, daily, dataPath, err := loaders.LoadToolData(tool, info, opts.DBPath)
+	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
 	}
 
 	activeDays := make(map[string]bool)
-	for _, d := range daily {
+	for _, d := range data.Daily {
 		if d.Turns > 0 {
 			activeDays[d.Day] = true
 		}
@@ -409,10 +470,10 @@ func main() {
 		}
 		out := map[string]interface{}{
 			"tool":        info.Name,
-			"dataPath":    dataPath,
+			"dataPath":    data.Path,
 			"generatedAt": time.Now().UTC().Format(time.RFC3339),
-			"summary":     jsonSummary{Summary: summary, CurrentStreak: current, LongestStreak: longest},
-			"daily":       daily,
+			"summary":     jsonSummary{Summary: data.Summary, CurrentStreak: current, LongestStreak: longest},
+			"daily":       data.Daily,
 		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -420,7 +481,7 @@ func main() {
 		return
 	}
 
-	fmt.Print(render.RenderDashboard(info.Name, summary, daily, dataPath, opts.Weeks, opts.NoColor))
+	fmt.Print(render.RenderDashboard(info.Name, data.Summary, data.Daily, data.Path, opts.Weeks, opts.NoColor))
 }
 
 // allToolOrder is the stable display order shared by the leaderboard and the
@@ -444,10 +505,89 @@ func toolHasData(info loaders.ToolInfo) bool {
 	return false
 }
 
-// runReport loads one tool or every tool with data, folds the days into the
-// requested grain, and prints a table or JSON.
+// usageSet is the loaded data behind the report, project, and model commands.
+type usageSet struct {
+	days     []thermal.DailyRow
+	projects []thermal.ProjectDay
+	byTool   []thermal.ToolDays
+	toolName string
+}
+
+// loadUsage loads one tool or every tool with data. All-tools mode skips
+// tools that fail and reports them on stderr when verbose; a named tool exits
+// on failure.
+func loadUsage(opts thermal.Options) usageSet {
+	var set usageSet
+
+	if opts.Tool == "all" || opts.Tool == "auto" {
+		tools := loaders.AllTools()
+		for _, t := range allToolOrder {
+			info := tools[t]
+			if !toolHasData(info) {
+				continue
+			}
+			data, err := loaders.LoadToolData(t, info, "")
+			if err != nil {
+				if opts.Verbose {
+					fmt.Fprintf(os.Stderr, "thermal: warning: failed loading %s: %v\n", info.Name, err)
+				}
+				continue
+			}
+			set.days = append(set.days, data.Daily...)
+			for i := range data.Projects {
+				data.Projects[i].Tool = info.Name
+			}
+			set.projects = append(set.projects, data.Projects...)
+			set.byTool = append(set.byTool, thermal.ToolDays{Tool: info.Name, Days: data.Daily})
+		}
+		if len(set.days) == 0 && len(set.projects) == 0 {
+			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
+			os.Exit(1)
+		}
+		return set
+	}
+
+	tool, ok := loaders.ResolveTool(opts.Tool)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
+		os.Exit(1)
+	}
+	info := loaders.AllTools()[tool]
+	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+		os.Exit(1)
+	}
+	set.days = data.Daily
+	set.projects = data.Projects
+	for i := range set.projects {
+		set.projects[i].Tool = info.Name
+	}
+	set.byTool = []thermal.ToolDays{{Tool: info.Name, Days: data.Daily}}
+	set.toolName = info.Name
+	return set
+}
+
+// newPricer builds the cost estimator unless estimation is disabled. It never
+// touches the network when offline, and a missing catalog leaves stored cost
+// untouched.
+func newPricer(opts thermal.Options) thermal.Pricer {
+	if opts.NoEstimate {
+		return nil
+	}
+	cat := pricing.Load(pricing.DefaultCachePath(), opts.Offline)
+	if cat.Len() > 0 {
+		return cat
+	}
+	if opts.Verbose {
+		fmt.Fprintln(os.Stderr, "thermal: warning: no pricing data available; showing stored cost only")
+	}
+	return nil
+}
+
+// runReport folds the loaded days into the requested grain and prints a table
+// or JSON.
 func runReport(opts thermal.Options) {
-	grain := thermal.Grain(opts.Report)
 	startOfWeek := time.Sunday
 	if d, ok := thermal.ParseWeekday(opts.StartOfWeek); ok {
 		startOfWeek = d
@@ -461,57 +601,10 @@ func runReport(opts thermal.Options) {
 		Order:       opts.Order,
 	}
 
-	var days []thermal.DailyRow
-	toolLabel := ""
+	set := loadUsage(opts)
 
-	if opts.Tool == "all" || opts.Tool == "auto" {
-		tools := loaders.AllTools()
-		for _, t := range allToolOrder {
-			info := tools[t]
-			if !toolHasData(info) {
-				continue
-			}
-			_, daily, _, err := loaders.LoadToolData(t, info, "")
-			if err != nil {
-				if opts.Verbose {
-					fmt.Fprintf(os.Stderr, "thermal: warning: failed loading %s: %v\n", info.Name, err)
-				}
-				continue
-			}
-			days = append(days, daily...)
-		}
-		if len(days) == 0 {
-			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
-			os.Exit(1)
-		}
-	} else {
-		tool, ok := loaders.ResolveTool(opts.Tool)
-		if !ok {
-			fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
-			os.Exit(1)
-		}
-		info := loaders.AllTools()[tool]
-		_, daily, _, err := loaders.LoadToolData(tool, info, opts.DBPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
-			os.Exit(1)
-		}
-		days = daily
-		toolLabel = info.Name
-	}
-
-	var pricer thermal.Pricer
-	if !opts.NoEstimate {
-		cat := pricing.Load(pricing.DefaultCachePath(), opts.Offline)
-		if cat.Len() > 0 {
-			pricer = cat
-		} else if opts.Verbose {
-			fmt.Fprintln(os.Stderr, "thermal: warning: no pricing data available; showing stored cost only")
-		}
-	}
-
-	rep := thermal.Aggregate(days, grain, aggOpts, pricer)
-	rep.Tool = toolLabel
+	rep := thermal.Aggregate(set.days, thermal.Grain(opts.Report), aggOpts, newPricer(opts))
+	rep.Tool = set.toolName
 
 	if opts.JSON {
 		type jsonReport struct {
@@ -532,4 +625,69 @@ func runReport(opts thermal.Options) {
 		return
 	}
 	fmt.Print(render.RenderReport(rep, opts.NoColor))
+}
+
+// runProjectReport ranks projects by token usage across tools and time.
+func runProjectReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	projectOpts := thermal.ProjectOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Sort:  opts.Sort,
+		Order: opts.Order,
+	}
+	rep := thermal.AggregateProjects(set.projects, projectOpts, newPricer(opts))
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.ProjectReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(jsonReport{
+			ProjectReport: rep,
+			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	if opts.Breakdown {
+		fmt.Print(render.RenderProjectsBreakdown(rep, opts.Top, opts.NoColor))
+		return
+	}
+	fmt.Print(render.RenderProjects(rep, opts.Top, opts.NoColor))
+}
+
+// runModelReport ranks models across tools and time. Cost here is always an
+// estimate because recorded cost is not attributable to a single model.
+func runModelReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	modelOpts := thermal.ModelOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Sort:  opts.Sort,
+		Order: opts.Order,
+	}
+	rep := thermal.AggregateModels(set.byTool, modelOpts, newPricer(opts))
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.ModelReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(jsonReport{
+			ModelReport: rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
 }

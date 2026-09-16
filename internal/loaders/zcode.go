@@ -16,20 +16,20 @@ import (
 // creation/read) plus provider, model, and agent on every completed request.
 // turn_usage supplies user-visible turn counts for daily rows. The DB records
 // no cost figures, so Cost stays 0.
-func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
 
 	var hasModelUsage bool
 	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='model_usage'`).Scan(&hasModelUsage); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	if !hasModelUsage {
-		return thermal.Summary{}, nil, fmt.Errorf("zcode: model_usage table not found in %s", dbPath)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("zcode: model_usage table not found in %s", dbPath)
 	}
 
 	var summary thermal.Summary
@@ -50,7 +50,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
 		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	// Longest session duration from the session table when present.
@@ -71,7 +71,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 			var model string
 			var n int64
 			modelRows.Scan(&model, &n)
-			summary.ModelBreakdown[model] = n
+			summary.ModelBreakdown[modelName(model)] += n
 		}
 		modelRows.Close()
 	}
@@ -97,54 +97,78 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	if hasTurns {
 		turnTable = "turn_usage"
 	}
+	// Turns per day and project. turn_usage has no project column, so the
+	// session row supplies it when the schema carries a directory.
+	turnJoin, turnProject := "", "''"
+	if hasColumn(db, "session", "directory") {
+		turnProject = "COALESCE(NULLIF(s.directory, ''), '')"
+		turnJoin = " LEFT JOIN session s ON s.id = t.session_id"
+	}
 	turnsByDay := make(map[string]int)
+	turnsByKey := make(map[projectDayKey]int)
 	if turnRows, err := db.Query(`
-		SELECT date(started_at / 1000, 'unixepoch', 'localtime') AS day, COUNT(*)
-		FROM ` + turnTable + `
-		WHERE status = 'completed'
-		GROUP BY day
+		SELECT date(t.started_at / 1000, 'unixepoch', 'localtime') AS day,
+			` + turnProject + ` AS project,
+			COUNT(*)
+		FROM ` + turnTable + ` t` + turnJoin + `
+		WHERE t.status = 'completed'
+		GROUP BY day, project
 	`); err == nil {
 		for turnRows.Next() {
-			var day string
+			var day, project string
 			var n int
-			if turnRows.Scan(&day, &n) == nil {
-				turnsByDay[day] = n
+			if turnRows.Scan(&day, &project, &n) == nil {
+				turnsByDay[day] += n
+				if key := thermal.ProjectKey(project); key != "" {
+					turnsByKey[projectDayKey{day, key}] += n
+				}
 			}
 		}
 		turnRows.Close()
 	}
 
+	modelJoin, modelProject := "", "''"
+	if hasColumn(db, "session", "directory") {
+		modelProject = "COALESCE(NULLIF(s.directory, ''), '')"
+		modelJoin = " LEFT JOIN session s ON s.id = m.session_id"
+	}
 	rows, err := db.Query(`
 		SELECT
-			date(started_at / 1000, 'unixepoch', 'localtime') AS day,
-			COALESCE(model_id, '') AS model,
-			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
-			COALESCE(SUM(MAX(output_tokens - reasoning_tokens, 0)), 0),
-			COALESCE(SUM(reasoning_tokens), 0),
-			COALESCE(SUM(cache_read_input_tokens), 0),
-			COALESCE(SUM(cache_creation_input_tokens), 0),
+			date(m.started_at / 1000, 'unixepoch', 'localtime') AS day,
+			` + modelProject + ` AS project,
+			COALESCE(m.model_id, '') AS model,
+			COALESCE(SUM(MAX(m.input_tokens - m.cache_read_input_tokens - m.cache_creation_input_tokens, 0)), 0),
+			COALESCE(SUM(MAX(m.output_tokens - m.reasoning_tokens, 0)), 0),
+			COALESCE(SUM(m.reasoning_tokens), 0),
+			COALESCE(SUM(m.cache_read_input_tokens), 0),
+			COALESCE(SUM(m.cache_creation_input_tokens), 0),
 			0.0,
 			0,
-			COALESCE(SUM(computed_total_tokens), 0)
-		FROM model_usage
-		WHERE status = 'completed'
-		GROUP BY day, model
+			COALESCE(SUM(m.computed_total_tokens), 0)
+		FROM model_usage m` + modelJoin + `
+		WHERE m.status = 'completed'
+		GROUP BY day, project, model
 		ORDER BY day
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
 
-	daily, err := foldDayModelRows(rows)
+	daily, projects, err := foldDayModelProjectRows(rows)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	for i := range daily {
 		if n, ok := turnsByDay[daily[i].Day]; ok {
 			daily[i].Turns = n
 		}
 	}
+	for i := range projects {
+		if n, ok := turnsByKey[projectDayKey{projects[i].Day, projects[i].Project}]; ok {
+			projects[i].Turns = n
+		}
+	}
 
-	return summary, daily, nil
+	return summary, daily, projects, nil
 }

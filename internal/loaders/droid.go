@@ -18,14 +18,14 @@ import (
 // this is an activity-only loader: message records stand in for activity the
 // way they do for command-code. Each *.jsonl file under sessions/ is one
 // session; per-file *.settings.json sidecars carry no usage data.
-func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
 	summary.Tool = "Droid"
 
 	pattern := filepath.Join(dataDir, "sessions", "*", "*.jsonl")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		return summary, nil, err
+		return summary, nil, nil, err
 	}
 
 	type fileResult struct {
@@ -117,5 +117,5 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) 
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

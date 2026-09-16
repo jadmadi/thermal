@@ -112,6 +112,13 @@ thermal --verbose
 thermal --no-color
 ```
 
+The leaderboard ranks by contribution streak. To rank by volume instead:
+
+```bash
+thermal --sort tokens   # biggest token consumers first
+thermal --sort cost     # biggest recorded spend first
+```
+
 ## Reports
 
 Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:
@@ -135,6 +142,86 @@ thermal weekly --order asc --start-of-week monday
 # JSON for scripting
 thermal weekly --json
 ```
+
+## Projects
+
+Group tokens, cost, and activity by project. thermal walks each recorded directory up to its nearest git repository, so subdirectories and worktrees fold into one project, and the same project is merged across every tool that touched it.
+
+```bash
+# Rank every project by tokens
+thermal projects
+
+# One tool only
+thermal opencode projects
+
+# A window
+thermal projects --last 30
+thermal projects --since 2026-08-01 --until 2026-08-31
+
+# Rank by something else: cost, days active, or most recent activity
+thermal projects --sort cost
+thermal projects --sort recent
+thermal projects --sort days --order asc
+
+# Tool split and top models under each project
+thermal projects --breakdown --top 5
+
+# Limit the printed rows, 0 means all
+thermal projects --top 10
+
+# JSON carries every project and the full path
+thermal projects --json
+```
+
+```
+  Thermal · projects
+
+  #    Project                       Tools                    Tokens       Cost  Days  Last
+  ───────────────────────────────────────────────────────────────────────────────────────────────
+   1.  mahak-bench (Jad)             OpenCode,Devin +4          5.1B    $216.85    14  2026-09-16
+        tools   OpenCode 2.9B · Devin 2.0B · Codex 250.3M · +3
+        models  deepseek-v4.1-flash 1.4B · muse-spark-1.3-contributor-free 820.4M · +7
+   2.  tree.waqf.app                 Devin,MiMoCode +2          3.8B      $4.10    10  2026-08-12
+   3.  etba3.app (aqaba-dev)         Codex,Devin,OpenCode     688.8M      $0.07     7  2026-09-07
+```
+
+The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
+
+Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, and codewhale. Agy records no project.
+
+## Models
+
+Rank models by token volume across every tool, with the tools that used each one.
+
+```bash
+# Global ranking
+thermal models
+
+# One tool only
+thermal opencode models
+
+# A window, or ranking by estimated cost
+thermal models --last 30
+thermal models --sort cost
+
+# Limit rows, or export
+thermal models --top 10
+thermal models --json
+```
+
+```
+  Thermal · models
+
+  #    Model                           Tools                    Tokens       Cost  Days  Last
+  ─────────────────────────────────────────────────────────────────────────────────────────────────
+   1.  deepseek-v4.1-flash             OpenCode,ZCode             3.9B     $23.29     8  2026-09-17
+   2.  deepseek-v4-flash-0731          MiMoCode,OpenCode +1       1.1B     $26.62     9  2026-09-12
+   3.  gpt-5.6-sol                     Codex                    386.8M    $256.25    10  2026-09-11
+```
+
+Cost in this view is always an estimate from models.dev list prices, because recorded cost belongs to a session or a day, never to one model. Model names are compared case insensitively, so `GLM-5.3-Flash` from ZCode and `glm-5.3-flash` from OpenCode count as one model.
+
+## Cost estimation
 
 Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
 

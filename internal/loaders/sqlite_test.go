@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -40,7 +41,7 @@ func TestLoadOpenCodeData_PreAggregatedSchema(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -88,7 +89,7 @@ func TestLoadOpenCodeData_ModelColumnShapes(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -107,6 +108,79 @@ func TestLoadOpenCodeData_ModelColumnShapes(t *testing.T) {
 	}
 	if _, ok := models[""]; ok {
 		t.Errorf("a NULL model must not create an empty model key, got %v", models)
+	}
+}
+
+func TestLoadOpenCodeData_ProjectAttribution(t *testing.T) {
+	// A real repository marker so two subdirectories collapse into one
+	// project root.
+	repo := filepath.Join(t.TempDir(), "repo")
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".git", "HEAD"), []byte("ref: refs/heads/main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sub1 := filepath.Join(repo, "apps", "web")
+	sub2 := filepath.Join(repo, "packages", "api")
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "opencode.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql open error: %v", err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`
+		CREATE TABLE session_v2 (
+			id TEXT PRIMARY KEY, tokens_input INTEGER, tokens_output INTEGER,
+			tokens_reasoning INTEGER, tokens_cache_read INTEGER, tokens_cache_write INTEGER,
+			cost REAL, summary_additions INTEGER, summary_deletions INTEGER,
+			summary_files INTEGER, agent TEXT,
+			time_created INTEGER, time_updated INTEGER, model TEXT, directory TEXT
+		);
+	`)
+	if err != nil {
+		t.Fatalf("exec create error: %v", err)
+	}
+	_, err = db.Exec(`
+		INSERT INTO session_v2 VALUES ('s1', 100, 50, 0, 0, 0, 0.10, 0, 0, 0, 'code', 1710504000000, 1710504060000, '{"id":"m1"}', ?);
+		INSERT INTO session_v2 VALUES ('s2', 200, 60, 0, 0, 0, 0.20, 0, 0, 0, 'code', 1710504000000, 1710504060000, '{"id":"m2"}', ?);
+	`, sub1, sub2)
+	if err != nil {
+		t.Fatalf("exec insert error: %v", err)
+	}
+
+	sum, daily, projects, err := LoadOpenCodeData(dbPath)
+	if err != nil {
+		t.Fatalf("LoadOpenCodeData error: %v", err)
+	}
+	if sum.Sessions != 2 || sum.LifetimeTokens != 410 {
+		t.Errorf("expected sessions=2 lifetime=410, got %d/%d", sum.Sessions, sum.LifetimeTokens)
+	}
+	if len(projects) != 1 {
+		t.Fatalf("expected both subdirectories to fold into one project, got %d: %+v", len(projects), projects)
+	}
+	p := projects[0]
+	if p.Project != repo {
+		t.Errorf("project = %q, want the repository root %q", p.Project, repo)
+	}
+	if p.Tokens != 410 || p.Input != 300 || p.Output != 110 {
+		t.Errorf("project totals = %+v", p)
+	}
+	if diff := p.Cost - 0.30; diff > 1e-9 || diff < -1e-9 {
+		t.Errorf("project cost = %v, want 0.30 (stored)", p.Cost)
+	}
+	if p.Turns != 2 {
+		t.Errorf("project turns = %d, want 2", p.Turns)
+	}
+	// Daily rows stay project-free.
+	if len(daily) != 1 || daily[0].Tokens != 410 {
+		t.Errorf("daily rows = %+v", daily)
+	}
+	if daily[0].Input+daily[0].Output+daily[0].Cache != daily[0].Tokens {
+		t.Errorf("daily types must add up to the total: %+v", daily[0])
 	}
 }
 
@@ -152,7 +226,7 @@ func TestLoadOpenCodeData_SessionV2(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -214,7 +288,7 @@ func TestLoadOpenCodeData_SessionV2Only(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -266,7 +340,7 @@ func TestLoadMiMoCodeData_MessageLevel(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadMiMoCodeData(dbPath)
+	sum, daily, _, err := LoadMiMoCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadMiMoCodeData error: %v", err)
 	}
@@ -324,7 +398,7 @@ func TestLoadDevinData_Schema(t *testing.T) {
 	// Disable global cache directory setting in unit test to force scan
 	t.Setenv("HOME", dir)
 
-	sum, daily, err := LoadDevinData(dbPath)
+	sum, daily, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadDevinData error: %v", err)
 	}
@@ -376,7 +450,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	// Initial scan (populates cache with MaxRowID = 1)
-	sum1, daily1, err := LoadDevinData(dbPath)
+	sum1, daily1, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("initial LoadDevinData error: %v", err)
 	}
@@ -396,7 +470,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	}
 
 	// Second scan (should trigger fast delta scan via row_id > 1)
-	sum2, daily2, err := LoadDevinData(dbPath)
+	sum2, daily2, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("delta LoadDevinData error: %v", err)
 	}
@@ -408,7 +482,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	}
 
 	// Verify exact cache hit after delta scan
-	sum3, _, err := LoadDevinData(dbPath)
+	sum3, _, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("cached LoadDevinData error: %v", err)
 	}

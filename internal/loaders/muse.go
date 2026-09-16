@@ -15,10 +15,10 @@ import (
 // activity the way message counts do for command-code. When local sessions
 // accumulate model-call frames, a token upgrade can read per-session
 // session.jsonl logs.
-func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
@@ -32,7 +32,7 @@ func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		FROM sessions
 	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.LongestSessionMs)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	// Model distribution from indexed model ids.
@@ -42,7 +42,7 @@ func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 			var model string
 			var n int64
 			modelRows.Scan(&model, &n)
-			summary.ModelBreakdown[model] = n
+			summary.ModelBreakdown[modelName(model)] += n
 		}
 		modelRows.Close()
 	}
@@ -59,7 +59,7 @@ func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		ORDER BY day
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
 
@@ -67,11 +67,11 @@ func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	for rows.Next() {
 		var r thermal.DailyRow
 		if err := rows.Scan(&r.Day, &r.Tokens); err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 		r.Turns = int(r.Tokens)
 		daily = append(daily, r)
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }
