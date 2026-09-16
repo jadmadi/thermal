@@ -129,7 +129,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 				models := make(map[string]int64)
 				for name, m := range u.ModelUsage {
 					if name != "" && m.ModelCalls > 0 {
-						models[name] += m.ModelCalls
+						models[modelName(name)] += m.ModelCalls
 					}
 				}
 				res.turns = append(res.turns, turnAgg{

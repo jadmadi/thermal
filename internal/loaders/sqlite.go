@@ -279,6 +279,7 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 		if err := rows.Scan(&day, &project, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
 			return nil, nil, err
 		}
+		model = modelName(model)
 		projectKey := thermal.ProjectKey(project)
 
 		row := byDay[day]

@@ -110,8 +110,12 @@ func TestAggregateProjectsMergesToolsAndWindows(t *testing.T) {
 	if merged.Project != "/repo/a" || merged.Tokens != 150 || merged.ActiveDays != 2 {
 		t.Errorf("merged project = %+v", merged)
 	}
-	if len(merged.Tools) != 2 || merged.Tools[0] != "Claude" || merged.Tools[1] != "OpenCode" {
-		t.Errorf("merged tools = %v", merged.Tools)
+	// Contributing tools rank by the tokens they contributed.
+	if len(merged.Tools) != 2 || merged.Tools[0] != "OpenCode" || merged.Tools[1] != "Claude" {
+		t.Errorf("merged tools = %v, want OpenCode first with 100 tokens", merged.Tools)
+	}
+	if merged.ToolTokens["OpenCode"] != 100 || merged.ToolTokens["Claude"] != 50 {
+		t.Errorf("tool token weights = %v", merged.ToolTokens)
 	}
 	if merged.FirstDay != "2026-09-10" || merged.LastDay != "2026-09-11" {
 		t.Errorf("date range = %s..%s", merged.FirstDay, merged.LastDay)
@@ -156,6 +160,100 @@ func TestAggregateProjectsSortKeys(t *testing.T) {
 	asc := AggregateProjects(days, ProjectOptions{Sort: "cost", Order: "asc"}, nil)
 	if asc.Rows[0].Project != "/repo/big" {
 		t.Errorf("ascending cost first = %s, want the cheapest", asc.Rows[0].Project)
+	}
+}
+
+func TestAggregateModelsRankingAndWindow(t *testing.T) {
+	batches := []ToolDays{
+		{Tool: "OpenCode", Days: []DailyRow{
+			{Day: "2026-09-10", Models: map[string]ModelTokens{
+				"deepseek-flash": {Input: 1000},
+				"glm-5.3":        {Input: 100},
+			}},
+			{Day: "2026-09-11", Models: map[string]ModelTokens{
+				"deepseek-flash": {Input: 500},
+			}},
+		}},
+		{Tool: "Codex", Days: []DailyRow{
+			{Day: "2026-09-11", Models: map[string]ModelTokens{
+				"gpt-6-astra": {Input: 300},
+			}},
+			{Day: "2026-08-01", Models: map[string]ModelTokens{
+				"ancient-model": {Input: 99_999},
+			}},
+		}},
+	}
+
+	all := AggregateModels(batches, ModelOptions{}, nil)
+	if len(all.Rows) != 4 {
+		t.Fatalf("expected 4 models, got %d", len(all.Rows))
+	}
+	if all.Rows[0].Model != "ancient-model" {
+		t.Errorf("default order should lead with the largest token total, got %s", all.Rows[0].Model)
+	}
+
+	windowed := AggregateModels(batches, ModelOptions{Since: "2026-09-10", Until: "2026-09-11"}, nil)
+	if len(windowed.Rows) != 3 {
+		t.Fatalf("expected 3 models in the window, got %d", len(windowed.Rows))
+	}
+	top := windowed.Rows[0]
+	if top.Model != "deepseek-flash" || top.Tokens != 1500 {
+		t.Errorf("top model = %+v, want deepseek-flash with 1500 tokens", top)
+	}
+	if top.Days != 2 {
+		t.Errorf("active days = %d, want 2", top.Days)
+	}
+	if len(top.Tools) != 1 || top.Tools[0] != "OpenCode" {
+		t.Errorf("tools = %v, want [OpenCode]", top.Tools)
+	}
+	if windowed.Totals.Tokens != 1900 {
+		t.Errorf("totals = %+v", windowed.Totals)
+	}
+
+	last := AggregateModels(batches, ModelOptions{Last: 2, Now: time.Date(2026, 9, 11, 12, 0, 0, 0, time.Local)}, nil)
+	if len(last.Rows) != 3 {
+		t.Errorf("--last 2 should drop the August day, got %d rows", len(last.Rows))
+	}
+}
+
+// ratePricer prices each model at its own per-million rate and reports the
+// rest as unpriced, which is how the real catalog behaves.
+type ratePricer struct{ rates map[string]float64 }
+
+func (r ratePricer) PriceDay(day DailyRow) (float64, []string) {
+	var cost float64
+	var missing []string
+	for model, counts := range day.Models {
+		rate, ok := r.rates[model]
+		if !ok {
+			missing = append(missing, model)
+			continue
+		}
+		cost += float64(counts.Total()) * rate / 1_000_000
+	}
+	return cost, missing
+}
+
+func TestAggregateModelsPricing(t *testing.T) {
+	batches := []ToolDays{
+		{Tool: "Codex", Days: []DailyRow{
+			{Day: "2026-09-11", Models: map[string]ModelTokens{
+				"gpt-5.4": {Input: 1_000_000},
+				"mystery": {Input: 10},
+			}},
+		}},
+	}
+	pricer := ratePricer{rates: map[string]float64{"gpt-5.4": 2.5}}
+	rep := AggregateModels(batches, ModelOptions{Sort: "cost"}, pricer)
+
+	if rep.Rows[0].Model != "gpt-5.4" || rep.Rows[0].Cost != 2.5 {
+		t.Errorf("cost sort should lead with the priced model, got %+v", rep.Rows[0])
+	}
+	if rep.Totals.Cost != 2.5 {
+		t.Errorf("total cost = %v, want 2.5", rep.Totals.Cost)
+	}
+	if len(rep.Totals.MissingPricing) != 1 || rep.Totals.MissingPricing[0] != "mystery" {
+		t.Errorf("missing pricing = %v", rep.Totals.MissingPricing)
 	}
 }
 

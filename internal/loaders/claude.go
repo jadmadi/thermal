@@ -112,7 +112,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 					output:     rec.Message.Usage.OutputTokens,
 					cacheRead:  rec.Message.Usage.CacheReadInputTokens,
 					cacheWrite: rec.Message.Usage.CacheCreationInputTokens,
-					model:      rec.Message.Model,
+					model:      modelName(rec.Message.Model),
 					project:    thermal.ProjectKey(rec.Cwd),
 				})
 			}

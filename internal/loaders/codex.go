@@ -120,8 +120,8 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		summary.LifetimeTokens += t.tokensUsed
 
 		if model.Valid && model.String != "" {
-			t.model = model.String
-			modelCounts[model.String]++
+			t.model = modelName(model.String)
+			modelCounts[t.model]++
 		}
 		if source.Valid && source.String != "" {
 			sourceCounts[source.String]++
