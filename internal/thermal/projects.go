@@ -10,7 +10,7 @@ import (
 // across tools and days inside the requested window. Rows come back largest
 // first by token total unless Order is "asc". A nil pricer leaves
 // EstimatedCost at zero, and stored cost always wins for a given day.
-func AggregateProjects(days []ProjectDay, toolName string, opts ProjectOptions, pricer Pricer) ProjectReport {
+func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) ProjectReport {
 	now := opts.Now
 	if now.IsZero() {
 		now = time.Now()
@@ -74,11 +74,11 @@ func AggregateProjects(days []ProjectDay, toolName string, opts ProjectOptions, 
 			}
 			activeSets[day.Project][day.Day] = true
 		}
-		if toolName != "" {
+		if day.Tool != "" {
 			if toolSets[day.Project] == nil {
 				toolSets[day.Project] = make(map[string]bool)
 			}
-			toolSets[day.Project][toolName] = true
+			toolSets[day.Project][day.Tool] = true
 		}
 
 		if pricer != nil && day.Cost == 0 && day.Tokens > 0 {

@@ -36,7 +36,7 @@ func resolveProjectKey(path string) string {
 		return ""
 	}
 	for dir := clean; ; {
-		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+		if isRepoRoot(dir) {
 			return dir
 		}
 		parent := filepath.Dir(dir)
@@ -46,4 +46,19 @@ func resolveProjectKey(path string) string {
 		dir = parent
 	}
 	return clean
+}
+
+// isRepoRoot reports whether dir holds a real repository marker. A .git
+// directory must contain HEAD, so a stray empty .git directory does not
+// swallow every path below it. A .git file marks a worktree or submodule.
+func isRepoRoot(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, ".git"))
+	if err != nil {
+		return false
+	}
+	if !info.IsDir() {
+		return true
+	}
+	_, err = os.Stat(filepath.Join(dir, ".git", "HEAD"))
+	return err == nil
 }

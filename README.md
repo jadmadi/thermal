@@ -136,6 +136,38 @@ thermal weekly --order asc --start-of-week monday
 thermal weekly --json
 ```
 
+## Projects
+
+Group tokens, cost, and activity by project. thermal walks each recorded directory up to its nearest git repository, so subdirectories and worktrees fold into one project, and the same project is merged across every tool that touched it.
+
+```bash
+# Rank every project by tokens
+thermal projects
+
+# One tool only
+thermal opencode projects
+
+# A window, newest first is the default order
+thermal projects --last 30
+thermal projects --since 2026-08-01 --until 2026-08-31
+thermal projects --order asc
+
+# JSON carries every project, the table shows the top 20
+thermal projects --json
+```
+
+```
+  Thermal · projects
+
+  #    Project                             Tools                Tokens       Cost  Days  Last
+  ─────────────────────────────────────────────────────────────────────────────────────────────────
+   1.  …/projects/waqftech/mahak-bench     Claude,Codex +4        5.1B    $216.85    14  2026-09-16
+   2.  …/projects/jadmadi/AlMatjar-App     Devin,OpenCode +2      2.9B      $1.86    21  2026-09-16
+   3.  /mnt/Jad/github/lab/sila           Codex,MiMoCode +3      1.3B     $71.78    12  2026-09-17
+```
+
+Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, and codewhale. Agy records no project.
+
 Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
 
 ```bash

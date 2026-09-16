@@ -3,6 +3,7 @@ package loaders
 import (
 	"bufio"
 	"encoding/json"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -65,6 +66,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 	type fileResult struct {
 		sessionID string
 		agent     string
+		project   string
 		turns     []turnAgg
 		duration  int64 // ms, from summary.json sidecar
 	}
@@ -154,17 +156,26 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 			// Agent name + duration from the summary.json sidecar.
 			if data, err := os.ReadFile(filepath.Join(filepath.Dir(p), "summary.json")); err == nil {
 				var meta struct {
-					AgentName string `json:"agent_name"`
-					CreatedAt string `json:"created_at"`
-					UpdatedAt string `json:"updated_at"`
+					AgentName  string `json:"agent_name"`
+					CreatedAt  string `json:"created_at"`
+					UpdatedAt  string `json:"updated_at"`
+					GitRootDir string `json:"git_root_dir"`
 				}
 				if json.Unmarshal(data, &meta) == nil {
 					res.agent = meta.AgentName
+					res.project = thermal.ProjectKey(meta.GitRootDir)
 					if start, err := time.Parse(time.RFC3339, meta.CreatedAt); err == nil {
 						if end, err := time.Parse(time.RFC3339, meta.UpdatedAt); err == nil {
 							res.duration = end.Sub(start).Milliseconds()
 						}
 					}
+				}
+			}
+			// Fall back to the URL-encoded workspace directory name when the
+			// sidecar has no git root.
+			if res.project == "" {
+				if decoded, err := url.PathUnescape(filepath.Base(filepath.Dir(filepath.Dir(p)))); err == nil {
+					res.project = thermal.ProjectKey(decoded)
 				}
 			}
 			results <- res
@@ -186,6 +197,8 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 		models     map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
+	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
+	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	modelCounts := make(map[string]int64)
 	agentCounts := make(map[string]int)
 
@@ -223,17 +236,44 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 			agg.cacheWrite += t.cacheWrite
 			agg.cost += t.cost
 			agg.turns++
+
+			var key projectDayKey
+			var pd *thermal.ProjectDay
+			if res.project != "" {
+				key = projectDayKey{t.day, res.project}
+				pd = byProjectDay[key]
+				if pd == nil {
+					pd = &thermal.ProjectDay{Project: res.project, Day: t.day}
+					byProjectDay[key] = pd
+				}
+				pd.Tokens += t.total
+				pd.Input += t.input
+				pd.Output += t.output
+				pd.Reasoning += t.reason
+				pd.CacheRead += t.cacheRead
+				pd.CacheWrite += t.cacheWrite
+				pd.Cost += t.cost
+				pd.Turns++
+			}
+
 			// modelUsage carries call counts, not tokens. Attribute the turn's
 			// tokens only when the turn used exactly one model.
 			if len(t.models) == 1 {
 				for name := range t.models {
-					agg.models[name] = agg.models[name].Add(thermal.ModelTokens{
+					counts := thermal.ModelTokens{
 						Input:      t.input,
 						Output:     t.output,
 						Reasoning:  t.reason,
 						CacheRead:  t.cacheRead,
 						CacheWrite: t.cacheWrite,
-					})
+					}
+					agg.models[name] = agg.models[name].Add(counts)
+					if pd != nil {
+						if projectModels[key] == nil {
+							projectModels[key] = make(map[string]thermal.ModelTokens)
+						}
+						projectModels[key][name] = projectModels[key][name].Add(counts)
+					}
 				}
 			}
 		}
@@ -255,6 +295,18 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
+	projects := make([]thermal.ProjectDay, 0, len(byProjectDay))
+	for key, pd := range byProjectDay {
+		pd.Models = projectModels[key]
+		projects = append(projects, *pd)
+	}
+	sort.Slice(projects, func(i, j int) bool {
+		if projects[i].Day != projects[j].Day {
+			return projects[i].Day < projects[j].Day
+		}
+		return projects[i].Project < projects[j].Project
+	})
+
 	if len(modelCounts) > 0 {
 		summary.ModelBreakdown = modelCounts
 	}
@@ -262,5 +314,5 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 		summary.AgentBreakdown = agentCounts
 	}
 
-	return summary, daily, nil, nil
+	return summary, daily, projects, nil
 }

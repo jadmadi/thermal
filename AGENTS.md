@@ -14,8 +14,9 @@ Thermal (`thermal`) is a high-performance, zero-allocation terminal contribution
 thermal/
 ├── cmd/thermal/         # Main CLI entrypoint (main.go, upgrade.go for self-update mechanism)
 ├── internal/loaders/    # Tool-specific ingestion engines and incremental delta-cache
-├── internal/thermal/    # Heatmap algorithms, streak calculation, and time parsing
-├── internal/render/     # Terminal formatting, color palettes, dashboard & leaderboard UI
+├── internal/thermal/    # Heatmap algorithms, streak calculation, time parsing, report and project aggregation
+├── internal/pricing/    # models.dev price catalog, cache, and cost estimation
+├── internal/render/     # Terminal formatting, color palettes, dashboard, report, project & leaderboard UI
 ├── internal/version/    # SemVer constants and ldflag injection targets
 ├── build.sh             # Local multi-target build and UPX compression script
 └── .goreleaser.yml      # Automated GitHub Actions release configuration
@@ -38,6 +39,7 @@ thermal/
 4. **Incremental Delta Caching (`cache.go`)**: For large databases (`Devin`, `OpenCode`, `MiMoCode`, `Codex`) and multi-file scanners (`command-code`, `Agy`), use the `LoadOrScanWithCache` mechanism (`~/.cache/thermal/<tool>.json`). Store exact file modification times (`mod_time`), sizes (`size`), or max seen transaction IDs so subsequent invocations take under `10ms`.
 5. **Concurrency Safety**: Multi-file, directory, and JSONL log scanners (`command-code`, `Codex` rollout logs, `Agy` overview logs) must use bounded worker pools (`sync.WaitGroup` or semaphore channels capped at ~16 workers) with thread-safe aggregation (`sync.Mutex`). Never spawn unbounded goroutines over thousands of files.
 6. **Disjoint Token Types**: Token type fields (`Input`, `Output`, `Reasoning`, `CacheRead`, `CacheWrite`) MUST be disjoint and add up to the recorded total. Sources that nest them (Codex and Grok put reasoning inside output and cache inside input; ZCode puts cache inside input) must subtract the nested parts in the loader, never in render or pricing.
+7. **Project Attribution**: Loaders whose source records where a session ran MUST emit `thermal.ProjectDay` rows beside the daily rows, normalized through `thermal.ProjectKey` so subdirectories fold into their nearest git root. Sources with no project data return an empty slice. Never invent a project name from a hash or an encoded directory name; `ProjectKey` falls back to the recorded path only when no repository marker exists.
 
 ### B. Tool-Specific Loader Quirks
 * **Devin (`devin.go`)**: Queries the SQLite DB joining `message_nodes` against `sessions`. Always check `metadata.metrics` for true input/output/cache token counts (`input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`). Check `prompt_history` (`updated_at` fallback to `created_at`) for accurate streak calculations across sessions without messages.
@@ -51,6 +53,7 @@ thermal/
 * **Muse (`muse.go`)**: Reads `~/.local/share/muse/session-index.db` (sessions, prompt counts, model ids, microsecond timestamps). Activity-only: no token or cost columns exist. Prompt counts stand in for activity; upgrade to per-session `session.jsonl` when model-call frames accumulate.
 * **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for assistant `message.usage` (input/output/cache tokens) and model ids; one file per session. No cost fields, so Cost stays 0. Bounded worker pool like command-code.
 * **Droid (`droid.go`)**: Scans `~/.factory/sessions/*/*.jsonl` message records for activity; session files carry no token or cost telemetry. Bounded worker pool like command-code.
+* **Project sources (token tools)**: OpenCode `session_v2.directory` (fall back to the `project` table worktree), MiMoCode `session.directory`, ZCode `session.directory`, Codex `threads.cwd`, Devin `sessions.working_directory`, Claude per-line `cwd`, Grok `summary.json.git_root_dir` (fall back to the URL-decoded session directory), codewhale `metadata.workspace`. Muse, Droid, and command-code carry a workspace or encoded directory but are deferred; Agy records no project at all.
 
 ---
 
@@ -63,6 +66,7 @@ thermal/
 3. **Color & Verbosity Flags**:
    * `--no-color`: Strips all ANSI escape sequences. Always check `colorEnabled` before emitting color codes.
    * `--verbose`: Outputs non-fatal loader diagnostic warnings (`database locked`, `missing directory`) exclusively to `os.Stderr`. Never pollute `os.Stdout` or JSON output (`--json`) with warnings.
+4. **Report and Project Commands**: `daily`, `weekly`, `monthly`, and `projects` are reserved positional words (`thermal opencode weekly`, `thermal projects`). Report options (`--since`, `--until`, `--last`, `--order`, `--breakdown`, `--start-of-week`, `--offline`, `--no-estimate`) must error when no report word is present instead of being silently ignored. Cost always comes from the source when recorded; `internal/pricing` estimates only days with no recorded cost and lists unpriced models in the footer rather than treating them as free. Project rows merge across tools by project key.
 
 ---
 

@@ -97,38 +97,57 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	if hasTurns {
 		turnTable = "turn_usage"
 	}
+	// Turns per day and project. turn_usage has no project column, so the
+	// session row supplies it when the schema carries a directory.
+	turnJoin, turnProject := "", "''"
+	if hasColumn(db, "session", "directory") {
+		turnProject = "COALESCE(NULLIF(s.directory, ''), '')"
+		turnJoin = " LEFT JOIN session s ON s.id = t.session_id"
+	}
 	turnsByDay := make(map[string]int)
+	turnsByKey := make(map[projectDayKey]int)
 	if turnRows, err := db.Query(`
-		SELECT date(started_at / 1000, 'unixepoch', 'localtime') AS day, COUNT(*)
-		FROM ` + turnTable + `
-		WHERE status = 'completed'
-		GROUP BY day
+		SELECT date(t.started_at / 1000, 'unixepoch', 'localtime') AS day,
+			` + turnProject + ` AS project,
+			COUNT(*)
+		FROM ` + turnTable + ` t` + turnJoin + `
+		WHERE t.status = 'completed'
+		GROUP BY day, project
 	`); err == nil {
 		for turnRows.Next() {
-			var day string
+			var day, project string
 			var n int
-			if turnRows.Scan(&day, &n) == nil {
-				turnsByDay[day] = n
+			if turnRows.Scan(&day, &project, &n) == nil {
+				turnsByDay[day] += n
+				if key := thermal.ProjectKey(project); key != "" {
+					turnsByKey[projectDayKey{day, key}] += n
+				}
 			}
 		}
 		turnRows.Close()
 	}
 
+	modelJoin, modelProject := "", "''"
+	if hasColumn(db, "session", "directory") {
+		modelProject = "COALESCE(NULLIF(s.directory, ''), '')"
+		modelJoin = " LEFT JOIN session s ON s.id = m.session_id"
+	}
 	rows, err := db.Query(`
 		SELECT
-			date(started_at / 1000, 'unixepoch', 'localtime') AS day,
-			COALESCE(model_id, '') AS model,
-			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
-			COALESCE(SUM(MAX(output_tokens - reasoning_tokens, 0)), 0),
-			COALESCE(SUM(reasoning_tokens), 0),
-			COALESCE(SUM(cache_read_input_tokens), 0),
-			COALESCE(SUM(cache_creation_input_tokens), 0),
+			date(m.started_at / 1000, 'unixepoch', 'localtime') AS day,
+			` + modelProject + ` AS project,
+			COALESCE(m.model_id, '') AS model,
+			COALESCE(SUM(MAX(m.input_tokens - m.cache_read_input_tokens - m.cache_creation_input_tokens, 0)), 0),
+			COALESCE(SUM(MAX(m.output_tokens - m.reasoning_tokens, 0)), 0),
+			COALESCE(SUM(m.reasoning_tokens), 0),
+			COALESCE(SUM(m.cache_read_input_tokens), 0),
+			COALESCE(SUM(m.cache_creation_input_tokens), 0),
 			0.0,
 			0,
-			COALESCE(SUM(computed_total_tokens), 0)
-		FROM model_usage
-		WHERE status = 'completed'
-		GROUP BY day, model
+			COALESCE(SUM(m.computed_total_tokens), 0)
+		FROM model_usage m` + modelJoin + `
+		WHERE m.status = 'completed'
+		GROUP BY day, project, model
 		ORDER BY day
 	`)
 	if err != nil {
@@ -136,7 +155,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 	defer rows.Close()
 
-	daily, err := foldDayModelRows(rows)
+	daily, projects, err := foldDayModelProjectRows(rows)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
@@ -145,6 +164,11 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			daily[i].Turns = n
 		}
 	}
+	for i := range projects {
+		if n, ok := turnsByKey[projectDayKey{projects[i].Day, projects[i].Project}]; ok {
+			projects[i].Turns = n
+		}
+	}
 
-	return summary, daily, nil, nil
+	return summary, daily, projects, nil
 }

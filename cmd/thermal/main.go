@@ -477,6 +477,9 @@ func loadUsage(opts thermal.Options) usageSet {
 				continue
 			}
 			set.days = append(set.days, data.Daily...)
+			for i := range data.Projects {
+				data.Projects[i].Tool = info.Name
+			}
 			set.projects = append(set.projects, data.Projects...)
 		}
 		if len(set.days) == 0 && len(set.projects) == 0 {
@@ -499,6 +502,9 @@ func loadUsage(opts thermal.Options) usageSet {
 	}
 	set.days = data.Daily
 	set.projects = data.Projects
+	for i := range set.projects {
+		set.projects[i].Tool = info.Name
+	}
 	set.toolName = info.Name
 	return set
 }
@@ -572,7 +578,7 @@ func runProjectReport(opts thermal.Options) {
 		Last:  opts.Last,
 		Order: opts.Order,
 	}
-	rep := thermal.AggregateProjects(set.projects, set.toolName, projectOpts, newPricer(opts))
+	rep := thermal.AggregateProjects(set.projects, projectOpts, newPricer(opts))
 
 	if opts.JSON {
 		type jsonReport struct {
