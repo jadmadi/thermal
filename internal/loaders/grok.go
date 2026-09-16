@@ -173,7 +173,13 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 
 	type dayAgg struct {
 		tokens int64
+		input  int64
+		output int64
+		reason int64
+		cache  int64
+		cost   float64
 		turns  int
+		models map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -202,17 +208,44 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			}
 			agg := byDay[t.day]
 			if agg == nil {
-				agg = &dayAgg{}
+				agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
 				byDay[t.day] = agg
 			}
 			agg.tokens += t.total
+			agg.input += t.input
+			agg.output += t.output
+			agg.reason += t.reason
+			agg.cache += t.cache
+			agg.cost += t.cost
 			agg.turns++
+			// modelUsage carries call counts, not tokens. Attribute the turn's
+			// tokens only when the turn used exactly one model.
+			if len(t.models) == 1 {
+				for name := range t.models {
+					agg.models[name] = agg.models[name].Add(thermal.ModelTokens{
+						Input:     t.input,
+						Output:    t.output,
+						Reasoning: t.reason,
+						Cache:     t.cache,
+					})
+				}
+			}
 		}
 	}
 
 	var daily []thermal.DailyRow
 	for day, agg := range byDay {
-		daily = append(daily, thermal.DailyRow{Day: day, Tokens: agg.tokens, Turns: agg.turns})
+		daily = append(daily, thermal.DailyRow{
+			Day:       day,
+			Tokens:    agg.tokens,
+			Input:     agg.input,
+			Output:    agg.output,
+			Reasoning: agg.reason,
+			Cache:     agg.cache,
+			Cost:      agg.cost,
+			Turns:     agg.turns,
+			Models:    agg.models,
+		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 

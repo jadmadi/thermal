@@ -33,11 +33,14 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	}
 
 	var summary thermal.Summary
+	// ZCode follows the provider convention where input_tokens already
+	// contains cache reads, so InputTokens is reported without the cached
+	// part. Otherwise the type columns double count against LifetimeTokens.
 	err = db.QueryRow(`
 		SELECT
 			COUNT(DISTINCT session_id),
 			COALESCE(SUM(computed_total_tokens), 0),
-			COALESCE(SUM(input_tokens), 0),
+			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
 			COALESCE(SUM(output_tokens), 0),
 			COALESCE(SUM(reasoning_tokens), 0),
 			COALESCE(SUM(cache_creation_input_tokens + cache_read_input_tokens), 0)
@@ -82,28 +85,48 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		agentRows.Close()
 	}
 
-	// Daily tokens from completed model requests. Turns come from completed
-	// turn_usage rows (one per user-visible turn); when that table is absent,
-	// fall back to completed request counts.
+	// Daily tokens from completed model requests, grouped by day and model so
+	// reports can break usage down per model. Turns are counted once per day:
+	// completed turn_usage rows when present (one per user-visible turn), else
+	// completed request counts.
 	var hasTurns bool
 	_ = db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='turn_usage'`).Scan(&hasTurns)
 
-	turnExpr := `(SELECT COUNT(*) FROM model_usage m2
-		WHERE m2.status = 'completed'
-		AND date(m2.started_at / 1000, 'unixepoch', 'localtime') = date(model_usage.started_at / 1000, 'unixepoch', 'localtime'))`
+	turnTable := "model_usage"
 	if hasTurns {
-		turnExpr = `(SELECT COUNT(*) FROM turn_usage t
-		WHERE t.status = 'completed'
-		AND date(t.started_at / 1000, 'unixepoch', 'localtime') = date(model_usage.started_at / 1000, 'unixepoch', 'localtime'))`
+		turnTable = "turn_usage"
 	}
+	turnsByDay := make(map[string]int)
+	if turnRows, err := db.Query(`
+		SELECT date(started_at / 1000, 'unixepoch', 'localtime') AS day, COUNT(*)
+		FROM ` + turnTable + `
+		WHERE status = 'completed'
+		GROUP BY day
+	`); err == nil {
+		for turnRows.Next() {
+			var day string
+			var n int
+			if turnRows.Scan(&day, &n) == nil {
+				turnsByDay[day] = n
+			}
+		}
+		turnRows.Close()
+	}
+
 	rows, err := db.Query(`
 		SELECT
 			date(started_at / 1000, 'unixepoch', 'localtime') AS day,
-			COALESCE(SUM(computed_total_tokens), 0),
-			` + turnExpr + `
+			COALESCE(model_id, '') AS model,
+			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
+			COALESCE(SUM(output_tokens), 0),
+			COALESCE(SUM(reasoning_tokens), 0),
+			COALESCE(SUM(cache_creation_input_tokens + cache_read_input_tokens), 0),
+			0.0,
+			0,
+			COALESCE(SUM(computed_total_tokens), 0)
 		FROM model_usage
 		WHERE status = 'completed'
-		GROUP BY day
+		GROUP BY day, model
 		ORDER BY day
 	`)
 	if err != nil {
@@ -111,13 +134,14 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	}
 	defer rows.Close()
 
-	var daily []thermal.DailyRow
-	for rows.Next() {
-		var r thermal.DailyRow
-		if err := rows.Scan(&r.Day, &r.Tokens, &r.Turns); err != nil {
-			return thermal.Summary{}, nil, err
+	daily, err := foldDayModelRows(rows)
+	if err != nil {
+		return thermal.Summary{}, nil, err
+	}
+	for i := range daily {
+		if n, ok := turnsByDay[daily[i].Day]; ok {
+			daily[i].Turns = n
 		}
-		daily = append(daily, r)
 	}
 
 	return summary, daily, nil

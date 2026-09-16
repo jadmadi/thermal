@@ -46,8 +46,13 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	defer rows.Close()
 
 	type dayAgg struct {
-		tokens int64
-		turns  int
+		tokens    int64
+		turns     int
+		input     int64
+		output    int64
+		reasoning int64
+		cache     int64
+		models    map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -62,6 +67,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		tokensUsed  int64
 		rolloutPath string
 		day         string
+		model       string
 	}
 	var threads []threadInfo
 
@@ -94,6 +100,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		summary.LifetimeTokens += t.tokensUsed
 
 		if model.Valid && model.String != "" {
+			t.model = model.String
 			modelCounts[model.String]++
 		}
 		if source.Valid && source.String != "" {
@@ -108,16 +115,6 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		}
 		threads = append(threads, t)
 	}
-
-	var daily []thermal.DailyRow
-	for day, agg := range byDay {
-		daily = append(daily, thermal.DailyRow{
-			Day:    day,
-			Tokens: agg.tokens,
-			Turns:  agg.turns,
-		})
-	}
-	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
 	if len(modelCounts) > 0 {
 		summary.ModelBreakdown = modelCounts
@@ -145,7 +142,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	}
 	wg.Wait()
 
-	for _, b := range breakdowns {
+	for i, b := range breakdowns {
 		if b == nil {
 			continue
 		}
@@ -153,6 +150,41 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		summary.OutputTokens += b.output
 		summary.ReasoningTokens += b.reasoning
 		summary.CacheTokens += b.cache
+
+		// The rollout total is cumulative for the thread and can drift from
+		// threads.tokens_used, so scale the breakdown to tokens_used before
+		// attributing it to the thread's day and model.
+		t := threads[i]
+		breakdownTotal := b.input + b.output + b.reasoning + b.cache
+		if t.tokensUsed <= 0 || breakdownTotal <= 0 {
+			continue
+		}
+		ratio := float64(t.tokensUsed) / float64(breakdownTotal)
+		scaled := tokenBreakdown{
+			input:     int64(float64(b.input) * ratio),
+			output:    int64(float64(b.output) * ratio),
+			reasoning: int64(float64(b.reasoning) * ratio),
+			cache:     int64(float64(b.cache) * ratio),
+		}
+		agg := byDay[t.day]
+		if agg == nil {
+			continue
+		}
+		agg.input += scaled.input
+		agg.output += scaled.output
+		agg.reasoning += scaled.reasoning
+		agg.cache += scaled.cache
+		if t.model != "" {
+			if agg.models == nil {
+				agg.models = make(map[string]thermal.ModelTokens)
+			}
+			agg.models[t.model] = agg.models[t.model].Add(thermal.ModelTokens{
+				Input:     scaled.input,
+				Output:    scaled.output,
+				Reasoning: scaled.reasoning,
+				Cache:     scaled.cache,
+			})
+		}
 	}
 
 	breakdownTotal := summary.InputTokens + summary.OutputTokens +
@@ -170,6 +202,21 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	} else if breakdownTotal == 0 {
 		summary.InputTokens = summary.LifetimeTokens
 	}
+
+	var daily []thermal.DailyRow
+	for day, agg := range byDay {
+		daily = append(daily, thermal.DailyRow{
+			Day:       day,
+			Tokens:    agg.tokens,
+			Input:     agg.input,
+			Output:    agg.output,
+			Reasoning: agg.reasoning,
+			Cache:     agg.cache,
+			Turns:     agg.turns,
+			Models:    agg.models,
+		})
+	}
+	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
 	return summary, daily, nil
 }

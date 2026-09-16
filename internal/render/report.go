@@ -131,7 +131,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		}
 		for _, name := range thermal.TopModels(row.Models) {
 			m := row.Models[name]
-			printRow("  └─ "+name, "", thermal.PeriodRow{
+			printRow("", "  └─ "+name, thermal.PeriodRow{
 				Input:     m.Input,
 				Output:    m.Output,
 				Reasoning: m.Reasoning,

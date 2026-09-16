@@ -179,12 +179,7 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		}
 
 		for model, counts := range day.Models {
-			cur := row.Models[model]
-			cur.Input += counts.Input
-			cur.Output += counts.Output
-			cur.Reasoning += counts.Reasoning
-			cur.Cache += counts.Cache
-			row.Models[model] = cur
+			row.Models[model] = row.Models[model].Add(counts)
 		}
 	}
 
@@ -233,12 +228,7 @@ func sumPeriods(rows []PeriodRow) PeriodRow {
 			if total.Models == nil {
 				total.Models = make(map[string]ModelTokens)
 			}
-			cur := total.Models[model]
-			cur.Input += counts.Input
-			cur.Output += counts.Output
-			cur.Reasoning += counts.Reasoning
-			cur.Cache += counts.Cache
-			total.Models[model] = cur
+			total.Models[model] = total.Models[model].Add(counts)
 		}
 	}
 	total.Cost = total.StoredCost + total.EstimatedCost

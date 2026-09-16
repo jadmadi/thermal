@@ -59,17 +59,30 @@ type Summary struct {
 
 // ModelTokens holds per-model token counts for a single day. Loaders fill it
 // only when the source records a model per message or session. Cache is the
-// combined cache read plus cache write count.
+// combined cache read plus cache write count. Unclassified holds tokens whose
+// type the source does not break down, such as a session-level total.
 type ModelTokens struct {
-	Input     int64 `json:"input,omitempty"`
-	Output    int64 `json:"output,omitempty"`
-	Reasoning int64 `json:"reasoning,omitempty"`
-	Cache     int64 `json:"cache,omitempty"`
+	Input        int64 `json:"input,omitempty"`
+	Output       int64 `json:"output,omitempty"`
+	Reasoning    int64 `json:"reasoning,omitempty"`
+	Cache        int64 `json:"cache,omitempty"`
+	Unclassified int64 `json:"unclassified,omitempty"`
 }
 
 // Total returns the sum of every token type.
 func (m ModelTokens) Total() int64 {
-	return m.Input + m.Output + m.Reasoning + m.Cache
+	return m.Input + m.Output + m.Reasoning + m.Cache + m.Unclassified
+}
+
+// Add returns the element-wise sum of two token counts.
+func (m ModelTokens) Add(o ModelTokens) ModelTokens {
+	return ModelTokens{
+		Input:        m.Input + o.Input,
+		Output:       m.Output + o.Output,
+		Reasoning:    m.Reasoning + o.Reasoning,
+		Cache:        m.Cache + o.Cache,
+		Unclassified: m.Unclassified + o.Unclassified,
+	}
 }
 
 // DailyRow is one calendar day of activity for one tool. Tokens is the total
