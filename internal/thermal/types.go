@@ -58,20 +58,26 @@ type Summary struct {
 }
 
 // ModelTokens holds per-model token counts for a single day. Loaders fill it
-// only when the source records a model per message or session. Cache is the
-// combined cache read plus cache write count. Unclassified holds tokens whose
-// type the source does not break down, such as a session-level total.
+// only when the source records a model per message or session. Cache reads and
+// writes stay separate because their prices differ. Unclassified holds tokens
+// whose type the source does not break down, such as a session-level total.
 type ModelTokens struct {
 	Input        int64 `json:"input,omitempty"`
 	Output       int64 `json:"output,omitempty"`
 	Reasoning    int64 `json:"reasoning,omitempty"`
-	Cache        int64 `json:"cache,omitempty"`
+	CacheRead    int64 `json:"cacheRead,omitempty"`
+	CacheWrite   int64 `json:"cacheWrite,omitempty"`
 	Unclassified int64 `json:"unclassified,omitempty"`
+}
+
+// Cache returns the combined cache read and write count.
+func (m ModelTokens) Cache() int64 {
+	return m.CacheRead + m.CacheWrite
 }
 
 // Total returns the sum of every token type.
 func (m ModelTokens) Total() int64 {
-	return m.Input + m.Output + m.Reasoning + m.Cache + m.Unclassified
+	return m.Input + m.Output + m.Reasoning + m.CacheRead + m.CacheWrite + m.Unclassified
 }
 
 // Add returns the element-wise sum of two token counts.
@@ -80,7 +86,8 @@ func (m ModelTokens) Add(o ModelTokens) ModelTokens {
 		Input:        m.Input + o.Input,
 		Output:       m.Output + o.Output,
 		Reasoning:    m.Reasoning + o.Reasoning,
-		Cache:        m.Cache + o.Cache,
+		CacheRead:    m.CacheRead + o.CacheRead,
+		CacheWrite:   m.CacheWrite + o.CacheWrite,
 		Unclassified: m.Unclassified + o.Unclassified,
 	}
 }

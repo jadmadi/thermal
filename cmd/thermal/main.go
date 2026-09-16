@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jadmadi/thermal/internal/loaders"
+	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/version"
@@ -480,7 +481,17 @@ func runReport(opts thermal.Options) {
 		toolLabel = info.Name
 	}
 
-	rep := thermal.Aggregate(days, grain, aggOpts, nil)
+	var pricer thermal.Pricer
+	if !opts.NoEstimate {
+		cat := pricing.Load(pricing.DefaultCachePath(), opts.Offline)
+		if cat.Len() > 0 {
+			pricer = cat
+		} else if opts.Verbose {
+			fmt.Fprintln(os.Stderr, "thermal: warning: no pricing data available; showing stored cost only")
+		}
+	}
+
+	rep := thermal.Aggregate(days, grain, aggOpts, pricer)
 	rep.Tool = toolLabel
 
 	if opts.JSON {

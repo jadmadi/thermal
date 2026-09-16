@@ -135,7 +135,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 				Input:     m.Input,
 				Output:    m.Output,
 				Reasoning: m.Reasoning,
-				Cache:     m.Cache,
+				Cache:     m.Cache(),
 				Tokens:    m.Total(),
 			}, faint)
 		}

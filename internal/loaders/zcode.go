@@ -120,7 +120,8 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
 			COALESCE(SUM(output_tokens), 0),
 			COALESCE(SUM(reasoning_tokens), 0),
-			COALESCE(SUM(cache_creation_input_tokens + cache_read_input_tokens), 0),
+			COALESCE(SUM(cache_read_input_tokens), 0),
+			COALESCE(SUM(cache_creation_input_tokens), 0),
 			0.0,
 			0,
 			COALESCE(SUM(computed_total_tokens), 0)

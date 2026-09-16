@@ -22,7 +22,7 @@ func sampleReport() thermal.Report {
 				ActiveDays: 3,
 				Cost:       2.5,
 				Models: map[string]thermal.ModelTokens{
-					"deepseek-v4-flash": {Input: 1200, Output: 3400, Cache: 500},
+					"deepseek-v4-flash": {Input: 1200, Output: 3400, CacheRead: 500},
 				},
 			},
 		},

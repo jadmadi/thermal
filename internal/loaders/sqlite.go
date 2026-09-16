@@ -81,7 +81,8 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 				COALESCE(SUM(tokens_input), 0),
 				COALESCE(SUM(tokens_output), 0),
 				COALESCE(SUM(tokens_reasoning), 0),
-				COALESCE(SUM(tokens_cache_read + tokens_cache_write), 0),
+				COALESCE(SUM(tokens_cache_read), 0),
+				COALESCE(SUM(tokens_cache_write), 0),
 				COALESCE(SUM(cost), 0),
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
@@ -164,7 +165,8 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 				COALESCE(SUM(tokens_input), 0),
 				COALESCE(SUM(tokens_output), 0),
 				COALESCE(SUM(tokens_reasoning), 0),
-				COALESCE(SUM(tokens_cache_read + tokens_cache_write), 0),
+				COALESCE(SUM(tokens_cache_read), 0),
+				COALESCE(SUM(tokens_cache_write), 0),
 				COALESCE(SUM(cost), 0),
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
@@ -225,10 +227,11 @@ func opencodeV2Source(db *sql.DB) string {
 }
 
 // foldDayModelRows turns a day-and-model aggregation result into DailyRows.
-// Expected column order: day, model, input, output, reasoning, cache, cost,
-// turns, total. The explicit total is authoritative because some sources pack
-// tokens differently (ZCode counts cache reads inside input, for example).
-// Per-model counts are folded into Models.
+// Expected column order: day, model, input, output, reasoning, cache read,
+// cache write, cost, turns, total. The explicit total is authoritative because
+// some sources pack tokens differently (ZCode counts cache reads inside input,
+// for example). Cache reads and writes stay separate for pricing, and their
+// sum feeds DailyRow.Cache.
 func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 	byDay := make(map[string]*thermal.DailyRow)
 	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
@@ -236,11 +239,11 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 
 	for rows.Next() {
 		var day, model string
-		var input, output, reasoning, cache int64
+		var input, output, reasoning, cacheRead, cacheWrite int64
 		var cost float64
 		var turns int
 		var total int64
-		if err := rows.Scan(&day, &model, &input, &output, &reasoning, &cache, &cost, &turns, &total); err != nil {
+		if err := rows.Scan(&day, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
 			return nil, err
 		}
 		row := byDay[day]
@@ -252,7 +255,7 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 		row.Input += input
 		row.Output += output
 		row.Reasoning += reasoning
-		row.Cache += cache
+		row.Cache += cacheRead + cacheWrite
 		row.Tokens += total
 		row.Cost += cost
 		row.Turns += turns
@@ -262,7 +265,11 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 				modelsByDay[day] = make(map[string]thermal.ModelTokens)
 			}
 			modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
-				Input: input, Output: output, Reasoning: reasoning, Cache: cache,
+				Input:      input,
+				Output:     output,
+				Reasoning:  reasoning,
+				CacheRead:  cacheRead,
+				CacheWrite: cacheWrite,
 			})
 		}
 	}
@@ -363,10 +370,8 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, erro
 			COALESCE(SUM(CAST(json_extract(data, '$.tokens.input') AS INTEGER)), 0),
 			COALESCE(SUM(CAST(json_extract(data, '$.tokens.output') AS INTEGER)), 0),
 			COALESCE(SUM(CAST(json_extract(data, '$.tokens.reasoning') AS INTEGER)), 0),
-			COALESCE(SUM(
-				COALESCE(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER), 0) +
-				COALESCE(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER), 0)
-			), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER)), 0),
 			COALESCE(SUM(CAST(json_extract(data, '$.cost') AS REAL)), 0),
 			COUNT(*),
 			COALESCE(SUM(

@@ -182,7 +182,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 				Input:     scaled.input,
 				Output:    scaled.output,
 				Reasoning: scaled.reasoning,
-				Cache:     scaled.cache,
+				CacheRead: scaled.cache,
 			})
 		}
 	}

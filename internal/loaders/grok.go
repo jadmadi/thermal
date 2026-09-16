@@ -49,16 +49,17 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 	}
 
 	type turnAgg struct {
-		day     string
-		input   int64
-		output  int64
-		reason  int64
-		cache   int64
-		total   int64
-		cost    float64
-		models  map[string]int64
-		firstTs int64
-		lastTs  int64
+		day        string
+		input      int64
+		output     int64
+		reason     int64
+		cacheRead  int64
+		cacheWrite int64
+		total      int64
+		cost       float64
+		models     map[string]int64
+		firstTs    int64
+		lastTs     int64
 	}
 	type fileResult struct {
 		sessionID string
@@ -129,16 +130,17 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 					}
 				}
 				res.turns = append(res.turns, turnAgg{
-					day:     thermal.UnixDay(rec.Timestamp),
-					input:   u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens,
-					output:  u.OutputTokens,
-					reason:  u.ReasoningTokens,
-					cache:   u.CachedReadTokens + u.CacheCreationTokens,
-					total:   total,
-					cost:    float64(u.CostUsdTicks) * ticksToUSD,
-					models:  models,
-					firstTs: rec.Timestamp,
-					lastTs:  rec.Timestamp,
+					day:        thermal.UnixDay(rec.Timestamp),
+					input:      u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens,
+					output:     u.OutputTokens,
+					reason:     u.ReasoningTokens,
+					cacheRead:  u.CachedReadTokens,
+					cacheWrite: u.CacheCreationTokens,
+					total:      total,
+					cost:       float64(u.CostUsdTicks) * ticksToUSD,
+					models:     models,
+					firstTs:    rec.Timestamp,
+					lastTs:     rec.Timestamp,
 				})
 			}
 			f.Close()
@@ -172,14 +174,15 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 	close(results)
 
 	type dayAgg struct {
-		tokens int64
-		input  int64
-		output int64
-		reason int64
-		cache  int64
-		cost   float64
-		turns  int
-		models map[string]thermal.ModelTokens
+		tokens     int64
+		input      int64
+		output     int64
+		reason     int64
+		cacheRead  int64
+		cacheWrite int64
+		cost       float64
+		turns      int
+		models     map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -200,7 +203,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			summary.InputTokens += t.input
 			summary.OutputTokens += t.output
 			summary.ReasoningTokens += t.reason
-			summary.CacheTokens += t.cache
+			summary.CacheTokens += t.cacheRead + t.cacheWrite
 			summary.LifetimeTokens += t.total
 			summary.Cost += t.cost
 			for name, n := range t.models {
@@ -215,7 +218,8 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			agg.input += t.input
 			agg.output += t.output
 			agg.reason += t.reason
-			agg.cache += t.cache
+			agg.cacheRead += t.cacheRead
+			agg.cacheWrite += t.cacheWrite
 			agg.cost += t.cost
 			agg.turns++
 			// modelUsage carries call counts, not tokens. Attribute the turn's
@@ -223,10 +227,11 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			if len(t.models) == 1 {
 				for name := range t.models {
 					agg.models[name] = agg.models[name].Add(thermal.ModelTokens{
-						Input:     t.input,
-						Output:    t.output,
-						Reasoning: t.reason,
-						Cache:     t.cache,
+						Input:      t.input,
+						Output:     t.output,
+						Reasoning:  t.reason,
+						CacheRead:  t.cacheRead,
+						CacheWrite: t.cacheWrite,
 					})
 				}
 			}
@@ -241,7 +246,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			Input:     agg.input,
 			Output:    agg.output,
 			Reasoning: agg.reason,
-			Cache:     agg.cache,
+			Cache:     agg.cacheRead + agg.cacheWrite,
 			Cost:      agg.cost,
 			Turns:     agg.turns,
 			Models:    agg.models,
