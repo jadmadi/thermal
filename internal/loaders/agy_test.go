@@ -21,7 +21,7 @@ func TestLoadAgyData_MockSession(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, daily, err := LoadAgyData(dir)
+	sum, daily, _, err := LoadAgyData(dir)
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestLoadAgyData_TranscriptOnly(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, daily, err := LoadAgyData(dir)
+	sum, daily, _, err := LoadAgyData(dir)
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestLoadAgyData_LegacyRootFallback(t *testing.T) {
 		t.Fatalf("write transcript error: %v", err)
 	}
 
-	sum, _, err := LoadAgyData(filepath.Join(dir, "antigravity"))
+	sum, _, _, err := LoadAgyData(filepath.Join(dir, "antigravity"))
 	if err != nil {
 		t.Fatalf("LoadAgyData error: %v", err)
 	}

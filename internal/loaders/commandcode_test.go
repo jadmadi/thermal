@@ -26,7 +26,7 @@ func TestLoadCommandCodeData_MockSession(t *testing.T) {
 		t.Fatalf("failed writing meta: %v", err)
 	}
 
-	sum, daily, err := LoadCommandCodeData(dir)
+	sum, daily, _, err := LoadCommandCodeData(dir)
 	if err != nil {
 		t.Fatalf("LoadCommandCodeData error: %v", err)
 	}

@@ -19,10 +19,10 @@ import (
 // pre-migration history is not dropped. For DBs predating session_v2, fall
 // back to the session table, and to message.data JSON aggregation when the
 // session table has no token columns.
-func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
@@ -33,7 +33,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	// keeps only pre-migration rows. Read v2 when present.
 	var hasV2 bool
 	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_v2'`).Scan(&hasV2); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	if hasV2 {
 		src := "(" + opencodeV2Source(db) + ")"
@@ -56,7 +56,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
 			&summary.FilesTouched, &summary.LongestSessionMs)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 
 		// Agent breakdown from session.agent column.
@@ -91,15 +91,15 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			ORDER BY day
 		`)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 		defer rows.Close()
 
 		daily, err := foldDayModelRows(rows)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
-		return summary, daily, nil
+		return summary, daily, nil, nil
 	}
 
 	// Check whether the session table has the pre-agg token columns (newer
@@ -109,7 +109,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	var hasSessionCols bool
 	err = db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'tokens_input'`).Scan(&hasSessionCols)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	if hasSessionCols {
@@ -133,7 +133,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
 			&summary.FilesTouched, &summary.LongestSessionMs)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 
 		// Agent breakdown from session.agent column.
@@ -174,15 +174,15 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			ORDER BY day
 		`)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 		defer rows.Close()
 
 		daily, err := foldDayModelRows(rows)
 		if err != nil {
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
-		return summary, daily, nil
+		return summary, daily, nil, nil
 	}
 
 	// Fallback: older schema without session token columns — aggregate from
@@ -295,17 +295,17 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 // session token columns, so we aggregate from message.data.tokens JSON. We
 // also surface session.summary_additions/deletions/files (code changes) and
 // message.data.agent (agent mode distribution) that were previously hidden.
-func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
 
-	summary, daily, err := loadMessageLevelData(db)
+	summary, daily, projects, err := loadMessageLevelData(db)
 	if err != nil {
-		return summary, daily, err
+		return summary, daily, projects, err
 	}
 
 	// Code-change analytics from session summary columns.
@@ -327,13 +327,13 @@ func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 		agentRows.Close()
 	}
 
-	return summary, daily, nil
+	return summary, daily, projects, nil
 }
 
 // loadMessageLevelData aggregates token metrics from the message table's
 // data JSON column. Shared by MiMo (always) and OpenCode (fallback for older
 // schemas without session-level token columns).
-func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, error) {
+func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
 	err := db.QueryRow(`
 		SELECT
@@ -358,7 +358,7 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, erro
 	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
 		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens, &summary.Cost)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	db.QueryRow(`SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`).
@@ -392,22 +392,22 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, erro
 		ORDER BY day
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
 
 	daily, err := foldDayModelRows(rows)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }
 
-func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
@@ -419,20 +419,20 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	var maxRowID int64
 	var sessionCount int
 	if err := db.QueryRow(`SELECT MAX(row_id) FROM message_nodes`).Scan(&maxRowID); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE hidden = 0`).Scan(&sessionCount); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	if c, ok := loadDevinCache(); ok && c.MaxRowID == maxRowID && c.SessionCount == sessionCount {
-		return c.Summary, c.Daily, nil
+		return c.Summary, c.Daily, nil, nil
 	}
 
 	// Longest session duration (created_at/last_activity_at are in seconds;
 	// LongestSessionMs is expected in milliseconds, so *1000).
 	var longestSec int64
 	if err := db.QueryRow(`SELECT COALESCE(MAX(last_activity_at - created_at), 0) FROM sessions WHERE hidden = 0`).Scan(&longestSec); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	// If session count is unchanged and new messages were simply appended (maxRowID > c.MaxRowID),
@@ -516,7 +516,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 				c.Daily = daily
 				c.MaxRowID = maxRowID
 				saveDevinCache(c)
-				return c.Summary, c.Daily, nil
+				return c.Summary, c.Daily, nil, nil
 			}
 		}
 	}
@@ -533,7 +533,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	// started.
 	var totalCount int64
 	if err := db.QueryRow(`SELECT COUNT(*) FROM message_nodes`).Scan(&totalCount); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	rows, err := db.Query(`
@@ -546,7 +546,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		WHERE chat_message LIKE '%"assistant"%' AND json_extract(chat_message, '$.role') = 'assistant'
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
 
@@ -564,7 +564,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
 		if err := rows.Scan(&createdAt, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
 			progress.Done()
-			return thermal.Summary{}, nil, err
+			return thermal.Summary{}, nil, nil, err
 		}
 		day := thermal.UnixDay(createdAt)
 		agg := byDay[day]
@@ -585,7 +585,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	progress.Done()
 
 	if err := rows.Err(); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	var daily []thermal.DailyRow
@@ -618,13 +618,13 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 			ORDER BY day
 		`)
 		if fbErr != nil {
-			return summary, nil, nil
+			return summary, nil, nil, nil
 		}
 		defer fbRows.Close()
 		for fbRows.Next() {
 			var r thermal.DailyRow
 			if err := fbRows.Scan(&r.Day, &r.Turns); err != nil {
-				return summary, nil, nil
+				return summary, nil, nil, nil
 			}
 			r.Tokens = int64(r.Turns)
 			daily = append(daily, r)
@@ -639,5 +639,5 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		Daily:        daily,
 	})
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

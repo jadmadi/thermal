@@ -19,14 +19,14 @@ import (
 // cache_creation_input_tokens); each file under projects/ is one session and
 // assistant messages are the countable turns. No cost fields exist in the
 // transcripts, so Cost stays 0.
-func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
 	summary.Tool = "Claude"
 
 	pattern := filepath.Join(dataDir, "projects", "*", "*.jsonl")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		return summary, nil, err
+		return summary, nil, nil, err
 	}
 
 	type msgAgg struct {
@@ -191,5 +191,5 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 		summary.ModelBreakdown = modelCounts
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

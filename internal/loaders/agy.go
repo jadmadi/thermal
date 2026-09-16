@@ -97,11 +97,11 @@ func countAgySteps(path string, res *sessionResult) int {
 }
 
 // LoadAgyData reads Google Antigravity session data in parallel using a bounded worker pool.
-func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	brainDir := resolveAgyBrainDir(dataDir)
 	entries, err := os.ReadDir(brainDir)
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot read %s: %w", brainDir, err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot read %s: %w", brainDir, err)
 	}
 
 	results := make(chan sessionResult, len(entries))
@@ -215,5 +215,5 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 		summary.ModelBreakdown = modelCounts
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

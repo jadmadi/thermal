@@ -14,7 +14,16 @@ type ToolInfo struct {
 	DataDir    string
 	Name       string
 	DataSubdir string // e.g. "history.jsonl", "brain", "sessions", "projects"
-	Loader     func(string) (thermal.Summary, []thermal.DailyRow, error)
+	Loader     func(string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error)
+}
+
+// ToolData is the loader output for one tool: the lifetime summary, per-day
+// rows, and per-project rows when the tool records where a session ran.
+type ToolData struct {
+	Summary  thermal.Summary
+	Daily    []thermal.DailyRow
+	Projects []thermal.ProjectDay
+	Path     string
 }
 
 func AllTools() map[thermal.Tool]ToolInfo {
@@ -136,7 +145,7 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 	return "", false
 }
 
-func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (thermal.Summary, []thermal.DailyRow, string, error) {
+func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error) {
 	switch t {
 	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse:
 		p := dbPath
@@ -144,32 +153,32 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (thermal.Summary
 			p = info.DBPath
 		}
 		if p == "" {
-			return thermal.Summary{}, nil, "", fmt.Errorf("no database path configured for %s", info.Name)
+			return ToolData{}, fmt.Errorf("no database path configured for %s", info.Name)
 		}
 		if _, err := os.Stat(p); os.IsNotExist(err) {
-			return thermal.Summary{}, nil, "", fmt.Errorf("database not found: %s", p)
+			return ToolData{}, fmt.Errorf("database not found: %s", p)
 		}
-		s, d, err := info.Loader(p)
+		s, d, pr, err := info.Loader(p)
 		s.Tool = info.Name
-		return s, d, info.DBPath, err
+		return ToolData{Summary: s, Daily: d, Projects: pr, Path: info.DBPath}, err
 	default:
 		dir := info.DataDir
 		if dbPath != "" {
 			dir = dbPath
 		}
 		if dir == "" {
-			return thermal.Summary{}, nil, "", fmt.Errorf("no data directory configured for %s", info.Name)
+			return ToolData{}, fmt.Errorf("no data directory configured for %s", info.Name)
 		}
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			return thermal.Summary{}, nil, "", fmt.Errorf("data directory not found: %s", dir)
+			return ToolData{}, fmt.Errorf("data directory not found: %s", dir)
 		}
-		s, d, err := info.Loader(dir)
+		s, d, pr, err := info.Loader(dir)
 		s.Tool = info.Name
 		dataPath := filepath.Join(dir, info.DataSubdir)
 		if info.DataSubdir == "" {
 			dataPath = filepath.Join(dir, "history.jsonl")
 		}
-		return s, d, dataPath, err
+		return ToolData{Summary: s, Daily: d, Projects: pr, Path: dataPath}, err
 	}
 }
 

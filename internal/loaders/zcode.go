@@ -16,20 +16,20 @@ import (
 // creation/read) plus provider, model, and agent on every completed request.
 // turn_usage supplies user-visible turn counts for daily rows. The DB records
 // no cost figures, so Cost stays 0.
-func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
 
 	var hasModelUsage bool
 	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='model_usage'`).Scan(&hasModelUsage); err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	if !hasModelUsage {
-		return thermal.Summary{}, nil, fmt.Errorf("zcode: model_usage table not found in %s", dbPath)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("zcode: model_usage table not found in %s", dbPath)
 	}
 
 	var summary thermal.Summary
@@ -50,7 +50,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
 		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 
 	// Longest session duration from the session table when present.
@@ -132,13 +132,13 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		ORDER BY day
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
 
 	daily, err := foldDayModelRows(rows)
 	if err != nil {
-		return thermal.Summary{}, nil, err
+		return thermal.Summary{}, nil, nil, err
 	}
 	for i := range daily {
 		if n, ok := turnsByDay[daily[i].Day]; ok {
@@ -146,5 +146,5 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		}
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

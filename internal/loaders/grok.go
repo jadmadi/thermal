@@ -39,14 +39,14 @@ type grokUsage struct {
 // updates carry usable per-turn usage. summary.json sidecars supply the agent
 // name and session duration. Sessions killed mid-turn never record usage and
 // are invisible, matching upstream reporter behavior.
-func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
 	summary.Tool = "Grok"
 
 	pattern := filepath.Join(dataDir, "sessions", "*", "*", "updates.jsonl")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		return summary, nil, err
+		return summary, nil, nil, err
 	}
 
 	type turnAgg struct {
@@ -262,5 +262,5 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 		summary.AgentBreakdown = agentCounts
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

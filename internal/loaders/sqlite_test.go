@@ -40,7 +40,7 @@ func TestLoadOpenCodeData_PreAggregatedSchema(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestLoadOpenCodeData_ModelColumnShapes(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestLoadOpenCodeData_SessionV2(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestLoadOpenCodeData_SessionV2Only(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadOpenCodeData(dbPath)
+	sum, daily, _, err := LoadOpenCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadOpenCodeData error: %v", err)
 	}
@@ -266,7 +266,7 @@ func TestLoadMiMoCodeData_MessageLevel(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadMiMoCodeData(dbPath)
+	sum, daily, _, err := LoadMiMoCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadMiMoCodeData error: %v", err)
 	}
@@ -324,7 +324,7 @@ func TestLoadDevinData_Schema(t *testing.T) {
 	// Disable global cache directory setting in unit test to force scan
 	t.Setenv("HOME", dir)
 
-	sum, daily, err := LoadDevinData(dbPath)
+	sum, daily, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadDevinData error: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	// Initial scan (populates cache with MaxRowID = 1)
-	sum1, daily1, err := LoadDevinData(dbPath)
+	sum1, daily1, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("initial LoadDevinData error: %v", err)
 	}
@@ -396,7 +396,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	}
 
 	// Second scan (should trigger fast delta scan via row_id > 1)
-	sum2, daily2, err := LoadDevinData(dbPath)
+	sum2, daily2, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("delta LoadDevinData error: %v", err)
 	}
@@ -408,7 +408,7 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 	}
 
 	// Verify exact cache hit after delta scan
-	sum3, _, err := LoadDevinData(dbPath)
+	sum3, _, _, err := LoadDevinData(dbPath)
 	if err != nil {
 		t.Fatalf("cached LoadDevinData error: %v", err)
 	}

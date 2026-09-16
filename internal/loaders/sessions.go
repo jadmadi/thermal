@@ -20,11 +20,11 @@ import (
 // The old loader only counted sessions (1 session = 1 activity unit). This
 // surfaces the real token volume and cost, moving codewhale from Activity
 // Hunters to Token Warriors.
-func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	sessionsDir := filepath.Join(dataDir, "sessions")
 	entries, err := os.ReadDir(sessionsDir)
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot read %s: %w", sessionsDir, err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot read %s: %w", sessionsDir, err)
 	}
 
 	type dayAgg struct {
@@ -128,5 +128,5 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, err
 		summary.AgentBreakdown = modeCounts
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }
