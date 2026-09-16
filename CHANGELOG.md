@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/jadmadi/thermal/compare/v0.5.0...v0.6.0) (2026-09-16)
+
+
+### Features
+
+* add daily, weekly, monthly reports, projects, and models ([#15](https://github.com/jadmadi/thermal/issues/15)) ([2097a62](https://github.com/jadmadi/thermal/commit/2097a62a258fea485abf5cc84b64ede17f764ac8))
+* rank tokens and cost per project across tools ([#18](https://github.com/jadmadi/thermal/issues/18)) ([8eb3c27](https://github.com/jadmadi/thermal/commit/8eb3c278ab091993162a98717511d0c42e808532))
+
 ## [0.5.0](https://github.com/jadmadi/thermal/compare/v0.4.0...v0.5.0) (2026-09-15)
 
 
