@@ -1,5 +1,7 @@
 package thermal
 
+import "time"
+
 type Tool string
 
 const (
@@ -20,12 +22,21 @@ const (
 )
 
 type Options struct {
-	Tool    string
-	DBPath  string
-	Weeks   int
-	JSON    bool
-	NoColor bool
-	Verbose bool
+	Tool        string
+	DBPath      string
+	Weeks       int
+	JSON        bool
+	NoColor     bool
+	Verbose     bool
+	Report      string // "", "daily", "weekly", "monthly"
+	Since       string // YYYY-MM-DD or YYYYMMDD
+	Until       string
+	Last        int
+	Order       string // "asc" or "desc", default "desc"
+	Breakdown   bool
+	StartOfWeek string // sunday..saturday, default sunday
+	Offline     bool   // never fetch pricing, use cache only
+	NoEstimate  bool   // report stored cost only, skip pricing
 }
 
 type Summary struct {
@@ -39,17 +50,42 @@ type Summary struct {
 	Cost             float64 `json:"cost"`
 	LongestSessionMs int64   `json:"longestSessionMs"`
 	// New analytics fields — populated by tools that have them; 0/nil otherwise.
-	LinesAdded       int64             `json:"linesAdded"`
-	LinesDeleted     int64             `json:"linesDeleted"`
-	FilesTouched     int64             `json:"filesTouched"`
-	AgentBreakdown   map[string]int    `json:"agentBreakdown,omitempty"`
-	ModelBreakdown   map[string]int64  `json:"modelBreakdown,omitempty"`
+	LinesAdded     int64            `json:"linesAdded"`
+	LinesDeleted   int64            `json:"linesDeleted"`
+	FilesTouched   int64            `json:"filesTouched"`
+	AgentBreakdown map[string]int   `json:"agentBreakdown,omitempty"`
+	ModelBreakdown map[string]int64 `json:"modelBreakdown,omitempty"`
 }
 
+// ModelTokens holds per-model token counts for a single day. Loaders fill it
+// only when the source records a model per message or session. Cache is the
+// combined cache read plus cache write count.
+type ModelTokens struct {
+	Input     int64 `json:"input,omitempty"`
+	Output    int64 `json:"output,omitempty"`
+	Reasoning int64 `json:"reasoning,omitempty"`
+	Cache     int64 `json:"cache,omitempty"`
+}
+
+// Total returns the sum of every token type.
+func (m ModelTokens) Total() int64 {
+	return m.Input + m.Output + m.Reasoning + m.Cache
+}
+
+// DailyRow is one calendar day of activity for one tool. Tokens is the total
+// across all token types; the type fields are additive and stay zero for
+// activity-only tools. Cost holds cost recorded by the source, never an
+// estimate.
 type DailyRow struct {
-	Day    string `json:"day"`
-	Tokens int64  `json:"tokens"`
-	Turns  int    `json:"turns"`
+	Day       string                 `json:"day"`
+	Tokens    int64                  `json:"tokens"`
+	Turns     int                    `json:"turns"`
+	Input     int64                  `json:"input,omitempty"`
+	Output    int64                  `json:"output,omitempty"`
+	Reasoning int64                  `json:"reasoning,omitempty"`
+	Cache     int64                  `json:"cache,omitempty"`
+	Cost      float64                `json:"cost,omitempty"`
+	Models    map[string]ModelTokens `json:"models,omitempty"`
 }
 
 type DayActivity struct {
@@ -67,4 +103,63 @@ type ToolResult struct {
 	ActiveDays    int
 	TotalActivity int64
 	DataPath      string
+}
+
+// Grain is the bucket size for a period report.
+type Grain string
+
+const (
+	GrainDay   Grain = "daily"
+	GrainWeek  Grain = "weekly"
+	GrainMonth Grain = "monthly"
+)
+
+// AggregateOptions controls period bucketing and row filtering. Since and
+// Until accept YYYY-MM-DD or YYYYMMDD. Last counts whole periods back from
+// Now, matching ccusage semantics: --last 1 is today, this week, or this
+// month. Last cannot be combined with Since or Until. Now defaults to
+// time.Now when zero and exists for deterministic tests.
+type AggregateOptions struct {
+	StartOfWeek time.Weekday
+	Since       string
+	Until       string
+	Last        int
+	Order       string // "asc" or "desc"; anything else means desc
+	Now         time.Time
+}
+
+// Pricer estimates cost for a day that carries no stored cost. Implementations
+// return the estimated USD cost and the names of models they have no price
+// for. A nil Pricer disables estimation.
+type Pricer interface {
+	PriceDay(day DailyRow) (cost float64, missing []string)
+}
+
+// PeriodRow is one bucket of a daily, weekly, or monthly report. Cost is the
+// total of stored and estimated cost. EstimatedCost is the part derived from
+// pricing data and MissingPricing lists models that had no price. Models is
+// the folded per-model token map for the bucket.
+type PeriodRow struct {
+	Period         string                 `json:"period"`
+	Models         map[string]ModelTokens `json:"models,omitempty"`
+	Input          int64                  `json:"inputTokens"`
+	Output         int64                  `json:"outputTokens"`
+	Reasoning      int64                  `json:"reasoningTokens"`
+	Cache          int64                  `json:"cacheTokens"`
+	Tokens         int64                  `json:"totalTokens"`
+	Turns          int                    `json:"turns"`
+	ActiveDays     int                    `json:"activeDays"`
+	StoredCost     float64                `json:"storedCost"`
+	EstimatedCost  float64                `json:"estimatedCost,omitempty"`
+	Cost           float64                `json:"cost"`
+	MissingPricing []string               `json:"missingPricing,omitempty"`
+}
+
+// Report is the payload behind thermal daily, weekly, and monthly. Rows are
+// sorted per the requested order and Totals sums every row.
+type Report struct {
+	Type   string      `json:"type"`
+	Tool   string      `json:"tool,omitempty"`
+	Rows   []PeriodRow `json:"data"`
+	Totals PeriodRow   `json:"totals"`
 }
