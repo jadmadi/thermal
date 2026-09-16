@@ -276,13 +276,24 @@ func readLastTokenBreakdown(rolloutPath string) *tokenBreakdown {
 		}
 
 		tu := ev.Info.TotalTokenUsage
+		// OpenAI-style usage nests cached reads inside input_tokens and
+		// reasoning inside output_tokens, and total_tokens equals
+		// input plus output. Subtract the nested parts so the four token
+		// types are disjoint and add up to the recorded total.
 		last = &tokenBreakdown{
-			input:     tu.InputTokens,
-			output:    tu.OutputTokens,
+			input:     nonNegative(tu.InputTokens - tu.CachedInputTokens),
+			output:    nonNegative(tu.OutputTokens - tu.ReasoningOutputTokens),
 			reasoning: tu.ReasoningOutputTokens,
 			cache:     tu.CachedInputTokens,
 		}
 	}
 
 	return last
+}
+
+func nonNegative(v int64) int64 {
+	if v < 0 {
+		return 0
+	}
+	return v
 }

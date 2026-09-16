@@ -155,8 +155,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 		legacyModel := "''"
 		var hasModelCol bool
 		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModelCol); err == nil && hasModelCol {
-			// Model is a JSON object ({"id": ...}) on v2-era schemas.
-			legacyModel = "COALESCE(json_extract(model, '$.id'), model)"
+			legacyModel = modelIDExpr("model")
 		}
 		rows, err := db.Query(`
 			SELECT
@@ -191,6 +190,14 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	return loadMessageLevelData(db)
 }
 
+// modelIDExpr builds a SQL expression that reads a model id from a column
+// holding either a JSON object ({"id": ...}) or a plain string. json_extract
+// raises an error on non-JSON text, so json_valid gates it, and a NULL column
+// becomes an empty string.
+func modelIDExpr(col string) string {
+	return `COALESCE(json_extract(CASE WHEN json_valid(` + col + `) THEN ` + col + ` END, '$.id'), ` + col + `, '')`
+}
+
 // opencodeV2Source builds a session row source covering session_v2 plus any
 // legacy session rows that were never migrated (ids absent from session_v2).
 // Child/subagent sessions carry their own token totals, so every row counts
@@ -202,7 +209,7 @@ func opencodeV2Source(db *sql.DB) string {
 			tokens_cache_read, tokens_cache_write, cost,
 			summary_additions, summary_deletions, summary_files,
 			agent, time_created, time_updated,`
-	v2Model := "COALESCE(json_extract(model, '$.id'), model)"
+	v2Model := modelIDExpr("model")
 	var hasV2Model bool
 	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session_v2') WHERE name = 'model'`).Scan(&hasV2Model); err == nil && !hasV2Model {
 		v2Model = "''"
@@ -211,9 +218,7 @@ func opencodeV2Source(db *sql.DB) string {
 		FROM session_v2`
 	var colsSeen int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`).Scan(&colsSeen); err == nil && colsSeen == 2 {
-		// The session table stores model as a JSON object ({"id": ...}) on
-		// v2-era schemas, so pull the id out; plain strings fall through.
-		legacyModel := "COALESCE(json_extract(model, '$.id'), model)"
+		legacyModel := modelIDExpr("model")
 		var hasModel bool
 		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModel); err == nil && !hasModel {
 			legacyModel = "''"

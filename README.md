@@ -136,7 +136,7 @@ thermal weekly --order asc --start-of-week monday
 thermal weekly --json
 ```
 
-Cost comes from what each tool records. When a source records none (Claude, Codex, ZCode, Devin, Muse), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate. Models with no price appear in a "No pricing for" line instead of being treated as free.
+Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
 
 ```bash
 # Cached pricing only, never touch the network

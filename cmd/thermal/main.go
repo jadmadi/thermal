@@ -124,9 +124,14 @@ func parseArgs() thermal.Options {
 			if hasInline {
 				return inline, true
 			}
-			if i+1 < len(remaining) && !strings.HasPrefix(remaining[i+1], "-") {
-				i++
-				return remaining[i], true
+			if i+1 < len(remaining) {
+				next := remaining[i+1]
+				// Accept negative numbers so --last -1 reaches validation
+				// instead of being silently ignored.
+				if !strings.HasPrefix(next, "-") || isNegativeNumber(next) {
+					i++
+					return next, true
+				}
 			}
 			return "", false
 		}
@@ -216,6 +221,20 @@ func isReportWord(s string) bool {
 		return true
 	}
 	return false
+}
+
+// isNegativeNumber reports whether s is a negative integer. Numeric flag
+// values like --last -1 must not be mistaken for the next flag.
+func isNegativeNumber(s string) bool {
+	if len(s) < 2 || s[0] != '-' {
+		return false
+	}
+	for _, ch := range s[1:] {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // validateReportFlags rejects report options that would otherwise be silently

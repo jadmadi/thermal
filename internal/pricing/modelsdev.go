@@ -46,7 +46,7 @@ var preferredProviders = []string{
 }
 
 func isPlanProvider(id string) bool {
-	return strings.HasSuffix(id, "-coding-plan") || strings.HasSuffix(id, "-token-plan")
+	return strings.Contains(id, "-plan")
 }
 
 // providerRank orders providers for price selection. Plan providers come last
@@ -106,6 +106,13 @@ func buildCatalog(providers map[string]modelsDevProvider) map[string]Price {
 			}
 			key := strings.ToLower(strings.TrimSpace(mid))
 			if key == "" {
+				continue
+			}
+			// A subscription plan lists zero because usage is bundled, not
+			// free. When a plan is the only source for a model, leave it
+			// unpriceable so reports say so instead of showing $0.
+			if isPlanProvider(pid) && model.Cost.Input == 0 && model.Cost.Output == 0 &&
+				model.Cost.CacheRead == 0 && model.Cost.CacheWrite == 0 {
 				continue
 			}
 			if cur, ok := picked[key]; ok && !betterChoice(rank, pid, cur.rank, cur.provider) {

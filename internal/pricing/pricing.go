@@ -76,25 +76,25 @@ func DefaultOverridesPath() string {
 // Load never blocks the caller and never returns nil.
 func Load(cachePath string, offline bool) *Catalog {
 	cat := readCache(cachePath)
+	if cat == nil {
+		cat = &Catalog{Version: CacheVersion, Models: map[string]Price{}}
+	}
 	applyOverrides(cat, DefaultOverridesPath())
 
-	stale := cat == nil || cat.FetchedAt.IsZero() || time.Since(cat.FetchedAt) > cacheTTL
+	stale := cat.FetchedAt.IsZero() || time.Since(cat.FetchedAt) > cacheTTL
 	if offline || !stale {
-		if cat == nil {
-			cat = &Catalog{Version: CacheVersion, Models: map[string]Price{}}
-		}
 		return cat
 	}
 
 	fresh, err := fetchCatalog()
 	if err != nil {
-		if cat == nil {
-			cat = &Catalog{Version: CacheVersion, Models: map[string]Price{}}
-		}
+		// A failed refresh keeps whatever the cache and overrides provide.
 		return cat
 	}
-	applyOverrides(fresh, DefaultOverridesPath())
+	// Persist before layering overrides so a user price never becomes part of
+	// the shared cache and outlives its own file.
 	writeCache(cachePath, fresh)
+	applyOverrides(fresh, DefaultOverridesPath())
 	return fresh
 }
 
@@ -249,6 +249,9 @@ func (p Price) withFallbacks() Price {
 
 // applyOverrides layers a user price map over the catalog. Overrides win.
 func applyOverrides(cat *Catalog, path string) {
+	if cat == nil {
+		return
+	}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return

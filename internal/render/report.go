@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jadmadi/thermal/internal/thermal"
 )
@@ -160,14 +161,22 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	return sb.String()
 }
 
+// truncate shortens s to width runes, adding an ellipsis when it cuts. Runes
+// rather than bytes so a multi-byte model name is never split.
 func truncate(s string, width int) string {
-	if len(s) <= width {
+	r := []rune(s)
+	if len(r) <= width {
 		return s
 	}
 	if width <= 1 {
-		return s[:width]
+		return string(r[:width])
 	}
-	return s[:width-1] + "…"
+	return string(r[:width-1]) + "…"
+}
+
+// runeLen counts runes for width comparisons in the table.
+func runeLen(s string) int {
+	return utf8.RuneCountInString(s)
 }
 
 func formatCost(v float64) string {
@@ -191,14 +200,14 @@ func modelCell(models map[string]thermal.ModelTokens, width int) string {
 			suffix = fmt.Sprintf(" +%d", len(names)-i-1)
 		}
 		candidate := strings.Join(append(append([]string{}, shown...), n), ", ") + suffix
-		if len(candidate) > width {
+		if runeLen(candidate) > width {
 			if len(shown) == 0 {
-				avail := width - len(suffix) - 1
+				avail := width - runeLen(suffix) - 1
 				if avail < 4 {
 					avail = 4
 				}
-				if len(n) > avail {
-					n = n[:avail] + "…"
+				if runeLen(n) > avail {
+					n = truncate(n, avail)
 				}
 				shown = append(shown, n)
 			}

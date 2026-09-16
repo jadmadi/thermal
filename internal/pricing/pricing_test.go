@@ -177,6 +177,64 @@ func TestBuildCatalogProviderPreference(t *testing.T) {
 	}
 }
 
+func TestBuildCatalogSkipsPlanOnlyModel(t *testing.T) {
+	providers := map[string]modelsDevProvider{
+		"zai-coding-plan": {Models: map[string]modelsDevModel{
+			"glm-5.3-highspeed": {Cost: &modelsDevCost{}},
+		}},
+		"some-plan": {Models: map[string]modelsDevModel{
+			"bundled": {Cost: &modelsDevCost{Input: 0, Output: 0}},
+		}},
+	}
+	cat := buildCatalog(providers)
+	for _, id := range []string{"glm-5.3-highspeed", "bundled"} {
+		if _, ok := cat[id]; ok {
+			t.Errorf("%s must stay unpriceable when only a subscription plan lists it", id)
+		}
+	}
+}
+
+func TestIsPlanProvider(t *testing.T) {
+	for _, id := range []string{
+		"zai-coding-plan", "alibaba-coding-plan-cn", "alibaba-token-plan-cn",
+		"xiaomi-token-plan-ams", "stepfun-step-plan", "stepfun-ai-step-plan",
+	} {
+		if !isPlanProvider(id) {
+			t.Errorf("isPlanProvider(%q) = false, want true", id)
+		}
+	}
+	for _, id := range []string{"openai", "anthropic", "opencode", "zhipuai", "openrouter"} {
+		if isPlanProvider(id) {
+			t.Errorf("isPlanProvider(%q) = true, want false", id)
+		}
+	}
+}
+
+func TestLoadWithMissingCacheAndOverrides(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	overrideDir := filepath.Join(home, ".config", "thermal")
+	if err := os.MkdirAll(overrideDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(overrideDir, "pricing.json"),
+		[]byte(`{"local-model":{"input":1,"output":2}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Cold cache plus an overrides file must not panic and must keep the
+	// override usable. Load never returns nil.
+	cat := Load(filepath.Join(home, ".cache", "thermal", "pricing.json"), true)
+	if cat == nil {
+		t.Fatal("Load returned nil")
+	}
+	p, ok := cat.Lookup("local-model")
+	if !ok || p.Input != 1 || p.Output != 2 {
+		t.Errorf("overrides not applied on a cold cache: %+v, %v", p, ok)
+	}
+}
+
 func TestBuildCatalogAlias(t *testing.T) {
 	providers := map[string]modelsDevProvider{
 		"google": {Models: map[string]modelsDevModel{

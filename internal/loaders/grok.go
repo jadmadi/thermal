@@ -18,8 +18,9 @@ import (
 const ticksToUSD = 1e-10
 
 // grokUsage mirrors the usage object on turn_completed updates. inputTokens
-// follows OpenAI convention and already includes cached reads; reasoning
-// tokens are a subset of output tokens and must not be added on top.
+// follows OpenAI convention and already includes cached reads, and reasoning
+// tokens are a subset of output tokens. The loader subtracts the nested parts
+// so the stored token types are disjoint and add up to the recorded total.
 type grokUsage struct {
 	InputTokens         int64 `json:"inputTokens"`
 	OutputTokens        int64 `json:"outputTokens"`
@@ -131,8 +132,8 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 				}
 				res.turns = append(res.turns, turnAgg{
 					day:        thermal.UnixDay(rec.Timestamp),
-					input:      u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens,
-					output:     u.OutputTokens,
+					input:      nonNegative(u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens),
+					output:     nonNegative(u.OutputTokens - u.ReasoningTokens),
 					reason:     u.ReasoningTokens,
 					cacheRead:  u.CachedReadTokens,
 					cacheWrite: u.CacheCreationTokens,

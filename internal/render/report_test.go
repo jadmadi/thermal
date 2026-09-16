@@ -3,6 +3,7 @@ package render
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/jadmadi/thermal/internal/thermal"
 )
@@ -103,5 +104,17 @@ func TestModelCell(t *testing.T) {
 	}
 	if got := modelCell(nil, 8); got != "—" {
 		t.Errorf("modelCell(nil) = %q, want em dash", got)
+	}
+
+	// Multi-byte model names must never be split mid-rune.
+	wide := map[string]thermal.ModelTokens{
+		"模型名称很长的模型名字": {Input: 100},
+	}
+	out := modelCell(wide, 8)
+	if utf8.RuneCountInString(out) > 8 {
+		t.Errorf("modelCell rune width = %d, want <= 8: %q", utf8.RuneCountInString(out), out)
+	}
+	if !utf8.ValidString(out) {
+		t.Errorf("modelCell produced invalid UTF-8: %q", out)
 	}
 }

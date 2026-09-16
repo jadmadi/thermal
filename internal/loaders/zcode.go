@@ -34,14 +34,15 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 
 	var summary thermal.Summary
 	// ZCode follows the provider convention where input_tokens already
-	// contains cache reads, so InputTokens is reported without the cached
-	// part. Otherwise the type columns double count against LifetimeTokens.
+	// contains cache reads and reasoning is part of output_tokens, so both are
+	// reported without the nested part. Otherwise the type columns double
+	// count against LifetimeTokens.
 	err = db.QueryRow(`
 		SELECT
 			COUNT(DISTINCT session_id),
 			COALESCE(SUM(computed_total_tokens), 0),
 			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
-			COALESCE(SUM(output_tokens), 0),
+			COALESCE(SUM(MAX(output_tokens - reasoning_tokens, 0)), 0),
 			COALESCE(SUM(reasoning_tokens), 0),
 			COALESCE(SUM(cache_creation_input_tokens + cache_read_input_tokens), 0)
 		FROM model_usage
@@ -118,7 +119,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 			date(started_at / 1000, 'unixepoch', 'localtime') AS day,
 			COALESCE(model_id, '') AS model,
 			COALESCE(SUM(MAX(input_tokens - cache_read_input_tokens - cache_creation_input_tokens, 0)), 0),
-			COALESCE(SUM(output_tokens), 0),
+			COALESCE(SUM(MAX(output_tokens - reasoning_tokens, 0)), 0),
 			COALESCE(SUM(reasoning_tokens), 0),
 			COALESCE(SUM(cache_read_input_tokens), 0),
 			COALESCE(SUM(cache_creation_input_tokens), 0),
