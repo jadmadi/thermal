@@ -112,6 +112,48 @@ thermal --verbose
 thermal --no-color
 ```
 
+## Reports
+
+Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:
+
+```bash
+# Last 7 days for OpenCode
+thermal opencode daily --last 7
+
+# Weekly report for every installed tool
+thermal weekly
+
+# A date window (YYYY-MM-DD or YYYYMMDD)
+thermal weekly --since 2026-08-01 --until 2026-08-31
+
+# This month, with a row per model
+thermal monthly --last 1 --breakdown
+
+# Oldest first, weeks starting on Monday
+thermal weekly --order asc --start-of-week monday
+
+# JSON for scripting
+thermal weekly --json
+```
+
+Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
+
+```bash
+# Cached pricing only, never touch the network
+thermal weekly --offline
+
+# Recorded cost only, skip estimates
+thermal weekly --no-estimate
+```
+
+Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hours. Add or correct prices in `~/.config/thermal/pricing.json`:
+
+```json
+{
+  "codex-auto-review": { "input": 1.25, "output": 10 }
+}
+```
+
 ## Example: Leaderboard
 
 ```
@@ -176,6 +218,8 @@ Thermal reads usage data from installed AI coding tools:
 - **Muse**: Reads the `session-index.db` session index (prompt counts, model ids, timestamps). Activity-only: the index carries no token or cost telemetry
 - **Claude**: Scans `projects/*/*.jsonl` for assistant `message.usage` token counts and model ids. No cost fields exist in transcripts
 - **Droid**: Scans `sessions/*/*.jsonl` message records for activity. Session files carry no token or cost telemetry
+
+Loaders also record per-day token types, recorded cost, and the models used, where the source provides them. Period reports fold those day rows.
 
 All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/O (`PRAGMA mmap_size`) and incremental delta-caching. Multi-file directory and JSONL scanners (`Agy`, `command-code`, `codex`) run concurrently via bounded parallel worker pools. Thermal never modifies your data and processes multi-gigabyte historical databases in milliseconds.
 

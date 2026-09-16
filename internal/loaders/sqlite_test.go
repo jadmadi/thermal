@@ -55,6 +55,61 @@ func TestLoadOpenCodeData_PreAggregatedSchema(t *testing.T) {
 	}
 }
 
+func TestLoadOpenCodeData_ModelColumnShapes(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "opencode.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql open error: %v", err)
+	}
+	defer db.Close()
+
+	// session_v2 only, so the legacy union arm is skipped. The model column
+	// holds a JSON object on current schemas, a plain string on some forks,
+	// and NULL on older rows. None of those may fail the loader.
+	_, err = db.Exec(`
+		CREATE TABLE session_v2 (
+			id TEXT PRIMARY KEY, tokens_input INTEGER, tokens_output INTEGER,
+			tokens_reasoning INTEGER, tokens_cache_read INTEGER, tokens_cache_write INTEGER,
+			cost REAL, summary_additions INTEGER, summary_deletions INTEGER,
+			summary_files INTEGER, agent TEXT,
+			time_created INTEGER, time_updated INTEGER, model TEXT
+		);
+	`)
+	if err != nil {
+		t.Fatalf("exec create error: %v", err)
+	}
+	_, err = db.Exec(`
+		INSERT INTO session_v2 VALUES ('s1', 100, 50, 0, 0, 0, 0.01, 0, 0, 0, 'code', 1710504000000, 1710504060000, '{"id":"json-model","providerID":"p"}');
+		INSERT INTO session_v2 VALUES ('s2', 10, 5, 0, 0, 0, 0.01, 0, 0, 0, 'code', 1710504000000, 1710504060000, 'plain-model');
+		INSERT INTO session_v2 VALUES ('s3', 1, 1, 0, 0, 0, 0.01, 0, 0, 0, 'code', 1710504000000, 1710504060000, NULL);
+	`)
+	if err != nil {
+		t.Fatalf("exec insert error: %v", err)
+	}
+
+	sum, daily, err := LoadOpenCodeData(dbPath)
+	if err != nil {
+		t.Fatalf("LoadOpenCodeData error: %v", err)
+	}
+	if sum.Sessions != 3 {
+		t.Errorf("expected sessions=3, got %d", sum.Sessions)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	models := daily[0].Models
+	if _, ok := models["json-model"]; !ok {
+		t.Errorf("expected the JSON model id to be extracted, got %v", models)
+	}
+	if _, ok := models["plain-model"]; !ok {
+		t.Errorf("expected a plain string model to pass through, got %v", models)
+	}
+	if _, ok := models[""]; ok {
+		t.Errorf("a NULL model must not create an empty model key, got %v", models)
+	}
+}
+
 func TestLoadOpenCodeData_SessionV2(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "opencode.db")

@@ -72,15 +72,22 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			agentRows.Close()
 		}
 
-		// Daily aggregation from pre-agg columns (one row per session, far
-		// fewer rows than message-level).
+		// Daily aggregation from pre-agg columns, one row per session and
+		// model, far fewer rows than message-level.
 		rows, err := db.Query(`
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
-				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
-				COUNT(*)
+				COALESCE(model, '') AS model,
+				COALESCE(SUM(tokens_input), 0),
+				COALESCE(SUM(tokens_output), 0),
+				COALESCE(SUM(tokens_reasoning), 0),
+				COALESCE(SUM(tokens_cache_read), 0),
+				COALESCE(SUM(tokens_cache_write), 0),
+				COALESCE(SUM(cost), 0),
+				COUNT(*),
+				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
 			FROM ` + src + `
-			GROUP BY day
+			GROUP BY day, model
 			ORDER BY day
 		`)
 		if err != nil {
@@ -88,13 +95,9 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 		}
 		defer rows.Close()
 
-		var daily []thermal.DailyRow
-		for rows.Next() {
-			var r thermal.DailyRow
-			if err := rows.Scan(&r.Day, &r.Tokens, &r.Turns); err != nil {
-				return thermal.Summary{}, nil, err
-			}
-			daily = append(daily, r)
+		daily, err := foldDayModelRows(rows)
+		if err != nil {
+			return thermal.Summary{}, nil, err
 		}
 		return summary, daily, nil
 	}
@@ -146,15 +149,28 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 			agentRows.Close()
 		}
 
-		// Daily aggregation from session pre-agg columns (one row per session,
-		// far fewer rows than message-level).
+		// Daily aggregation from session pre-agg columns, one row per session
+		// and model, far fewer rows than message-level. Older schemas may lack
+		// the model column; the empty literal keeps the query valid.
+		legacyModel := "''"
+		var hasModelCol bool
+		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModelCol); err == nil && hasModelCol {
+			legacyModel = modelIDExpr("model")
+		}
 		rows, err := db.Query(`
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
-				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
-				COUNT(*)
+				` + legacyModel + ` AS model,
+				COALESCE(SUM(tokens_input), 0),
+				COALESCE(SUM(tokens_output), 0),
+				COALESCE(SUM(tokens_reasoning), 0),
+				COALESCE(SUM(tokens_cache_read), 0),
+				COALESCE(SUM(tokens_cache_write), 0),
+				COALESCE(SUM(cost), 0),
+				COUNT(*),
+				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
 			FROM session
-			GROUP BY day
+			GROUP BY day, model
 			ORDER BY day
 		`)
 		if err != nil {
@@ -162,13 +178,9 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 		}
 		defer rows.Close()
 
-		var daily []thermal.DailyRow
-		for rows.Next() {
-			var r thermal.DailyRow
-			if err := rows.Scan(&r.Day, &r.Tokens, &r.Turns); err != nil {
-				return thermal.Summary{}, nil, err
-			}
-			daily = append(daily, r)
+		daily, err := foldDayModelRows(rows)
+		if err != nil {
+			return thermal.Summary{}, nil, err
 		}
 		return summary, daily, nil
 	}
@@ -178,26 +190,105 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, error
 	return loadMessageLevelData(db)
 }
 
+// modelIDExpr builds a SQL expression that reads a model id from a column
+// holding either a JSON object ({"id": ...}) or a plain string. json_extract
+// raises an error on non-JSON text, so json_valid gates it, and a NULL column
+// becomes an empty string.
+func modelIDExpr(col string) string {
+	return `COALESCE(json_extract(CASE WHEN json_valid(` + col + `) THEN ` + col + ` END, '$.id'), ` + col + `, '')`
+}
+
 // opencodeV2Source builds a session row source covering session_v2 plus any
 // legacy session rows that were never migrated (ids absent from session_v2).
 // Child/subagent sessions carry their own token totals, so every row counts
 // real usage exactly once. The legacy arm is skipped when the session table
-// lacks an id or token columns.
+// lacks an id or token columns, and its model column is replaced with an empty
+// literal when absent so the UNION stays valid.
 func opencodeV2Source(db *sql.DB) string {
 	const cols = `SELECT id, tokens_input, tokens_output, tokens_reasoning,
 			tokens_cache_read, tokens_cache_write, cost,
 			summary_additions, summary_deletions, summary_files,
-			agent, time_created, time_updated`
-	source := cols + `
+			agent, time_created, time_updated,`
+	v2Model := modelIDExpr("model")
+	var hasV2Model bool
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session_v2') WHERE name = 'model'`).Scan(&hasV2Model); err == nil && !hasV2Model {
+		v2Model = "''"
+	}
+	source := cols + ` ` + v2Model + ` AS model
 		FROM session_v2`
 	var colsSeen int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`).Scan(&colsSeen); err == nil && colsSeen == 2 {
+		legacyModel := modelIDExpr("model")
+		var hasModel bool
+		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModel); err == nil && !hasModel {
+			legacyModel = "''"
+		}
 		source += `
-		UNION ALL ` + cols + `
+		UNION ALL ` + cols + ` ` + legacyModel + ` AS model
 		FROM session
 		WHERE id NOT IN (SELECT id FROM session_v2)`
 	}
 	return source
+}
+
+// foldDayModelRows turns a day-and-model aggregation result into DailyRows.
+// Expected column order: day, model, input, output, reasoning, cache read,
+// cache write, cost, turns, total. The explicit total is authoritative because
+// some sources pack tokens differently (ZCode counts cache reads inside input,
+// for example). Cache reads and writes stay separate for pricing, and their
+// sum feeds DailyRow.Cache.
+func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
+	byDay := make(map[string]*thermal.DailyRow)
+	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
+	var order []string
+
+	for rows.Next() {
+		var day, model string
+		var input, output, reasoning, cacheRead, cacheWrite int64
+		var cost float64
+		var turns int
+		var total int64
+		if err := rows.Scan(&day, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
+			return nil, err
+		}
+		row := byDay[day]
+		if row == nil {
+			row = &thermal.DailyRow{Day: day}
+			byDay[day] = row
+			order = append(order, day)
+		}
+		row.Input += input
+		row.Output += output
+		row.Reasoning += reasoning
+		row.Cache += cacheRead + cacheWrite
+		row.Tokens += total
+		row.Cost += cost
+		row.Turns += turns
+
+		if model != "" {
+			if modelsByDay[day] == nil {
+				modelsByDay[day] = make(map[string]thermal.ModelTokens)
+			}
+			modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
+				Input:      input,
+				Output:     output,
+				Reasoning:  reasoning,
+				CacheRead:  cacheRead,
+				CacheWrite: cacheWrite,
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	daily := make([]thermal.DailyRow, 0, len(order))
+	for _, day := range order {
+		row := byDay[day]
+		row.Models = modelsByDay[day]
+		daily = append(daily, *row)
+	}
+	return daily, nil
 }
 
 // LoadMiMoCodeData reads the MiMoCode SQLite DB. MiMo has no pre-aggregated
@@ -276,17 +367,28 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, erro
 	rows, err := db.Query(`
 		SELECT
 			date(time_created / 1000, 'unixepoch', 'localtime') AS day,
-			SUM(
+			COALESCE(
+				NULLIF(NULLIF(json_extract(data, '$.modelID'), ''), '<synthetic>'),
+				NULLIF(json_extract(data, '$.model'), ''),
+				''
+			) AS model,
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.input') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.output') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.reasoning') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(data, '$.cost') AS REAL)), 0),
+			COUNT(*),
+			COALESCE(SUM(
 				COALESCE(CAST(json_extract(data, '$.tokens.input') AS INTEGER), 0) +
 				COALESCE(CAST(json_extract(data, '$.tokens.output') AS INTEGER), 0) +
 				COALESCE(CAST(json_extract(data, '$.tokens.reasoning') AS INTEGER), 0) +
 				COALESCE(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER), 0) +
 				COALESCE(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER), 0)
-			) AS tokens,
-			COUNT(*) AS turns
+			), 0)
 		FROM message
 		WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant'
-		GROUP BY day
+		GROUP BY day, model
 		ORDER BY day
 	`)
 	if err != nil {
@@ -294,13 +396,9 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, erro
 	}
 	defer rows.Close()
 
-	var daily []thermal.DailyRow
-	for rows.Next() {
-		var r thermal.DailyRow
-		if err := rows.Scan(&r.Day, &r.Tokens, &r.Turns); err != nil {
-			return thermal.Summary{}, nil, err
-		}
-		daily = append(daily, r)
+	daily, err := foldDayModelRows(rows)
+	if err != nil {
+		return thermal.Summary{}, nil, err
 	}
 
 	return summary, daily, nil
@@ -355,14 +453,24 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		if err == nil {
 			defer deltaRows.Close()
 			type dayAgg struct {
-				tokens int64
-				turns  int
+				tokens   int64
+				inTok    int64
+				outTok   int64
+				cacheTok int64
+				turns    int
 			}
 			byDay := make(map[string]*dayAgg)
+			modelsByDay := make(map[string]map[string]thermal.ModelTokens)
 			for _, r := range c.Daily {
 				byDay[r.Day] = &dayAgg{
-					tokens: r.Tokens,
-					turns:  r.Turns,
+					tokens:   r.Tokens,
+					inTok:    r.Input,
+					outTok:   r.Output,
+					cacheTok: r.Cache,
+					turns:    r.Turns,
+				}
+				if len(r.Models) > 0 {
+					modelsByDay[r.Day] = r.Models
 				}
 			}
 
@@ -380,6 +488,9 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 				}
 				deltaTok := inTok.Int64 + outTok.Int64 + cacheRead.Int64 + cacheCreate.Int64
 				agg.tokens += deltaTok
+				agg.inTok += inTok.Int64
+				agg.outTok += outTok.Int64
+				agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 				agg.turns++
 
 				c.Summary.InputTokens += inTok.Int64
@@ -394,7 +505,11 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 					daily = append(daily, thermal.DailyRow{
 						Day:    day,
 						Tokens: agg.tokens,
+						Input:  agg.inTok,
+						Output: agg.outTok,
+						Cache:  agg.cacheTok,
 						Turns:  agg.turns,
+						Models: modelsByDay[day],
 					})
 				}
 				sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
@@ -481,6 +596,9 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
 		daily = append(daily, thermal.DailyRow{
 			Day:    day,
 			Tokens: agg.inTok + agg.outTok + agg.cacheTok,
+			Input:  agg.inTok,
+			Output: agg.outTok,
+			Cache:  agg.cacheTok,
 			Turns:  agg.turns,
 		})
 	}

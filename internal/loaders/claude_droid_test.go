@@ -56,8 +56,18 @@ func TestLoadClaudeData_AssistantUsage(t *testing.T) {
 	if daily[0].Tokens != 1550 || daily[0].Turns != 2 {
 		t.Errorf("expected first day 1550/2, got %d/%d", daily[0].Tokens, daily[0].Turns)
 	}
+	if daily[0].Input != 300 || daily[0].Output != 150 || daily[0].Cache != 1100 {
+		t.Errorf("expected first day 300/150/1100 typed tokens, got %d/%d/%d",
+			daily[0].Input, daily[0].Output, daily[0].Cache)
+	}
+	if len(daily[0].Models) != 1 || daily[0].Models["claude-opus"].Input != 300 {
+		t.Errorf("expected per-day model claude-opus with 300 input, got %v", daily[0].Models)
+	}
 	if daily[1].Tokens != 15 || daily[1].Turns != 1 {
 		t.Errorf("expected second day 15/1, got %d/%d", daily[1].Tokens, daily[1].Turns)
+	}
+	if len(daily[1].Models) != 1 || daily[1].Models["claude-sonnet"].Output != 5 {
+		t.Errorf("expected per-day model claude-sonnet with 5 output, got %v", daily[1].Models)
 	}
 }
 

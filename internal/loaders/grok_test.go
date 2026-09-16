@@ -61,13 +61,19 @@ func TestLoadGrokData_TurnCompleted(t *testing.T) {
 	if sum.LifetimeTokens != 692690 { // 442869 + 249821, recorded totals
 		t.Errorf("expected lifetime=692690, got %d", sum.LifetimeTokens)
 	}
-	// Input is uncached: 440742-327040 + 248171-241024 = 120849.
-	if sum.InputTokens != 120849 || sum.OutputTokens != 3777 || sum.ReasoningTokens != 2836 {
-		t.Errorf("expected tokens 120849/3777/2836, got %d/%d/%d",
+	// Input is uncached: 440742-327040 + 248171-241024 = 120849. Output
+	// excludes reasoning, which is a nested subset of it:
+	// (2127-1624) + (1650-1212) = 941.
+	if sum.InputTokens != 120849 || sum.OutputTokens != 941 || sum.ReasoningTokens != 2836 {
+		t.Errorf("expected tokens 120849/941/2836, got %d/%d/%d",
 			sum.InputTokens, sum.OutputTokens, sum.ReasoningTokens)
 	}
 	if sum.CacheTokens != 568064 { // 327040 + 241024
 		t.Errorf("expected cache=568064, got %d", sum.CacheTokens)
+	}
+	if sum.InputTokens+sum.OutputTokens+sum.ReasoningTokens+sum.CacheTokens != sum.LifetimeTokens {
+		t.Errorf("token types must add up to lifetime %d, got %d", sum.LifetimeTokens,
+			sum.InputTokens+sum.OutputTokens+sum.ReasoningTokens+sum.CacheTokens)
 	}
 	// Ticks to USD at 1e-10: 0.338278 + 0.1065012 = 0.4447792.
 	if math.Abs(sum.Cost-0.4447792) > 1e-9 {

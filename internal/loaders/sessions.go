@@ -29,7 +29,9 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, err
 
 	type dayAgg struct {
 		tokens int64
+		cost   float64
 		turns  int
+		models map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -76,11 +78,17 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, err
 
 		agg := byDay[day]
 		if agg == nil {
-			agg = &dayAgg{}
+			agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
 			byDay[day] = agg
 		}
 		agg.tokens += md.TotalTokens
+		agg.cost += md.Cost.SessionCostUSD
 		agg.turns += md.MessageCount
+		if md.Model != "" && md.TotalTokens > 0 {
+			// codewhale records a session total with no token type split, so
+			// the tokens land in the unclassified bucket.
+			agg.models[md.Model] = agg.models[md.Model].Add(thermal.ModelTokens{Unclassified: md.TotalTokens})
+		}
 
 		summary.Sessions++
 		summary.LifetimeTokens += md.TotalTokens
@@ -106,7 +114,9 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, err
 		daily = append(daily, thermal.DailyRow{
 			Day:    day,
 			Tokens: agg.tokens,
+			Cost:   agg.cost,
 			Turns:  agg.turns,
+			Models: agg.models,
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })

@@ -13,20 +13,27 @@ import (
 	"time"
 
 	"github.com/jadmadi/thermal/internal/loaders"
+	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/version"
 )
 
 func usage() string {
-	return `Usage: thermal [options] [command]
+	return `Usage: thermal [options] [tool] [report]
 
 Don't break the streak.
 Terminal usage profile for AI coding tools.
 
 Commands:
+  daily          Daily report (tokens and cost per day)
+  weekly         Weekly report
+  monthly        Monthly report
   upgrade        Self-upgrade to the latest release
   version        Show version info
+
+Reports accept an optional tool: "thermal opencode weekly",
+"thermal weekly" (all tools). Tool defaults to all.
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -44,12 +51,20 @@ Supported tools:
   droid         Droid (Factory)
 
 Options:
-  --tool <name>   Tool to show (default: all)
-  --db <path>     Override database/data path
-  --weeks <num>   Heatmap width in weeks, 4-104 (default: 52)
-  --json          Output JSON instead of dashboard
-  --no-color      Disable ANSI colors
-  -h, --help      Show this help`
+  --tool <name>      Tool to show (default: all)
+  --db <path>        Override database/data path
+  --weeks <num>      Heatmap width in weeks, 4-104 (default: 52)
+  --since <date>     Report window start: YYYY-MM-DD or YYYYMMDD
+  --until <date>     Report window end
+  --last <num>       Last num days/weeks/months; excludes --since/--until
+  --order <dir>      Report sort order: asc or desc (default: desc)
+  --breakdown        Show per-model rows in reports
+  --start-of-week    Week start day, sunday-saturday (default: sunday)
+  --offline          Use cached pricing only, never fetch
+  --no-estimate      Report stored cost only, skip pricing estimates
+  --json             Output JSON instead of dashboard
+  --no-color         Disable ANSI colors
+  -h, --help         Show this help`
 }
 
 func parseArgs() thermal.Options {
@@ -71,6 +86,14 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, agy, command-code, codewhale, zcode, grok, muse, claude, droid")
 	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
+	flag.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
+	flag.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
+	flag.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
+	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
+	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
+	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
+	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
+	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Skip pricing estimates, stored cost only")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
@@ -82,39 +105,106 @@ func parseArgs() thermal.Options {
 	flag.Parse()
 
 	remaining := flag.Args()
-	if len(remaining) > 1 {
-		for i := 1; i < len(remaining); i++ {
-			arg := remaining[i]
-			switch {
-			case arg == "--no-color":
-				opts.NoColor = true
-			case arg == "--json":
-				opts.JSON = true
-			case strings.HasPrefix(arg, "--weeks="):
-				if v, err := strconv.Atoi(strings.TrimPrefix(arg, "--weeks=")); err == nil {
-					opts.Weeks = v
-				}
-			case arg == "--weeks" && i+1 < len(remaining):
-				if v, err := strconv.Atoi(remaining[i+1]); err == nil {
-					opts.Weeks = v
+	var positionals []string
+	for i := 0; i < len(remaining); i++ {
+		arg := remaining[i]
+		if !strings.HasPrefix(arg, "-") {
+			positionals = append(positionals, arg)
+			continue
+		}
+
+		name, inline := arg, ""
+		hasInline := false
+		if eq := strings.Index(arg, "="); eq >= 0 {
+			name = arg[:eq]
+			inline = arg[eq+1:]
+			hasInline = true
+		}
+		takeValue := func() (string, bool) {
+			if hasInline {
+				return inline, true
+			}
+			if i+1 < len(remaining) {
+				next := remaining[i+1]
+				// Accept negative numbers so --last -1 reaches validation
+				// instead of being silently ignored.
+				if !strings.HasPrefix(next, "-") || isNegativeNumber(next) {
 					i++
+					return next, true
 				}
-			case strings.HasPrefix(arg, "--db="):
-				opts.DBPath = strings.TrimPrefix(arg, "--db=")
-			case arg == "--db" && i+1 < len(remaining):
-				opts.DBPath = remaining[i+1]
-				i++
-			case strings.HasPrefix(arg, "--tool="):
-				opts.Tool = strings.TrimPrefix(arg, "--tool=")
-			case arg == "--tool" && i+1 < len(remaining):
-				opts.Tool = remaining[i+1]
-				i++
+			}
+			return "", false
+		}
+
+		switch name {
+		case "--no-color":
+			opts.NoColor = true
+		case "--json":
+			opts.JSON = true
+		case "--breakdown":
+			opts.Breakdown = true
+		case "--offline":
+			opts.Offline = true
+		case "--no-estimate":
+			opts.NoEstimate = true
+		case "--verbose", "-v", "-d":
+			opts.Verbose = true
+		case "--weeks":
+			if v, ok := takeValue(); ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					opts.Weeks = n
+				}
+			}
+		case "--db":
+			if v, ok := takeValue(); ok {
+				opts.DBPath = v
+			}
+		case "--tool":
+			if v, ok := takeValue(); ok {
+				opts.Tool = v
+			}
+		case "--since":
+			if v, ok := takeValue(); ok {
+				opts.Since = v
+			}
+		case "--until":
+			if v, ok := takeValue(); ok {
+				opts.Until = v
+			}
+		case "--last":
+			if v, ok := takeValue(); ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					opts.Last = n
+				}
+			}
+		case "--order":
+			if v, ok := takeValue(); ok {
+				opts.Order = v
+			}
+		case "--start-of-week":
+			if v, ok := takeValue(); ok {
+				opts.StartOfWeek = v
 			}
 		}
 	}
 
-	if len(remaining) > 0 && !strings.HasPrefix(remaining[0], "-") {
-		opts.Tool = remaining[0]
+	if len(positionals) > 0 {
+		if isReportWord(positionals[0]) {
+			opts.Report = strings.ToLower(positionals[0])
+			if len(positionals) > 1 {
+				opts.Tool = positionals[1]
+			}
+		} else {
+			opts.Tool = positionals[0]
+			if len(positionals) > 1 && isReportWord(positionals[1]) {
+				opts.Report = strings.ToLower(positionals[1])
+			}
+		}
+	}
+
+	if err := validateReportFlags(opts); err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+		os.Exit(1)
 	}
 
 	if opts.Weeks < 4 || opts.Weeks > 104 {
@@ -123,6 +213,65 @@ func parseArgs() thermal.Options {
 	}
 
 	return opts
+}
+
+func isReportWord(s string) bool {
+	switch strings.ToLower(s) {
+	case "daily", "weekly", "monthly":
+		return true
+	}
+	return false
+}
+
+// isNegativeNumber reports whether s is a negative integer. Numeric flag
+// values like --last -1 must not be mistaken for the next flag.
+func isNegativeNumber(s string) bool {
+	if len(s) < 2 || s[0] != '-' {
+		return false
+	}
+	for _, ch := range s[1:] {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// validateReportFlags rejects report options that would otherwise be silently
+// ignored, and checks the values themselves.
+func validateReportFlags(opts thermal.Options) error {
+	reportOnlyUsed := opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
+		opts.Breakdown || opts.Offline || opts.NoEstimate ||
+		opts.Order != "desc" || opts.StartOfWeek != "sunday"
+	if opts.Report == "" {
+		if reportOnlyUsed {
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, or monthly")
+		}
+		return nil
+	}
+	if opts.Last < 0 {
+		return fmt.Errorf("--last cannot be negative")
+	}
+	if opts.Last > 0 && (opts.Since != "" || opts.Until != "") {
+		return fmt.Errorf("--last cannot be combined with --since or --until")
+	}
+	if opts.Order != "asc" && opts.Order != "desc" {
+		return fmt.Errorf("--order must be asc or desc")
+	}
+	if _, ok := thermal.ParseWeekday(opts.StartOfWeek); !ok {
+		return fmt.Errorf("--start-of-week must be a weekday name, sunday through saturday")
+	}
+	if opts.Since != "" {
+		if _, ok := thermal.ParseDay(opts.Since); !ok {
+			return fmt.Errorf("--since must be YYYY-MM-DD or YYYYMMDD")
+		}
+	}
+	if opts.Until != "" {
+		if _, ok := thermal.ParseDay(opts.Until); !ok {
+			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD")
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -147,22 +296,18 @@ func main() {
 		return
 	}
 
+	if opts.Report != "" {
+		runReport(opts)
+		return
+	}
+
 	if opts.Tool == "all" {
 		tools := loaders.AllTools()
 		var results []thermal.ToolResult
 
-		toolOrder := []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid}
-		for _, t := range toolOrder {
+		for _, t := range allToolOrder {
 			info := tools[t]
-			if info.DBPath != "" {
-				if _, err := os.Stat(info.DBPath); os.IsNotExist(err) {
-					continue
-				}
-			} else if info.DataDir != "" {
-				if _, err := os.Stat(info.DataDir); os.IsNotExist(err) {
-					continue
-				}
-			} else {
+			if !toolHasData(info) {
 				continue
 			}
 
@@ -276,4 +421,115 @@ func main() {
 	}
 
 	fmt.Print(render.RenderDashboard(info.Name, summary, daily, dataPath, opts.Weeks, opts.NoColor))
+}
+
+// allToolOrder is the stable display order shared by the leaderboard and the
+// all-tools reports.
+var allToolOrder = []thermal.Tool{
+	thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin,
+	thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode,
+	thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid,
+}
+
+// toolHasData reports whether the tool's database or data directory exists.
+func toolHasData(info loaders.ToolInfo) bool {
+	if info.DBPath != "" {
+		_, err := os.Stat(info.DBPath)
+		return err == nil
+	}
+	if info.DataDir != "" {
+		_, err := os.Stat(info.DataDir)
+		return err == nil
+	}
+	return false
+}
+
+// runReport loads one tool or every tool with data, folds the days into the
+// requested grain, and prints a table or JSON.
+func runReport(opts thermal.Options) {
+	grain := thermal.Grain(opts.Report)
+	startOfWeek := time.Sunday
+	if d, ok := thermal.ParseWeekday(opts.StartOfWeek); ok {
+		startOfWeek = d
+	}
+
+	aggOpts := thermal.AggregateOptions{
+		StartOfWeek: startOfWeek,
+		Since:       opts.Since,
+		Until:       opts.Until,
+		Last:        opts.Last,
+		Order:       opts.Order,
+	}
+
+	var days []thermal.DailyRow
+	toolLabel := ""
+
+	if opts.Tool == "all" || opts.Tool == "auto" {
+		tools := loaders.AllTools()
+		for _, t := range allToolOrder {
+			info := tools[t]
+			if !toolHasData(info) {
+				continue
+			}
+			_, daily, _, err := loaders.LoadToolData(t, info, "")
+			if err != nil {
+				if opts.Verbose {
+					fmt.Fprintf(os.Stderr, "thermal: warning: failed loading %s: %v\n", info.Name, err)
+				}
+				continue
+			}
+			days = append(days, daily...)
+		}
+		if len(days) == 0 {
+			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
+			os.Exit(1)
+		}
+	} else {
+		tool, ok := loaders.ResolveTool(opts.Tool)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
+			os.Exit(1)
+		}
+		info := loaders.AllTools()[tool]
+		_, daily, _, err := loaders.LoadToolData(tool, info, opts.DBPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+			os.Exit(1)
+		}
+		days = daily
+		toolLabel = info.Name
+	}
+
+	var pricer thermal.Pricer
+	if !opts.NoEstimate {
+		cat := pricing.Load(pricing.DefaultCachePath(), opts.Offline)
+		if cat.Len() > 0 {
+			pricer = cat
+		} else if opts.Verbose {
+			fmt.Fprintln(os.Stderr, "thermal: warning: no pricing data available; showing stored cost only")
+		}
+	}
+
+	rep := thermal.Aggregate(days, grain, aggOpts, pricer)
+	rep.Tool = toolLabel
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.Report
+			GeneratedAt string `json:"generatedAt"`
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(jsonReport{
+			Report:      rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	if opts.Breakdown {
+		fmt.Print(render.RenderReportBreakdown(rep, opts.NoColor))
+		return
+	}
+	fmt.Print(render.RenderReport(rep, opts.NoColor))
 }

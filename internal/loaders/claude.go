@@ -30,11 +30,12 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 	}
 
 	type msgAgg struct {
-		day    string
-		input  int64
-		output int64
-		cache  int64
-		model  string
+		day        string
+		input      int64
+		output     int64
+		cacheRead  int64
+		cacheWrite int64
+		model      string
 	}
 	type fileResult struct {
 		msgs     []msgAgg
@@ -104,11 +105,12 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 					continue
 				}
 				res.msgs = append(res.msgs, msgAgg{
-					day:    day,
-					input:  rec.Message.Usage.InputTokens,
-					output: rec.Message.Usage.OutputTokens,
-					cache:  rec.Message.Usage.CacheReadInputTokens + rec.Message.Usage.CacheCreationInputTokens,
-					model:  rec.Message.Model,
+					day:        day,
+					input:      rec.Message.Usage.InputTokens,
+					output:     rec.Message.Usage.OutputTokens,
+					cacheRead:  rec.Message.Usage.CacheReadInputTokens,
+					cacheWrite: rec.Message.Usage.CacheCreationInputTokens,
+					model:      rec.Message.Model,
 				})
 			}
 			f.Close()
@@ -126,8 +128,10 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 	close(results)
 
 	type dayAgg struct {
-		tokens int64
-		turns  int
+		input, output         int64
+		cacheRead, cacheWrite int64
+		turns                 int
+		models                map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -143,24 +147,43 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, error)
 		for _, m := range res.msgs {
 			summary.InputTokens += m.input
 			summary.OutputTokens += m.output
-			summary.CacheTokens += m.cache
-			summary.LifetimeTokens += m.input + m.output + m.cache
+			summary.CacheTokens += m.cacheRead + m.cacheWrite
+			summary.LifetimeTokens += m.input + m.output + m.cacheRead + m.cacheWrite
 			if m.model != "" {
 				modelCounts[m.model]++
 			}
 			agg := byDay[m.day]
 			if agg == nil {
-				agg = &dayAgg{}
+				agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
 				byDay[m.day] = agg
 			}
-			agg.tokens += m.input + m.output + m.cache
+			agg.input += m.input
+			agg.output += m.output
+			agg.cacheRead += m.cacheRead
+			agg.cacheWrite += m.cacheWrite
 			agg.turns++
+			if m.model != "" && (m.input+m.output+m.cacheRead+m.cacheWrite) > 0 {
+				agg.models[m.model] = agg.models[m.model].Add(thermal.ModelTokens{
+					Input:      m.input,
+					Output:     m.output,
+					CacheRead:  m.cacheRead,
+					CacheWrite: m.cacheWrite,
+				})
+			}
 		}
 	}
 
 	var daily []thermal.DailyRow
 	for day, agg := range byDay {
-		daily = append(daily, thermal.DailyRow{Day: day, Tokens: agg.tokens, Turns: agg.turns})
+		daily = append(daily, thermal.DailyRow{
+			Day:    day,
+			Tokens: agg.input + agg.output + agg.cacheRead + agg.cacheWrite,
+			Input:  agg.input,
+			Output: agg.output,
+			Cache:  agg.cacheRead + agg.cacheWrite,
+			Turns:  agg.turns,
+			Models: agg.models,
+		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 

@@ -18,8 +18,9 @@ import (
 const ticksToUSD = 1e-10
 
 // grokUsage mirrors the usage object on turn_completed updates. inputTokens
-// follows OpenAI convention and already includes cached reads; reasoning
-// tokens are a subset of output tokens and must not be added on top.
+// follows OpenAI convention and already includes cached reads, and reasoning
+// tokens are a subset of output tokens. The loader subtracts the nested parts
+// so the stored token types are disjoint and add up to the recorded total.
 type grokUsage struct {
 	InputTokens         int64 `json:"inputTokens"`
 	OutputTokens        int64 `json:"outputTokens"`
@@ -49,16 +50,17 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 	}
 
 	type turnAgg struct {
-		day     string
-		input   int64
-		output  int64
-		reason  int64
-		cache   int64
-		total   int64
-		cost    float64
-		models  map[string]int64
-		firstTs int64
-		lastTs  int64
+		day        string
+		input      int64
+		output     int64
+		reason     int64
+		cacheRead  int64
+		cacheWrite int64
+		total      int64
+		cost       float64
+		models     map[string]int64
+		firstTs    int64
+		lastTs     int64
 	}
 	type fileResult struct {
 		sessionID string
@@ -129,16 +131,17 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 					}
 				}
 				res.turns = append(res.turns, turnAgg{
-					day:     thermal.UnixDay(rec.Timestamp),
-					input:   u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens,
-					output:  u.OutputTokens,
-					reason:  u.ReasoningTokens,
-					cache:   u.CachedReadTokens + u.CacheCreationTokens,
-					total:   total,
-					cost:    float64(u.CostUsdTicks) * ticksToUSD,
-					models:  models,
-					firstTs: rec.Timestamp,
-					lastTs:  rec.Timestamp,
+					day:        thermal.UnixDay(rec.Timestamp),
+					input:      nonNegative(u.InputTokens - u.CachedReadTokens - u.CacheCreationTokens),
+					output:     nonNegative(u.OutputTokens - u.ReasoningTokens),
+					reason:     u.ReasoningTokens,
+					cacheRead:  u.CachedReadTokens,
+					cacheWrite: u.CacheCreationTokens,
+					total:      total,
+					cost:       float64(u.CostUsdTicks) * ticksToUSD,
+					models:     models,
+					firstTs:    rec.Timestamp,
+					lastTs:     rec.Timestamp,
 				})
 			}
 			f.Close()
@@ -172,8 +175,15 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 	close(results)
 
 	type dayAgg struct {
-		tokens int64
-		turns  int
+		tokens     int64
+		input      int64
+		output     int64
+		reason     int64
+		cacheRead  int64
+		cacheWrite int64
+		cost       float64
+		turns      int
+		models     map[string]thermal.ModelTokens
 	}
 	byDay := make(map[string]*dayAgg)
 	modelCounts := make(map[string]int64)
@@ -194,7 +204,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			summary.InputTokens += t.input
 			summary.OutputTokens += t.output
 			summary.ReasoningTokens += t.reason
-			summary.CacheTokens += t.cache
+			summary.CacheTokens += t.cacheRead + t.cacheWrite
 			summary.LifetimeTokens += t.total
 			summary.Cost += t.cost
 			for name, n := range t.models {
@@ -202,17 +212,46 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
 			}
 			agg := byDay[t.day]
 			if agg == nil {
-				agg = &dayAgg{}
+				agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
 				byDay[t.day] = agg
 			}
 			agg.tokens += t.total
+			agg.input += t.input
+			agg.output += t.output
+			agg.reason += t.reason
+			agg.cacheRead += t.cacheRead
+			agg.cacheWrite += t.cacheWrite
+			agg.cost += t.cost
 			agg.turns++
+			// modelUsage carries call counts, not tokens. Attribute the turn's
+			// tokens only when the turn used exactly one model.
+			if len(t.models) == 1 {
+				for name := range t.models {
+					agg.models[name] = agg.models[name].Add(thermal.ModelTokens{
+						Input:      t.input,
+						Output:     t.output,
+						Reasoning:  t.reason,
+						CacheRead:  t.cacheRead,
+						CacheWrite: t.cacheWrite,
+					})
+				}
+			}
 		}
 	}
 
 	var daily []thermal.DailyRow
 	for day, agg := range byDay {
-		daily = append(daily, thermal.DailyRow{Day: day, Tokens: agg.tokens, Turns: agg.turns})
+		daily = append(daily, thermal.DailyRow{
+			Day:       day,
+			Tokens:    agg.tokens,
+			Input:     agg.input,
+			Output:    agg.output,
+			Reasoning: agg.reason,
+			Cache:     agg.cacheRead + agg.cacheWrite,
+			Cost:      agg.cost,
+			Turns:     agg.turns,
+			Models:    agg.models,
+		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
