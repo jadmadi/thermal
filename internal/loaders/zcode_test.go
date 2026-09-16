@@ -58,7 +58,7 @@ func TestLoadZCodeData_ModelUsage(t *testing.T) {
 		t.Fatalf("exec insert error: %v", err)
 	}
 
-	sum, daily, err := LoadZCodeData(dbPath)
+	sum, daily, _, err := LoadZCodeData(dbPath)
 	if err != nil {
 		t.Fatalf("LoadZCodeData error: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestLoadZCodeData_MissingModelUsage(t *testing.T) {
 	if _, err := db.Exec(`CREATE TABLE session (id TEXT PRIMARY KEY);`); err != nil {
 		t.Fatalf("exec create error: %v", err)
 	}
-	if _, _, err := LoadZCodeData(dbPath); err == nil {
+	if _, _, _, err := LoadZCodeData(dbPath); err == nil {
 		t.Errorf("expected error for DB without model_usage table, got nil")
 	}
 }

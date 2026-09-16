@@ -183,3 +183,58 @@ type Report struct {
 	Rows   []PeriodRow `json:"data"`
 	Totals PeriodRow   `json:"totals"`
 }
+
+// ProjectDay is one day of usage attributed to one project directory. Loaders
+// emit these for tools that record where a session ran. Tokens is the total
+// recorded by the source; the type fields are disjoint and add up to it.
+type ProjectDay struct {
+	Project    string                 `json:"project"`
+	Day        string                 `json:"day"`
+	Tokens     int64                  `json:"tokens"`
+	Input      int64                  `json:"input,omitempty"`
+	Output     int64                  `json:"output,omitempty"`
+	Reasoning  int64                  `json:"reasoning,omitempty"`
+	CacheRead  int64                  `json:"cacheRead,omitempty"`
+	CacheWrite int64                  `json:"cacheWrite,omitempty"`
+	Cost       float64                `json:"cost,omitempty"`
+	Turns      int                    `json:"turns,omitempty"`
+	Models     map[string]ModelTokens `json:"models,omitempty"`
+}
+
+// ProjectRow aggregates usage for one project across tools and time.
+type ProjectRow struct {
+	Project        string                 `json:"project"`
+	Tools          []string               `json:"tools,omitempty"`
+	Input          int64                  `json:"inputTokens"`
+	Output         int64                  `json:"outputTokens"`
+	Reasoning      int64                  `json:"reasoningTokens"`
+	Cache          int64                  `json:"cacheTokens"`
+	Tokens         int64                  `json:"totalTokens"`
+	Turns          int                    `json:"turns"`
+	ActiveDays     int                    `json:"activeDays"`
+	FirstDay       string                 `json:"firstDay,omitempty"`
+	LastDay        string                 `json:"lastDay,omitempty"`
+	StoredCost     float64                `json:"storedCost"`
+	EstimatedCost  float64                `json:"estimatedCost,omitempty"`
+	Cost           float64                `json:"cost"`
+	MissingPricing []string               `json:"missingPricing,omitempty"`
+	Models         map[string]ModelTokens `json:"models,omitempty"`
+}
+
+// ProjectReport is the payload behind thermal projects.
+type ProjectReport struct {
+	Type   string       `json:"type"`
+	Rows   []ProjectRow `json:"data"`
+	Totals ProjectRow   `json:"totals"`
+}
+
+// ProjectOptions filters and sorts a project report. Last counts calendar days
+// back from Now, matching the report commands. Order sorts by total tokens:
+// anything other than "asc" means largest first.
+type ProjectOptions struct {
+	Since string
+	Until string
+	Last  int
+	Order string
+	Now   time.Time
+}

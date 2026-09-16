@@ -51,7 +51,7 @@ func TestLoadGrokData_TurnCompleted(t *testing.T) {
 			`{"timestamp":1785012000,"method":"_x.ai/session/update","params":{"sessionId":"s2","update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":248171,"outputTokens":1650,"totalTokens":249821,"cachedReadTokens":241024,"reasoningTokens":1212,"modelCalls":4,"costUsdTicks":1065012000,"modelUsage":{"grok-4.5-build":{"modelCalls":4}}}}}}`,
 		})
 
-	sum, daily, err := LoadGrokData(dir)
+	sum, daily, _, err := LoadGrokData(dir)
 	if err != nil {
 		t.Fatalf("LoadGrokData error: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestLoadGrokData_TurnCompleted(t *testing.T) {
 
 func TestLoadGrokData_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	sum, daily, err := LoadGrokData(dir)
+	sum, daily, _, err := LoadGrokData(dir)
 	if err != nil {
 		t.Fatalf("LoadGrokData error: %v", err)
 	}

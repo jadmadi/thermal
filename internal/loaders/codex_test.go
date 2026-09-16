@@ -42,7 +42,7 @@ func TestLoadCodexData_NestedTokenTypes(t *testing.T) {
 	}
 	db.Close()
 
-	sum, daily, err := LoadCodexData(dir)
+	sum, daily, _, err := LoadCodexData(dir)
 	if err != nil {
 		t.Fatalf("LoadCodexData error: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestLoadCodexData_ReconciliationAndRollouts(t *testing.T) {
 	}
 	db.Close()
 
-	sum, daily, err := LoadCodexData(dir)
+	sum, daily, _, err := LoadCodexData(dir)
 	if err != nil {
 		t.Fatalf("LoadCodexData error: %v", err)
 	}

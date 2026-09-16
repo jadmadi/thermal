@@ -18,7 +18,7 @@ import (
 
 // LoadCodexData reads Codex session data from state_5.sqlite primary source
 // or falls back to history.jsonl if stateDB doesn't exist.
-func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) {
+func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	stateDB := filepath.Join(dataDir, "state_5.sqlite")
 	if _, err := os.Stat(stateDB); err == nil {
 		return loadCodexFromStateDB(dataDir, stateDB)
@@ -26,10 +26,10 @@ func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, error) 
 	return loadJsonlData(dataDir, "ts", false)
 }
 
-func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.DailyRow, error) {
+func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
 	}
 	defer db.Close()
 
@@ -41,7 +41,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		ORDER BY created_at
 	`)
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot query threads: %w", err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot query threads: %w", err)
 	}
 	defer rows.Close()
 
@@ -218,7 +218,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }
 
 type tokenBreakdown struct {

@@ -13,11 +13,11 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
-func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, error) {
+func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	historyPath := filepath.Join(dataDir, "history.jsonl")
 	f, err := os.Open(historyPath)
 	if err != nil {
-		return thermal.Summary{}, nil, fmt.Errorf("cannot open %s: %w", historyPath, err)
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", historyPath, err)
 	}
 	defer f.Close()
 
@@ -70,5 +70,5 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 		LifetimeTokens: totalCommands,
 	}
 
-	return summary, daily, nil
+	return summary, daily, nil, nil
 }

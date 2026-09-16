@@ -29,7 +29,7 @@ func TestLoadClaudeData_AssistantUsage(t *testing.T) {
 		t.Fatalf("write error: %v", err)
 	}
 
-	sum, daily, err := LoadClaudeData(dir)
+	sum, daily, _, err := LoadClaudeData(dir)
 	if err != nil {
 		t.Fatalf("LoadClaudeData error: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestLoadDroidData_Messages(t *testing.T) {
 		t.Fatalf("write error: %v", err)
 	}
 
-	sum, daily, err := LoadDroidData(dir)
+	sum, daily, _, err := LoadDroidData(dir)
 	if err != nil {
 		t.Fatalf("LoadDroidData error: %v", err)
 	}
