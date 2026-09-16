@@ -55,6 +55,31 @@ func TestProjectKeyGitRoot(t *testing.T) {
 	}
 }
 
+func TestProjectKeyResolvesSymlinks(t *testing.T) {
+	root := t.TempDir()
+	repo := filepath.Join(root, "real", "repo")
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".git", "HEAD"), []byte("ref: refs/heads/main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(filepath.Join(root, "real"), link); err != nil {
+		t.Fatal(err)
+	}
+
+	realKey := ProjectKey(repo)
+	linkedKey := ProjectKey(filepath.Join(link, "repo"))
+	if realKey != linkedKey {
+		t.Errorf("symlinked path key %q != real path key %q", linkedKey, realKey)
+	}
+	if realKey != repo {
+		t.Errorf("key = %q, want the repository root %q", realKey, repo)
+	}
+}
+
 func TestProjectKeyFallback(t *testing.T) {
 	root := t.TempDir()
 	plain := filepath.Join(root, "plain", "nested")
