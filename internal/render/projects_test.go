@@ -40,9 +40,9 @@ func sampleProjectReport() thermal.ProjectReport {
 }
 
 func TestRenderProjects_Table(t *testing.T) {
-	out := RenderProjects(sampleProjectReport(), true)
+	out := RenderProjects(sampleProjectReport(), 0, true)
 	for _, want := range []string{
-		"projects", "Project", "Tools", "Tokens", "/home/user/projects/alpha",
+		"projects", "Project", "Tools", "Tokens", "alpha", "beta",
 		"Claude,OpenCode", "Total", "$12.50", "2026-09-16",
 		"estimated from pricing", "No pricing for: mystery-model",
 	} {
@@ -53,7 +53,7 @@ func TestRenderProjects_Table(t *testing.T) {
 }
 
 func TestRenderProjects_Empty(t *testing.T) {
-	out := RenderProjects(thermal.ProjectReport{Type: "projects"}, true)
+	out := RenderProjects(thermal.ProjectReport{Type: "projects"}, 0, true)
 	if !strings.Contains(out, "No project activity") {
 		t.Errorf("expected empty notice:\n%s", out)
 	}
@@ -61,7 +61,7 @@ func TestRenderProjects_Empty(t *testing.T) {
 
 func TestRenderProjects_CapsRows(t *testing.T) {
 	rep := thermal.ProjectReport{Type: "projects"}
-	for i := 0; i < defaultTop+3; i++ {
+	for i := 0; i < 12; i++ {
 		rep.Rows = append(rep.Rows, thermal.ProjectRow{
 			Project: fmt.Sprintf("/repo/p%02d", i),
 			Tools:   []string{"OpenCode"},
@@ -69,12 +69,48 @@ func TestRenderProjects_CapsRows(t *testing.T) {
 			LastDay: "2026-09-16",
 		})
 	}
-	out := RenderProjects(rep, true)
-	if !strings.Contains(out, "and 3 more") {
-		t.Errorf("expected the overflow line:\n%s", out)
+
+	// No limit prints every row.
+	all := RenderProjects(rep, 0, true)
+	if strings.Contains(all, "more") {
+		t.Errorf("unlimited output should not summarise rows:\n%s", all)
 	}
-	if strings.Contains(out, "/repo/p22") {
-		t.Errorf("rows past the cap should not print:\n%s", out)
+	if !strings.Contains(all, "p11") {
+		t.Errorf("expected the last row to print:\n%s", all)
+	}
+
+	// A limit prints the head and summarises the rest.
+	capped := RenderProjects(rep, 5, true)
+	if !strings.Contains(capped, "and 7 more") {
+		t.Errorf("expected the overflow line:\n%s", capped)
+	}
+	if strings.Contains(capped, "p05") {
+		t.Errorf("rows past the limit should not print:\n%s", capped)
+	}
+}
+
+func TestDisplayNames(t *testing.T) {
+	rows := []thermal.ProjectRow{
+		{Project: "/home/user/projects/waqftech/mahak-bench"},
+		{Project: "/mnt/Jad/github/lab/sila"},
+		{Project: "/home/user/work/other/mahak-bench"},
+		{Project: "/srv/app"},
+	}
+	names := displayNames(rows)
+
+	if names["/home/user/projects/waqftech/mahak-bench"] != "mahak-bench (waqftech)" {
+		t.Errorf("colliding name should carry a parent hint, got %q",
+			names["/home/user/projects/waqftech/mahak-bench"])
+	}
+	if names["/home/user/work/other/mahak-bench"] != "mahak-bench (other)" {
+		t.Errorf("colliding name should carry a parent hint, got %q",
+			names["/home/user/work/other/mahak-bench"])
+	}
+	if names["/srv/app"] != "app" {
+		t.Errorf("unique name = %q, want app", names["/srv/app"])
+	}
+	if names["/mnt/Jad/github/lab/sila"] != "sila" {
+		t.Errorf("unique name = %q, want sila", names["/mnt/Jad/github/lab/sila"])
 	}
 }
 
@@ -95,12 +131,10 @@ func TestToolsCell(t *testing.T) {
 	}
 }
 
-func TestProjectLabel(t *testing.T) {
-	got := projectLabel("/home/user/very/deep/path/to/project-name", 20)
-	if runeLen(got) > 20 {
-		t.Errorf("projectLabel width = %d, want <= 20: %q", runeLen(got), got)
-	}
-	if !strings.HasSuffix(got, "project-name") {
-		t.Errorf("projectLabel = %q, want the tail preserved", got)
+func TestProjectLabelFallsBackToTail(t *testing.T) {
+	names := displayNames([]thermal.ProjectRow{{Project: "/home/user/very/deep/path/to/project-name"}})
+	got := names["/home/user/very/deep/path/to/project-name"]
+	if got != "project-name" {
+		t.Errorf("displayNames = %q, want the last segment", got)
 	}
 }

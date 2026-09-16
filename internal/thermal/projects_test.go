@@ -121,6 +121,44 @@ func TestAggregateProjectsMergesToolsAndWindows(t *testing.T) {
 	}
 }
 
+func TestAggregateProjectsSortKeys(t *testing.T) {
+	days := []ProjectDay{
+		{Project: "/repo/big", Day: "2026-09-01", Tokens: 5000, Turns: 1, Cost: 1.0},
+		{Project: "/repo/expensive", Day: "2026-09-16", Tokens: 100, Turns: 1, Cost: 90.0},
+		{Project: "/repo/steady", Day: "2026-09-10", Tokens: 900, Turns: 1, Cost: 5.0},
+	}
+	// Give the steady project more active days than the others.
+	days = append(days,
+		ProjectDay{Project: "/repo/steady", Day: "2026-09-11", Tokens: 100, Turns: 1},
+		ProjectDay{Project: "/repo/steady", Day: "2026-09-12", Tokens: 100, Turns: 1},
+	)
+
+	cost := AggregateProjects(days, ProjectOptions{Sort: "cost"}, nil)
+	if cost.Rows[0].Project != "/repo/expensive" {
+		t.Errorf("cost sort first = %s, want /repo/expensive", cost.Rows[0].Project)
+	}
+
+	days2 := AggregateProjects(days, ProjectOptions{Sort: "days"}, nil)
+	if days2.Rows[0].Project != "/repo/steady" {
+		t.Errorf("days sort first = %s, want /repo/steady", days2.Rows[0].Project)
+	}
+
+	recent := AggregateProjects(days, ProjectOptions{Sort: "recent"}, nil)
+	if recent.Rows[0].Project != "/repo/expensive" {
+		t.Errorf("recent sort first = %s, want the newest day", recent.Rows[0].Project)
+	}
+
+	tokens := AggregateProjects(days, ProjectOptions{}, nil)
+	if tokens.Rows[0].Project != "/repo/big" {
+		t.Errorf("default sort first = %s, want the largest token total", tokens.Rows[0].Project)
+	}
+
+	asc := AggregateProjects(days, ProjectOptions{Sort: "cost", Order: "asc"}, nil)
+	if asc.Rows[0].Project != "/repo/big" {
+		t.Errorf("ascending cost first = %s, want the cheapest", asc.Rows[0].Project)
+	}
+}
+
 func TestAggregateProjectsLastAndPricing(t *testing.T) {
 	now := time.Date(2026, 9, 16, 12, 0, 0, 0, time.Local)
 	days := []ProjectDay{

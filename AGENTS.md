@@ -66,7 +66,7 @@ thermal/
 3. **Color & Verbosity Flags**:
    * `--no-color`: Strips all ANSI escape sequences. Always check `colorEnabled` before emitting color codes.
    * `--verbose`: Outputs non-fatal loader diagnostic warnings (`database locked`, `missing directory`) exclusively to `os.Stderr`. Never pollute `os.Stdout` or JSON output (`--json`) with warnings.
-4. **Report and Project Commands**: `daily`, `weekly`, `monthly`, and `projects` are reserved positional words (`thermal opencode weekly`, `thermal projects`). Report options (`--since`, `--until`, `--last`, `--order`, `--breakdown`, `--start-of-week`, `--offline`, `--no-estimate`) must error when no report word is present instead of being silently ignored. Cost always comes from the source when recorded; `internal/pricing` estimates only days with no recorded cost and lists unpriced models in the footer rather than treating them as free. Project rows merge across tools by project key.
+4. **Report and Project Commands**: `daily`, `weekly`, `monthly`, and `projects` are reserved positional words (`thermal opencode weekly`, `thermal projects`). Report options (`--since`, `--until`, `--last`, `--order`, `--breakdown`, `--start-of-week`, `--offline`, `--no-estimate`) must error when no report word is present instead of being silently ignored, and `--sort`/`--top` must error outside `projects`. Cost always comes from the source when recorded; `internal/pricing` estimates only days with no recorded cost and lists unpriced models in the footer rather than treating them as free. Project rows merge across tools by project key, and the table prints every row unless `--top` limits it.
 
 ---
 
