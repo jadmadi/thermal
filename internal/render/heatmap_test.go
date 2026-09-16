@@ -1,9 +1,9 @@
 package render
 
 import (
-	"github.com/jadmadi/thermal/internal/thermal"
 	"strings"
 	"testing"
+	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func TestRenderHeatmap_Dimensions(t *testing.T) {
