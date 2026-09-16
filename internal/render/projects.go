@@ -10,7 +10,7 @@ import (
 
 const (
 	projectWidth = 34
-	toolsWidth   = 12
+	toolsWidth   = 16
 	daysWidth    = 4
 	lastWidth    = 10
 	rankWidth    = 3
@@ -80,7 +80,7 @@ func RenderProjects(rep thermal.ProjectReport, noColor bool) string {
 	cells := []string{
 		thermal.PadRight("", rankWidth),
 		thermal.PadRight("Total", projectWidth),
-		thermal.PadRight(strings.Join(totals.Tools, ","), toolsWidth),
+		thermal.PadRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
 		thermal.PadLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
 		thermal.PadLeft(formatCostOrDash(totals.Cost), numberWidth),
 		thermal.PadLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
@@ -114,7 +114,7 @@ func printProjectRow(sb *strings.Builder, rank int, row thermal.ProjectRow, widt
 	cells := []string{
 		thermal.PadLeft(fmt.Sprintf("%d.", rank), widths[0]),
 		thermal.PadRight(projectLabel(row.Project, widths[1]), widths[1]),
-		thermal.PadRight(truncate(strings.Join(row.Tools, ","), widths[2]), widths[2]),
+		thermal.PadRight(toolsCell(row.Tools, widths[2]), widths[2]),
 		thermal.PadLeft(thermal.CompactNumber(row.Tokens), widths[3]),
 		thermal.PadLeft(formatCostOrDash(row.Cost), widths[4]),
 		thermal.PadLeft(fmt.Sprintf("%d", row.ActiveDays), widths[5]),
@@ -138,6 +138,34 @@ func formatCostOrDash(v float64) string {
 		return "—"
 	}
 	return formatCost(v)
+}
+
+// toolsCell renders contributing tool names in a fixed-width cell, dropping
+// the tail and adding a count when the list does not fit.
+func toolsCell(tools []string, width int) string {
+	if len(tools) == 0 {
+		return "—"
+	}
+	shown := make([]string, 0, len(tools))
+	for i, t := range tools {
+		suffix := ""
+		if i < len(tools)-1 {
+			suffix = fmt.Sprintf(" +%d", len(tools)-i-1)
+		}
+		candidate := strings.Join(append(append([]string{}, shown...), t), ",") + suffix
+		if runeLen(candidate) > width {
+			if len(shown) == 0 {
+				shown = append(shown, truncate(t, width))
+			}
+			break
+		}
+		shown = append(shown, t)
+	}
+	cell := strings.Join(shown, ",")
+	if used := len(shown); used < len(tools) {
+		cell += fmt.Sprintf(" +%d", len(tools)-used)
+	}
+	return cell
 }
 
 // projectLabel shortens a project path for the table. The home directory

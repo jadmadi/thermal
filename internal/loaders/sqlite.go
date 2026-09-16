@@ -72,11 +72,12 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 			agentRows.Close()
 		}
 
-		// Daily aggregation from pre-agg columns, one row per session and
-		// model, far fewer rows than message-level.
+		// Daily aggregation from pre-agg columns, one row per session,
+		// project, and model, far fewer rows than message-level.
 		rows, err := db.Query(`
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
+				project,
 				COALESCE(model, '') AS model,
 				COALESCE(SUM(tokens_input), 0),
 				COALESCE(SUM(tokens_output), 0),
@@ -87,7 +88,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
 			FROM ` + src + `
-			GROUP BY day, model
+			GROUP BY day, project, model
 			ORDER BY day
 		`)
 		if err != nil {
@@ -95,11 +96,11 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 		}
 		defer rows.Close()
 
-		daily, err := foldDayModelRows(rows)
+		daily, projects, err := foldDayModelProjectRows(rows)
 		if err != nil {
 			return thermal.Summary{}, nil, nil, err
 		}
-		return summary, daily, nil, nil
+		return summary, daily, projects, nil
 	}
 
 	// Check whether the session table has the pre-agg token columns (newer
@@ -149,17 +150,18 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 			agentRows.Close()
 		}
 
-		// Daily aggregation from session pre-agg columns, one row per session
-		// and model, far fewer rows than message-level. Older schemas may lack
-		// the model column; the empty literal keeps the query valid.
+		// Daily aggregation from session pre-agg columns, one row per session,
+		// project, and model, far fewer rows than message-level. Older schemas
+		// may lack the model or directory columns; empty literals keep the
+		// query valid.
 		legacyModel := "''"
-		var hasModelCol bool
-		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModelCol); err == nil && hasModelCol {
+		if hasColumn(db, "session", "model") {
 			legacyModel = modelIDExpr("model")
 		}
 		rows, err := db.Query(`
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
+				` + sessionProjectExpr(db, "session") + ` AS project,
 				` + legacyModel + ` AS model,
 				COALESCE(SUM(tokens_input), 0),
 				COALESCE(SUM(tokens_output), 0),
@@ -170,7 +172,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
 			FROM session
-			GROUP BY day, model
+			GROUP BY day, project, model
 			ORDER BY day
 		`)
 		if err != nil {
@@ -178,11 +180,11 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 		}
 		defer rows.Close()
 
-		daily, err := foldDayModelRows(rows)
+		daily, projects, err := foldDayModelProjectRows(rows)
 		if err != nil {
 			return thermal.Summary{}, nil, nil, err
 		}
-		return summary, daily, nil, nil
+		return summary, daily, projects, nil
 	}
 
 	// Fallback: older schema without session token columns — aggregate from
@@ -202,60 +204,88 @@ func modelIDExpr(col string) string {
 // legacy session rows that were never migrated (ids absent from session_v2).
 // Child/subagent sessions carry their own token totals, so every row counts
 // real usage exactly once. The legacy arm is skipped when the session table
-// lacks an id or token columns, and its model column is replaced with an empty
-// literal when absent so the UNION stays valid.
+// lacks an id or token columns, and the model and directory columns are
+// replaced with empty literals when absent so the UNION stays valid.
 func opencodeV2Source(db *sql.DB) string {
 	const cols = `SELECT id, tokens_input, tokens_output, tokens_reasoning,
 			tokens_cache_read, tokens_cache_write, cost,
 			summary_additions, summary_deletions, summary_files,
 			agent, time_created, time_updated,`
 	v2Model := modelIDExpr("model")
-	var hasV2Model bool
-	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session_v2') WHERE name = 'model'`).Scan(&hasV2Model); err == nil && !hasV2Model {
+	if !hasColumn(db, "session_v2", "model") {
 		v2Model = "''"
 	}
-	source := cols + ` ` + v2Model + ` AS model
+	v2Project := sessionProjectExpr(db, "session_v2")
+	source := cols + ` ` + v2Model + ` AS model, ` + v2Project + ` AS project
 		FROM session_v2`
 	var colsSeen int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`).Scan(&colsSeen); err == nil && colsSeen == 2 {
 		legacyModel := modelIDExpr("model")
-		var hasModel bool
-		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'model'`).Scan(&hasModel); err == nil && !hasModel {
+		if !hasColumn(db, "session", "model") {
 			legacyModel = "''"
 		}
+		legacyProject := sessionProjectExpr(db, "session")
 		source += `
-		UNION ALL ` + cols + ` ` + legacyModel + ` AS model
+		UNION ALL ` + cols + ` ` + legacyModel + ` AS model, ` + legacyProject + ` AS project
 		FROM session
 		WHERE id NOT IN (SELECT id FROM session_v2)`
 	}
 	return source
 }
 
-// foldDayModelRows turns a day-and-model aggregation result into DailyRows.
-// Expected column order: day, model, input, output, reasoning, cache read,
-// cache write, cost, turns, total. The explicit total is authoritative because
-// some sources pack tokens differently (ZCode counts cache reads inside input,
-// for example). Cache reads and writes stay separate for pricing, and their
-// sum feeds DailyRow.Cache.
-func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
+// hasColumn reports whether a table carries the named column. A missing table
+// also reports false.
+func hasColumn(db *sql.DB, table, column string) bool {
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column).Scan(&n); err != nil {
+		return false
+	}
+	return n > 0
+}
+
+// sessionProjectExpr reads a session directory as a project path, falling back
+// to an empty literal when the column is absent or blank.
+func sessionProjectExpr(db *sql.DB, table string) string {
+	if !hasColumn(db, table, "directory") {
+		return "''"
+	}
+	return `COALESCE(NULLIF(directory, ''), '')`
+}
+
+// projectDayKey identifies one day of one project.
+type projectDayKey struct{ day, project string }
+
+// foldDayModelProjectRows turns a day, project, and model aggregation result
+// into DailyRows plus ProjectDays. Expected column order: day, project, model,
+// input, output, reasoning, cache read, cache write, cost, turns, total. The
+// explicit total is authoritative because some sources pack tokens differently
+// (ZCode counts cache reads inside input, for example). Cache reads and writes
+// stay separate for pricing, and their sum feeds DailyRow.Cache. Project paths
+// are normalized to their git root, and blank projects are skipped.
+func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.ProjectDay, error) {
 	byDay := make(map[string]*thermal.DailyRow)
+	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
-	var order []string
+	modelsByProjectDay := make(map[projectDayKey]map[string]thermal.ModelTokens)
+	var dayOrder []string
+	var projectOrder []projectDayKey
 
 	for rows.Next() {
-		var day, model string
+		var day, project, model string
 		var input, output, reasoning, cacheRead, cacheWrite int64
 		var cost float64
 		var turns int
 		var total int64
-		if err := rows.Scan(&day, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
-			return nil, err
+		if err := rows.Scan(&day, &project, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
+			return nil, nil, err
 		}
+		projectKey := thermal.ProjectKey(project)
+
 		row := byDay[day]
 		if row == nil {
 			row = &thermal.DailyRow{Day: day}
 			byDay[day] = row
-			order = append(order, day)
+			dayOrder = append(dayOrder, day)
 		}
 		row.Input += input
 		row.Output += output
@@ -264,6 +294,24 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 		row.Tokens += total
 		row.Cost += cost
 		row.Turns += turns
+
+		if projectKey != "" {
+			key := projectDayKey{day, projectKey}
+			pd := byProjectDay[key]
+			if pd == nil {
+				pd = &thermal.ProjectDay{Project: projectKey, Day: day}
+				byProjectDay[key] = pd
+				projectOrder = append(projectOrder, key)
+			}
+			pd.Input += input
+			pd.Output += output
+			pd.Reasoning += reasoning
+			pd.CacheRead += cacheRead
+			pd.CacheWrite += cacheWrite
+			pd.Tokens += total
+			pd.Cost += cost
+			pd.Turns += turns
+		}
 
 		if model != "" {
 			if modelsByDay[day] == nil {
@@ -276,19 +324,39 @@ func foldDayModelRows(rows *sql.Rows) ([]thermal.DailyRow, error) {
 				CacheRead:  cacheRead,
 				CacheWrite: cacheWrite,
 			})
+			if projectKey != "" {
+				key := projectDayKey{day, projectKey}
+				if modelsByProjectDay[key] == nil {
+					modelsByProjectDay[key] = make(map[string]thermal.ModelTokens)
+				}
+				modelsByProjectDay[key][model] = modelsByProjectDay[key][model].Add(thermal.ModelTokens{
+					Input:      input,
+					Output:     output,
+					Reasoning:  reasoning,
+					CacheRead:  cacheRead,
+					CacheWrite: cacheWrite,
+				})
+			}
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	daily := make([]thermal.DailyRow, 0, len(order))
-	for _, day := range order {
+	daily := make([]thermal.DailyRow, 0, len(dayOrder))
+	for _, day := range dayOrder {
 		row := byDay[day]
 		row.Models = modelsByDay[day]
 		daily = append(daily, *row)
 	}
-	return daily, nil
+
+	projects := make([]thermal.ProjectDay, 0, len(projectOrder))
+	for _, key := range projectOrder {
+		pd := byProjectDay[key]
+		pd.Models = modelsByProjectDay[key]
+		projects = append(projects, *pd)
+	}
+	return daily, projects, nil
 }
 
 // LoadMiMoCodeData reads the MiMoCode SQLite DB. MiMo has no pre-aggregated
@@ -364,31 +432,41 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 	db.QueryRow(`SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`).
 		Scan(&summary.LongestSessionMs)
 
+	// Project attribution comes from the session row when the schema carries a
+	// directory for it. Columns are qualified because session also has
+	// time_created.
+	projectExpr := "''"
+	from := "FROM message"
+	if hasColumn(db, "session", "directory") {
+		projectExpr = "COALESCE(NULLIF(s.directory, ''), '')"
+		from = "FROM message LEFT JOIN session s ON s.id = message.session_id"
+	}
 	rows, err := db.Query(`
 		SELECT
-			date(time_created / 1000, 'unixepoch', 'localtime') AS day,
+			date(message.time_created / 1000, 'unixepoch', 'localtime') AS day,
+			` + projectExpr + ` AS project,
 			COALESCE(
-				NULLIF(NULLIF(json_extract(data, '$.modelID'), ''), '<synthetic>'),
-				NULLIF(json_extract(data, '$.model'), ''),
+				NULLIF(NULLIF(json_extract(message.data, '$.modelID'), ''), '<synthetic>'),
+				NULLIF(json_extract(message.data, '$.model'), ''),
 				''
 			) AS model,
-			COALESCE(SUM(CAST(json_extract(data, '$.tokens.input') AS INTEGER)), 0),
-			COALESCE(SUM(CAST(json_extract(data, '$.tokens.output') AS INTEGER)), 0),
-			COALESCE(SUM(CAST(json_extract(data, '$.tokens.reasoning') AS INTEGER)), 0),
-			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER)), 0),
-			COALESCE(SUM(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER)), 0),
-			COALESCE(SUM(CAST(json_extract(data, '$.cost') AS REAL)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.tokens.input') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.tokens.output') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.tokens.reasoning') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.tokens.cache.read') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.tokens.cache.write') AS INTEGER)), 0),
+			COALESCE(SUM(CAST(json_extract(message.data, '$.cost') AS REAL)), 0),
 			COUNT(*),
 			COALESCE(SUM(
-				COALESCE(CAST(json_extract(data, '$.tokens.input') AS INTEGER), 0) +
-				COALESCE(CAST(json_extract(data, '$.tokens.output') AS INTEGER), 0) +
-				COALESCE(CAST(json_extract(data, '$.tokens.reasoning') AS INTEGER), 0) +
-				COALESCE(CAST(json_extract(data, '$.tokens.cache.read') AS INTEGER), 0) +
-				COALESCE(CAST(json_extract(data, '$.tokens.cache.write') AS INTEGER), 0)
+				COALESCE(CAST(json_extract(message.data, '$.tokens.input') AS INTEGER), 0) +
+				COALESCE(CAST(json_extract(message.data, '$.tokens.output') AS INTEGER), 0) +
+				COALESCE(CAST(json_extract(message.data, '$.tokens.reasoning') AS INTEGER), 0) +
+				COALESCE(CAST(json_extract(message.data, '$.tokens.cache.read') AS INTEGER), 0) +
+				COALESCE(CAST(json_extract(message.data, '$.tokens.cache.write') AS INTEGER), 0)
 			), 0)
-		FROM message
-		WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant'
-		GROUP BY day, model
+		` + from + `
+		WHERE message.data LIKE '%"assistant"%' AND json_extract(message.data, '$.role') = 'assistant'
+		GROUP BY day, project, model
 		ORDER BY day
 	`)
 	if err != nil {
@@ -396,12 +474,12 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 	}
 	defer rows.Close()
 
-	daily, err := foldDayModelRows(rows)
+	daily, projects, err := foldDayModelProjectRows(rows)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 
-	return summary, daily, nil, nil
+	return summary, daily, projects, nil
 }
 
 func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
@@ -425,7 +503,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		return thermal.Summary{}, nil, nil, err
 	}
 	if c, ok := loadDevinCache(); ok && c.MaxRowID == maxRowID && c.SessionCount == sessionCount {
-		return c.Summary, c.Daily, nil, nil
+		return c.Summary, c.Daily, c.Projects, nil
 	}
 
 	// Longest session duration (created_at/last_activity_at are in seconds;
@@ -435,6 +513,14 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		return thermal.Summary{}, nil, nil, err
 	}
 
+	// Project attribution needs the session working directory, which older
+	// Devin schemas may not carry.
+	projectSelect, projectJoin := "''", ""
+	if hasColumn(db, "sessions", "working_directory") {
+		projectSelect = "COALESCE(s.working_directory, '')"
+		projectJoin = " LEFT JOIN sessions s ON s.id = m.session_id"
+	}
+
 	// If session count is unchanged and new messages were simply appended (maxRowID > c.MaxRowID),
 	// perform a lightning-fast delta scan on only the new message_nodes rows via PK index.
 	if c, ok := loadDevinCache(); ok && c.SessionCount == sessionCount && maxRowID > c.MaxRowID && c.MaxRowID > 0 {
@@ -442,13 +528,14 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		c.Summary.LongestSessionMs = longestSec * 1000
 
 		deltaRows, err := db.Query(`
-			SELECT created_at,
-			       json_extract(chat_message, '$.metadata.metrics.input_tokens'),
-			       json_extract(chat_message, '$.metadata.metrics.output_tokens'),
-			       json_extract(chat_message, '$.metadata.metrics.cache_read_tokens'),
-			       json_extract(chat_message, '$.metadata.metrics.cache_creation_tokens')
-			FROM message_nodes
-			WHERE row_id > ? AND chat_message LIKE '%"assistant"%' AND json_extract(chat_message, '$.role') = 'assistant'
+			SELECT m.created_at,
+			       `+projectSelect+`,
+			       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
+			       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
+			       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
+			       json_extract(m.chat_message, '$.metadata.metrics.cache_creation_tokens')
+			FROM message_nodes m`+projectJoin+`
+			WHERE m.row_id > ? AND m.chat_message LIKE '%"assistant"%' AND json_extract(m.chat_message, '$.role') = 'assistant'
 		`, c.MaxRowID)
 		if err == nil {
 			defer deltaRows.Close()
@@ -473,11 +560,16 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 					modelsByDay[r.Day] = r.Models
 				}
 			}
+			byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
+			for _, p := range c.Projects {
+				byProjectDay[projectDayKey{p.Day, p.Project}] = &p
+			}
 
 			for deltaRows.Next() {
 				var createdAt int64
+				var workingDir string
 				var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
-				if err := deltaRows.Scan(&createdAt, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
+				if err := deltaRows.Scan(&createdAt, &workingDir, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
 					break
 				}
 				day := thermal.UnixDay(createdAt)
@@ -492,6 +584,21 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 				agg.outTok += outTok.Int64
 				agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 				agg.turns++
+
+				if project := thermal.ProjectKey(workingDir); project != "" {
+					key := projectDayKey{day, project}
+					pd := byProjectDay[key]
+					if pd == nil {
+						pd = &thermal.ProjectDay{Project: project, Day: day}
+						byProjectDay[key] = pd
+					}
+					pd.Tokens += deltaTok
+					pd.Input += inTok.Int64
+					pd.Output += outTok.Int64
+					pd.CacheRead += cacheRead.Int64
+					pd.CacheWrite += cacheCreate.Int64
+					pd.Turns++
+				}
 
 				c.Summary.InputTokens += inTok.Int64
 				c.Summary.OutputTokens += outTok.Int64
@@ -514,9 +621,10 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 				}
 				sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 				c.Daily = daily
+				c.Projects = sortedProjects(byProjectDay)
 				c.MaxRowID = maxRowID
 				saveDevinCache(c)
-				return c.Summary, c.Daily, nil, nil
+				return c.Summary, c.Daily, c.Projects, nil
 			}
 		}
 	}
@@ -537,13 +645,14 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 
 	rows, err := db.Query(`
-		SELECT created_at,
-		       json_extract(chat_message, '$.metadata.metrics.input_tokens'),
-		       json_extract(chat_message, '$.metadata.metrics.output_tokens'),
-		       json_extract(chat_message, '$.metadata.metrics.cache_read_tokens'),
-		       json_extract(chat_message, '$.metadata.metrics.cache_creation_tokens')
-		FROM message_nodes
-		WHERE chat_message LIKE '%"assistant"%' AND json_extract(chat_message, '$.role') = 'assistant'
+		SELECT m.created_at,
+		       ` + projectSelect + `,
+		       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
+		       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
+		       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
+		       json_extract(m.chat_message, '$.metadata.metrics.cache_creation_tokens')
+		FROM message_nodes m` + projectJoin + `
+		WHERE m.chat_message LIKE '%"assistant"%' AND json_extract(m.chat_message, '$.role') = 'assistant'
 	`)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
@@ -558,11 +667,13 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		turns                   int
 	}
 	byDay := make(map[string]*dayAgg)
+	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	var scanned int64
 	for rows.Next() {
 		var createdAt int64
+		var workingDir string
 		var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
-		if err := rows.Scan(&createdAt, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
+		if err := rows.Scan(&createdAt, &workingDir, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
 			progress.Done()
 			return thermal.Summary{}, nil, nil, err
 		}
@@ -576,6 +687,22 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		agg.outTok += outTok.Int64
 		agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 		agg.turns++
+
+		if project := thermal.ProjectKey(workingDir); project != "" {
+			key := projectDayKey{day, project}
+			pd := byProjectDay[key]
+			if pd == nil {
+				pd = &thermal.ProjectDay{Project: project, Day: day}
+				byProjectDay[key] = pd
+			}
+			pd.Input += inTok.Int64
+			pd.Output += outTok.Int64
+			pd.CacheRead += cacheRead.Int64
+			pd.CacheWrite += cacheCreate.Int64
+			pd.Tokens += inTok.Int64 + outTok.Int64 + cacheRead.Int64 + cacheCreate.Int64
+			pd.Turns++
+		}
+
 		scanned++
 		if scanned%2000 == 0 {
 			progress.Increment(2000)
@@ -632,12 +759,32 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		summary.LifetimeTokens = int64(summary.Sessions)
 	}
 
+	projects := sortedProjects(byProjectDay)
 	saveDevinCache(DevinCache{
 		MaxRowID:     maxRowID,
 		SessionCount: sessionCount,
 		Summary:      summary,
 		Daily:        daily,
+		Projects:     projects,
 	})
 
-	return summary, daily, nil, nil
+	return summary, daily, projects, nil
+}
+
+// sortedProjects flattens a project-day map into a stable slice.
+func sortedProjects(byProjectDay map[projectDayKey]*thermal.ProjectDay) []thermal.ProjectDay {
+	if len(byProjectDay) == 0 {
+		return nil
+	}
+	projects := make([]thermal.ProjectDay, 0, len(byProjectDay))
+	for _, pd := range byProjectDay {
+		projects = append(projects, *pd)
+	}
+	sort.Slice(projects, func(i, j int) bool {
+		if projects[i].Day != projects[j].Day {
+			return projects[i].Day < projects[j].Day
+		}
+		return projects[i].Project < projects[j].Project
+	})
+	return projects
 }

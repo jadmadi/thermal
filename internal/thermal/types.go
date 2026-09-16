@@ -186,10 +186,12 @@ type Report struct {
 
 // ProjectDay is one day of usage attributed to one project directory. Loaders
 // emit these for tools that record where a session ran. Tokens is the total
-// recorded by the source; the type fields are disjoint and add up to it.
+// recorded by the source; the type fields are disjoint and add up to it. Tool
+// is filled by the caller with the tool's display name.
 type ProjectDay struct {
 	Project    string                 `json:"project"`
 	Day        string                 `json:"day"`
+	Tool       string                 `json:"tool,omitempty"`
 	Tokens     int64                  `json:"tokens"`
 	Input      int64                  `json:"input,omitempty"`
 	Output     int64                  `json:"output,omitempty"`
