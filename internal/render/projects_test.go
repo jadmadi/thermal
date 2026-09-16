@@ -96,7 +96,7 @@ func TestDisplayNames(t *testing.T) {
 		{Project: "/home/user/work/other/mahak-bench"},
 		{Project: "/srv/app"},
 	}
-	names := displayNames(rows)
+	names := displayNames(projectPaths(rows))
 
 	if names["/home/user/projects/waqftech/mahak-bench"] != "mahak-bench (waqftech)" {
 		t.Errorf("colliding name should carry a parent hint, got %q",
@@ -132,7 +132,7 @@ func TestToolsCell(t *testing.T) {
 }
 
 func TestProjectLabelFallsBackToTail(t *testing.T) {
-	names := displayNames([]thermal.ProjectRow{{Project: "/home/user/very/deep/path/to/project-name"}})
+	names := displayNames([]string{"/home/user/very/deep/path/to/project-name"})
 	got := names["/home/user/very/deep/path/to/project-name"]
 	if got != "project-name" {
 		t.Errorf("displayNames = %q, want the last segment", got)

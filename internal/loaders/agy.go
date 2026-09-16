@@ -160,7 +160,7 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 									model = strings.TrimSuffix(model, ".")
 									model = strings.TrimSpace(model)
 									if model != "" && model != "None" {
-										res.modelCounts[model]++
+										res.modelCounts[modelName(model)]++
 									}
 								}
 							}

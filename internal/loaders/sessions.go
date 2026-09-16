@@ -76,6 +76,7 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, []t
 			continue
 		}
 		day := thermal.LocalDay(t)
+		model := modelName(md.Model)
 
 		agg := byDay[day]
 		if agg == nil {
@@ -85,10 +86,10 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, []t
 		agg.tokens += md.TotalTokens
 		agg.cost += md.Cost.SessionCostUSD
 		agg.turns += md.MessageCount
-		if md.Model != "" && md.TotalTokens > 0 {
+		if model != "" && md.TotalTokens > 0 {
 			// codewhale records a session total with no token type split, so
 			// the tokens land in the unclassified bucket.
-			agg.models[md.Model] = agg.models[md.Model].Add(thermal.ModelTokens{Unclassified: md.TotalTokens})
+			agg.models[model] = agg.models[model].Add(thermal.ModelTokens{Unclassified: md.TotalTokens})
 		}
 
 		projectKey := thermal.ProjectKey(md.Workspace)
@@ -102,11 +103,11 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, []t
 			pd.Tokens += md.TotalTokens
 			pd.Cost += md.Cost.SessionCostUSD
 			pd.Turns += md.MessageCount
-			if md.Model != "" && md.TotalTokens > 0 {
+			if model != "" && md.TotalTokens > 0 {
 				if pd.Models == nil {
 					pd.Models = make(map[string]thermal.ModelTokens)
 				}
-				pd.Models[md.Model] = pd.Models[md.Model].Add(thermal.ModelTokens{Unclassified: md.TotalTokens})
+				pd.Models[model] = pd.Models[model].Add(thermal.ModelTokens{Unclassified: md.TotalTokens})
 			}
 		}
 
@@ -120,8 +121,8 @@ func LoadCodewhaleData(dataDir string) (thermal.Summary, []thermal.DailyRow, []t
 			summary.LongestSessionMs = durationMs
 		}
 
-		if md.Model != "" {
-			modelCounts[md.Model]++
+		if model != "" {
+			modelCounts[model]++
 		}
 		if md.Mode != "" {
 			modeCounts[md.Mode]++

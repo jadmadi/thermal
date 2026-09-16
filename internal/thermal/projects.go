@@ -3,7 +3,6 @@ package thermal
 import (
 	"sort"
 	"strings"
-	"time"
 )
 
 // AggregateProjects folds project-day usage into one row per project, summing
@@ -11,21 +10,7 @@ import (
 // first by token total unless Order is "asc". A nil pricer leaves
 // EstimatedCost at zero, and stored cost always wins for a given day.
 func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) ProjectReport {
-	now := opts.Now
-	if now.IsZero() {
-		now = time.Now()
-	}
-
-	var since, until, lastStart time.Time
-	if t, ok := ParseDay(opts.Since); ok {
-		since = t
-	}
-	if t, ok := ParseDay(opts.Until); ok {
-		until = t
-	}
-	if opts.Last > 0 {
-		lastStart = midnight(now).AddDate(0, 0, -(opts.Last - 1))
-	}
+	since, until, lastStart := windowBounds(opts.Since, opts.Until, opts.Last, opts.Now)
 
 	byKey := make(map[string]*ProjectRow)
 	activeSets := make(map[string]map[string]bool)
@@ -33,19 +18,10 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 
 	for _, day := range days {
 		t, ok := ParseDay(day.Day)
-		if !ok {
+		if !ok || day.Project == "" {
 			continue
 		}
-		if !since.IsZero() && t.Before(since) {
-			continue
-		}
-		if !until.IsZero() && t.After(until) {
-			continue
-		}
-		if !lastStart.IsZero() && t.Before(lastStart) {
-			continue
-		}
-		if day.Project == "" {
+		if !inWindow(t, since, until, lastStart) {
 			continue
 		}
 
@@ -79,6 +55,10 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 				toolSets[day.Project] = make(map[string]bool)
 			}
 			toolSets[day.Project][day.Tool] = true
+			if row.ToolTokens == nil {
+				row.ToolTokens = make(map[string]int64)
+			}
+			row.ToolTokens[day.Tool] += day.Tokens
 		}
 
 		if pricer != nil && day.Cost == 0 && day.Tokens > 0 {
@@ -110,7 +90,14 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 		for tool := range toolSets[project] {
 			row.Tools = append(row.Tools, tool)
 		}
-		sort.Strings(row.Tools)
+		// Rank contributing tools by the tokens each one contributed.
+		sort.Slice(row.Tools, func(i, j int) bool {
+			ti, tj := row.ToolTokens[row.Tools[i]], row.ToolTokens[row.Tools[j]]
+			if ti != tj {
+				return ti > tj
+			}
+			return row.Tools[i] < row.Tools[j]
+		})
 		sort.Strings(row.MissingPricing)
 		row.Cost = row.StoredCost + row.EstimatedCost
 		if len(row.MissingPricing) == 0 {
@@ -195,6 +182,12 @@ func sumProjects(rows []ProjectRow) ProjectRow {
 		for _, tool := range row.Tools {
 			if !containsString(total.Tools, tool) {
 				total.Tools = append(total.Tools, tool)
+			}
+			if row.ToolTokens != nil {
+				if total.ToolTokens == nil {
+					total.ToolTokens = make(map[string]int64)
+				}
+				total.ToolTokens[tool] += row.ToolTokens[tool]
 			}
 		}
 		for _, m := range row.MissingPricing {

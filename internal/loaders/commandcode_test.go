@@ -36,7 +36,8 @@ func TestLoadCommandCodeData_MockSession(t *testing.T) {
 	if len(daily) != 1 {
 		t.Errorf("expected 1 daily row, got %d", len(daily))
 	}
-	if sum.ModelBreakdown["DeepSeek-Coder"] != 1 {
-		t.Errorf("expected DeepSeek-Coder model in breakdown, got %v", sum.ModelBreakdown)
+	// Model names are lowercased so the same model merges across tools.
+	if sum.ModelBreakdown["deepseek-coder"] != 1 {
+		t.Errorf("expected deepseek-coder model in breakdown, got %v", sum.ModelBreakdown)
 	}
 }

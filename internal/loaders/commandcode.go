@@ -36,12 +36,12 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 	}
 
 	type fileResult struct {
-		day         string
-		msgCount    int
-		model       string
-		durationMs  int64
-		hasSession  bool
-		dayCounts   map[string]int
+		day        string
+		msgCount   int
+		model      string
+		durationMs int64
+		hasSession bool
+		dayCounts  map[string]int
 	}
 
 	results := make(chan fileResult, len(sessionFiles))
@@ -139,7 +139,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 			summary.LongestSessionMs = res.durationMs
 		}
 		if res.model != "" && res.day != "" {
-			modelCounts[res.model]++
+			modelCounts[modelName(res.model)]++
 		}
 		for day, count := range res.dayCounts {
 			byDay[day] += count

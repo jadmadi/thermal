@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -20,6 +21,16 @@ const (
 // RenderProjects prints a project leaderboard. top limits the printed rows;
 // zero means print every row. The full project paths stay in --json output.
 func RenderProjects(rep thermal.ProjectReport, top int, noColor bool) string {
+	return renderProjects(rep, top, noColor, false)
+}
+
+// RenderProjectsBreakdown adds a tool split and the top models under every
+// project row.
+func RenderProjectsBreakdown(rep thermal.ProjectReport, top int, noColor bool) string {
+	return renderProjects(rep, top, noColor, true)
+}
+
+func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown bool) string {
 	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
 
 	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
@@ -39,7 +50,7 @@ func RenderProjects(rep thermal.ProjectReport, top int, noColor bool) string {
 		return sb.String()
 	}
 
-	names := displayNames(rep.Rows)
+	names := displayNames(projectPaths(rep.Rows))
 
 	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "Days", "Last"}
 	alignRight := []bool{false, false, false, true, true, true, false}
@@ -71,6 +82,9 @@ func RenderProjects(rep thermal.ProjectReport, top int, noColor bool) string {
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
 		printProjectRow(&sb, i+1, row, names[row.Project], widths, nil)
+		if breakdown {
+			printProjectBreakdown(&sb, row, dim)
+		}
 	}
 	if rest := len(rep.Rows) - shown; rest > 0 {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest))))
@@ -142,17 +156,17 @@ func formatCostOrDash(v float64) string {
 	return formatCost(v)
 }
 
-// displayNames maps each project path to a short label. A lone repository
-// shows as its own name, mahak-bench. When two repositories share a name, the
+// displayNames maps each path to a short label. A lone repository shows as its
+// own directory name, mahak-bench. When two paths share a name, the
 // distinguishing parent segment is added in parentheses, mahak-bench (Jad).
 // The full path stays in the JSON output.
-func displayNames(rows []thermal.ProjectRow) map[string]string {
-	tails := make([][]string, len(rows))
-	for i, row := range rows {
-		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(row.Project), "/"), "/")
+func displayNames(paths []string) map[string]string {
+	tails := make([][]string, len(paths))
+	for i, p := range paths {
+		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(p), "/"), "/")
 	}
 
-	out := make(map[string]string, len(rows))
+	out := make(map[string]string, len(paths))
 	for i, parts := range tails {
 		base := parts[len(parts)-1]
 		name := base
@@ -175,9 +189,70 @@ func displayNames(rows []thermal.ProjectRow) map[string]string {
 				break
 			}
 		}
-		out[rows[i].Project] = name
+		out[paths[i]] = name
 	}
 	return out
+}
+
+func projectPaths(rows []thermal.ProjectRow) []string {
+	paths := make([]string, len(rows))
+	for i, row := range rows {
+		paths[i] = row.Project
+	}
+	return paths
+}
+
+// printProjectBreakdown writes the tool split and top models under one project
+// row. Both lines show token totals rather than shares, because some tools
+// record no model attribution, which would make percentages misleading.
+func printProjectBreakdown(sb *strings.Builder, row thermal.ProjectRow, dim func(string) string) {
+	if len(row.Tools) > 1 {
+		sb.WriteString("        " + dim("tools   "+weightLine(row.Tools, row.ToolTokens, 3)) + "\n")
+	}
+	if len(row.Models) > 1 {
+		names := make([]string, 0, len(row.Models))
+		weights := make(map[string]int64, len(row.Models))
+		for name, counts := range row.Models {
+			names = append(names, name)
+			weights[name] = counts.Total()
+		}
+		short := displayNames(names)
+		labels := make([]string, len(names))
+		for i, name := range names {
+			labels[i] = short[name]
+		}
+		// Re-key the weights under the short labels so the line can print them.
+		shortWeights := make(map[string]int64, len(names))
+		for i, name := range names {
+			shortWeights[labels[i]] = weights[name]
+		}
+		sb.WriteString("        " + dim("models  "+weightLine(labels, shortWeights, 3)) + "\n")
+	}
+}
+
+// weightLine renders "name tokens" entries, largest first, capped at limit.
+func weightLine(names []string, weights map[string]int64, limit int) string {
+	sorted := append([]string{}, names...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if weights[sorted[i]] != weights[sorted[j]] {
+			return weights[sorted[i]] > weights[sorted[j]]
+		}
+		return sorted[i] < sorted[j]
+	})
+
+	shown := sorted
+	if limit > 0 && len(shown) > limit {
+		shown = shown[:limit]
+	}
+	parts := make([]string, 0, len(shown))
+	for _, name := range shown {
+		parts = append(parts, fmt.Sprintf("%s %s", name, thermal.CompactNumber(weights[name])))
+	}
+	line := strings.Join(parts, " · ")
+	if rest := len(sorted) - len(shown); rest > 0 {
+		line += fmt.Sprintf(" · +%d", rest)
+	}
+	return line
 }
 
 // toolsCell renders contributing tool names in a fixed-width cell, dropping

@@ -31,7 +31,8 @@ func TestLoadAgyData_MockSession(t *testing.T) {
 	if len(daily) != 1 {
 		t.Errorf("expected 1 daily row, got %d", len(daily))
 	}
-	if sum.ModelBreakdown["Gemini 3.1 Pro (High)"] != 1 {
+	// Model names are lowercased so the same model merges across tools.
+	if sum.ModelBreakdown["gemini 3.1 pro (high)"] != 1 {
 		t.Errorf("expected model breakdown for Gemini 3.1 Pro (High), got %v", sum.ModelBreakdown)
 	}
 }

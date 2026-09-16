@@ -209,6 +209,7 @@ type ProjectDay struct {
 type ProjectRow struct {
 	Project        string                 `json:"project"`
 	Tools          []string               `json:"tools,omitempty"`
+	ToolTokens     map[string]int64       `json:"toolTokens,omitempty"`
 	Input          int64                  `json:"inputTokens"`
 	Output         int64                  `json:"outputTokens"`
 	Reasoning      int64                  `json:"reasoningTokens"`
@@ -237,6 +238,43 @@ type ProjectReport struct {
 // tokens (default), cost, days, or recent. Order flips the ranking: anything
 // other than "asc" means largest or newest first.
 type ProjectOptions struct {
+	Since string
+	Until string
+	Last  int
+	Sort  string
+	Order string
+	Now   time.Time
+}
+
+// ModelRow aggregates one model across tools and time. Cost is estimated from
+// pricing data because recorded cost attaches to a session or day, never to a
+// single model.
+type ModelRow struct {
+	Model          string   `json:"model"`
+	Tools          []string `json:"tools,omitempty"`
+	Input          int64    `json:"inputTokens"`
+	Output         int64    `json:"outputTokens"`
+	Reasoning      int64    `json:"reasoningTokens"`
+	CacheRead      int64    `json:"cacheReadTokens"`
+	CacheWrite     int64    `json:"cacheWriteTokens"`
+	Tokens         int64    `json:"totalTokens"`
+	Days           int      `json:"activeDays"`
+	FirstDay       string   `json:"firstDay,omitempty"`
+	LastDay        string   `json:"lastDay,omitempty"`
+	Cost           float64  `json:"estimatedCost"`
+	MissingPricing []string `json:"missingPricing,omitempty"`
+}
+
+// ModelReport is the payload behind thermal models.
+type ModelReport struct {
+	Type   string     `json:"type"`
+	Rows   []ModelRow `json:"data"`
+	Totals ModelRow   `json:"totals"`
+}
+
+// ModelOptions filters and sorts a model report. Sort picks the ranking key:
+// tokens (default) or cost. Order flips the ranking.
+type ModelOptions struct {
 	Since string
 	Until string
 	Last  int

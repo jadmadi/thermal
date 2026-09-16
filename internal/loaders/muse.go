@@ -42,7 +42,7 @@ func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal
 			var model string
 			var n int64
 			modelRows.Scan(&model, &n)
-			summary.ModelBreakdown[model] = n
+			summary.ModelBreakdown[modelName(model)] += n
 		}
 		modelRows.Close()
 	}

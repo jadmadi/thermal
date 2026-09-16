@@ -77,8 +77,10 @@ func TestLoadZCodeData_ModelUsage(t *testing.T) {
 	if sum.LinesAdded != 10 || sum.LinesDeleted != 2 || sum.FilesTouched != 1 {
 		t.Errorf("expected lines 10/2/1, got %d/%d/%d", sum.LinesAdded, sum.LinesDeleted, sum.FilesTouched)
 	}
-	if sum.ModelBreakdown["GLM-5.3"] != 1 || sum.ModelBreakdown["GLM-5.3-Flash"] != 1 || sum.ModelBreakdown["deepseek-v4-flash"] != 1 {
-		t.Errorf("expected one completed request per model, got %v", sum.ModelBreakdown)
+	// Case is normalized so a source that records GLM-5.3 and another that
+	// records glm-5.3 land on one row.
+	if sum.ModelBreakdown["glm-5.3"] != 1 || sum.ModelBreakdown["glm-5.3-flash"] != 1 || sum.ModelBreakdown["deepseek-v4-flash"] != 1 {
+		t.Errorf("expected one completed request per model, lowercased, got %v", sum.ModelBreakdown)
 	}
 	if sum.AgentBreakdown["build"] != 2 || sum.AgentBreakdown["edit"] != 1 {
 		t.Errorf("expected agent breakdown build=2 edit=1, got %v", sum.AgentBreakdown)
@@ -93,8 +95,8 @@ func TestLoadZCodeData_ModelUsage(t *testing.T) {
 		t.Errorf("expected first day 290/150/10 typed tokens, got %d/%d/%d",
 			daily[0].Input, daily[0].Output, daily[0].Cache)
 	}
-	if len(daily[0].Models) != 2 || daily[0].Models["GLM-5.3"].Input != 90 || daily[0].Models["GLM-5.3-Flash"].Input != 200 {
-		t.Errorf("expected per-model input 90 and 200, got %v", daily[0].Models)
+	if len(daily[0].Models) != 2 || daily[0].Models["glm-5.3"].Input != 90 || daily[0].Models["glm-5.3-flash"].Input != 200 {
+		t.Errorf("expected per-model input 90 and 200, lowercased, got %v", daily[0].Models)
 	}
 	if daily[1].Tokens != 15 || daily[1].Turns != 1 {
 		t.Errorf("expected second day tokens=15 turns=1, got %d/%d", daily[1].Tokens, daily[1].Turns)

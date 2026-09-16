@@ -30,12 +30,15 @@ Commands:
   weekly         Weekly report
   monthly        Monthly report
   projects       Tokens and cost per project, ranked
+  models         Tokens and estimated cost per model, ranked
   upgrade        Self-upgrade to the latest release
   version        Show version info
 
 Reports accept an optional tool: "thermal opencode weekly",
 "thermal weekly" (all tools). Tool defaults to all.
 Projects collapse to the nearest git root and merge across tools.
+--sort picks the ranking: streak|tokens|cost for the leaderboard,
+tokens|cost|days|recent for projects, tokens|cost for models.
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -60,9 +63,9 @@ Options:
   --until <date>     Report window end
   --last <num>       Last num days/weeks/months; excludes --since/--until
   --order <dir>      Report sort order: asc or desc (default: desc)
-  --sort <key>       Project ranking: tokens, cost, days, recent (default: tokens)
-  --top <num>        Project rows to print, 0 for all (default: 0)
-  --breakdown        Show per-model rows in reports
+  --sort <key>       Ranking key; see Commands above for valid keys per command
+  --top <num>        Project or model rows to print, 0 for all (default: 0)
+  --breakdown        Show per-model rows in reports, per-project detail for projects
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
   --no-estimate      Report stored cost only, skip pricing estimates
@@ -94,8 +97,8 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
 	flag.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
 	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
-	flag.StringVar(&opts.Sort, "sort", "tokens", "Project ranking: tokens, cost, days, or recent")
-	flag.IntVar(&opts.Top, "top", 0, "Project rows to print, 0 for all")
+	flag.StringVar(&opts.Sort, "sort", "", "Ranking: streak|tokens|cost for the leaderboard, tokens|cost|days|recent for projects, tokens|cost for models")
+	flag.IntVar(&opts.Top, "top", 0, "Project or model rows to print, 0 for all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
@@ -233,7 +236,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects":
+	case "daily", "weekly", "monthly", "projects", "models":
 		return true
 	}
 	return false
@@ -254,38 +257,16 @@ func isNegativeNumber(s string) bool {
 }
 
 // validateReportFlags rejects report options that would otherwise be silently
-// ignored, and checks the values themselves.
+// ignored, and checks the values themselves. Sort defaults depend on the
+// command: the leaderboard ranks by streak, projects and models by tokens.
 func validateReportFlags(opts thermal.Options) error {
 	sortKey := strings.ToLower(opts.Sort)
-	if sortKey == "" {
-		sortKey = "tokens"
-	}
-	reportOnlyUsed := opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
-		opts.Breakdown || opts.Offline || opts.NoEstimate ||
-		opts.Order != "desc" || opts.StartOfWeek != "sunday" ||
-		sortKey != "tokens" || opts.Top != 0
-	if opts.Report == "" {
-		if reportOnlyUsed {
-			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --sort, --top, --offline, --no-estimate) need a report command: daily, weekly, monthly, or projects")
-		}
-		return nil
-	}
+
 	if opts.Last < 0 {
 		return fmt.Errorf("--last cannot be negative")
 	}
 	if opts.Top < 0 {
 		return fmt.Errorf("--top cannot be negative")
-	}
-	switch sortKey {
-	case "tokens", "cost", "days", "recent":
-	default:
-		return fmt.Errorf("--sort must be tokens, cost, days, or recent")
-	}
-	if sortKey != "tokens" && opts.Report != "projects" {
-		return fmt.Errorf("--sort only applies to the projects command")
-	}
-	if opts.Top > 0 && opts.Report != "projects" {
-		return fmt.Errorf("--top only applies to the projects command")
 	}
 	if opts.Last > 0 && (opts.Since != "" || opts.Until != "") {
 		return fmt.Errorf("--last cannot be combined with --since or --until")
@@ -304,6 +285,44 @@ func validateReportFlags(opts thermal.Options) error {
 	if opts.Until != "" {
 		if _, ok := thermal.ParseDay(opts.Until); !ok {
 			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD")
+		}
+	}
+
+	if opts.Report == "" {
+		// Leaderboard flags. Sort is optional here and means streak when unset.
+		if sortKey != "" && sortKey != "streak" && sortKey != "tokens" && sortKey != "cost" {
+			return fmt.Errorf("--sort must be streak, tokens, or cost for the leaderboard")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
+		}
+		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
+			opts.Breakdown || opts.Offline || opts.NoEstimate ||
+			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, monthly, projects, or models")
+		}
+		return nil
+	}
+
+	switch opts.Report {
+	case "projects":
+		switch sortKey {
+		case "", "tokens", "cost", "days", "recent":
+		default:
+			return fmt.Errorf("--sort must be tokens, cost, days, or recent for projects")
+		}
+	case "models":
+		switch sortKey {
+		case "", "tokens", "cost":
+		default:
+			return fmt.Errorf("--sort must be tokens or cost for models")
+		}
+	default:
+		if sortKey != "" {
+			return fmt.Errorf("--sort only applies to the leaderboard, projects, and models")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
 		}
 	}
 	return nil
@@ -332,11 +351,14 @@ func main() {
 	}
 
 	if opts.Report != "" {
-		if opts.Report == "projects" {
+		switch opts.Report {
+		case "projects":
 			runProjectReport(opts)
-			return
+		case "models":
+			runModelReport(opts)
+		default:
+			runReport(opts)
 		}
-		runReport(opts)
 		return
 	}
 
@@ -408,7 +430,7 @@ func main() {
 			return
 		}
 
-		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor))
+		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort))
 		return
 	}
 
@@ -483,10 +505,11 @@ func toolHasData(info loaders.ToolInfo) bool {
 	return false
 }
 
-// usageSet is the loaded data behind the report and project commands.
+// usageSet is the loaded data behind the report, project, and model commands.
 type usageSet struct {
 	days     []thermal.DailyRow
 	projects []thermal.ProjectDay
+	byTool   []thermal.ToolDays
 	toolName string
 }
 
@@ -515,6 +538,7 @@ func loadUsage(opts thermal.Options) usageSet {
 				data.Projects[i].Tool = info.Name
 			}
 			set.projects = append(set.projects, data.Projects...)
+			set.byTool = append(set.byTool, thermal.ToolDays{Tool: info.Name, Days: data.Daily})
 		}
 		if len(set.days) == 0 && len(set.projects) == 0 {
 			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
@@ -539,6 +563,7 @@ func loadUsage(opts thermal.Options) usageSet {
 	for i := range set.projects {
 		set.projects[i].Tool = info.Name
 	}
+	set.byTool = []thermal.ToolDays{{Tool: info.Name, Days: data.Daily}}
 	set.toolName = info.Name
 	return set
 }
@@ -629,5 +654,40 @@ func runProjectReport(opts thermal.Options) {
 		return
 	}
 
+	if opts.Breakdown {
+		fmt.Print(render.RenderProjectsBreakdown(rep, opts.Top, opts.NoColor))
+		return
+	}
 	fmt.Print(render.RenderProjects(rep, opts.Top, opts.NoColor))
+}
+
+// runModelReport ranks models across tools and time. Cost here is always an
+// estimate because recorded cost is not attributable to a single model.
+func runModelReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	modelOpts := thermal.ModelOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Sort:  opts.Sort,
+		Order: opts.Order,
+	}
+	rep := thermal.AggregateModels(set.byTool, modelOpts, newPricer(opts))
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.ModelReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(jsonReport{
+			ModelReport: rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
 }
