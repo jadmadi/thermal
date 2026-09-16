@@ -3,23 +3,23 @@ package render
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 const (
-	projectWidth = 34
-	toolsWidth   = 16
+	projectWidth = 28
+	toolsWidth   = 20
 	daysWidth    = 4
 	lastWidth    = 10
 	rankWidth    = 3
-	defaultTop   = 20
 )
 
-// RenderProjects prints a project leaderboard ranked by tokens. Rows past the
-// top slice are summarised instead of printed, and --json carries them all.
-func RenderProjects(rep thermal.ProjectReport, noColor bool) string {
+// RenderProjects prints a project leaderboard. top limits the printed rows;
+// zero means print every row. The full project paths stay in --json output.
+func RenderProjects(rep thermal.ProjectReport, top int, noColor bool) string {
 	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
 
 	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
@@ -38,6 +38,8 @@ func RenderProjects(rep thermal.ProjectReport, noColor bool) string {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim("No project activity in the selected window.")))
 		return sb.String()
 	}
+
+	names := displayNames(rep.Rows)
 
 	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "Days", "Last"}
 	alignRight := []bool{false, false, false, true, true, true, false}
@@ -63,12 +65,12 @@ func RenderProjects(rep thermal.ProjectReport, noColor bool) string {
 	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
 
 	shown := len(rep.Rows)
-	if shown > defaultTop {
-		shown = defaultTop
+	if top > 0 && top < shown {
+		shown = top
 	}
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
-		printProjectRow(&sb, i+1, row, widths, nil)
+		printProjectRow(&sb, i+1, row, names[row.Project], widths, nil)
 	}
 	if rest := len(rep.Rows) - shown; rest > 0 {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest))))
@@ -110,10 +112,10 @@ func RenderProjects(rep thermal.ProjectReport, noColor bool) string {
 	return sb.String()
 }
 
-func printProjectRow(sb *strings.Builder, rank int, row thermal.ProjectRow, widths []int, style func(string) string) {
+func printProjectRow(sb *strings.Builder, rank int, row thermal.ProjectRow, name string, widths []int, style func(string) string) {
 	cells := []string{
 		thermal.PadLeft(fmt.Sprintf("%d.", rank), widths[0]),
-		thermal.PadRight(projectLabel(row.Project, widths[1]), widths[1]),
+		thermal.PadRight(truncate(name, widths[1]), widths[1]),
 		thermal.PadRight(toolsCell(row.Tools, widths[2]), widths[2]),
 		thermal.PadLeft(thermal.CompactNumber(row.Tokens), widths[3]),
 		thermal.PadLeft(formatCostOrDash(row.Cost), widths[4]),
@@ -138,6 +140,44 @@ func formatCostOrDash(v float64) string {
 		return "—"
 	}
 	return formatCost(v)
+}
+
+// displayNames maps each project path to a short label. A lone repository
+// shows as its own name, mahak-bench. When two repositories share a name, the
+// distinguishing parent segment is added in parentheses, mahak-bench (Jad).
+// The full path stays in the JSON output.
+func displayNames(rows []thermal.ProjectRow) map[string]string {
+	tails := make([][]string, len(rows))
+	for i, row := range rows {
+		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(row.Project), "/"), "/")
+	}
+
+	out := make(map[string]string, len(rows))
+	for i, parts := range tails {
+		base := parts[len(parts)-1]
+		name := base
+		for n := 1; n <= len(parts); n++ {
+			candidate := strings.Join(parts[len(parts)-n:], "/")
+			shared := false
+			for j, other := range tails {
+				if i == j || n > len(other) {
+					continue
+				}
+				if strings.Join(other[len(other)-n:], "/") == candidate {
+					shared = true
+					break
+				}
+			}
+			if !shared {
+				if n > 1 {
+					name = base + " (" + parts[len(parts)-n] + ")"
+				}
+				break
+			}
+		}
+		out[rows[i].Project] = name
+	}
+	return out
 }
 
 // toolsCell renders contributing tool names in a fixed-width cell, dropping
@@ -166,22 +206,4 @@ func toolsCell(tools []string, width int) string {
 		cell += fmt.Sprintf(" +%d", len(tools)-used)
 	}
 	return cell
-}
-
-// projectLabel shortens a project path for the table. The home directory
-// becomes ~, and long paths keep their tail segments because the last parts
-// identify the repository.
-func projectLabel(path string, width int) string {
-	label := thermal.FormatPath(path)
-	if runeLen(label) <= width {
-		return label
-	}
-	parts := strings.Split(strings.Trim(label, "/"), "/")
-	for i := 1; i < len(parts); i++ {
-		candidate := "…/" + strings.Join(parts[i:], "/")
-		if runeLen(candidate) <= width {
-			return candidate
-		}
-	}
-	return truncate(label, width)
 }

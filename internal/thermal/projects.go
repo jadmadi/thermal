@@ -122,12 +122,7 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 		rows = append(rows, *row)
 	}
 
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].Tokens != rows[j].Tokens {
-			return rows[i].Tokens > rows[j].Tokens
-		}
-		return rows[i].Project < rows[j].Project
-	})
+	sortProjectRows(rows, opts.Sort)
 	if strings.EqualFold(opts.Order, "asc") {
 		for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
 			rows[i], rows[j] = rows[j], rows[i]
@@ -135,6 +130,48 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 	}
 
 	return ProjectReport{Type: "projects", Rows: rows, Totals: sumProjects(rows)}
+}
+
+// sortProjectRows ranks projects by the requested key, largest or newest
+// first. Ties fall back to token total and then to the project path so the
+// order is stable.
+func sortProjectRows(rows []ProjectRow, key string) {
+	sort.Slice(rows, func(i, j int) bool {
+		a, b := rows[i], rows[j]
+		var primary int
+		switch strings.ToLower(key) {
+		case "cost":
+			switch {
+			case a.Cost > b.Cost:
+				primary = 1
+			case a.Cost < b.Cost:
+				primary = -1
+			}
+		case "days":
+			primary = a.ActiveDays - b.ActiveDays
+		case "recent":
+			switch {
+			case a.LastDay > b.LastDay:
+				primary = 1
+			case a.LastDay < b.LastDay:
+				primary = -1
+			}
+		default: // tokens
+			switch {
+			case a.Tokens > b.Tokens:
+				primary = 1
+			case a.Tokens < b.Tokens:
+				primary = -1
+			}
+		}
+		if primary != 0 {
+			return primary > 0
+		}
+		if a.Tokens != b.Tokens {
+			return a.Tokens > b.Tokens
+		}
+		return a.Project < b.Project
+	})
 }
 
 func sumProjects(rows []ProjectRow) ProjectRow {

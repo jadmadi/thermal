@@ -28,7 +28,7 @@ type Options struct {
 	JSON        bool
 	NoColor     bool
 	Verbose     bool
-	Report      string // "", "daily", "weekly", "monthly"
+	Report      string // "", "daily", "weekly", "monthly", "projects"
 	Since       string // YYYY-MM-DD or YYYYMMDD
 	Until       string
 	Last        int
@@ -37,6 +37,8 @@ type Options struct {
 	StartOfWeek string // sunday..saturday, default sunday
 	Offline     bool   // never fetch pricing, use cache only
 	NoEstimate  bool   // report stored cost only, skip pricing
+	Sort        string // tokens, cost, days, recent; default tokens
+	Top         int    // project rows to print, 0 means all
 }
 
 type Summary struct {
@@ -231,12 +233,14 @@ type ProjectReport struct {
 }
 
 // ProjectOptions filters and sorts a project report. Last counts calendar days
-// back from Now, matching the report commands. Order sorts by total tokens:
-// anything other than "asc" means largest first.
+// back from Now, matching the report commands. Sort picks the ranking key:
+// tokens (default), cost, days, or recent. Order flips the ranking: anything
+// other than "asc" means largest or newest first.
 type ProjectOptions struct {
 	Since string
 	Until string
 	Last  int
+	Sort  string
 	Order string
 	Now   time.Time
 }

@@ -147,24 +147,34 @@ thermal projects
 # One tool only
 thermal opencode projects
 
-# A window, newest first is the default order
+# A window
 thermal projects --last 30
 thermal projects --since 2026-08-01 --until 2026-08-31
-thermal projects --order asc
 
-# JSON carries every project, the table shows the top 20
+# Rank by something else: cost, days active, or most recent activity
+thermal projects --sort cost
+thermal projects --sort recent
+thermal projects --sort days --order asc
+
+# Limit the printed rows, 0 means all
+thermal projects --top 10
+
+# JSON carries every project and the full path
 thermal projects --json
 ```
 
 ```
   Thermal · projects
 
-  #    Project                             Tools                Tokens       Cost  Days  Last
-  ─────────────────────────────────────────────────────────────────────────────────────────────────
-   1.  …/projects/waqftech/mahak-bench     Claude,Codex +4        5.1B    $216.85    14  2026-09-16
-   2.  …/projects/jadmadi/AlMatjar-App     Devin,OpenCode +2      2.9B      $1.86    21  2026-09-16
-   3.  /mnt/Jad/github/lab/sila           Codex,MiMoCode +3      1.3B     $71.78    12  2026-09-17
+  #    Project                       Tools                    Tokens       Cost  Days  Last
+  ───────────────────────────────────────────────────────────────────────────────────────────────
+   1.  mahak-bench (Jad)             Claude,Codex +4            5.1B    $216.85    14  2026-09-16
+   2.  tree.waqf.app                 Codex,Devin +2             3.8B      $4.10    10  2026-08-12
+   3.  AlMatjar-App                  Devin,MiMoCode +1          2.9B      $1.86    21  2026-09-16
+   4.  etba3.app (aqaba-dev)         Codex,Devin,OpenCode     688.8M      $0.07     7  2026-09-07
 ```
+
+The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. The full path is in `--json`.
 
 Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, and codewhale. Agy records no project.
 

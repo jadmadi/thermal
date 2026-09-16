@@ -35,6 +35,7 @@ Commands:
 
 Reports accept an optional tool: "thermal opencode weekly",
 "thermal weekly" (all tools). Tool defaults to all.
+Projects collapse to the nearest git root and merge across tools.
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -59,6 +60,8 @@ Options:
   --until <date>     Report window end
   --last <num>       Last num days/weeks/months; excludes --since/--until
   --order <dir>      Report sort order: asc or desc (default: desc)
+  --sort <key>       Project ranking: tokens, cost, days, recent (default: tokens)
+  --top <num>        Project rows to print, 0 for all (default: 0)
   --breakdown        Show per-model rows in reports
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
@@ -91,6 +94,8 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
 	flag.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
 	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
+	flag.StringVar(&opts.Sort, "sort", "tokens", "Project ranking: tokens, cost, days, or recent")
+	flag.IntVar(&opts.Top, "top", 0, "Project rows to print, 0 for all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
@@ -182,6 +187,16 @@ func parseArgs() thermal.Options {
 			if v, ok := takeValue(); ok {
 				opts.Order = v
 			}
+		case "--sort":
+			if v, ok := takeValue(); ok {
+				opts.Sort = v
+			}
+		case "--top":
+			if v, ok := takeValue(); ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					opts.Top = n
+				}
+			}
 		case "--start-of-week":
 			if v, ok := takeValue(); ok {
 				opts.StartOfWeek = v
@@ -241,17 +256,36 @@ func isNegativeNumber(s string) bool {
 // validateReportFlags rejects report options that would otherwise be silently
 // ignored, and checks the values themselves.
 func validateReportFlags(opts thermal.Options) error {
+	sortKey := strings.ToLower(opts.Sort)
+	if sortKey == "" {
+		sortKey = "tokens"
+	}
 	reportOnlyUsed := opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
 		opts.Breakdown || opts.Offline || opts.NoEstimate ||
-		opts.Order != "desc" || opts.StartOfWeek != "sunday"
+		opts.Order != "desc" || opts.StartOfWeek != "sunday" ||
+		sortKey != "tokens" || opts.Top != 0
 	if opts.Report == "" {
 		if reportOnlyUsed {
-			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, or monthly")
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --sort, --top, --offline, --no-estimate) need a report command: daily, weekly, monthly, or projects")
 		}
 		return nil
 	}
 	if opts.Last < 0 {
 		return fmt.Errorf("--last cannot be negative")
+	}
+	if opts.Top < 0 {
+		return fmt.Errorf("--top cannot be negative")
+	}
+	switch sortKey {
+	case "tokens", "cost", "days", "recent":
+	default:
+		return fmt.Errorf("--sort must be tokens, cost, days, or recent")
+	}
+	if sortKey != "tokens" && opts.Report != "projects" {
+		return fmt.Errorf("--sort only applies to the projects command")
+	}
+	if opts.Top > 0 && opts.Report != "projects" {
+		return fmt.Errorf("--top only applies to the projects command")
 	}
 	if opts.Last > 0 && (opts.Since != "" || opts.Until != "") {
 		return fmt.Errorf("--last cannot be combined with --since or --until")
@@ -576,6 +610,7 @@ func runProjectReport(opts thermal.Options) {
 		Since: opts.Since,
 		Until: opts.Until,
 		Last:  opts.Last,
+		Sort:  opts.Sort,
 		Order: opts.Order,
 	}
 	rep := thermal.AggregateProjects(set.projects, projectOpts, newPricer(opts))
@@ -594,5 +629,5 @@ func runProjectReport(opts thermal.Options) {
 		return
 	}
 
-	fmt.Print(render.RenderProjects(rep, opts.NoColor))
+	fmt.Print(render.RenderProjects(rep, opts.Top, opts.NoColor))
 }
