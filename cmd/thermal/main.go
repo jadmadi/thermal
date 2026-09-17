@@ -31,6 +31,9 @@ Commands:
   monthly        Monthly report
   projects       Tokens and cost per project, ranked
   models         Tokens and estimated cost per model, ranked
+  mix            Tool or model mix over time, with switching stats
+  stats          Daily distribution: percentiles, weekday, outliers
+  trend          Daily trend fit with a month-end projection
   upgrade        Self-upgrade to the latest release
   version        Show version info
 
@@ -39,6 +42,8 @@ Reports accept an optional tool: "thermal opencode weekly",
 Projects collapse to the nearest git root and merge across tools.
 --sort picks the ranking: streak|tokens|cost for the leaderboard,
 tokens|cost|days|recent for projects, tokens|cost for models.
+--metric tokens|cost applies to mix, stats, and trend.
+--by tool|model and --grain day|week|month apply to mix.
 
 Supported tools:
   all           Show all tools as leaderboard (default)
@@ -99,6 +104,9 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
 	flag.StringVar(&opts.Sort, "sort", "", "Ranking: streak|tokens|cost for the leaderboard, tokens|cost|days|recent for projects, tokens|cost for models")
 	flag.IntVar(&opts.Top, "top", 0, "Project or model rows to print, 0 for all")
+	flag.StringVar(&opts.Metric, "metric", "tokens", "Analytics metric: tokens or cost")
+	flag.StringVar(&opts.By, "by", "tool", "Mix dimension: tool or model")
+	flag.StringVar(&opts.Grain, "grain", "week", "Mix bucket size: day, week, or month")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
@@ -200,6 +208,18 @@ func parseArgs() thermal.Options {
 					opts.Top = n
 				}
 			}
+		case "--metric":
+			if v, ok := takeValue(); ok {
+				opts.Metric = v
+			}
+		case "--by":
+			if v, ok := takeValue(); ok {
+				opts.By = v
+			}
+		case "--grain":
+			if v, ok := takeValue(); ok {
+				opts.Grain = v
+			}
 		case "--start-of-week":
 			if v, ok := takeValue(); ok {
 				opts.StartOfWeek = v
@@ -236,7 +256,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats":
 		return true
 	}
 	return false
@@ -261,6 +281,18 @@ func isNegativeNumber(s string) bool {
 // command: the leaderboard ranks by streak, projects and models by tokens.
 func validateReportFlags(opts thermal.Options) error {
 	sortKey := strings.ToLower(opts.Sort)
+	metricKey := strings.ToLower(opts.Metric)
+	if metricKey == "" {
+		metricKey = "tokens"
+	}
+	byKey := strings.ToLower(opts.By)
+	if byKey == "" {
+		byKey = "tool"
+	}
+	grainKey := strings.ToLower(opts.Grain)
+	if grainKey == "" {
+		grainKey = "week"
+	}
 
 	if opts.Last < 0 {
 		return fmt.Errorf("--last cannot be negative")
@@ -296,6 +328,9 @@ func validateReportFlags(opts thermal.Options) error {
 		if opts.Top != 0 {
 			return fmt.Errorf("--top only applies to the projects and models commands")
 		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
 		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
 			opts.Breakdown || opts.Offline || opts.NoEstimate ||
 			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
@@ -317,12 +352,46 @@ func validateReportFlags(opts thermal.Options) error {
 		default:
 			return fmt.Errorf("--sort must be tokens or cost for models")
 		}
+	case "trend", "mix", "stats":
+		if sortKey != "" {
+			return fmt.Errorf("--sort does not apply to the analytics commands")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
+		}
+		switch metricKey {
+		case "tokens", "cost":
+		default:
+			return fmt.Errorf("--metric must be tokens or cost")
+		}
+		if opts.Report == "mix" {
+			switch byKey {
+			case "tool", "model":
+			default:
+				return fmt.Errorf("--by must be tool or model")
+			}
+			switch grainKey {
+			case "day", "week", "month":
+			default:
+				return fmt.Errorf("--grain must be day, week, or month")
+			}
+			break
+		}
+		if byKey != "tool" {
+			return fmt.Errorf("--by only applies to the mix command")
+		}
+		if grainKey != "week" {
+			return fmt.Errorf("--grain only applies to the mix command")
+		}
 	default:
 		if sortKey != "" {
 			return fmt.Errorf("--sort only applies to the leaderboard, projects, and models")
 		}
 		if opts.Top != 0 {
 			return fmt.Errorf("--top only applies to the projects and models commands")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
 		}
 	}
 	return nil
@@ -356,6 +425,12 @@ func main() {
 			runProjectReport(opts)
 		case "models":
 			runModelReport(opts)
+		case "mix":
+			runMixReport(opts)
+		case "stats":
+			runStatsReport(opts)
+		case "trend":
+			runTrendReport(opts)
 		default:
 			runReport(opts)
 		}
@@ -585,16 +660,26 @@ func newPricer(opts thermal.Options) thermal.Pricer {
 	return nil
 }
 
+// startOfWeek resolves the report week start from the flag.
+func startOfWeek(opts thermal.Options) time.Weekday {
+	if d, ok := thermal.ParseWeekday(opts.StartOfWeek); ok {
+		return d
+	}
+	return time.Sunday
+}
+
+// writeReportJSON prints any report payload with the standard indentation.
+func writeReportJSON(v interface{}) {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(v)
+}
+
 // runReport folds the loaded days into the requested grain and prints a table
 // or JSON.
 func runReport(opts thermal.Options) {
-	startOfWeek := time.Sunday
-	if d, ok := thermal.ParseWeekday(opts.StartOfWeek); ok {
-		startOfWeek = d
-	}
-
 	aggOpts := thermal.AggregateOptions{
-		StartOfWeek: startOfWeek,
+		StartOfWeek: startOfWeek(opts),
 		Since:       opts.Since,
 		Until:       opts.Until,
 		Last:        opts.Last,
@@ -611,9 +696,7 @@ func runReport(opts thermal.Options) {
 			thermal.Report
 			GeneratedAt string `json:"generatedAt"`
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		enc.Encode(jsonReport{
+		writeReportJSON(jsonReport{
 			Report:      rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		})
@@ -680,9 +763,7 @@ func runModelReport(opts thermal.Options) {
 			thermal.ModelReport
 			GeneratedAt string `json:"generatedAt"`
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		enc.Encode(jsonReport{
+		writeReportJSON(jsonReport{
 			ModelReport: rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		})
@@ -690,4 +771,94 @@ func runModelReport(opts thermal.Options) {
 	}
 
 	fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
+}
+
+// runMixReport shows the tool or model mix over time with switching stats.
+func runMixReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	mixOpts := thermal.MixOptions{
+		Since:       opts.Since,
+		Until:       opts.Until,
+		Last:        opts.Last,
+		Grain:       thermal.Grain(strings.ToLower(opts.Grain)),
+		By:          strings.ToLower(opts.By),
+		Metric:      strings.ToLower(opts.Metric),
+		StartOfWeek: startOfWeek(opts),
+	}
+	pricer := newPricer(opts)
+	var rep thermal.MixReport
+	if mixOpts.By == "model" {
+		rep = thermal.AggregateModelMix(set.days, mixOpts, pricer)
+	} else {
+		rep = thermal.AggregateToolMix(set.byTool, mixOpts, pricer)
+	}
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.MixReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonReport{
+			MixReport:   rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderMix(rep, opts.NoColor))
+}
+
+// runStatsReport summarises the daily distribution of tokens or cost.
+func runStatsReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	statsOpts := thermal.StatsOptions{
+		Since:  opts.Since,
+		Until:  opts.Until,
+		Last:   opts.Last,
+		Metric: strings.ToLower(opts.Metric),
+	}
+	rep := thermal.AggregateStats(set.days, statsOpts, newPricer(opts))
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.StatsReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonReport{
+			StatsReport: rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderStats(rep, opts.NoColor))
+}
+
+// runTrendReport fits a daily trend and projects it to month end.
+func runTrendReport(opts thermal.Options) {
+	set := loadUsage(opts)
+
+	trendOpts := thermal.TrendOptions{
+		Since:  opts.Since,
+		Until:  opts.Until,
+		Last:   opts.Last,
+		Metric: strings.ToLower(opts.Metric),
+	}
+	rep := thermal.AggregateTrend(set.days, trendOpts, newPricer(opts))
+
+	if opts.JSON {
+		type jsonReport struct {
+			thermal.TrendReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonReport{
+			TrendReport: rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderTrend(rep, opts.NoColor))
 }

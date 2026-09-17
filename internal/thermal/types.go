@@ -39,6 +39,9 @@ type Options struct {
 	NoEstimate  bool   // report stored cost only, skip pricing
 	Sort        string // tokens, cost, days, recent; default tokens
 	Top         int    // project rows to print, 0 means all
+	Metric      string // tokens or cost; analytics verbs
+	By          string // tool or model; mix verb
+	Grain       string // day, week, month; mix verb
 }
 
 type Summary struct {
