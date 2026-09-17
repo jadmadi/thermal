@@ -44,6 +44,10 @@ With Go:
 go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
+Prefer a hosted page? The documentation site in
+[`docs/pages`](docs/pages) covers the same ground with rendered terminal
+output: https://jadmadi.github.io/thermal/
+
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
 
 Or build from source using the included build script:
