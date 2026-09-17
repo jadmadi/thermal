@@ -143,6 +143,12 @@ thermal weekly --order asc --start-of-week monday
 thermal weekly --json
 ```
 
+Daily, weekly, and monthly tables list token-bearing periods only: days with
+no classified tokens, no recorded cost, and no model attribution (pure step
+or message counts, empty sessions) are skipped so the Tokens column and the
+Total row stay in tokens. That activity still counts toward streaks and the
+leaderboard.
+
 ## Projects
 
 Group tokens, cost, and activity by project. thermal walks each recorded directory up to its nearest git repository, so subdirectories and worktrees fold into one project, and the same project is merged across every tool that touched it.
