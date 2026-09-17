@@ -38,6 +38,21 @@ func TestValidateReportFlags(t *testing.T) {
 		{"bad weekday", with(base, func(o *thermal.Options) { o.Report = "daily"; o.StartOfWeek = "someday" }), true},
 		{"bad since", with(base, func(o *thermal.Options) { o.Report = "daily"; o.Since = "01/02/2026" }), true},
 		{"compact since ok", with(base, func(o *thermal.Options) { o.Report = "monthly"; o.Since = "20260101"; o.Until = "2026-01-31" }), false},
+		{"mix ok", with(base, func(o *thermal.Options) {
+			o.Report = "mix"
+			o.Metric = "cost"
+			o.By = "model"
+			o.Grain = "month"
+		}), false},
+		{"stats ok", with(base, func(o *thermal.Options) { o.Report = "stats"; o.Metric = "cost" }), false},
+		{"trend ok", with(base, func(o *thermal.Options) { o.Report = "trend"; o.Last = 30 }), false},
+		{"bad metric", with(base, func(o *thermal.Options) { o.Report = "stats"; o.Metric = "steps" }), true},
+		{"bad by", with(base, func(o *thermal.Options) { o.Report = "mix"; o.By = "project" }), true},
+		{"bad grain", with(base, func(o *thermal.Options) { o.Report = "mix"; o.Grain = "quarter" }), true},
+		{"by on trend", with(base, func(o *thermal.Options) { o.Report = "trend"; o.By = "model" }), true},
+		{"grain on stats", with(base, func(o *thermal.Options) { o.Report = "stats"; o.Grain = "day" }), true},
+		{"metric on leaderboard", with(base, func(o *thermal.Options) { o.Metric = "cost" }), true},
+		{"grain on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Grain = "month" }), true},
 	}
 
 	for _, tc := range cases {
