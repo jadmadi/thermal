@@ -118,3 +118,5 @@ go build -o /tmp/thermal-test ./cmd/thermal
 ```
 
 When modifying loaders, ensure unit tests inside `internal/loaders/*_test.go` cover edge cases (missing databases, corrupted files, zero-token sessions, timestamp variations, and schema differences) using mock temporary files or SQLite in-memory databases.
+
+* **gofmt scope**: run `gofmt` only on files the change touches. Several test files carry pre-existing drift, and a repo-wide sweep adds unrelated noise to feature diffs.
