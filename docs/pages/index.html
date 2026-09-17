@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermal — contribution heatmap for AI coding tools</title>
+<meta name="description" content="Thermal reads the session databases your AI coding tools already write and renders streaks, tokens, and cost as a terminal heatmap. Twelve tools, read-only, zero config.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0E13">
+<!-- Swap this for a custom domain if the site moves off GitHub Pages. -->
+<link rel="canonical" href="https://jadmadi.github.io/thermal/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Thermal">
+<meta property="og:title" content="Thermal — contribution heatmap for AI coding tools">
+<meta property="og:description" content="Streaks, tokens, and cost across twelve AI coding tools, rendered in your terminal.">
+<meta property="og:url" content="https://jadmadi.github.io/thermal/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230B0E13'/%3E%3Cg transform='translate(2.5 2.5)'%3E%3Crect width='2.6' height='2.6' rx='0.7' fill='%231E2836'/%3E%3Crect x='3.6' width='2.6' height='2.6' rx='0.7' fill='%232F6C55'/%3E%3Crect y='3.6' width='2.6' height='2.6' rx='0.7' fill='%233F9270'/%3E%3Crect x='3.6' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%234FB98B'/%3E%3Crect x='7.2' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%2386EFC0'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+/* ---------------------------------------------------------------------------
+   Thermal docs — dark terminal register.
+   Tokens first. Heat ramp values mirror the tool's own 256-colour levels
+   (22, 28, 34, 40) so the page reads as an extension of the product.
+   --------------------------------------------------------------------------- */
+:root{
+  --bg:#0B0E13;
+  --raised:#11151C;
+  --sunken:#0A0D11;
+  --line:#1C232E;
+  --line-strong:#28313F;
+  --fg:#E9EDF4;
+  --muted:#98A2B3;
+  --faint:#7C8CA1;
+  --heat-0:#1E2836;
+  --heat-1:#2F6C55;
+  --heat-2:#3F9270;
+  --heat-3:#4FB98B;
+  --heat-4:#86EFC0;
+  --gold:#E3B341;
+  --price:#E3B341;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --step--1:.84rem;
+  --step-0:1.0625rem;
+  --step-1:1.28rem;
+  --step-2:1.55rem;
+  --step-3:2.05rem;
+  --step-4:2.95rem;
+  --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem;
+  --s6:2rem; --s7:3rem; --s8:4.5rem; --s9:7rem;
+  --r-sm:3px; --r-md:6px; --r-lg:9px;
+  --container:1180px;
+  --prose:min(72ch,100%);
+  --lede:min(52ch,100%);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--sans);
+  font-size:var(--step-0);
+  line-height:1.6;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
+p{margin:0}
+a{color:var(--fg);text-decoration:none}
+a:hover{color:var(--heat-3)}
+a:focus-visible,button:focus-visible,summary:focus-visible,pre:focus-visible{
+  outline:2px solid var(--heat-3);outline-offset:3px;border-radius:var(--r-sm);
+}
+code,kbd,pre{font-family:var(--mono);font-size:.92em;overflow-wrap:anywhere}
+.skip{
+  position:absolute;left:-9999px;top:var(--s2);
+  background:var(--heat-4);color:#06231A;padding:var(--s2) var(--s4);
+  border-radius:var(--r-md);z-index:20;font-weight:600;
+}
+.skip:focus{left:var(--s4)}
+
+.wrap{max-width:var(--container);margin:0 auto;padding:0 var(--s5)}
+.prose{max-width:var(--prose)}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+.mono{font-family:var(--mono)}
+
+/* ---------------------------------------------------------------- top bar */
+.top{
+  position:sticky;top:0;z-index:10;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.top-in{
+  max-width:var(--container);margin:0 auto;padding:var(--s3) var(--s5);
+  display:flex;align-items:center;gap:var(--s5);
+}
+.brand{display:flex;align-items:center;gap:var(--s3);font-weight:650;letter-spacing:-.01em}
+.brand svg{display:block;flex:none}
+.top nav{margin-left:auto;display:flex;gap:var(--s5);font-size:var(--step--1)}
+.top nav a{color:var(--muted)}
+.top nav a:hover{color:var(--fg)}
+@media (max-width:720px){.top nav{display:none}}
+
+/* ------------------------------------------------------------------- hero */
+.hero{padding:var(--s9) 0 var(--s8)}
+.hero-grid{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);
+  gap:var(--s8);align-items:start;
+}
+@media (max-width:940px){.hero-grid{grid-template-columns:1fr;gap:var(--s7)}}
+/* Grid items default to a min-content floor; zero it so a long unbreakable
+   line can scroll inside its own box instead of widening the page. */
+.hero-grid > *{min-width:0}
+.hero h1{
+  font-family:var(--mono);font-size:clamp(2.1rem,4.4vw,3.05rem);font-weight:600;
+  letter-spacing:-.035em;max-width:min(16ch,100%);
+}
+.hero .lede{
+  margin-top:var(--s5);font-size:var(--step-1);line-height:1.55;
+  color:var(--muted);max-width:var(--lede);
+}
+.hero .lede strong{color:var(--fg);font-weight:600}
+
+/* heat panel — the one decorative risk on the page, and it is the product.
+   Cell size is a variable so the grid shrinks as one unit, never clipping. */
+.panel{
+  background:var(--raised);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:var(--s5);
+  min-width:0;
+}
+.hm{margin:0}
+.hm-ruler{
+  display:grid;grid-template-columns:repeat(53,minmax(0,1fr));
+  gap:2px;margin-bottom:8px;
+  font-family:var(--mono);font-size:9px;color:var(--faint);line-height:1;
+}
+.hm-ruler span{white-space:nowrap;overflow:visible}
+.hm-grid{display:grid;gap:2px}
+.hm-row{
+  display:grid;grid-template-columns:repeat(53,minmax(0,1fr));
+  gap:2px;max-width:449px;
+}
+/* Below this width the squares stop reading as a heatmap, so the panel
+   scrolls sideways instead of shrinking them into dust. */
+@media (max-width:430px){
+  .hm{overflow-x:auto;padding-bottom:var(--s3)}
+  .hm-grid,.hm-ruler{min-width:300px;width:300px}
+}
+/* Cells are squares that fill their track, so the grid scales with the panel
+   at any width instead of forcing a minimum. */
+.hm-cell{
+  aspect-ratio:1;border-radius:2px;background:var(--heat-0);
+  display:block;width:100%;
+}
+.hm-lv0{background:var(--heat-0)}
+.hm-lv1{background:var(--heat-1)}
+.hm-lv2{background:var(--heat-2)}
+.hm-lv3{background:var(--heat-3)}
+.hm-lv4{background:var(--heat-4)}
+.hm-today{box-shadow:0 0 0 1.5px var(--heat-4),0 0 12px -2px var(--heat-4)}
+/* Cells are visible by default and only animate when motion is welcome, so a
+   failed animation can never leave the heatmap blank. */
+.js .hm-cell{animation:scan .55s cubic-bezier(.2,.7,.3,1) backwards;animation-delay:calc(var(--i) * 6ms)}
+@keyframes scan{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .js .hm-cell{animation:none}
+}
+.hm-foot{
+  display:flex;align-items:center;gap:var(--s2);margin-top:var(--s4);
+  font-family:var(--mono);font-size:var(--step--1);color:var(--faint);
+}
+.hm-foot .hm-cell{animation:none;width:9px;height:9px}
+
+/* ------------------------------------------------------------------ stats */
+.stats{
+  display:flex;flex-wrap:wrap;gap:var(--s6);
+  margin-top:var(--s7);padding-top:var(--s5);border-top:1px solid var(--line);
+}
+.stat .n{
+  font-family:var(--mono);font-size:var(--step-2);font-weight:600;
+  letter-spacing:-.03em;display:block;
+}
+.stat .k{font-size:var(--step--1);color:var(--faint)}
+
+/* ---------------------------------------------------------------- section */
+section{padding:var(--s8) 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+.sec-head{margin-bottom:var(--s6)}
+.sec-head h2{
+  font-family:var(--mono);font-size:var(--step-3);font-weight:600;
+  letter-spacing:-.03em;scroll-margin-top:5rem;
+}
+.sec-head p{margin-top:var(--s3);color:var(--muted);max-width:var(--prose)}
+.body-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s6)}
+@media (min-width:1000px){
+  .sec-head h2{font-size:calc(var(--step-3) * 1.05)}
+}
+@media (max-width:620px){.sec-head h2{font-size:var(--step-2)}}
+
+/* ------------------------------------------------------------------ blocks */
+pre{
+  margin:var(--s5) 0 0;padding:var(--s5);
+  background:var(--sunken);border:1px solid var(--line);
+  border-radius:var(--r-md);overflow-x:auto;
+  line-height:1.62;color:#D6DEEA;
+}
+pre.output{color:var(--muted)}
+pre b{color:var(--heat-3);font-weight:400}
+pre i{color:var(--gold);font-style:normal}
+pre u{color:var(--faint);text-decoration:none}
+.cmd{
+  margin:var(--s5) 0 0;background:var(--sunken);
+  border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;
+}
+.cmd pre{
+  margin:0;border:0;border-radius:0;background:none;
+  padding:var(--s4) var(--s5) var(--s5);
+}
+.cmd.wrap pre{white-space:pre-wrap;overflow-wrap:anywhere}
+/* Terminal output keeps its fixed-width columns and scrolls sideways. */
+.cmd pre.output{overflow-x:auto;scrollbar-color:var(--line-strong) transparent}
+.scroll-hint{
+  display:none;margin:var(--s3) 0 0;font-size:var(--step--1);
+  color:var(--faint);font-family:var(--mono);
+}
+@media (max-width:1000px){.scroll-hint{display:block}}
+.cmd-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+  padding:var(--s2) var(--s3) var(--s2) var(--s5);
+  border-bottom:1px solid var(--line);
+}
+.cmd-bar .lang{
+  font-family:var(--mono);font-size:var(--step--1);color:var(--faint);
+}
+.copy{
+  background:transparent;color:var(--muted);
+  border:1px solid var(--line-strong);border-radius:var(--r-sm);
+  font-family:var(--mono);font-size:var(--step--1);
+  padding:.25rem .6rem;cursor:pointer;
+  transition:color 120ms ease-out,border-color 120ms ease-out;
+}
+.copy:hover{color:var(--fg);border-color:var(--faint)}
+.copy[data-done]{color:var(--heat-3);border-color:var(--heat-3)}
+@media (max-width:900px){
+  .cmd-bar{padding:var(--s2) var(--s2) var(--s2) var(--s4)}
+  .copy{min-height:40px;min-width:76px;font-size:var(--step-0)}
+}
+
+/* --------------------------------------------------------------- key list */
+.keys{list-style:none;margin:var(--s6) 0 0;padding:0;display:grid;gap:var(--s5)}
+.keys li{display:grid;grid-template-columns:170px minmax(0,1fr);gap:var(--s5)}
+@media (max-width:620px){.keys li{grid-template-columns:1fr;gap:var(--s1)}}
+.keys dt,.keys .term{font-family:var(--mono);color:var(--fg);font-size:var(--step--1);padding-top:.15rem}
+.keys dd{margin:0;color:var(--muted)}
+
+/* ----------------------------------------------------------------- tables */
+.tbl-wrap{overflow-x:auto;margin-top:var(--s5)}
+table{border-collapse:collapse;width:100%;min-width:640px;text-align:left}
+caption{
+  text-align:left;color:var(--faint);font-size:var(--step--1);
+  padding-bottom:var(--s3);
+}
+th,td{padding:var(--s3) var(--s4) var(--s3) 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{
+  color:var(--faint);font-family:var(--mono);font-weight:500;
+  font-size:var(--step--1);white-space:nowrap;
+}
+td{color:var(--muted)}
+td:first-child{color:var(--fg);white-space:nowrap}
+td.mono,th.mono{font-family:var(--mono);font-size:var(--step--1)}
+tbody tr:hover td{background:#0E131A}
+td .yes{color:var(--heat-3)}
+
+/* ------------------------------------------------------------------ notes */
+.note{
+  margin-top:var(--s5);padding:var(--s4) var(--s5);
+  background:var(--raised);border-left:2px solid var(--heat-2);
+  border-radius:0 var(--r-md) var(--r-md) 0;color:var(--muted);
+  max-width:var(--prose);
+}
+.note strong{color:var(--fg)}
+
+.steps{list-style:none;counter-reset:s;margin:0;padding:0;max-width:var(--prose)}
+.steps li{counter-increment:s;padding-left:var(--s6);position:relative;margin-top:var(--s5)}
+.steps li::before{
+  content:counter(s);position:absolute;left:0;top:.15rem;
+  font-family:var(--mono);font-size:var(--step--1);color:var(--faint);
+  border:1px solid var(--line-strong);border-radius:var(--r-sm);
+  width:1.4rem;height:1.4rem;display:grid;place-items:center;
+}
+.steps b{display:block;color:var(--fg);font-weight:600;margin-bottom:var(--s1)}
+.steps p{color:var(--muted)}
+
+/* -------------------------------------------------------------- reference */
+.ref-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--s8)}
+@media (max-width:900px){.ref-grid{grid-template-columns:1fr;gap:var(--s6)}}
+.ref-grid > *{min-width:0}
+.toc{position:sticky;top:5.5rem;align-self:start;font-size:var(--step--1)}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+.toc a{color:var(--faint)}
+.toc a[aria-current="true"]{color:var(--heat-3)}
+@media (max-width:900px){.toc{position:static;border-bottom:1px solid var(--line);padding-bottom:var(--s5)}
+  .toc ol{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:var(--s3) var(--s5)}
+}
+.flag-legend{
+  display:flex;flex-wrap:wrap;gap:var(--s5);margin-top:var(--s5);
+  font-size:var(--step--1);color:var(--faint);
+}
+.flag-legend span{font-family:var(--mono)}
+.flag-legend b{color:var(--muted);font-weight:400}
+
+/* ---------------------------------------------------------------- closing */
+footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
+.foot-grid{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);align-items:baseline}
+.foot-grid p{color:var(--faint);font-size:var(--step--1);max-width:52ch}
+.foot-grid nav{display:flex;gap:var(--s5);font-size:var(--step--1)}
+.foot-grid nav a{color:var(--muted)}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#top">
+      <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
+        <rect width="2.6" height="2.6" rx=".7" fill="#1E2836"/>
+        <rect x="3.6" width="2.6" height="2.6" rx=".7" fill="#2F6C55"/>
+        <rect y="3.6" width="2.6" height="2.6" rx=".7" fill="#3F9270"/>
+        <rect x="3.6" y="3.6" width="2.6" height="2.6" rx=".7" fill="#4FB98B"/>
+        <rect x="7.2" y="3.6" width="2.6" height="2.6" rx=".7" fill="#86EFC0"/>
+      </svg>
+      Thermal
+    </a>
+    <nav aria-label="Sections">
+      <a href="#start">Install</a>
+      <a href="#leaderboard">Leaderboard</a>
+      <a href="#reports">Reports</a>
+      <a href="#projects">Projects</a>
+      <a href="#models">Models</a>
+      <a href="#reference">Reference</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div id="top"></div>
+
+<!-- ============================================================== HERO === -->
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-grid">
+      <div>
+        <h1>Don't break the streak.</h1>
+        <p class="lede">
+          Thermal reads the session databases your AI coding tools already
+          write, and renders <strong>streaks, tokens, and cost</strong> as a
+          heatmap in the terminal. Twelve tools, one table. Nothing to
+          configure, and nothing written back to your data.
+        </p>
+        <div class="cmd wrap">
+          <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+          <pre><code>go install github.com/jadmadi/thermal/cmd/thermal@latest
+thermal</code></pre>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="hm-foot" style="margin:0 0 .75rem">
+          <span>Last 53 weeks</span>
+        </p>
+              <div class="hm" aria-hidden="true">
+        <div class="hm-ruler"><span>Oct</span><span></span><span></span><span></span><span>Nov</span><span></span><span></span><span></span><span>Dec</span><span></span><span></span><span></span><span></span><span>Jan</span><span></span><span></span><span></span><span>Feb</span><span></span><span></span><span></span><span>Mar</span><span></span><span></span><span></span><span></span><span>Apr</span><span></span><span></span><span></span><span>May</span><span></span><span></span><span></span><span></span><span>Jun</span><span></span><span></span><span></span><span>Jul</span><span></span><span></span><span></span><span></span><span>Aug</span><span></span><span></span><span></span><span>Sep</span><span></span><span></span><span></span><span></span></div>
+        <div class="hm-grid">
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+        </div>
+      </div>
+        <p class="hm-foot">
+          <span>less</span>
+          <span class="hm-cell hm-lv0"></span>
+          <span class="hm-cell hm-lv1"></span>
+          <span class="hm-cell hm-lv2"></span>
+          <span class="hm-cell hm-lv3"></span>
+          <span class="hm-cell hm-lv4"></span>
+          <span>more</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="n">12</span><span class="k">tools read</span></div>
+      <div class="stat"><span class="n">~10ms</span><span class="k">warm runs, delta cache</span></div>
+      <div class="stat"><span class="n">read-only</span><span class="k">sources never modified</span></div>
+      <div class="stat"><span class="n">10.7 MB</span><span class="k">stripped binary, no CGO</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ INSTALL == -->
+<section id="start">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Install and run</h2>
+      <p>
+        One command with a Go toolchain. Prebuilt binaries cover Linux, macOS,
+        and Windows with UPX-compressed release assets.
+      </p>
+    </div>
+
+    <div class="body-grid">
+      <ol class="steps prose">
+        <li>
+          <b>Install</b>
+          <p>With Go 1.26 or newer, the version in <span class="mono">go.mod</span>:</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <pre><code>go install github.com/jadmadi/thermal/cmd/thermal@latest</code></pre>
+          </div>
+          <p style="margin-top:var(--s4)">
+            Or grab a binary from
+            <a href="https://github.com/jadmadi/thermal/releases">GitHub Releases</a>.
+            To build from source instead:
+          </p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <pre><code>git clone https://github.com/jadmadi/thermal
+cd thermal
+./build.sh --release</code></pre>
+          </div>
+        </li>
+        <li>
+          <b>Run it</b>
+          <p>
+            With no arguments thermal lists every tool it finds and ranks them.
+            Tool data is read on demand, so you can start with a single tool:
+          </p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <pre><code>thermal                 <u># leaderboard for every installed tool</u>
+thermal opencode        <u># one tool, full dashboard</u>
+thermal --tool auto     <u># first tool it finds on this machine</u></code></pre>
+          </div>
+        </li>
+        <li>
+          <b>Keep it current</b>
+          <p>
+            Binaries installed from a release or <span class="mono">go install</span>
+            update themselves in place, with an atomic replace of the running
+            file:
+          </p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <pre><code>thermal upgrade
+thermal version</code></pre>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== LEADERBOARD == -->
+<section id="leaderboard">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Leaderboard</h2>
+      <p>
+        The default view. Tools split into those that record tokens and those
+        that only record activity, because a step count and a token count are
+        not the same unit and should never sit in one column.
+      </p>
+    </div>
+
+    <div class="prose">
+      <p class="muted">
+        Token Warriors rank by tokens burned. Activity Hunters rank by messages,
+        steps, or prompts. Rank order is chosen with
+        <span class="mono">--sort</span>.
+      </p>
+      <pre class="output"><code>  THERMAL  — Don't break the streak.
+
+  Token Warriors
+   #    Tool           Strk    Best    Days     Tokens      Cost
+   ─────────────────────────────────────────────────────────────────
+   1. OpenCode          10d     10d     26d   8.2B tok    $50.54
+   2. Codex              6d      7d     43d   938.7M tok  —
+   3. ZCode              3d      3d      5d   676.2M tok  —
+   4. Devin              2d     33d     45d   19.2B tok   —
+   5. MiMoCode           1d      7d     16d   1.2B tok    $56.14
+   6. Grok               1d      1d      1d   692.7K tok  $0.44
+   7. codewhale          1d      1d      3d   110.1K tok  $0.02
+   8. Claude             1d      1d      3d   0 tok       —
+
+  Activity Hunters
+   #    Tool           Strk    Best    Days     Activity
+   ───────────────────────────────────────────────────────
+   1. Agy               36d     36d     43d   60.1K step
+   2. command-code       2d      9d     44d   10.4K msg
+   3. Droid              1d      1d      2d   14 msg
+   4. Muse               0d      0d      0d   0 prompt
+
+  >> Agy is on fire with a 36-day streak!
+
+  Keep the heat going. Don't break the streak.</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+
+    <div class="prose">
+      <div class="cmd">
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <pre><code>thermal --sort tokens   <u># biggest token consumers first</u>
+thermal --sort cost     <u># biggest recorded spend first</u>
+thermal --weeks 26      <u># narrower heatmap, 4 to 104</u>
+thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Streaks are computed from activity, not tokens.</strong>
+      A day where an agent ran but recorded no tokens still counts, so a push
+      that produced no usage telemetry never breaks your streak.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ REPORTS == -->
+<section id="reports">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Reports</h2>
+      <p>
+        Daily, weekly, and monthly reports fold the same rows into period
+        tables. A week starts on Sunday unless
+        <span class="mono">--start-of-week</span> says otherwise.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <pre><code>thermal weekly                          <u># every tool, newest week first</u>
+thermal opencode daily --last 7         <u># one tool, last 7 days</u>
+thermal monthly --last 1 --breakdown    <u># this month, plus a row per model</u>
+thermal weekly --since 2026-08-01 --until 2026-08-31
+thermal weekly --order asc --start-of-week monday
+thermal weekly --json                   <u># unchanged shape, scripts first</u></code></pre>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <caption>Report options. These error when no report command is present instead of being ignored.</caption>
+        <thead>
+          <tr><th>Flag</th><th>Default</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">--since, --until</td>
+            <td class="mono">—</td>
+            <td>Window bounds as <span class="mono">YYYY-MM-DD</span> or <span class="mono">YYYYMMDD</span>.</td>
+          </tr>
+          <tr>
+            <td class="mono">--last N</td>
+            <td class="mono">0</td>
+            <td>Whole periods back from now. <span class="mono">--last 1</span> is today, this week, or this month. Cannot be combined with <span class="mono">--since</span> or <span class="mono">--until</span>.</td>
+          </tr>
+          <tr>
+            <td class="mono">--order</td>
+            <td class="mono">desc</td>
+            <td><span class="mono">asc</span> or <span class="mono">desc</span>.</td>
+          </tr>
+          <tr>
+            <td class="mono">--start-of-week</td>
+            <td class="mono">sunday</td>
+            <td>Any weekday name, for weekly buckets.</td>
+          </tr>
+          <tr>
+            <td class="mono">--breakdown</td>
+            <td class="mono">off</td>
+            <td>Indents a per-model row under each period.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <strong>Tables list token-bearing periods.</strong> A day with no
+      classified tokens, no recorded cost, and no model attribution is skipped,
+      so the Tokens column and the Total row stay in one unit. Daily, weekly,
+      and monthly totals for the same window are identical. Activity-only
+      periods still count toward streaks and the leaderboard.
+    </p>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <p class="muted" style="margin-bottom:var(--s2)">
+        Weekly output, real numbers from one machine:
+      </p>
+      <pre class="output"><code>  Thermal · weekly usage · all tools
+
+  Period      Models                   Input     Output     Reason      Cache     Tokens       Cost
+  ─────────────────────────────────────────────────────────────────────────────────────────────────
+  2026-09-13  deepseek-v4.1… +10      52.5M       5.6M       4.7M       4.3B       4.3B     $74.94
+  2026-09-06  deepseek-v4.1… +13     129.4M      10.0M       3.9M       5.7B       5.9B    $216.03
+  2026-08-30  omen-alpha +5           122.4M       9.9M     690.4K       4.4B       4.6B     $62.13
+  ─────────────────────────────────────────────────────────────────────────────────────────────────
+  Total                               1.3B      80.7M      10.3M      28.0B      29.4B    $611.20
+
+  ~ $507.17 of the total is estimated from pricing data.
+  No pricing for: accounts/fireworks/models/deepseek-v4-flash-0731, codex-auto-review</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== PROJECTS == -->
+<section id="projects">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Projects</h2>
+      <p>
+        Tokens and cost per repository. Thermal walks each recorded directory
+        up to its nearest git root, so subdirectories and worktrees fold into
+        one row, and the same repository merges across every tool that touched
+        it.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <pre><code>thermal projects                     <u># rank every project by tokens</u>
+thermal projects --sort cost         <u># or cost, days, recent</u>
+thermal projects --last 30 --top 10  <u># window and row limit</u>
+thermal projects --breakdown         <u># tool split and top models per project</u>
+thermal projects --json              <u># full paths, every row</u></code></pre>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <pre class="output"><code>  Thermal · projects
+
+  #    Project                       Tools                    Tokens       Cost  Days  Last
+  ───────────────────────────────────────────────────────────────────────────────────────────────
+   1.  mahak-bench                   OpenCode,Devin +5          5.1B    $226.35    14  2026-09-16
+   2.  tree.waqf.app                 Devin,MiMoCode +2          3.8B      $4.10    10  2026-08-12
+   3.  AlMatjar-App                  Devin,OpenCode +1          2.9B      $1.86    21  2026-09-16
+   4.  rewaq                         Devin,OpenCode,Codex       2.5B     $26.74     3  2026-09-01
+   5.  sila                          ZCode,OpenCode +3          1.5B     $78.39    12  2026-09-17
+  … and 76 more (use --json for the full list)
+  ───────────────────────────────────────────────────────────────────────────────────────────────
+       Total                         Claude,Codex +6           30.3B    $621.74   251  2026-09-17</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+
+    <p class="note">
+      <strong>Merge happens by git root, not by path string.</strong>
+      Symlinked homes and duplicate checkouts collapse to a single project.
+      A directory with no repository marker falls back to its recorded path
+      rather than an invented name.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================= MODELS == -->
+<section id="models">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Models</h2>
+      <p>
+        Every model id across every tool, ranked by tokens, with the tools that
+        used it. Case is normalized, so
+        <span class="mono">GLM-5.3-Flash</span> from ZCode and
+        <span class="mono">glm-5.3-flash</span> from OpenCode count once.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <pre><code>thermal models                <u># global ranking</u>
+thermal models --sort cost    <u># rank by estimated cost</u>
+thermal opencode models       <u># one tool only</u>
+thermal models --top 10</code></pre>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <pre class="output"><code>  Thermal · models
+
+  #    Model                           Tools                    Tokens       Cost  Days  Last
+  ─────────────────────────────────────────────────────────────────────────────────────────────────
+   1.  deepseek-v4.1-flash             OpenCode,ZCode             3.9B     $23.29     8  2026-09-17
+   2.  deepseek-v4-flash-0731          MiMoCode,OpenCode +1       1.1B     $26.62     9  2026-09-12
+   3.  gpt-5.6-sol                     Codex                    386.8M    $256.25    10  2026-09-11</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+
+    <p class="note">
+      <strong>Cost here is always an estimate.</strong>
+      A recorded cost belongs to a session or a day, never to one model, so
+      thermal prices models from list prices instead of pretending the split
+      is known.
+    </p>
+  </div>
+</section>
+
+<!-- =============================================================== COST == -->
+<section id="cost">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Cost estimation</h2>
+      <p>
+        Recorded cost always wins. Thermal only estimates the days a source
+        left blank, and it names the models it could not price instead of
+        counting them as free.
+      </p>
+    </div>
+
+    <div class="prose">
+      <p class="muted">
+        Prices come from the <a href="https://models.dev">models.dev</a>
+        catalog, cached at <span class="mono">~/.cache/thermal/pricing.json</span>
+        and refreshed once a day. Estimates never mix with recorded cost inside
+        one day.
+      </p>
+      <div class="cmd">
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <pre><code>thermal weekly --offline      <u># cached prices only, never fetch</u>
+thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
+      </div>
+      <p class="muted" style="margin-top:var(--s5)">
+        Override or add a price in
+        <span class="mono">~/.config/thermal/pricing.json</span>:
+      </p>
+      <div class="cmd">
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <pre><code>{
+  "codex-auto-review": { "input": 1.25, "output": 10 }
+}</code></pre>
+      </div>
+      <p class="note">
+        <strong>Subscription models report as unpriced.</strong>
+        When a model has no list price, it appears in a
+        <span class="mono">No pricing for</span> line under the table. That is
+        deliberate: a blank is honest, a zero is not.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== TOOLS == -->
+<section id="tools">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Supported tools</h2>
+      <p>
+        Each tool is read from where it already keeps its own data. The paths
+        below assume the usual home directory.
+      </p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <caption>Twelve tools. Aliases in the third column work anywhere a tool name does.</caption>
+        <thead>
+          <tr><th>Tool</th><th>Source</th><th>Aliases</th><th>Metrics</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Devin</td>
+            <td class="mono">~/.local/share/devin/cli/sessions.db</td>
+            <td class="mono">devin</td>
+            <td>Tokens, sessions, cost, projects</td>
+          </tr>
+          <tr>
+            <td>OpenCode</td>
+            <td class="mono">~/.local/share/opencode/opencode.db</td>
+            <td class="mono">oc</td>
+            <td>Tokens, sessions, cost, projects</td>
+          </tr>
+          <tr>
+            <td>MiMoCode</td>
+            <td class="mono">~/.local/share/mimocode/mimocode.db</td>
+            <td class="mono">mimo, mimo-</td>
+            <td>Tokens, sessions, cost, projects</td>
+          </tr>
+          <tr>
+            <td>Codex</td>
+            <td class="mono">~/.codex/state_5.sqlite + sessions/*.jsonl</td>
+            <td class="mono">codex</td>
+            <td>Tokens, sessions, model and source split, projects</td>
+          </tr>
+          <tr>
+            <td>codewhale</td>
+            <td class="mono">~/.codewhale/sessions/*.json</td>
+            <td class="mono">whale</td>
+            <td>Tokens, sessions, cost, projects</td>
+          </tr>
+          <tr>
+            <td>ZCode</td>
+            <td class="mono">~/.zcode/cli/db/db.sqlite</td>
+            <td class="mono">zc</td>
+            <td>Tokens, sessions, model and agent split, projects</td>
+          </tr>
+          <tr>
+            <td>Grok</td>
+            <td class="mono">~/.grok/sessions/*/*/updates.jsonl</td>
+            <td class="mono">grok</td>
+            <td>Tokens, sessions, cost, projects</td>
+          </tr>
+          <tr>
+            <td>Claude</td>
+            <td class="mono">~/.claude/projects/*/*.jsonl</td>
+            <td class="mono">claude, ccode</td>
+            <td>Tokens, sessions, models, projects</td>
+          </tr>
+          <tr>
+            <td>Muse</td>
+            <td class="mono">~/.local/share/muse/session-index.db</td>
+            <td class="mono">muse</td>
+            <td>Prompt activity, sessions, models</td>
+          </tr>
+          <tr>
+            <td>Droid</td>
+            <td class="mono">~/.factory/sessions/*/*.jsonl</td>
+            <td class="mono">droid, factory</td>
+            <td>Message activity, sessions</td>
+          </tr>
+          <tr>
+            <td>command-code</td>
+            <td class="mono">~/.commandcode/sessions/*/transcript.jsonl</td>
+            <td class="mono">cmd, cc, commandcode</td>
+            <td>Message activity, sessions, models</td>
+          </tr>
+          <tr>
+            <td>Agy</td>
+            <td class="mono">~/.gemini/antigravity-cli/brain/*/logs/transcript.jsonl</td>
+            <td class="mono">agy</td>
+            <td>Step activity, sessions, models</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <p class="muted">
+        Codex also reads reasoning effort and source breakdown from rollout
+        logs when they exist, and the SQLite state file is the primary source.
+        Agy falls back to its legacy overview logs when the current root is
+        absent.
+      </p>
+      <p class="note">
+        <strong>Read-only, always.</strong>
+        SQLite databases open with
+        <span class="mono">mode=ro</span> and a 256&nbsp;MB mmap window. The
+        only files thermal writes are its own delta cache under
+        <span class="mono">~/.cache/thermal/</span> and the pricing cache,
+        which is why a warm run lands under ten milliseconds.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== REFERENCE == -->
+<section id="reference">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Reference</h2>
+      <p>
+        Every command and flag. Report options are rejected where they would be
+        ignored, so a typo fails loudly instead of silently changing nothing.
+      </p>
+    </div>
+
+    <div class="ref-grid">
+      <nav class="toc" aria-label="On this page">
+        <ol>
+          <li><a href="#start">Install and run</a></li>
+          <li><a href="#leaderboard">Leaderboard</a></li>
+          <li><a href="#reports">Reports</a></li>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#models">Models</a></li>
+          <li><a href="#cost">Cost estimation</a></li>
+          <li><a href="#tools">Supported tools</a></li>
+          <li><a href="#reference">Reference</a></li>
+        </ol>
+      </nav>
+
+      <div>
+        <h3 class="mono" style="font-size:var(--step-1);margin-bottom:var(--s3)">Commands</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Command</th><th>What it prints</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">thermal</td><td>Leaderboard across every installed tool.</td></tr>
+              <tr><td class="mono">thermal &lt;tool&gt;</td><td>Full dashboard: summary, streak, heatmap.</td></tr>
+              <tr><td class="mono">thermal daily</td><td>One row per day.</td></tr>
+              <tr><td class="mono">thermal weekly</td><td>One row per week.</td></tr>
+              <tr><td class="mono">thermal monthly</td><td>One row per month.</td></tr>
+              <tr><td class="mono">thermal projects</td><td>One row per git repository.</td></tr>
+              <tr><td class="mono">thermal models</td><td>One row per model id.</td></tr>
+              <tr><td class="mono">thermal upgrade</td><td>Self-update from GitHub Releases.</td></tr>
+              <tr><td class="mono">thermal version</td><td>Version, commit, and build date.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="margin-top:var(--s4);font-size:var(--step--1)">
+          A tool name and a report word combine in either order:
+          <span class="mono">thermal opencode weekly</span> is the same as
+          <span class="mono">thermal weekly opencode</span>.
+        </p>
+
+        <h3 class="mono" style="font-size:var(--step-1);margin:var(--s7) 0 var(--s3)">Flags</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Flag</th><th>Default</th><th>Effect</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">--tool &lt;name&gt;</td><td class="mono">all</td><td>Scope to one tool. Accepts the aliases above.</td></tr>
+              <tr><td class="mono">--db &lt;path&gt;</td><td class="mono">—</td><td>Override the data path for one tool.</td></tr>
+              <tr><td class="mono">--weeks &lt;n&gt;</td><td class="mono">52</td><td>Heatmap width, 4 to 104.</td></tr>
+              <tr><td class="mono">--sort &lt;key&gt;</td><td class="mono">streak</td><td>Leaderboard: <span class="mono">streak</span>, <span class="mono">tokens</span>, <span class="mono">cost</span>. Projects: <span class="mono">tokens</span>, <span class="mono">cost</span>, <span class="mono">days</span>, <span class="mono">recent</span>. Models: <span class="mono">tokens</span>, <span class="mono">cost</span>.</td></tr>
+              <tr><td class="mono">--top &lt;n&gt;</td><td class="mono">0</td><td>Row limit for projects and models. 0 prints every row.</td></tr>
+              <tr><td class="mono">--breakdown</td><td class="mono">off</td><td>Per-model rows in reports, per-project detail in projects.</td></tr>
+              <tr><td class="mono">--json</td><td class="mono">off</td><td>Machine-readable output on stdout.</td></tr>
+              <tr><td class="mono">--no-color</td><td class="mono">off</td><td>Strip ANSI colour, for logs and CI.</td></tr>
+              <tr><td class="mono">--verbose</td><td class="mono">off</td><td>Non-fatal loader warnings to stderr. stdout stays clean.</td></tr>
+              <tr><td class="mono">--offline</td><td class="mono">off</td><td>Use cached prices, never fetch. Reports only.</td></tr>
+              <tr><td class="mono">--no-estimate</td><td class="mono">off</td><td>Reported cost only, no estimates. Reports only.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flag-legend">
+          <span><b>--last, --since, --until, --order, --start-of-week</b> need a report word</span>
+          <span><b>exit code 1</b> on validation errors</span>
+        </div>
+
+        <pre class="output" style="margin-top:var(--s6)"><code>$ thermal weekly --top 5
+thermal: --top only applies to the projects and models commands</code></pre>
+        <p class="scroll-hint">Scrolls sideways to show every column.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <p>
+      Thermal is MIT-licensed and reads local files only. It never uploads
+      usage data anywhere.
+    </p>
+    <nav aria-label="Project links">
+      <a href="https://github.com/jadmadi/thermal">GitHub</a>
+      <a href="https://github.com/jadmadi/thermal/releases">Releases</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/README.md">README</a>
+      <a href="#top">Back to top</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Give every heatmap cell its stagger index once, so the scan animation
+  // sweeps left to right instead of firing all at once.
+  var cells = document.querySelectorAll('.hm-cell');
+  for (var i = 0; i < cells.length; i++) {
+    cells[i].style.setProperty('--i', i % 53);
+  }
+
+  // Copy buttons: read the sibling pre, write to the clipboard, confirm.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    var cmd = btn.closest('.cmd') || btn.parentElement;
+    var pre = cmd.querySelector('pre');
+    if (!pre) return;
+    var text = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      btn.setAttribute('data-done', '');
+      setTimeout(function () {
+        btn.textContent = 'Copy';
+        btn.removeAttribute('data-done');
+      }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      // Some browsers stall the clipboard promise instead of rejecting it.
+      // Race a timer so the button never sits silent on a dead promise.
+      var raced = Promise.race([
+        navigator.clipboard.writeText(text),
+        new Promise(function (_, no) { setTimeout(no, 700); })
+      ]);
+      raced.then(done, function () { legacy(text, done); });
+    } else {
+      legacy(text, done);
+    }
+  });
+
+  function legacy(text, done) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    // Confirm either way: the text is selected and the user saw the click land.
+    done();
+    return ok;
+  }
+
+  // Scrollspy: mark the section the reader is actually in. Anchors and the
+  // sidebar share one implementation, which is why it walks every target.
+  var links = document.querySelectorAll('.toc a');
+  var targets = [];
+  for (var j = 0; j < links.length; j++) {
+    var el = document.querySelector(links[j].getAttribute('href'));
+    if (el) targets.push({ link: links[j], el: el });
+  }
+  if (targets.length && 'IntersectionObserver' in window) {
+    var seen = new Map();
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { seen.set(en.target, en.intersectionRatio); });
+      var best = null, bestRatio = 0;
+      seen.forEach(function (ratio, el) {
+        if (ratio > bestRatio) { bestRatio = ratio; best = el; }
+      });
+      targets.forEach(function (t) {
+        if (t.el === best) t.link.setAttribute('aria-current', 'true');
+        else t.link.removeAttribute('aria-current');
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
+    targets.forEach(function (t) { obs.observe(t.el); });
+  }
+})();
+</script>
+</body>
+</html>
