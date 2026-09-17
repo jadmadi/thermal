@@ -1,0 +1,11 @@
+{
+  "goal_slug": "report-period-totals",
+  "claimed_by": "opencode",
+  "agent": "opencode",
+  "claimed_at": "2026-09-17T11:00:24.846197779Z",
+  "updated_at": "2026-09-17T11:00:24.846197779Z",
+  "hostname": "madi",
+  "pid": 2594154,
+  "status": "in_progress",
+  "note": "fix weekly/monthly totals and empty-row formatting"
+}
