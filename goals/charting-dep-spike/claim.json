@@ -1,0 +1,11 @@
+{
+  "goal_slug": "charting-dep-spike",
+  "claimed_by": "opencode",
+  "agent": "opencode",
+  "claimed_at": "2026-09-17T03:39:00.829680172Z",
+  "updated_at": "2026-09-17T03:39:00.829680172Z",
+  "hostname": "madi",
+  "pid": 1884061,
+  "status": "in_progress",
+  "note": "Spike module in /tmp/opencode/ntcharts-spike"
+}
