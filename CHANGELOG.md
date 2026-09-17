@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/jadmadi/thermal/compare/v0.6.0...v0.7.0) (2026-09-17)
+
+
+### Features
+
+* **analytics:** add mix, stats, and trend verbs ([#22](https://github.com/jadmadi/thermal/issues/22)) ([9c28a0a](https://github.com/jadmadi/thermal/commit/9c28a0af26a610ebaff49a8b02cc9635e8120e85))
+
 ## [0.6.0](https://github.com/jadmadi/thermal/compare/v0.5.0...v0.6.0) (2026-09-16)
 
 
