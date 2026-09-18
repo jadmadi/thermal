@@ -53,6 +53,10 @@
   --step-4:2.95rem;
   --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem;
   --s6:2rem; --s7:3rem; --s8:4.5rem; --s9:7rem;
+  --motion-fast:120ms;
+  --motion-base:200ms;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-soft:cubic-bezier(.4,0,.2,1);
   --r-sm:3px; --r-md:6px; --r-lg:9px;
   --container:1180px;
   --prose:min(72ch,100%);
@@ -72,8 +76,14 @@ body{
 }
 h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
 p{margin:0}
-a{color:var(--fg);text-decoration:none}
-a:hover{color:var(--heat-3)}
+a{
+  color:var(--fg);text-decoration:none;
+  text-underline-offset:2px;text-decoration-skip-ink:auto;
+  transition:color var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  a:hover{color:var(--heat-3);text-decoration:underline}
+}
 a:focus-visible,button:focus-visible,summary:focus-visible,pre:focus-visible{
   outline:2px solid var(--heat-3);outline-offset:3px;border-radius:var(--r-sm);
 }
@@ -106,7 +116,14 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
 .brand svg{display:block;flex:none}
 .top nav{margin-left:auto;display:flex;gap:var(--s5);font-size:var(--step--1)}
 .top nav a{color:var(--muted)}
-.top nav a:hover{color:var(--fg)}
+.top nav a span{position:relative}
+/* Grows from the left so it reads as arriving, not as a jump. */
+.top nav a span::after{
+  content:"";position:absolute;left:0;right:0;bottom:-5px;height:1px;
+  background:currentColor;transform:scaleX(0);transform-origin:left;
+  transition:transform var(--motion-base) var(--ease-out);
+}
+.top nav a:hover span::after{transform:scaleX(1)}
 @media (max-width:720px){.top nav{display:none}}
 
 /* ------------------------------------------------------------------- hero */
@@ -165,13 +182,36 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
 .hm-lv2{background:var(--heat-2)}
 .hm-lv3{background:var(--heat-3)}
 .hm-lv4{background:var(--heat-4)}
+/* Windows High Contrast collapses background colours, which would flatten the
+   ramp into one shade. The heatmap has a text alternative, so keep its data. */
+@media (forced-colors:active){
+  .hm-cell,.hm-foot .hm-cell{forced-color-adjust:none}
+  .hm-today{box-shadow:none;outline:2px solid CanvasText;outline-offset:1px}
+}
 .hm-today{box-shadow:0 0 0 1.5px var(--heat-4),0 0 12px -2px var(--heat-4)}
 /* Cells are visible by default and only animate when motion is welcome, so a
-   failed animation can never leave the heatmap blank. */
-.js .hm-cell{animation:scan .55s cubic-bezier(.2,.7,.3,1) backwards;animation-delay:calc(var(--i) * 6ms)}
-@keyframes scan{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+   failed animation can never leave the heatmap blank. Opacity and background
+   only: no transform, which would promote all 371 cells to their own layer. */
+.js .hm-cell{animation:scan var(--motion-base) var(--ease-soft) backwards}
+.js .hm-row:nth-child(2) .hm-cell{animation-delay:8ms}
+.js .hm-row:nth-child(3) .hm-cell{animation-delay:16ms}
+.js .hm-row:nth-child(4) .hm-cell{animation-delay:24ms}
+.js .hm-row:nth-child(5) .hm-cell{animation-delay:32ms}
+.js .hm-row:nth-child(6) .hm-cell{animation-delay:40ms}
+.js .hm-row:nth-child(7) .hm-cell{animation-delay:48ms}
+.js .hm-cell:nth-child(4n+1){animation-delay:6ms}
+.js .hm-cell:nth-child(4n+2){animation-delay:12ms}
+.js .hm-cell:nth-child(4n+3){animation-delay:18ms}
+@keyframes scan{from{opacity:0;background:var(--heat-4)}}
 @media (prefers-reduced-motion:reduce){
   .js .hm-cell{animation:none}
+  /* Reduced motion removes gratuitous motion, not signal. Focus rings and the
+     copy button's confirmation still change state, just without travel. */
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
 }
 .hm-foot{
   display:flex;align-items:center;gap:var(--s2);margin-top:var(--s4);
@@ -198,7 +238,10 @@ section:first-of-type{border-top:0}
   font-family:var(--mono);font-size:var(--step-3);font-weight:600;
   letter-spacing:-.03em;scroll-margin-top:5rem;
 }
-.sec-head p{margin-top:var(--s3);color:var(--muted);max-width:var(--prose)}
+.sec-head p{
+  margin-top:var(--s3);margin-bottom:var(--s6);
+  color:var(--muted);max-width:var(--prose);
+}
 .body-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s6)}
 @media (min-width:1000px){
   .sec-head h2{font-size:calc(var(--step-3) * 1.05)}
@@ -245,13 +288,23 @@ pre u{color:var(--faint);text-decoration:none}
   border:1px solid var(--line-strong);border-radius:var(--r-sm);
   font-family:var(--mono);font-size:var(--step--1);
   padding:.25rem .6rem;cursor:pointer;
-  transition:color 120ms ease-out,border-color 120ms ease-out;
+  touch-action:manipulation;
+  /* Explicit box on the icon so failure feedback can swap it in place. */
+  display:inline-flex;align-items:center;gap:.4rem;
+  transition:color var(--motion-fast) var(--ease-out),
+             border-color var(--motion-fast) var(--ease-out),
+             transform var(--motion-fast) var(--ease-out);
 }
-.copy:hover{color:var(--fg);border-color:var(--faint)}
-.copy[data-done]{color:var(--heat-3);border-color:var(--heat-3)}
+.copy svg{width:1em;height:1em;flex:none}
+@media (hover:hover) and (pointer:fine){
+  .copy:hover{color:var(--fg);border-color:var(--faint)}
+}
+.copy:active{transform:scale(.97)}
+.copy[data-state="ok"]{color:var(--heat-3);border-color:var(--heat-3)}
+.copy[data-state="fail"]{color:var(--gold);border-color:var(--gold)}
 @media (max-width:900px){
   .cmd-bar{padding:var(--s2) var(--s2) var(--s2) var(--s4)}
-  .copy{min-height:40px;min-width:76px;font-size:var(--step-0)}
+  .copy{min-height:40px;min-width:88px}
 }
 
 /* --------------------------------------------------------------- key list */
@@ -276,6 +329,7 @@ th{
 td{color:var(--muted)}
 td:first-child{color:var(--fg);white-space:nowrap}
 td.mono,th.mono{font-family:var(--mono);font-size:var(--step--1)}
+td{transition:background var(--motion-fast) var(--ease-soft)}
 tbody tr:hover td{background:#0E131A}
 td .yes{color:var(--heat-3)}
 
@@ -395,12 +449,12 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       Thermal
     </a>
     <nav aria-label="Sections">
-      <a href="#start">Install</a>
-      <a href="#leaderboard">Leaderboard</a>
-      <a href="#reports">Reports</a>
-      <a href="#projects">Projects</a>
-      <a href="#models">Models</a>
-      <a href="#reference">Reference</a>
+      <a href="#start"><span>Install</span></a>
+      <a href="#leaderboard"><span>Leaderboard</span></a>
+      <a href="#reports"><span>Reports</span></a>
+      <a href="#projects"><span>Projects</span></a>
+      <a href="#models"><span>Models</span></a>
+      <a href="#reference"><span>Reference</span></a>
     </nav>
   </div>
 </header>
@@ -421,7 +475,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
           configure, and nothing written back to your data.
         </p>
         <div class="cmd wrap">
-          <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+          <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
           <pre><code>go install github.com/jadmadi/thermal/cmd/thermal@latest
 thermal</code></pre>
         </div>
@@ -457,7 +511,7 @@ thermal</code></pre>
 
     <div class="stats">
       <div class="stat"><span class="n">12</span><span class="k">tools read</span></div>
-      <div class="stat"><span class="n">~10ms</span><span class="k">warm runs, delta cache</span></div>
+      <div class="stat"><span class="n">cached</span><span class="k">warm runs re-read only deltas</span></div>
       <div class="stat"><span class="n">read-only</span><span class="k">sources never modified</span></div>
       <div class="stat"><span class="n">10.7 MB</span><span class="k">stripped binary, no CGO</span></div>
     </div>
@@ -481,7 +535,7 @@ thermal</code></pre>
           <b>Install</b>
           <p>With Go 1.26 or newer, the version in <span class="mono">go.mod</span>:</p>
           <div class="cmd">
-            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
             <pre><code>go install github.com/jadmadi/thermal/cmd/thermal@latest</code></pre>
           </div>
           <p style="margin-top:var(--s4)">
@@ -490,7 +544,7 @@ thermal</code></pre>
             To build from source instead:
           </p>
           <div class="cmd">
-            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
             <pre><code>git clone https://github.com/jadmadi/thermal
 cd thermal
 ./build.sh --release</code></pre>
@@ -503,7 +557,7 @@ cd thermal
             Tool data is read on demand, so you can start with a single tool:
           </p>
           <div class="cmd">
-            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
             <pre><code>thermal                 <u># leaderboard for every installed tool</u>
 thermal opencode        <u># one tool, full dashboard</u>
 thermal --tool auto     <u># first tool it finds on this machine</u></code></pre>
@@ -517,7 +571,7 @@ thermal --tool auto     <u># first tool it finds on this machine</u></code></pre
             file:
           </p>
           <div class="cmd">
-            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+            <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
             <pre><code>thermal upgrade
 thermal version</code></pre>
           </div>
@@ -575,7 +629,7 @@ thermal version</code></pre>
 
     <div class="prose">
       <div class="cmd">
-        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
         <pre><code>thermal --sort tokens   <u># biggest token consumers first</u>
 thermal --sort cost     <u># biggest recorded spend first</u>
 thermal --weeks 26      <u># narrower heatmap, 4 to 104</u>
@@ -604,7 +658,7 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
     </div>
 
     <div class="cmd">
-      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
       <pre><code>thermal weekly                          <u># every tool, newest week first</u>
 thermal opencode daily --last 7         <u># one tool, last 7 days</u>
 thermal monthly --last 1 --breakdown    <u># this month, plus a row per model</u>
@@ -692,7 +746,7 @@ thermal weekly --json                   <u># unchanged shape, scripts first</u><
     </div>
 
     <div class="cmd">
-      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
       <pre><code>thermal projects                     <u># rank every project by tokens</u>
 thermal projects --sort cost         <u># or cost, days, recent</u>
 thermal projects --last 30 --top 10  <u># window and row limit</u>
@@ -739,7 +793,7 @@ thermal projects --json              <u># full paths, every row</u></code></pre>
     </div>
 
     <div class="cmd">
-      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
       <pre><code>thermal models                <u># global ranking</u>
 thermal models --sort cost    <u># rank by estimated cost</u>
 thermal opencode models       <u># one tool only</u>
@@ -786,7 +840,7 @@ thermal models --top 10</code></pre>
         one day.
       </p>
       <div class="cmd">
-        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
         <pre><code>thermal weekly --offline      <u># cached prices only, never fetch</u>
 thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
       </div>
@@ -795,7 +849,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
         <span class="mono">~/.config/thermal/pricing.json</span>:
       </p>
       <div class="cmd">
-        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy>Copy</button></div>
+        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
         <pre><code>{
   "codex-auto-review": { "input": 1.25, "output": 10 }
 }</code></pre>
@@ -917,7 +971,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
         <span class="mono">mode=ro</span> and a 256&nbsp;MB mmap window. The
         only files thermal writes are its own delta cache under
         <span class="mono">~/.cache/thermal/</span> and the pricing cache,
-        which is why a warm run lands under ten milliseconds.
+        which is why warm runs only re-read what changed.
       </p>
     </div>
   </div>
@@ -1056,9 +1110,9 @@ thermal: --top only applies to the projects and models commands</code></pre>
       <div>
         <div class="faq-q">How do I install it?</div>
         <p>
-          Run <span class="mono">go install
-          github.com/jadmadi/thermal/cmd/thermal@latest</span>, or download a
-          prebuilt binary for Linux, macOS, or Windows from GitHub Releases.
+          Run <span class="mono">go&nbsp;install</span> with the module path
+          in the install section above, or download a prebuilt binary for
+          Linux, macOS, or Windows from GitHub Releases.
         </p>
       </div>
       <div>
@@ -1100,36 +1154,26 @@ thermal: --top only applies to the projects and models commands</code></pre>
     cells[i].style.setProperty('--i', i % 53);
   }
 
-  // Copy buttons: read the sibling pre, write to the clipboard, confirm.
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-copy]');
-    if (!btn) return;
-    var cmd = btn.closest('.cmd') || btn.parentElement;
-    var pre = cmd.querySelector('pre');
-    if (!pre) return;
-    var text = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
-    var done = function () {
-      btn.textContent = 'Copied';
-      btn.setAttribute('data-done', '');
-      setTimeout(function () {
-        btn.textContent = 'Copy';
-        btn.removeAttribute('data-done');
-      }, 1400);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      // Some browsers stall the clipboard promise instead of rejecting it.
-      // Race a timer so the button never sits silent on a dead promise.
-      var raced = Promise.race([
-        navigator.clipboard.writeText(text),
-        new Promise(function (_, no) { setTimeout(no, 700); })
-      ]);
-      raced.then(done, function () { legacy(text, done); });
-    } else {
-      legacy(text, done);
-    }
-  });
+  // Copy buttons. Feedback is honest: the button confirms only when the text
+  // actually reached the clipboard, and says so plainly when it did not.
+  var ICONS = {
+    copy: '<rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+    ok: '<path d="M2.5 8.5 6 12l7.5-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    fail: '<path d="M8 3v6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="12.6" r="1.1" fill="currentColor"/>'
+  };
 
-  function legacy(text, done) {
+  function writeClipboard(text) {
+    var fallback = function () { return Promise.resolve(legacy(text)); };
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return fallback();
+    // Some browsers stall the clipboard promise instead of rejecting it, so
+    // race a timer and fall through rather than leaving the button silent.
+    return Promise.race([
+      navigator.clipboard.writeText(text),
+      new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, 700); })
+    ]).then(function () { return true; }, fallback);
+  }
+
+  function legacy(text) {
     var ta = document.createElement('textarea');
     ta.value = text;
     ta.setAttribute('readonly', '');
@@ -1140,10 +1184,29 @@ thermal: --top only applies to the projects and models commands</code></pre>
     var ok = false;
     try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
     document.body.removeChild(ta);
-    // Confirm either way: the text is selected and the user saw the click land.
-    done();
     return ok;
   }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    var cmd = btn.closest('.cmd') || btn.parentElement;
+    var pre = cmd.querySelector('pre');
+    if (!pre) return;
+    var code = pre.querySelector('code');
+    var label = btn.querySelector('span');
+    var icon = btn.querySelector('svg');
+    writeClipboard(code ? code.innerText : pre.innerText).then(function (ok) {
+      btn.setAttribute('data-state', ok ? 'ok' : 'fail');
+      icon.innerHTML = ok ? ICONS.ok : ICONS.fail;
+      label.textContent = ok ? 'Copied' : "Couldn't copy";
+      setTimeout(function () {
+        btn.removeAttribute('data-state');
+        icon.innerHTML = ICONS.copy;
+        label.textContent = 'Copy';
+      }, ok ? 1400 : 2400);
+    });
+  });
 
   // Scrollspy: mark the section the reader is actually in. Anchors and the
   // sidebar share one implementation, which is why it walks every target.
