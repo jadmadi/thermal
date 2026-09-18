@@ -88,9 +88,32 @@ func TopModels(models map[string]ModelTokens) []string {
 	return names
 }
 
+// hasTokenData reports whether a day carries token or cost telemetry: a
+// classified token count, recorded cost, or a model with positive tokens.
+// Activity-only days (message or step counts with no breakdown, cost, or
+// model) return false, so period reports never mix steps into token columns
+// and totals. Streaks and the leaderboard keep that activity separately.
+func hasTokenData(day DailyRow) bool {
+	if day.Input != 0 || day.Output != 0 || day.Reasoning != 0 || day.Cache != 0 {
+		return true
+	}
+	if day.Cost != 0 {
+		return true
+	}
+	for _, counts := range day.Models {
+		if counts.Total() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // Aggregate folds day rows into a report at the requested grain. Days outside
-// the since, until, or last window are dropped. Rows come back newest first
-// unless Order is "asc". A nil pricer leaves EstimatedCost at zero.
+// the since, until, or last window are dropped, as are days with no token or
+// cost telemetry (activity-only and empty session days). Rows come back newest
+// first unless Order is "asc". Totals accumulate from the kept days directly,
+// so every grain reports bit-identical totals for the same window. A nil
+// pricer leaves EstimatedCost at zero.
 func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Pricer) Report {
 	if grain != GrainWeek && grain != GrainMonth {
 		grain = GrainDay
@@ -127,6 +150,10 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 	byKey := make(map[string]*PeriodRow)
 	activeSets := make(map[string]map[string]bool)
 
+	var total PeriodRow
+	totalModels := make(map[string]ModelTokens)
+	totalActive := make(map[string]bool)
+
 	for _, day := range days {
 		t, ok := ParseDay(day.Day)
 		if !ok {
@@ -139,6 +166,9 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 			continue
 		}
 		if !lastStart.IsZero() && t.Before(lastStart) {
+			continue
+		}
+		if !hasTokenData(day) {
 			continue
 		}
 
@@ -157,6 +187,14 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		row.Turns += day.Turns
 		row.StoredCost += day.Cost
 
+		total.Input += day.Input
+		total.Output += day.Output
+		total.Reasoning += day.Reasoning
+		total.Cache += day.Cache
+		total.Tokens += day.Tokens
+		total.Turns += day.Turns
+		total.StoredCost += day.Cost
+
 		if day.Turns > 0 {
 			set := activeSets[key]
 			if set == nil {
@@ -164,6 +202,7 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 				activeSets[key] = set
 			}
 			set[day.Day] = true
+			totalActive[day.Day] = true
 		}
 
 		// Estimate only days with no stored cost. A day with recorded cost
@@ -171,15 +210,26 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		if pricer != nil && day.Cost == 0 && day.Tokens > 0 {
 			cost, missing := pricer.PriceDay(day)
 			row.EstimatedCost += cost
+			total.EstimatedCost += cost
 			for _, m := range missing {
 				if !containsString(row.MissingPricing, m) {
 					row.MissingPricing = append(row.MissingPricing, m)
 				}
+				if !containsString(total.MissingPricing, m) {
+					total.MissingPricing = append(total.MissingPricing, m)
+				}
 			}
 		}
 
+		// Zero-count model entries are loader artifacts (a named session with
+		// no counted tokens). They carry no signal, so they never become rows
+		// or inflate the "+N" model suffix.
 		for model, counts := range day.Models {
+			if counts.Total() == 0 {
+				continue
+			}
 			row.Models[model] = row.Models[model].Add(counts)
+			totalModels[model] = totalModels[model].Add(counts)
 		}
 	}
 
@@ -204,42 +254,17 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		}
 	}
 
-	return Report{Type: string(grain), Rows: rows, Totals: sumPeriods(rows)}
-}
-
-func sumPeriods(rows []PeriodRow) PeriodRow {
-	var total PeriodRow
-	for _, row := range rows {
-		total.Input += row.Input
-		total.Output += row.Output
-		total.Reasoning += row.Reasoning
-		total.Cache += row.Cache
-		total.Tokens += row.Tokens
-		total.Turns += row.Turns
-		total.ActiveDays += row.ActiveDays
-		total.StoredCost += row.StoredCost
-		total.EstimatedCost += row.EstimatedCost
-		for _, m := range row.MissingPricing {
-			if !containsString(total.MissingPricing, m) {
-				total.MissingPricing = append(total.MissingPricing, m)
-			}
-		}
-		for model, counts := range row.Models {
-			if total.Models == nil {
-				total.Models = make(map[string]ModelTokens)
-			}
-			total.Models[model] = total.Models[model].Add(counts)
-		}
-	}
+	total.ActiveDays = len(totalActive)
 	total.Cost = total.StoredCost + total.EstimatedCost
 	sort.Strings(total.MissingPricing)
 	if len(total.MissingPricing) == 0 {
 		total.MissingPricing = nil
 	}
-	if len(total.Models) == 0 {
-		total.Models = nil
+	if len(totalModels) > 0 {
+		total.Models = totalModels
 	}
-	return total
+
+	return Report{Type: string(grain), Rows: rows, Totals: total}
 }
 
 func containsString(list []string, s string) bool {

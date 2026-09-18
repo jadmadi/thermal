@@ -28,20 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 8
-- 🟢 **Implemented & Verified**: 1
-- 🔵 **In Progress (Claimed)**: 2
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 5
-- 📋 **Execution Tasks Progress**: 10/42 completed (23%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :--- | :--- | :--- |
-| [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | `@opencode` | Static analytics: mix, stats, trend aggregations and verbs | 9m0s ago |
-| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | `@opencode` | fix weekly/monthly totals and empty-row formatting | 7m0s ago |
+- 🟢 **Implemented & Verified**: 3
+- 🟡 **Ready to Execute (Pending)**: 1 (0 independent ⚡, 1 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 4
+- 📋 **Execution Tasks Progress**: 14/42 completed (33%)
 
 ---
 
@@ -49,7 +39,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :--- | :--- | :--- |
-| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🚢 SHIP ⛔ Blocked (#3)` | Prereqs: charting-analytics | TUI shell and Overview view — Add the thermal dashboard command: a Bubble Tea v2 application shell with tab ro... | `/goal goals/tui-shell-overview/goal.md` |
+| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🚢 SHIP 🔗 Ready (#3)` | Deps met: charting-analytics | TUI shell and Overview view — Add the thermal dashboard command: a Bubble Tea v2 application shell with tab ro... | `/goal goals/tui-shell-overview/goal.md` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: tui-shell-overview | TUI Stats view — Histogram of daily tokens or cost with a log toggle, weekday profile, top days, ... | `/goal goals/tui-stats-view/goal.md` |
@@ -62,4 +52,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Mode | Shape | Task / Ref | Commit |
 | :--- | :---: | :--- | :--- | :--- |
 | [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fa74fe7` |
+| [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9c28a0a` |
+| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `9d44753` |
 

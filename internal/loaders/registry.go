@@ -121,7 +121,6 @@ var toolAliases = map[string]thermal.Tool{
 	"devin":        thermal.ToolDevin,
 	"agy":          thermal.ToolAgy,
 	"cmd":          thermal.ToolCommandCode,
-	"cc":           thermal.ToolCommandCode,
 	"commandcode":  thermal.ToolCommandCode,
 	"command-code": thermal.ToolCommandCode,
 	"whale":        thermal.ToolCodewhale,
