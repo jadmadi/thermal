@@ -401,6 +401,22 @@ td a{color:var(--heat-3)}
 }
 .faq-grid p{color:var(--muted);max-width:52ch;font-size:.98rem}
 
+/* ---------------------------------------------------------------- answers */
+.answers{
+  display:grid;gap:var(--s6) var(--s8);
+  grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));
+  max-width:var(--container);
+}
+.answers h3{
+  font-size:var(--step-0);font-weight:600;letter-spacing:-.01em;
+  margin-bottom:var(--s2);
+}
+.answers p{
+  color:var(--muted);max-width:56ch;font-size:.98rem;
+  margin-bottom:var(--s3);
+}
+.answers .fix{color:var(--fg);font-size:.95rem;max-width:56ch}
+
 /* ---------------------------------------------------------------- closing */
 footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
 .foot-grid{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);align-items:baseline}
@@ -596,6 +612,91 @@ thermal version</code></pre>
           </div>
         </li>
       </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== ANSWERS == -->
+<section id="answers">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What it answers</h2>
+      <p>
+        Each question below is one the tools themselves cannot answer, because
+        each one only knows its own usage.
+      </p>
+    </div>
+
+    <div class="answers">
+      <div>
+        <h3>What are the agents costing me?</h3>
+        <p>
+          Spend sits in twelve different places, and none of them show a total.
+          Two of them record no cost at all.
+        </p>
+        <p class="fix">
+          One table puts every tool in the same units, with recorded cost where
+          it exists and estimates where it does not.
+        </p>
+      </div>
+      <div>
+        <h3>Which project is eating the budget?</h3>
+        <p>
+          A bill per tool says what you spent, never on what. Invoicing a client
+          or dividing cost between teams needs the project, not the tool.
+        </p>
+        <p class="fix">
+          <span class="mono">thermal projects</span> ranks repositories by
+          tokens and cost, merged across every tool that touched each one.
+        </p>
+      </div>
+      <div>
+        <h3>Which model burns the money?</h3>
+        <p>
+          Token share and cost share are not the same number. A model used a
+          fraction of the time can carry most of the bill.
+        </p>
+        <p class="fix">
+          <span class="mono">thermal models --sort cost</span> ranks by
+          estimated cost, so routing decisions come from spend rather than
+          volume.
+        </p>
+      </div>
+      <div>
+        <h3>Are we still using what we pay for?</h3>
+        <p>
+          Seats expire quietly. The sessions keep running, the activity
+          disappears, and nobody notices a tool stopped being used.
+        </p>
+        <p class="fix">
+          Streaks and active days per tool, plus the heatmap, show which tools
+          you reach for and which have gone cold.
+        </p>
+      </div>
+      <div>
+        <h3>What if the source deletes its history?</h3>
+        <p>
+          Tools rotate their own logs and drop sessions. When that happens, the
+          usage record goes with it, and there is no way to get it back.
+        </p>
+        <p class="fix">
+          Thermal reads SQLite files and JSONL logs in place and writes its own
+          delta cache, so a re-read is fast and the numbers stay repeatable
+          from what each tool still has.
+        </p>
+      </div>
+      <div>
+        <h3>Can I show this without sending code anywhere?</h3>
+        <p>
+          Usage data is still your code's shadow. A dashboard that wants an
+          account or an upload is a hard sell to a security review.
+        </p>
+        <p class="fix">
+          Nothing leaves the machine. Databases open read-only, there is no
+          server and no account, and the only files written are caches under
+          the user cache directory.
+        </p>
+      </div>
     </div>
   </div>
 </section>
@@ -999,6 +1100,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
       <nav class="toc" aria-label="On this page">
         <ol>
           <li><a href="#start">Install and run</a></li>
+          <li><a href="#answers">What it answers</a></li>
           <li><a href="#leaderboard">Leaderboard</a></li>
           <li><a href="#reports">Reports</a></li>
           <li><a href="#projects">Projects</a></li>

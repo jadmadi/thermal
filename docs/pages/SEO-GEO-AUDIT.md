@@ -13,6 +13,7 @@ Target URL for canonical tags: `https://jadmadi.github.io/thermal/`
 | H1 count | 1 | 1 |
 | Schema markup | none | SoftwareApplication, Person, FAQPage |
 | FAQ section | none | 6 questions, visible and marked up |
+| Problem framing | absent | "What it answers", 6 grounded pain points |
 | Order line in H2 | no | yes ("Supported tools") |
 | robots.txt | missing | present, AI bots named explicitly |
 | sitemap.xml | missing | present, one canonical URL |
@@ -26,6 +27,13 @@ Target URL for canonical tags: `https://jadmadi.github.io/thermal/`
 Baseline run found four gaps: no schema, no robots.txt, no sitemap, and a
 169-character description. All four are closed. The remaining script output is
 clean.
+
+## On-page copy that answers questions
+
+The "What it answers" section states six problems in the reader's own terms
+before describing the command that solves each one. That shape suits answer
+engines, which quote a direct answer more readily than a feature list, and it
+does the work a comparison page would do for readers arriving from search.
 
 ## Outbound links
 
