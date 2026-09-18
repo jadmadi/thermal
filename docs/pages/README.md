@@ -8,7 +8,7 @@ step, no JavaScript framework, no external requests.
 ```
 docs/pages/
 ├── index.html       The whole site: styles, content, and a little vanilla JS
-├── 404.html         A copy of index.html, used by GitHub Pages for unknown paths
+├── 404.html         A copy of index.html, served for unknown paths
 ├── og.png           Social share card, 1200x630
 ├── robots.txt       Crawler policy, AI bots named explicitly
 ├── sitemap.xml      One URL, updated by hand
@@ -23,25 +23,26 @@ offline as it does on a CDN. The only binary asset is `og.png`.
 
 ## Deploy to GitHub Pages
 
-Repository settings, Pages, then:
+Pages is enabled on this repository with the source set to GitHub Actions,
+which is what lets the site live in `docs/pages`. Branch-based Pages only
+offers `/` or `/docs`, so an Actions workflow in
+`.github/workflows/pages.yml` publishes `docs/pages` instead, on every push to
+`main` that touches the site.
 
-- Source: Deploy from a branch
-- Branch: `main`
-- Folder: `/docs/pages`
+Nothing else to configure. Merging to `main` deploys; the workflow also has a
+manual trigger in the Actions tab. The site lands at
+`https://<owner>.github.io/<repo>/`.
 
-The site lands at `https://<owner>.github.io/<repo>/`. No workflow file is
-needed. If you later publish at the repository root, move the two HTML files up
-one level and leave the README behind.
+If you would rather not use Actions, move the site files to `docs/` at the
+repository root and switch Settings, Pages, Source back to "Deploy from a
+branch" with folder `/docs`.
 
 ## Deploy to Cloudflare Pages
 
-Connect the repository and set:
-
-- Framework preset: None
-- Build command: leave empty
-- Build output directory: `docs/pages`
-
-Cloudflare serves `index.html` at the root and, because 404.html mirrors it,
+Connect the repository and set the build output directory to `docs/pages`.
+Leave the framework preset at None and the build command empty. The GitHub
+Actions workflow is not used there, so no extra configuration is needed.
+Cloudflare serves `index.html` at the root and, because `404.html` mirrors it,
 also serves the documentation for unknown paths.
 
 ## Editing
@@ -72,3 +73,5 @@ python3 -m http.server 8899 --directory docs/pages
 
 Contrast, focus rings, hit targets on the Copy buttons, and
 `prefers-reduced-motion` are already handled. Keep them that way.
+
+When the page content changes, update `<lastmod>` in `sitemap.xml`.

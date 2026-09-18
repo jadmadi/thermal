@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 Scope: `docs/pages/` (one page, `index.html`, mirrored as `404.html`)
-Target URL assumed for canonical tags: `https://jadmadi.github.io/thermal/`
+Target URL for canonical tags: `https://jadmadi.github.io/thermal/`
 
 ## Status after this pass
 
@@ -67,9 +67,11 @@ Where thermal differs, and where the content should push:
 
 ## Prioritized actions
 
-1. Deploy. None of this counts until the URL resolves. Enable GitHub Pages
-   with folder `/docs/pages`, then submit the sitemap in Search Console and
-   Bing Webmaster Tools.
+1. Deploy. Pages is enabled with the source set to GitHub Actions, and
+   `.github/workflows/pages.yml` publishes `docs/pages`. Branch-based Pages
+   cannot serve a subfolder other than `/docs`, which is why the workflow
+   exists. The workflow runs when this branch merges to `main`. After that,
+   submit the sitemap in Search Console and Bing Webmaster Tools.
 2. Add comparison pages: "thermal vs ccusage", "thermal vs tokscale", and a
    ccusage-alternatives page. In this category, comparison intent converts and
    the terms are not yet owned by anyone.
