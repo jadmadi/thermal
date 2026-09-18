@@ -55,7 +55,7 @@ Or build from source using the included build script:
 ```bash
 git clone https://github.com/jadmadi/thermal
 cd thermal
-./build.sh --release   # Builds stripped production binary (~9.8MB) with embedded version tags
+./build.sh --release   # Builds stripped production binary (~10.7MB) with embedded version tags
 ```
 
 You can run `./build.sh --help` to explore available build modes (`--release`, `--dev`, `--upx`) and cross-compilation targets. Or build manually with Go:
