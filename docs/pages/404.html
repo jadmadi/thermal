@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thermal docs</title>
-<meta name="description" content="Thermal reads the session databases your AI coding tools already write and renders streaks, tokens, and cost as a terminal heatmap. Twelve tools, read-only, zero config.">
+<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 12 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0B0E13">
 <!-- Swap this for a custom domain if the site moves off GitHub Pages. -->
@@ -14,7 +14,12 @@
 <meta property="og:title" content="Thermal — contribution heatmap for AI coding tools">
 <meta property="og:description" content="Streaks, tokens, and cost across twelve AI coding tools, rendered in your terminal.">
 <meta property="og:url" content="https://jadmadi.github.io/thermal/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://jadmadi.github.io/thermal/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="thermal: a contribution heatmap filling toward a live streak, with the tagline Don't break the streak.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jadmadi.github.io/thermal/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230B0E13'/%3E%3Cg transform='translate(2.5 2.5)'%3E%3Crect width='2.6' height='2.6' rx='0.7' fill='%231E2836'/%3E%3Crect x='3.6' width='2.6' height='2.6' rx='0.7' fill='%232F6C55'/%3E%3Crect y='3.6' width='2.6' height='2.6' rx='0.7' fill='%233F9270'/%3E%3Crect x='3.6' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%234FB98B'/%3E%3Crect x='7.2' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%2386EFC0'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 /* ---------------------------------------------------------------------------
@@ -72,7 +77,7 @@ a:hover{color:var(--heat-3)}
 a:focus-visible,button:focus-visible,summary:focus-visible,pre:focus-visible{
   outline:2px solid var(--heat-3);outline-offset:3px;border-radius:var(--r-sm);
 }
-code,kbd,pre{font-family:var(--mono);font-size:.92em;overflow-wrap:anywhere}
+code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywhere}
 .skip{
   position:absolute;left:-9999px;top:var(--s2);
   background:var(--heat-4);color:#06231A;padding:var(--s2) var(--s4);
@@ -312,13 +317,66 @@ td .yes{color:var(--heat-3)}
 .flag-legend span{font-family:var(--mono)}
 .flag-legend b{color:var(--muted);font-weight:400}
 
+/* -------------------------------------------------------------------- faq */
+.faq-grid{
+  display:grid;gap:var(--s6) var(--s8);
+  grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));
+  max-width:var(--container);
+}
+.faq-grid .faq-q{
+  font-size:var(--step-0);font-weight:600;margin-bottom:var(--s2);
+  font-family:var(--sans);letter-spacing:-.01em;
+}
+.faq-grid p{color:var(--muted);max-width:52ch;font-size:.98rem}
+
 /* ---------------------------------------------------------------- closing */
 footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
 .foot-grid{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);align-items:baseline}
 .foot-grid p{color:var(--faint);font-size:var(--step--1);max-width:52ch}
-.foot-grid nav{display:flex;gap:var(--s5);font-size:var(--step--1)}
+.foot-grid nav{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);font-size:var(--step--1)}
 .foot-grid nav a{color:var(--muted)}
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://jadmadi.github.io/thermal/#software",
+      "name": "thermal",
+      "alternateName": "Thermal",
+      "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Command line tool",
+      "operatingSystem": "Linux, macOS, Windows",
+      "softwareVersion": "0.6.0",
+      "softwareRequirements": "Go 1.26 or a prebuilt binary",
+      "programmingLanguage": "Go",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "license": "https://github.com/jadmadi/thermal/blob/main/LICENSE",
+      "codeRepository": "https://github.com/jadmadi/thermal",
+      "description": "Thermal is a terminal heatmap, streak, token, and cost report for twelve AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, command-code, and Agy already write, and never modifies them.",
+      "featureList": [
+        "Contribution heatmap and streak tracking per tool",
+        "Daily, weekly, and monthly token and cost reports",
+        "Token and cost attribution per git repository",
+        "Model ranking across every tool, case-normalized",
+        "Pricing estimates from models.dev with recorded cost taking precedence",
+        "Read-only SQLite access with incremental delta caching"
+      ],
+      "author": { "@id": "https://jadmadi.net/#person" },
+      "publisher": { "@id": "https://jadmadi.net/#person" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://jadmadi.net/#person",
+      "name": "Jad Madi",
+      "url": "https://jadmadi.net",
+      "sameAs": [ "https://x.com/jadmadi", "https://github.com/jadmadi" ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <script>document.documentElement.classList.add('js')</script>
@@ -428,7 +486,7 @@ thermal</code></pre>
           </div>
           <p style="margin-top:var(--s4)">
             Or grab a binary from
-            <a href="https://github.com/jadmadi/thermal/releases">GitHub Releases</a>.
+            <a href="https://github.com/jadmadi/thermal/releases" rel="noopener noreferrer">GitHub Releases</a>.
             To build from source instead:
           </p>
           <div class="cmd">
@@ -722,7 +780,7 @@ thermal models --top 10</code></pre>
 
     <div class="prose">
       <p class="muted">
-        Prices come from the <a href="https://models.dev">models.dev</a>
+        Prices come from the <a href="https://models.dev" rel="noopener noreferrer">models.dev</a>
         catalog, cached at <span class="mono">~/.cache/thermal/pricing.json</span>
         and refreshed once a day. Estimates never mix with recorded cost inside
         one day.
@@ -950,6 +1008,70 @@ thermal: --top only applies to the projects and models commands</code></pre>
     </div>
   </div>
 </section>
+<!-- ================================================================ FAQ == -->
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="faq-title">Common questions</h2>
+      <p>
+        Short answers to what people ask before installing. Everything here is
+        expanded in the sections above.
+      </p>
+    </div>
+
+    <div class="faq-grid">
+      <div>
+        <div class="faq-q">What is thermal?</div>
+        <p>
+          A command line tool that renders a GitHub-style contribution heatmap
+          for AI coding agents, with streaks, token counts, and cost. One
+          static Go binary, no server, no account.
+        </p>
+      </div>
+      <div>
+        <div class="faq-q">Which tools does it support?</div>
+        <p>
+          Twelve: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
+          Claude, Muse, Droid, command-code, and Agy. Activity-only tools rank
+          separately from tools that record tokens.
+        </p>
+      </div>
+      <div>
+        <div class="faq-q">Does it upload or change my data?</div>
+        <p>
+          No. Thermal opens each database read-only with a 256&nbsp;MB memory
+          map and never writes to it. The only writes are its own cache under
+          <span class="mono">~/.cache/thermal/</span>. Nothing leaves the
+          machine.
+        </p>
+      </div>
+      <div>
+        <div class="faq-q">How is cost calculated?</div>
+        <p>
+          Cost comes from the source when the tool records it. Days with no
+          recorded cost are estimated from models.dev list prices, and models
+          with no price are named under the table rather than counted as free.
+        </p>
+      </div>
+      <div>
+        <div class="faq-q">How do I install it?</div>
+        <p>
+          Run <span class="mono">go install
+          github.com/jadmadi/thermal/cmd/thermal@latest</span>, or download a
+          prebuilt binary for Linux, macOS, or Windows from GitHub Releases.
+        </p>
+      </div>
+      <div>
+        <div class="faq-q">How is this different from git log?</div>
+        <p>
+          Git only shows committed work. Thermal shows what the agents
+          actually burned, including tokens and cost on days when nothing was
+          committed.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
 
 <footer>
@@ -958,10 +1080,12 @@ thermal: --top only applies to the projects and models commands</code></pre>
       Thermal is MIT-licensed and reads local files only. It never uploads
       usage data anywhere.
     </p>
-    <nav aria-label="Project links">
-      <a href="https://github.com/jadmadi/thermal">GitHub</a>
-      <a href="https://github.com/jadmadi/thermal/releases">Releases</a>
-      <a href="https://github.com/jadmadi/thermal/blob/main/README.md">README</a>
+    <nav aria-label="Project and author links">
+      <a href="https://jadmadi.net" rel="noopener noreferrer">Blog</a>
+      <a href="https://x.com/jadmadi" rel="noopener noreferrer">X</a>
+      <a href="https://github.com/jadmadi/thermal" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/jadmadi/thermal/releases" rel="noopener noreferrer">Releases</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/README.md" rel="noopener noreferrer">README</a>
       <a href="#top">Back to top</a>
     </nav>
   </div>
@@ -1045,6 +1169,62 @@ thermal: --top only applies to the projects and models commands</code></pre>
     targets.forEach(function (t) { obs.observe(t.el); });
   }
 })();
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is thermal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Thermal is a command line tool that renders a GitHub-style contribution heatmap for AI coding agents, with streaks, token counts, and cost. It is a single static Go binary with no server and no account."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which AI coding tools does thermal support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Twelve: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does thermal upload or change my data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Thermal opens each source database read-only with an mmap window and never writes to it. The only files it writes are its own delta cache and pricing cache under the user cache directory, and no data leaves the machine."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is cost calculated?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cost comes from the source when the tool records it. Days with no recorded cost are estimated from models.dev list prices, and models with no list price are named under the table instead of being treated as free. Estimates and recorded cost never mix inside one day."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I install thermal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run go install github.com/jadmadi/thermal/cmd/thermal@latest, or download a prebuilt binary for Linux, macOS, or Windows from GitHub Releases. Either way, thermal upgrade updates the binary in place."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is thermal different from git log?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Git shows committed work only. Thermal shows what AI agents actually consumed, including token counts and cost on days when nothing was committed."
+      }
+    }
+  ]
+}
 </script>
 </body>
 </html>

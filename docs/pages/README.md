@@ -7,15 +7,19 @@ step, no JavaScript framework, no external requests.
 
 ```
 docs/pages/
-├── index.html   The whole site: styles, content, and a little vanilla JS
-├── 404.html     A copy of index.html, used by GitHub Pages for unknown paths
-└── README.md    This file
+├── index.html       The whole site: styles, content, and a little vanilla JS
+├── 404.html         A copy of index.html, used by GitHub Pages for unknown paths
+├── og.png           Social share card, 1200x630
+├── robots.txt       Crawler policy, AI bots named explicitly
+├── sitemap.xml      One URL, updated by hand
+├── SEO-GEO-AUDIT.md Audit notes, competitors, and the next actions
+└── README.md        This file
 ```
 
 Everything the page needs is inline: CSS in a `<style>` block, JavaScript in a
 `<script>` block, the wordmark and favicon as inline SVG or data URIs, and the
 system font stack. The page makes no network requests, so it renders the same
-offline as it does on a CDN.
+offline as it does on a CDN. The only binary asset is `og.png`.
 
 ## Deploy to GitHub Pages
 
