@@ -34,7 +34,7 @@ thermal
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`, `zc`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`.
 
 ## Install
 

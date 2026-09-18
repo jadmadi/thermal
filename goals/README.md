@@ -28,19 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 8
-- 🟢 **Implemented & Verified**: 2
-- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented & Verified**: 3
 - 🟡 **Ready to Execute (Pending)**: 1 (0 independent ⚡, 1 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 4
-- 📋 **Execution Tasks Progress**: 10/42 completed (23%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :--- | :--- | :--- |
-| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | `@opencode` | fix weekly/monthly totals and empty-row formatting | 9m0s ago |
+- 📋 **Execution Tasks Progress**: 14/42 completed (33%)
 
 ---
 
@@ -62,4 +53,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | :--- | :---: | :--- | :--- | :--- |
 | [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fa74fe7` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9c28a0a` |
+| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `9d44753` |
 
