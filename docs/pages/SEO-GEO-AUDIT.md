@@ -28,6 +28,12 @@ Baseline run found four gaps: no schema, no robots.txt, no sitemap, and a
 169-character description. All four are closed. The remaining script output is
 clean.
 
+## Page inventory
+
+Twelve sections, three terminal captures, six tables, and two JSON-LD blocks.
+The captures exist because the page was text only, and a reader scanning for
+three seconds needs something to look at before reading.
+
 ## On-page copy that answers questions
 
 The "What it answers" section states six problems in the reader's own terms

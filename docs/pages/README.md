@@ -10,6 +10,7 @@ docs/pages/
 ├── index.html       The whole site: styles, content, and a little vanilla JS
 ├── 404.html         A copy of index.html, served for unknown paths
 ├── og.png           Social share card, 1200x630
+├── shot-*.webp      Terminal captures: leaderboard, weekly, projects
 ├── robots.txt       Crawler policy, AI bots named explicitly
 ├── sitemap.xml      One URL, updated by hand
 ├── SEO-GEO-AUDIT.md Audit notes, competitors, and the next actions
@@ -19,7 +20,8 @@ docs/pages/
 Everything the page needs is inline: CSS in a `<style>` block, JavaScript in a
 `<script>` block, the wordmark and favicon as inline SVG or data URIs, and the
 system font stack. The page makes no network requests, so it renders the same
-offline as it does on a CDN. The only binary asset is `og.png`.
+offline as it does on a CDN apart from three screenshots, which are lazy
+loaded.
 
 ## Deploy to GitHub Pages
 
@@ -75,3 +77,8 @@ Contrast, focus rings, hit targets on the Copy buttons, and
 `prefers-reduced-motion` are already handled. Keep them that way.
 
 When the page content changes, update `<lastmod>` in `sitemap.xml`.
+
+The three `shot-*.webp` captures were rendered at ray.so and converted from
+PNG. Two things to know if you re-shoot them: ray.so's editor clips lines
+wider than 80 columns, so keep samples under that, and the projects capture
+uses invented project names on real numbers.
