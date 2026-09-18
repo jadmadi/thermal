@@ -124,6 +124,22 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
   transition:transform var(--motion-base) var(--ease-out);
 }
 .top nav a:hover span::after{transform:scaleX(1)}
+/* The only outbound action in the bar, so it gets a boundary. No underline. */
+.top nav a.support{
+  color:var(--fg);border:1px solid var(--line-strong);border-radius:var(--r-sm);
+  padding:.2rem .55rem;
+  transition:color var(--motion-fast) var(--ease-out),
+             border-color var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .top nav a.support:hover{color:var(--heat-3);border-color:var(--heat-3)}
+}
+.top nav a.support span::after{content:none}
+/* Seven items and a button need room. Tighten first, then drop the bar. */
+@media (max-width:820px){
+  .top nav{gap:var(--s3)}
+  .top nav a{font-size:.8rem}
+}
 @media (max-width:720px){.top nav{display:none}}
 
 /* ------------------------------------------------------------------- hero */
@@ -457,6 +473,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       <a href="#projects"><span>Projects</span></a>
       <a href="#models"><span>Models</span></a>
       <a href="#reference"><span>Reference</span></a>
+      <a class="support" href="https://x.com/jadmadi" rel="noopener noreferrer"><span>Support</span></a>
     </nav>
   </div>
 </header>
