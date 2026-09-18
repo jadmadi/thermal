@@ -332,6 +332,8 @@ td.mono,th.mono{font-family:var(--mono);font-size:var(--step--1)}
 td{transition:background var(--motion-fast) var(--ease-soft)}
 tbody tr:hover td{background:#0E131A}
 td .yes{color:var(--heat-3)}
+td a{color:var(--heat-3)}
+@media (hover:hover) and (pointer:fine){td a:hover{text-decoration:underline}}
 
 /* ------------------------------------------------------------------ notes */
 .note{
@@ -870,87 +872,75 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
     <div class="sec-head">
       <h2>Supported tools</h2>
       <p>
-        Each tool is read from where it already keeps its own data. The paths
-        below assume the usual home directory.
+        Thermal reads each tool from where it already keeps its own data. Tool
+        names link to the project's own page.
       </p>
     </div>
 
     <div class="tbl-wrap">
       <table>
-        <caption>Twelve tools. Aliases in the third column work anywhere a tool name does.</caption>
+        <caption>Twelve tools. Names link to the project's own page. Aliases work anywhere a tool name does.</caption>
         <thead>
-          <tr><th>Tool</th><th>Source</th><th>Aliases</th><th>Metrics</th></tr>
+          <tr><th>Tool</th><th>Aliases</th><th>Metrics</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td>Devin</td>
-            <td class="mono">~/.local/share/devin/cli/sessions.db</td>
+            <td><a href="https://devin.ai" rel="noopener noreferrer">Devin</a></td>
             <td class="mono">devin</td>
             <td>Tokens, sessions, cost, projects</td>
           </tr>
           <tr>
-            <td>OpenCode</td>
-            <td class="mono">~/.local/share/opencode/opencode.db</td>
+            <td><a href="https://opencode.ai" rel="noopener noreferrer">OpenCode</a></td>
             <td class="mono">oc</td>
             <td>Tokens, sessions, cost, projects</td>
           </tr>
           <tr>
-            <td>MiMoCode</td>
-            <td class="mono">~/.local/share/mimocode/mimocode.db</td>
+            <td><a href="https://mimo.xiaomi.com/mimocode" rel="noopener noreferrer">MiMoCode</a></td>
             <td class="mono">mimo, mimo-</td>
             <td>Tokens, sessions, cost, projects</td>
           </tr>
           <tr>
-            <td>Codex</td>
-            <td class="mono">~/.codex/state_5.sqlite + sessions/*.jsonl</td>
+            <td><a href="https://github.com/openai/codex" rel="noopener noreferrer">Codex</a></td>
             <td class="mono">codex</td>
             <td>Tokens, sessions, model and source split, projects</td>
           </tr>
           <tr>
-            <td>codewhale</td>
-            <td class="mono">~/.codewhale/sessions/*.json</td>
+            <td><a href="https://codewhale.net" rel="noopener noreferrer">codewhale</a></td>
             <td class="mono">whale</td>
             <td>Tokens, sessions, cost, projects</td>
           </tr>
           <tr>
-            <td>ZCode</td>
-            <td class="mono">~/.zcode/cli/db/db.sqlite</td>
+            <td><a href="https://zcode.z.ai" rel="noopener noreferrer">ZCode</a></td>
             <td class="mono">zc</td>
             <td>Tokens, sessions, model and agent split, projects</td>
           </tr>
           <tr>
-            <td>Grok</td>
-            <td class="mono">~/.grok/sessions/*/*/updates.jsonl</td>
+            <td><a href="https://x.ai/cli" rel="noopener noreferrer">Grok</a></td>
             <td class="mono">grok</td>
             <td>Tokens, sessions, cost, projects</td>
           </tr>
           <tr>
-            <td>Claude</td>
-            <td class="mono">~/.claude/projects/*/*.jsonl</td>
+            <td><a href="https://claude.com/claude-code" rel="noopener noreferrer">Claude</a></td>
             <td class="mono">claude, ccode</td>
             <td>Tokens, sessions, models, projects</td>
           </tr>
           <tr>
-            <td>Muse</td>
-            <td class="mono">~/.local/share/muse/session-index.db</td>
+            <td><a href="https://dev.meta.ai/docs/muse-code" rel="noopener noreferrer">Muse</a></td>
             <td class="mono">muse</td>
             <td>Prompt activity, sessions, models</td>
           </tr>
           <tr>
-            <td>Droid</td>
-            <td class="mono">~/.factory/sessions/*/*.jsonl</td>
+            <td><a href="https://factory.ai" rel="noopener noreferrer">Droid</a></td>
             <td class="mono">droid, factory</td>
             <td>Message activity, sessions</td>
           </tr>
           <tr>
-            <td>command-code</td>
-            <td class="mono">~/.commandcode/sessions/*/transcript.jsonl</td>
+            <td><a href="https://commandcode.ai" rel="noopener noreferrer">command-code</a></td>
             <td class="mono">cmd, cc, commandcode</td>
             <td>Message activity, sessions, models</td>
           </tr>
           <tr>
-            <td>Agy</td>
-            <td class="mono">~/.gemini/antigravity-cli/brain/*/logs/transcript.jsonl</td>
+            <td><a href="https://antigravity.google/docs/cli/overview" rel="noopener noreferrer">Agy</a></td>
             <td class="mono">agy</td>
             <td>Step activity, sessions, models</td>
           </tr>

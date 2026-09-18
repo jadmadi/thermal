@@ -27,6 +27,14 @@ Baseline run found four gaps: no schema, no robots.txt, no sitemap, and a
 169-character description. All four are closed. The remaining script output is
 clean.
 
+## Outbound links
+
+The supported tools table links each of the twelve tools to its own site or
+repository, verified by request before publishing. That is fourteen outbound
+links on the page, all with `rel="noopener noreferrer"`, which helps the page
+read as a reference rather than a puff piece and gives readers somewhere to go
+after.
+
 ## Deliberate decisions
 
 Two findings from the checklist are intentionally not "fixed":
