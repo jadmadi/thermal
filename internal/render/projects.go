@@ -3,7 +3,6 @@ package render
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -161,37 +160,7 @@ func formatCostOrDash(v float64) string {
 // distinguishing parent segment is added in parentheses, mahak-bench (Jad).
 // The full path stays in the JSON output.
 func displayNames(paths []string) map[string]string {
-	tails := make([][]string, len(paths))
-	for i, p := range paths {
-		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(p), "/"), "/")
-	}
-
-	out := make(map[string]string, len(paths))
-	for i, parts := range tails {
-		base := parts[len(parts)-1]
-		name := base
-		for n := 1; n <= len(parts); n++ {
-			candidate := strings.Join(parts[len(parts)-n:], "/")
-			shared := false
-			for j, other := range tails {
-				if i == j || n > len(other) {
-					continue
-				}
-				if strings.Join(other[len(other)-n:], "/") == candidate {
-					shared = true
-					break
-				}
-			}
-			if !shared {
-				if n > 1 {
-					name = base + " (" + parts[len(parts)-n] + ")"
-				}
-				break
-			}
-		}
-		out[paths[i]] = name
-	}
-	return out
+	return thermal.ProjectDisplayNames(paths)
 }
 
 func projectPaths(rows []thermal.ProjectRow) []string {
