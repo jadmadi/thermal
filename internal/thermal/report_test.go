@@ -185,7 +185,10 @@ func TestAggregatePricingRule(t *testing.T) {
 
 func TestAggregateSkipsDaysWithoutTokenData(t *testing.T) {
 	days := []DailyRow{
-		{Day: "2026-09-10", Tokens: 21, Turns: 21},                                                // activity count, no telemetry
+		// A positive Tokens total counts on its own: a source that reports a
+		// session total without a breakdown is a token source. It cannot be
+		// priced, so it is also counted as unattributed.
+		{Day: "2026-09-10", Tokens: 21, Turns: 21},
 		{Day: "2026-09-11", Tokens: 0, Turns: 2},                                                  // empty session, turns but no tokens
 		{Day: "2026-09-12", Tokens: 0, Turns: 0},                                                  // fully empty
 		{Day: "2026-09-13", Tokens: 0, Turns: 0, Models: map[string]ModelTokens{"ghost": {}}},     // zero-count model only
@@ -194,16 +197,20 @@ func TestAggregateSkipsDaysWithoutTokenData(t *testing.T) {
 		{Day: "2026-09-16", Tokens: 0, Turns: 0, Models: map[string]ModelTokens{"m": {Input: 5}}}, // kept: positive model
 	}
 	rep := Aggregate(days, GrainDay, AggregateOptions{Order: "asc"}, nil)
-	if len(rep.Rows) != 3 {
-		t.Fatalf("expected 3 token-bearing rows, got %d: %+v", len(rep.Rows), rep.Rows)
+	if len(rep.Rows) != 4 {
+		t.Fatalf("expected 4 rows, got %d: %+v", len(rep.Rows), rep.Rows)
 	}
-	for i, want := range []string{"2026-09-14", "2026-09-15", "2026-09-16"} {
+	for i, want := range []string{"2026-09-10", "2026-09-14", "2026-09-15", "2026-09-16"} {
 		if rep.Rows[i].Period != want {
 			t.Errorf("row %d = %s, want %s", i, rep.Rows[i].Period, want)
 		}
 	}
-	if rep.Totals.Tokens != 10 || rep.Totals.Turns != 2 || rep.Totals.ActiveDays != 2 {
-		t.Errorf("totals = %+v, want 10 tokens / 2 turns / 2 active days", rep.Totals)
+	if rep.Totals.Tokens != 31 || rep.Totals.Turns != 23 || rep.Totals.ActiveDays != 3 {
+		t.Errorf("totals = %+v, want 31 tokens / 23 turns / 3 active days", rep.Totals)
+	}
+	// The days with no model and no recorded cost are what no price can cover.
+	if rep.Totals.UnattributedTokens != 31 {
+		t.Errorf("unattributed = %d, want 31 (the two model-less days)", rep.Totals.UnattributedTokens)
 	}
 	if rep.Totals.Cost != 1.5 || rep.Totals.StoredCost != 1.5 {
 		t.Errorf("totals cost = %+v, want 1.5 stored", rep.Totals)
@@ -237,12 +244,17 @@ func TestAggregateTotalsMatchAcrossGrains(t *testing.T) {
 		{Day: "2026-08-31", Tokens: 10, Input: 6, Output: 4, Turns: 1, Cost: 1.5},
 		{Day: "2026-09-01", Tokens: 20, Input: 10, Output: 10, Turns: 1, Models: map[string]ModelTokens{"m": {Input: 10, Output: 10}}},
 		{Day: "2026-09-02", Tokens: 30, Input: 10, Output: 20, Turns: 1, Cost: 2.0},
-		{Day: "2026-09-03", Tokens: 7, Turns: 7}, // activity only, excluded everywhere
+		// A token count with no model breakdown is a token day: it is counted,
+		// it cannot be priced, and the footer is told about it.
+		{Day: "2026-09-03", Tokens: 7, Turns: 7},
 	}
 	pricer := &stubPricer{cost: 2.5, missing: []string{"unknown-model"}}
 	daily := Aggregate(days, GrainDay, AggregateOptions{}, pricer)
-	if pricer.calls != 1 {
-		t.Fatalf("daily pricer calls = %d, want 1 (activity day skipped)", pricer.calls)
+	if pricer.calls != 2 {
+		t.Fatalf("daily pricer calls = %d, want 2 (the two days with no recorded cost)", pricer.calls)
+	}
+	if daily.Totals.UnattributedTokens != 7 {
+		t.Errorf("unattributed = %d, want 7 (the model-less day)", daily.Totals.UnattributedTokens)
 	}
 	pricer.calls = 0
 	weekly := Aggregate(days, GrainWeek, AggregateOptions{StartOfWeek: time.Sunday}, pricer)
@@ -259,8 +271,8 @@ func TestAggregateTotalsMatchAcrossGrains(t *testing.T) {
 			t.Errorf("grain model totals differ: %v vs %v", a.Models, b.Models)
 		}
 	}
-	if monthly.Totals.Tokens != 60 || monthly.Totals.StoredCost != 3.5 || monthly.Totals.EstimatedCost != 2.5 {
-		t.Errorf("totals = %+v, want 60 tokens / 3.5 stored / 2.5 estimated", monthly.Totals)
+	if monthly.Totals.Tokens != 67 || monthly.Totals.StoredCost != 3.5 || monthly.Totals.EstimatedCost != 5.0 {
+		t.Errorf("totals = %+v, want 67 tokens / 3.5 stored / 5.0 estimated", monthly.Totals)
 	}
 }
 
