@@ -1,0 +1,11 @@
+{
+  "goal_slug": "tui-stats-view",
+  "claimed_by": "opencode",
+  "agent": "opencode",
+  "claimed_at": "2026-09-19T17:57:05.142394659Z",
+  "updated_at": "2026-09-19T17:57:05.142394659Z",
+  "hostname": "madi",
+  "pid": 1157329,
+  "status": "in_progress",
+  "note": "Histogram, rhythm, outliers, projection"
+}

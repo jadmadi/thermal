@@ -810,7 +810,8 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
   1-5      jump to a view               t    metric: tokens or cost
   tab      next view                     s    sort: tokens, cost, name
   j / k    move down and up              ?    help
-  f        tool filter (Projects)        enter  open a project detail</code></pre>
+  f        tool filter (Projects)        enter  open a project detail
+  l        log scale (Stats)             v      mix by tool or model</code></pre>
     </div>
 
     <p class="muted" style="margin-top:var(--s5)">
@@ -820,9 +821,11 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
       with the tool split, the model split, a weekly trend, and a heatmap
       scoped to the selected range. Mix stacks the window over time by tool or
       by model and reports who led and how often that changed. Models ranks
-      every model with an estimated cost. Every total equals the matching
-      report command for the same window, and a test asserts that rather than
-      eyeballing it.
+      every model with an estimated cost. Stats shows the daily distribution
+      with a log scale for long tails, the weekday profile, the top days, the
+      outliers, and a month-end projection drawn as a range rather than a
+      single number. Every total equals the matching report command for the
+      same window, and a test asserts that rather than eyeballing it.
     </p>
 
     <p class="note">
