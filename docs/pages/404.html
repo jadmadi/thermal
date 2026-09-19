@@ -791,6 +791,42 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
   </div>
 </section>
 
+<!-- ========================================================== DASHBOARD == -->
+<section id="dashboard">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>The dashboard</h2>
+      <p>
+        The reports answer one question each. The dashboard answers them all at
+        once, from a single load of the same data.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
+      <pre><code>thermal dashboard
+
+  q        quit                          r    range: 30d, 90d, 1y, all
+  1-5      jump to a view               t    metric: tokens or cost
+  tab      next view                     s    sort: tokens, cost, name
+  j / k    move down and up              ?    help</code></pre>
+    </div>
+
+    <p class="muted" style="margin-top:var(--s5)">
+      The Overview view opens with totals, then ranks every tool that recorded
+      usage in the window, with a bar, a twelve-week sparkline, and the current
+      streak. Every total equals the matching report command for the same
+      window, and a test asserts that rather than eyeballing it.
+    </p>
+
+    <p class="note">
+      <strong>The dashboard needs a terminal.</strong>
+      Piped output is told to use the static commands instead, and
+      <span class="mono">--json</span> never opens a terminal UI.
+    </p>
+  </div>
+</section>
+
 <!-- ============================================================ REPORTS == -->
 <section id="reports">
   <div class="wrap">
@@ -1231,6 +1267,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
       <nav class="toc" aria-label="On this page">
         <ol>
           <li><a href="#start">Install and run</a></li>
+          <li><a href="#dashboard">The dashboard</a></li>
           <li><a href="#answers">What it answers</a></li>
           <li><a href="#leaderboard">Leaderboard</a></li>
           <li><a href="#reports">Reports</a></li>
@@ -1253,6 +1290,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
             <tbody>
               <tr><td class="mono">thermal</td><td>Leaderboard across every installed tool.</td></tr>
               <tr><td class="mono">thermal &lt;tool&gt;</td><td>Full dashboard: summary, streak, heatmap.</td></tr>
+              <tr><td class="mono">thermal dashboard</td><td>Interactive dashboard: Overview, Projects, Mix, Models and Stats in one screen. Needs a terminal.</td></tr>
               <tr><td class="mono">thermal daily</td><td>One row per day.</td></tr>
               <tr><td class="mono">thermal weekly</td><td>One row per week.</td></tr>
               <tr><td class="mono">thermal monthly</td><td>One row per month.</td></tr>
