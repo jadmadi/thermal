@@ -28,17 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 8
-- 🟢 **Implemented & Verified**: 7
-- 🟡 **Ready to Execute (Pending)**: 1 (0 independent ⚡, 1 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 36/42 completed (85%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :--- | :--- | :--- |
-| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🚢 SHIP 🔗 Ready (#7)` | Deps met: tui-projects-view, tui-mix-models-views, tui-stats-view | Chart flags, docs, and 0.7.0 release — Add --chart to projects, models and the period reports, print concrete bar rows ... | `/goal goals/charting-flags-docs-release/goal.md` |
+- 🟢 **Implemented & Verified**: 8
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 42/42 completed (100%)
 
 ---
 
@@ -52,5 +44,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `e15056f` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `6a591f8` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `338b8bd` |
+| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `1cb2f50` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 

@@ -70,7 +70,10 @@ func fireEmoji(streak int) string {
 // RenderLeaderboard ranks tools. sortKey picks the primary ranking: "streak"
 // (default) keeps the contribution-streak order, "tokens" ranks by token
 // volume, and "cost" by recorded cost. Streak remains the tiebreaker.
-func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string) string {
+// RenderLeaderboard prints the ranked tools. When estimate is false the frame
+// adds a line stating the recorded cost total, because the Cost column only
+// ever shows what a tool recorded and a reader should not have to add it up.
+func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool) string {
 	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
 
 	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
@@ -235,6 +238,27 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		} else {
 			sb.WriteString(fmt.Sprintf("  %s No active streaks. Time to code!\n", dim("--")))
 		}
+	}
+
+	// Cost provenance. The leaderboard prints recorded cost only, which is not
+	// the number a report prints: reports estimate the days a source left
+	// blank. Saying so here stops the two from looking like a bug.
+	var recorded float64
+	recording := 0
+	for _, r := range results {
+		if r.Summary.Cost > 0 {
+			recorded += r.Summary.Cost
+			recording++
+		}
+	}
+	if recording > 0 {
+		line := fmt.Sprintf("Recorded cost: %s from %d tools.", formatCost(recorded), recording)
+		if estimate {
+			line += " Reports estimate the rest from pricing data; the leaderboard does not."
+		} else {
+			line += " Estimates are off. Reports would show the same figure."
+		}
+		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(line)))
 	}
 
 	sb.WriteString(fmt.Sprintf("\n  %s\n\n", dim("Keep the heat going. Don't break the streak.")))

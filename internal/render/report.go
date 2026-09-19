@@ -146,8 +146,11 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	printRow("Total", "", rep.Totals, gold)
 
 	if rep.Totals.EstimatedCost > 0 {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf("~ %s of the total is estimated from pricing data.",
-			formatCost(rep.Totals.EstimatedCost)))))
+		// Name the split right under the total, so the number never reads as
+		// fully recorded money.
+		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf(
+			"Total = %s recorded + ~%s estimated from pricing data.",
+			formatCost(rep.Totals.StoredCost), formatCost(rep.Totals.EstimatedCost)))))
 	}
 	if len(rep.Totals.MissingPricing) > 0 {
 		models := rep.Totals.MissingPricing

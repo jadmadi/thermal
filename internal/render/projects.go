@@ -110,8 +110,9 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	sb.WriteString("\n")
 
 	if totals.EstimatedCost > 0 {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf("~ %s of the total is estimated from pricing data.",
-			formatCost(totals.EstimatedCost)))))
+		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf(
+			"Total = %s recorded + ~%s estimated from pricing data.",
+			formatCost(totals.StoredCost), formatCost(totals.EstimatedCost)))))
 	}
 	if len(totals.MissingPricing) > 0 {
 		models := totals.MissingPricing

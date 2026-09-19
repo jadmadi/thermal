@@ -14,7 +14,7 @@ func TestRenderLeaderboard_Output(t *testing.T) {
 			ActiveDays: 30, TotalActivity: 1500000, Summary: thermal.Summary{Cost: 12.50},
 		},
 	}
-	out := RenderLeaderboard(results, 52, true, "")
+	out := RenderLeaderboard(results, 52, true, "", true)
 	if !strings.Contains(out, "Token Warriors") {
 		t.Errorf("expected Token Warriors section in output")
 	}
@@ -53,13 +53,45 @@ func TestRenderLeaderboardSortKeys(t *testing.T) {
 		return name
 	}
 
-	if got := firstPlace(RenderLeaderboard(results, 52, true, "")); got != "steady" {
+	if got := firstPlace(RenderLeaderboard(results, 52, true, "", true)); got != "steady" {
 		t.Errorf("default order leader = %s, want steady", got)
 	}
-	if got := firstPlace(RenderLeaderboard(results, 52, true, "tokens")); got != "whale" {
+	if got := firstPlace(RenderLeaderboard(results, 52, true, "tokens", true)); got != "whale" {
 		t.Errorf("token order leader = %s, want whale", got)
 	}
-	if got := firstPlace(RenderLeaderboard(results, 52, true, "cost")); got != "pricey" {
+	if got := firstPlace(RenderLeaderboard(results, 52, true, "cost", true)); got != "pricey" {
 		t.Errorf("cost order leader = %s, want pricey", got)
+	}
+}
+
+// TestLeaderboardStatesCostProvenance pins the line that stops the leaderboard
+// and the reports from looking like they disagree about money, which they do
+// by design: the leaderboard prints recorded cost, reports add estimates.
+func TestLeaderboardStatesCostProvenance(t *testing.T) {
+	results := []thermal.ToolResult{
+		{Tool: "one", Name: "one", Summary: thermal.Summary{Cost: 10.5}, ActiveDays: 1},
+		{Tool: "two", Name: "two", Summary: thermal.Summary{Cost: 2.25}, ActiveDays: 1},
+	}
+
+	withEstimate := RenderLeaderboard(results, 52, true, "", true)
+	if !strings.Contains(withEstimate, "$12.75") {
+		t.Errorf("recorded total missing:\n%s", withEstimate)
+	}
+	if !strings.Contains(withEstimate, "Reports estimate the rest") {
+		t.Errorf("estimate disclosure missing:\n%s", withEstimate)
+	}
+
+	plain := RenderLeaderboard(results, 52, true, "", false)
+	if !strings.Contains(plain, "$12.75") {
+		t.Errorf("recorded total missing with estimation off:\n%s", plain)
+	}
+	if !strings.Contains(plain, "Estimates are off") {
+		t.Errorf("the off state is not stated:\n%s", plain)
+	}
+
+	// No recorded cost at all: the line would be noise, so it must not print.
+	dash := RenderLeaderboard(results[:0], 52, true, "", true)
+	if strings.Contains(dash, "Recorded cost") {
+		t.Errorf("cost line printed with no recorded cost:\n%s", dash)
 	}
 }

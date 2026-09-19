@@ -350,6 +350,7 @@ th{
 td{color:var(--muted)}
 td:first-child{color:var(--fg);white-space:nowrap}
 td.mono,th.mono{font-family:var(--mono);font-size:var(--step--1)}
+td.nowrap,th.nowrap{white-space:nowrap}
 td{transition:background var(--motion-fast) var(--ease-soft)}
 tbody tr:hover td{background:#0E131A}
 td .yes{color:var(--heat-3)}
@@ -1074,17 +1075,65 @@ thermal models --top 10</code></pre>
         and refreshed once a day. Estimates never mix with recorded cost inside
         one day.
       </p>
+    </div>
+
+    <h3 class="mono" style="font-size:var(--step-1);margin:var(--s7) 0 var(--s3)">Two totals, two questions</h3>
+    <p class="muted">
+      The leaderboard and the reports answer different questions, and their
+      totals do not match. That is by design.
+    </p>
+
+    <div class="tbl-wrap">
+      <table>
+        <caption>Same data, same window, one machine. The numbers below are from a real run.</caption>
+        <thead>
+          <tr><th>Command</th><th>Shows</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">thermal</td>
+            <td>Recorded cost only, with a line stating the sum. A tool that records no cost shows a dash.</td>
+            <td class="mono nowrap">$112.41</td>
+          </tr>
+          <tr>
+            <td class="mono">thermal projects</td>
+            <td>Recorded cost plus an estimate for the days a source left blank, with the split named under the total.</td>
+            <td class="mono nowrap">$670.28</td>
+          </tr>
+          <tr>
+            <td class="mono">thermal projects --no-estimate</td>
+            <td>Recorded cost alone, so the two agree exactly.</td>
+            <td class="mono nowrap">$112.41</td>
+          </tr>
+          <tr>
+            <td class="mono">thermal models</td>
+            <td>Always an estimate, because recorded cost belongs to a session or a day, never to one model.</td>
+            <td class="mono nowrap">$683.21</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <strong>The estimate is an indication, not a floor.</strong>
+      For a tool that records neither cost nor model names, such as Devin, every
+      day is priced at a conservative rate, so the real figure can sit on either
+      side of it. Treat the recorded part as fact and the estimated part as a
+      shape: recorded spend is $112.41, and the rest is inference from list prices.
+    </p>
+
+    <div class="prose">
       <div class="cmd">
         <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
         <pre><code>thermal weekly --offline      <u># cached prices only, never fetch</u>
-thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
+thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard too</u></code></pre>
       </div>
       <p class="muted" style="margin-top:var(--s5)">
         Override or add a price in
         <span class="mono">~/.config/thermal/pricing.json</span>:
       </p>
       <div class="cmd">
-        <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
+        <div class="cmd-bar"><span class="lang">json</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
         <pre><code>{
   "codex-auto-review": { "input": 1.25, "output": 10 }
 }</code></pre>
@@ -1334,7 +1383,7 @@ thermal weekly --no-estimate  <u># recorded cost only</u></code></pre>
               <tr><td class="mono">GROK_HOME</td><td class="mono">~/.grok</td><td>Environment variable. Sets the Grok data root; the only path a tool lets you move today.</td></tr>
               <tr><td class="mono">--verbose</td><td class="mono">off</td><td>Non-fatal loader warnings to stderr. stdout stays clean.</td></tr>
               <tr><td class="mono">--offline</td><td class="mono">off</td><td>Use cached prices, never fetch. Reports only.</td></tr>
-              <tr><td class="mono">--no-estimate</td><td class="mono">off</td><td>Reported cost only, no estimates. Reports only.</td></tr>
+              <tr><td class="mono">--no-estimate</td><td class="mono">off</td><td>Recorded cost only, no pricing estimates. Works on the leaderboard and on reports.</td></tr>
             </tbody>
           </table>
         </div>
