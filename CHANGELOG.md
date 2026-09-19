@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/jadmadi/thermal/compare/v0.7.0...v0.8.0) (2026-09-19)
+
+
+### Features
+
+* **devin:** attribute tokens to the session model so they can be priced ([0508a4e](https://github.com/jadmadi/thermal/commit/0508a4ea15c68d5718ba4a3aa694ebdd22cbde12))
+* **devin:** attribute tokens to the session model so they can be priced ([818975d](https://github.com/jadmadi/thermal/commit/818975d0bfac021b5b0daad2f25373d4bb44c05c))
+
+
+### Bug Fixes
+
+* **reports:** count the tokens no price covers, and stop dropping token days ([49d6766](https://github.com/jadmadi/thermal/commit/49d676643bfdef21d531e396aa4147ead4ac6b3d))
+* **reports:** count unpriceable tokens and stop dropping token days ([b130221](https://github.com/jadmadi/thermal/commit/b130221746f843f926627587acc4b5705a8a6135))
+
 ## [0.7.0](https://github.com/jadmadi/thermal/compare/v0.6.0...v0.7.0) (2026-09-19)
 
 
