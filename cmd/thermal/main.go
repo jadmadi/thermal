@@ -14,6 +14,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/mattn/go-isatty"
+	"golang.org/x/term"
 
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
@@ -76,6 +77,7 @@ Options:
   --sort <key>       Ranking key; see Commands above for valid keys per command
   --top <num>        Project or model rows to print, 0 for all (default: 0)
   --breakdown        Show per-model rows in reports, per-project detail for projects
+  --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
   --no-estimate      Report stored cost only, skip pricing estimates
@@ -113,6 +115,7 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.By, "by", "tool", "Mix dimension: tool or model")
 	flag.StringVar(&opts.Grain, "grain", "week", "Mix bucket size: day, week, or month")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
+	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Skip pricing estimates, stored cost only")
@@ -165,6 +168,8 @@ func parseArgs() thermal.Options {
 			opts.JSON = true
 		case "--breakdown":
 			opts.Breakdown = true
+		case "--chart":
+			opts.Chart = true
 		case "--offline":
 			opts.Offline = true
 		case "--no-estimate":
@@ -337,9 +342,9 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
 		}
 		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
-			opts.Breakdown || opts.Offline || opts.NoEstimate ||
+			opts.Breakdown || opts.Chart || opts.Offline || opts.NoEstimate ||
 			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
-			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, monthly, projects, or models")
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --chart, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, monthly, projects, or models")
 		}
 		return nil
 	}
@@ -712,9 +717,37 @@ func runReport(opts thermal.Options) {
 
 	if opts.Breakdown {
 		fmt.Print(render.RenderReportBreakdown(rep, opts.NoColor))
+		if opts.Chart {
+			fmt.Print(render.RenderPeriodChart(rep, opts.Sort, reportWidth(), opts.NoColor))
+		}
 		return
 	}
 	fmt.Print(render.RenderReport(rep, opts.NoColor))
+	if opts.Chart {
+		fmt.Print(render.RenderPeriodChart(rep, "tokens", reportWidth(), opts.NoColor))
+	}
+}
+
+// projectDisplayNames resolves the labels the projects table used, so charts
+// and tables name a project the same way.
+func projectDisplayNames(rep thermal.ProjectReport) map[string]string {
+	paths := make([]string, 0, len(rep.Rows))
+	for _, row := range rep.Rows {
+		paths = append(paths, row.Project)
+	}
+	return thermal.ProjectDisplayNames(paths)
+}
+
+// reportWidth is the width the terminal gives a table. Charts size themselves
+// against it so a narrow terminal gets shorter bars rather than wrapped lines.
+func reportWidth() int {
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
+		return w
+	}
+	if w, _, err := term.GetSize(int(os.Stdin.Fd())); err == nil && w > 0 {
+		return w
+	}
+	return 100
 }
 
 // runDashboard launches the interactive dashboard. Two guards keep scripts and
@@ -781,9 +814,15 @@ func runProjectReport(opts thermal.Options) {
 
 	if opts.Breakdown {
 		fmt.Print(render.RenderProjectsBreakdown(rep, opts.Top, opts.NoColor))
+		if opts.Chart {
+			fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), reportWidth(), opts.NoColor))
+		}
 		return
 	}
 	fmt.Print(render.RenderProjects(rep, opts.Top, opts.NoColor))
+	if opts.Chart {
+		fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), reportWidth(), opts.NoColor))
+	}
 }
 
 // runModelReport ranks models across tools and time. Cost here is always an
@@ -813,6 +852,9 @@ func runModelReport(opts thermal.Options) {
 	}
 
 	fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
+	if opts.Chart {
+		fmt.Print(render.RenderModelChart(rep, reportWidth(), opts.NoColor))
+	}
 }
 
 // runMixReport shows the tool or model mix over time with switching stats.

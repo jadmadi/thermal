@@ -42,7 +42,20 @@ thermal/
 7. **Project Attribution**: Loaders whose source records where a session ran MUST emit `thermal.ProjectDay` rows beside the daily rows, normalized through `thermal.ProjectKey` so subdirectories fold into their nearest git root. Sources with no project data return an empty slice. `ProjectKey` resolves symlinks first, because the same directory reached through a symlinked parent (a symlinked home, for example) must count once, and never invent a project name from a hash or an encoded directory name; it falls back to the recorded path only when no repository marker exists.
 8. **Canonical Model Names**: Model ids MUST pass through `modelName()` before they become map keys (`DailyRow.Models`, `ProjectDay.Models`, `Summary.ModelBreakdown`), because tools disagree on case (`GLM-5.3-Flash` in ZCode versus `glm-5.3-flash` in OpenCode). One model is one row everywhere, including `thermal models`.
 
-### B. Tool-Specific Loader Quirks
+### B. TUI Boundary (`internal/tui/`)
+1. **Imports stay inside the package**: `internal/tui` may import `internal/thermal`, `internal/loaders`, `internal/pricing`, and the charm stack. Nothing outside it imports `internal/tui` except `cmd/thermal`, and the CLI must never render a TUI frame itself.
+2. **Aggregation belongs to `internal/thermal`**: a view calls an existing aggregator (`AggregateModels`, `AggregateProjects`, `AggregateToolMix`, `AggregateModelMix`, `AggregateStats`, `AggregateTrend`) and never re-derives a total. View totals must equal the matching static command for the same window, and the parity check is a test, not an inspection.
+3. **Every frame is tested at two sizes**: a golden `View()` at 80x24 and 120x40 with colour forced off, plus a key-flow test for the keys the view owns.
+4. **`thermal dashboard` is the only TUI entry point**: plain `thermal` keeps printing the leaderboard, a non-TTY stdout gets a pointer to the static commands, and `--json` never opens a UI.
+
+### C. Chart Conventions (`internal/render/chart.go`)
+1. **No colour-only encoding**: a bar always prints its number beside it, and a legend or caption carries the meaning, so a monochrome terminal loses nothing.
+2. **The scale is named**: a caption states what the bar is measured against.
+3. **Width aware**: charts size themselves against the terminal and shorten the bar rather than wrapping a line. A chart that overshoots the frame stops being pasteable.
+4. **Capped at twelve rows** with a stated remainder, because a bar chart with eighty rows duplicates the table instead of summarising it.
+5. **`--chart` never touches `--json`**: it only adds rows to stdout.
+
+### D. Tool-Specific Loader Quirks
 * **Devin (`devin.go`)**: Queries the SQLite DB joining `message_nodes` against `sessions`. Always check `metadata.metrics` for true input/output/cache token counts (`input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`). Check `prompt_history` (`updated_at` fallback to `created_at`) for accurate streak calculations across sessions without messages.
 * **OpenCode / MiMoCode (`internal/loaders/sqlite.go`)**: Read pre-aggregated token columns (`tokens_input`, `tokens_output`, `tokens_reasoning`, `tokens_cache_read/write`) plus `cost` and diff summaries. OpenCode v2 writes sessions to `session_v2` and abandons the legacy `session` table; probe for `session_v2` first and fold in legacy-only rows. Never assume a table stays the primary source across tool upgrades.
 * **Codex (`codex.go`)**: Reads `state_5.sqlite` (`threads.tokens_used`, reasoning effort, source/model breakdown) as the primary source. Supplements with rollout JSONL logs (`~/.codex/sessions/**/*.jsonl`) for granular token breakdowns when available.

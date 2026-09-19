@@ -34,6 +34,7 @@ type Options struct {
 	Last        int
 	Order       string // "asc" or "desc", default "desc"
 	Breakdown   bool
+	Chart       bool   // print bar rows under report tables
 	StartOfWeek string // sunday..saturday, default sunday
 	Offline     bool   // never fetch pricing, use cache only
 	NoEstimate  bool   // report stored cost only, skip pricing
