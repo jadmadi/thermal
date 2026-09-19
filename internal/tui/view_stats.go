@@ -9,20 +9,13 @@ import (
 
 // renderStats draws the Stats tab: a distribution, a weekday profile, the top
 // days, the outliers, and the projection band.
-func renderStats(sv StatsView, width int, p Palette) string {
-	var b strings.Builder
-
+func renderStats(sv StatsView, width, height int, p Palette) string {
 	right := fmt.Sprintf("%s · %s to %s", sv.Metric, sv.Start, sv.End)
-	b.WriteString(spread(p.Emphasis.Render("Stats"), p.Muted.Render(right), width))
-	b.WriteString("\n\n")
+	title := spread(p.Emphasis.Render("Stats"), p.Muted.Render(right), width)
 
 	if sv.Days == 0 {
-		b.WriteString(p.Muted.Render("No activity in this window."))
-		return b.String()
+		return title + "\n\n" + p.Muted.Render("No activity in this window.")
 	}
-
-	b.WriteString(statSummary(sv, width, p))
-	b.WriteString("\n\n")
 
 	// Two blocks side by side only when both fit. At 80 columns the histogram
 	// alone needs most of the frame, so they stack instead of overflowing.
@@ -32,25 +25,31 @@ func renderStats(sv StatsView, width int, p Palette) string {
 	}
 	hist := histogramBlock(sv, width, p)
 	rhythm := rhythmBlock(sv, half, p)
+	distribution := hist
 	if maxLineWidth(hist)+maxLineWidth(rhythm)+2 <= width {
-		b.WriteString(joinColumns([]string{hist, rhythm}, half))
+		distribution = joinColumns([]string{hist, rhythm}, half)
 	} else {
-		b.WriteString(hist)
-		b.WriteString("\n\n")
-		b.WriteString(rhythm)
+		distribution = hist + "\n\n" + rhythm
 	}
-	b.WriteString("\n\n")
-	b.WriteString(dayLists(sv, width, p))
 
+	projection := ""
 	if sv.Project != nil {
-		b.WriteString("\n\n")
-		b.WriteString(projectionBlock(sv, width, p))
+		projection = projectionBlock(sv, width, p)
 	}
+	note := ""
 	if sv.Estimated {
-		b.WriteString("\n\n")
-		b.WriteString(p.Muted.Render("cost is estimated from pricing data for days with no recorded cost"))
+		note = p.Muted.Render("cost is estimated from pricing data for days with no recorded cost")
 	}
-	return strings.TrimRight(b.String(), "\n")
+	// Priority order: the headline numbers, the distribution, the day lists,
+	// then the projection, then the footnote.
+	return fitBlocks(height-4,
+		title,
+		statSummary(sv, width, p),
+		distribution,
+		dayLists(sv, width, p),
+		projection,
+		note,
+	)
 }
 
 func statSummary(sv StatsView, width int, p Palette) string {

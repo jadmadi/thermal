@@ -22,9 +22,9 @@ func TestRealDataMixAndModels(t *testing.T) {
 		m.tab = tab
 		out := ""
 		if tab == tabMix {
-			out = renderMix(m.buildMixView(), 116, m.palette)
+			out = renderMix(m.buildMixView(), 116, 40, m.palette)
 		} else {
-			out = renderModels(m.buildModelsView(), 116, m.palette)
+			out = renderModels(m.buildModelsView(), 116, 40, 0, m.palette)
 		}
 		lines := strings.Split(out, "\n")
 		if len(lines) < 8 {

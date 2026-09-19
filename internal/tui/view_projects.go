@@ -19,10 +19,14 @@ const (
 	pcolLast   = 11
 )
 
-// renderProjects draws the ranked project table. Names come from
-// thermal.ProjectDisplayNames, the same rule the static report uses, so a
-// directory and its row label never disagree between the two surfaces.
-func renderProjects(pd ProjectsData, width int, p Palette) string {
+// renderProjects draws the ranked project table, windowed so the cursor row is
+// always on screen. Names come from thermal.ProjectDisplayNames, the same rule
+// the static report uses, so a directory and its row label never disagree
+// between the two surfaces.
+//
+// height is the whole frame, not the table: the fixed header and footer are
+// subtracted here, because only this function knows how tall its chrome is.
+func renderProjects(pd ProjectsData, width, height int, cursor int, p Palette) string {
 	names := projectLabels(pd.Rows)
 	var b strings.Builder
 
@@ -85,7 +89,20 @@ func renderProjects(pd ProjectsData, width int, p Palette) string {
 	b.WriteString(p.Dim.Render(strings.Repeat("─", minInt(width, lipglossWidth(header)))))
 	b.WriteString("\n")
 
-	for i, row := range pd.Rows {
+	// Rows the frame can hold: the frame is the tab bar and a blank line, the
+	// title and a blank, the header and its rule, the table, then a rule, the
+	// total, the note and the hint. Anything left over is rows.
+	chrome := 15
+	if pd.EstCost > 0 {
+		chrome++
+	}
+	if ModelNoteForTools(pd.Rows, pd.Tokens) != "" {
+		chrome++
+	}
+	first, last := viewportWindow(len(pd.Rows), cursor, height-chrome)
+
+	for i := first; i < last; i++ {
+		row := pd.Rows[i]
 		cells := []string{
 			padTo(fmt.Sprintf("%d.", i+1), pcolRank),
 			padTo(truncateRunes(labelFor(names, row.Project), pcolName), pcolName),
@@ -106,6 +123,8 @@ func renderProjects(pd ProjectsData, width int, p Palette) string {
 			cells = append(cells, padTo(truncateRunes(joinTools(row.Tools, 2), pcolTools), pcolTools))
 		}
 		if include >= 4 {
+			// Scale against the largest row overall, not the first visible one,
+			// so bars keep their meaning as the window moves.
 			cells = append(cells, p.bar(row.Tokens, pd.Rows[0].Tokens, barW))
 		}
 		b.WriteString(strings.Join(cells, tableGap))
@@ -114,6 +133,19 @@ func renderProjects(pd ProjectsData, width int, p Palette) string {
 
 	b.WriteString(p.Dim.Render(strings.Repeat("─", minInt(width, lipglossWidth(header)))))
 	b.WriteString("\n")
+	if hidden := len(pd.Rows) - (last - first); hidden > 0 {
+		above, below := first, len(pd.Rows)-last
+		var parts []string
+		if above > 0 {
+			parts = append(parts, fmt.Sprintf("%d above", above))
+		}
+		if below > 0 {
+			parts = append(parts, fmt.Sprintf("%d below", below))
+		}
+		b.WriteString(p.Dim.Render(fmt.Sprintf("  rows %d-%d of %d (%s)",
+			first+1, last, len(pd.Rows), strings.Join(parts, ", "))))
+		b.WriteString("\n")
+	}
 	b.WriteString(p.Emphasis.Render(padTo("Total", pcolRank+pcolName)) +
 		padLeft(thermal.CompactNumber(pd.Tokens), pcolTokens) + tableGap +
 		padLeft(Money(pd.Cost), pcolCost+len(tableGap)))
@@ -131,6 +163,32 @@ func renderProjects(pd ProjectsData, width int, p Palette) string {
 		b.WriteString("\n")
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// viewportWindow returns the half-open row range to draw so that cursor is
+// visible. It tries to keep the cursor centred, then clamps to the ends, which
+// is what makes the table feel like a list rather than a page.
+func viewportWindow(total, cursor, available int) (int, int) {
+	if available < 1 {
+		available = 1
+	}
+	if total <= available {
+		return 0, total
+	}
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor >= total {
+		cursor = total - 1
+	}
+	first := cursor - available/2
+	if first < 0 {
+		first = 0
+	}
+	if first+available > total {
+		first = total - available
+	}
+	return first, first + available
 }
 
 // renderProjectDetail draws the drill-down: totals, tool mix, model mix, the

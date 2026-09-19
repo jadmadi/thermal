@@ -26,17 +26,22 @@ const (
 
 // renderOverview draws the Overview view for a window. It is pure, so the
 // golden tests can call it with fixed input and compare text.
-func renderOverview(ov Overview, width int, p Palette) string {
-	var b strings.Builder
-
-	b.WriteString(titleLine(ov, width, p))
-	b.WriteString("\n\n")
-	b.WriteString(statCards(ov, width, p))
-	b.WriteString("\n\n")
-	b.WriteString(toolTable(ov, width, p))
-	b.WriteString("\n\n")
-	b.WriteString(shareStrip(ov, width, p))
-	return b.String()
+//
+// height is the whole frame. Blocks are dropped from the bottom when the
+// terminal cannot hold them all, which is what keeps the frame from scrolling
+// the tab bar off screen.
+func renderOverview(ov Overview, width, height int, p Palette) string {
+	// Two lines are the tab bar and its blank, two more close the frame.
+	budget := height - 4
+	if budget < 1 {
+		budget = 1
+	}
+	return fitBlocks(budget,
+		titleLine(ov, width, p),
+		statCards(ov, width, p),
+		toolTable(ov, width, p),
+		shareStrip(ov, width, p),
+	)
 }
 
 func titleLine(ov Overview, width int, p Palette) string {
@@ -418,4 +423,31 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// fitBlocks joins rendered blocks with a blank line between them, dropping
+// whole blocks from the end until the result fits the frame. Blocks carry their
+// own priority: the caller orders them, so the least important is last and is
+// the first to go. At least one block always prints, so a very short terminal
+// shows a partial view rather than nothing.
+func fitBlocks(budget int, blocks ...string) string {
+	var kept []string
+	used := 0
+	for _, block := range blocks {
+		block = strings.TrimRight(block, "\n")
+		if block == "" {
+			continue
+		}
+		h := len(strings.Split(block, "\n"))
+		need := h
+		if len(kept) > 0 {
+			need += 2 // the blank line between blocks
+		}
+		if used+need > budget && len(kept) > 0 {
+			break
+		}
+		kept = append(kept, block)
+		used += need
+	}
+	return strings.Join(kept, "\n\n")
 }
