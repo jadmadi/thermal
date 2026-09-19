@@ -34,7 +34,7 @@ thermal
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`/`cc`, `whale`, `zc`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`.
 
 ## Install
 
@@ -44,6 +44,10 @@ With Go:
 go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
+Prefer a hosted page? The documentation site in
+[`docs/pages`](docs/pages) covers the same ground with rendered terminal
+output: https://jadmadi.github.io/thermal/
+
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
 
 Or build from source using the included build script:
@@ -51,7 +55,7 @@ Or build from source using the included build script:
 ```bash
 git clone https://github.com/jadmadi/thermal
 cd thermal
-./build.sh --release   # Builds stripped production binary (~9.8MB) with embedded version tags
+./build.sh --release   # Builds stripped production binary (~10.7MB) with embedded version tags
 ```
 
 You can run `./build.sh --help` to explore available build modes (`--release`, `--dev`, `--upx`) and cross-compilation targets. Or build manually with Go:
@@ -142,6 +146,12 @@ thermal weekly --order asc --start-of-week monday
 # JSON for scripting
 thermal weekly --json
 ```
+
+Daily, weekly, and monthly tables list token-bearing periods only: days with
+no classified tokens, no recorded cost, and no model attribution (pure step
+or message counts, empty sessions) are skipped so the Tokens column and the
+Total row stay in tokens. That activity still counts toward streaks and the
+leaderboard.
 
 ## Projects
 

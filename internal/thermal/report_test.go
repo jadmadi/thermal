@@ -38,9 +38,9 @@ func TestParseWeekday(t *testing.T) {
 func TestAggregateWeeklySundayAndMonday(t *testing.T) {
 	// 2026-09-16 is a Wednesday. Sunday starts 2026-09-13, Monday 2026-09-14.
 	days := []DailyRow{
-		{Day: "2026-09-13", Tokens: 100, Turns: 1},
-		{Day: "2026-09-16", Tokens: 200, Turns: 2},
-		{Day: "2026-09-20", Tokens: 300, Turns: 1},
+		{Day: "2026-09-13", Tokens: 100, Input: 100, Turns: 1},
+		{Day: "2026-09-16", Tokens: 200, Input: 200, Turns: 2},
+		{Day: "2026-09-20", Tokens: 300, Input: 300, Turns: 1},
 	}
 
 	sunday := Aggregate(days, GrainWeek, AggregateOptions{StartOfWeek: time.Sunday, Order: "asc"}, nil)
@@ -86,8 +86,8 @@ func TestAggregateMonthlyAndTotals(t *testing.T) {
 
 func TestAggregateOrderDefaultsToDesc(t *testing.T) {
 	days := []DailyRow{
-		{Day: "2026-09-01", Tokens: 1, Turns: 1},
-		{Day: "2026-09-03", Tokens: 1, Turns: 1},
+		{Day: "2026-09-01", Tokens: 1, Input: 1, Turns: 1},
+		{Day: "2026-09-03", Tokens: 1, Input: 1, Turns: 1},
 	}
 	asc := Aggregate(days, GrainDay, AggregateOptions{Order: "asc"}, nil)
 	if asc.Rows[0].Period != "2026-09-01" {
@@ -101,9 +101,9 @@ func TestAggregateOrderDefaultsToDesc(t *testing.T) {
 
 func TestAggregateFilters(t *testing.T) {
 	days := []DailyRow{
-		{Day: "2026-09-01", Tokens: 1, Turns: 1},
-		{Day: "2026-09-10", Tokens: 1, Turns: 1},
-		{Day: "2026-09-16", Tokens: 1, Turns: 1},
+		{Day: "2026-09-01", Tokens: 1, Input: 1, Turns: 1},
+		{Day: "2026-09-10", Tokens: 1, Input: 1, Turns: 1},
+		{Day: "2026-09-16", Tokens: 1, Input: 1, Turns: 1},
 	}
 	window := Aggregate(days, GrainDay, AggregateOptions{Since: "20260905", Until: "2026-09-15"}, nil)
 	if len(window.Rows) != 1 || window.Rows[0].Period != "2026-09-10" {
@@ -132,8 +132,8 @@ func TestAggregateFilters(t *testing.T) {
 
 func TestAggregateActiveDaysDeduplicates(t *testing.T) {
 	days := []DailyRow{
-		{Day: "2026-09-16", Tokens: 10, Turns: 2},
-		{Day: "2026-09-16", Tokens: 5, Turns: 1},
+		{Day: "2026-09-16", Tokens: 10, Input: 10, Turns: 2},
+		{Day: "2026-09-16", Tokens: 5, Input: 5, Turns: 1},
 	}
 	rep := Aggregate(days, GrainDay, AggregateOptions{}, nil)
 	if rep.Rows[0].ActiveDays != 1 {
@@ -158,11 +158,14 @@ func (s *stubPricer) PriceDay(day DailyRow) (float64, []string) {
 func TestAggregatePricingRule(t *testing.T) {
 	pricer := &stubPricer{cost: 2.5, missing: []string{"unknown-model"}}
 	days := []DailyRow{
-		{Day: "2026-09-15", Tokens: 100, Turns: 1},            // estimated
-		{Day: "2026-09-16", Tokens: 100, Turns: 1, Cost: 9.0}, // stored, no pricing pass
-		{Day: "2026-09-17", Tokens: 0, Turns: 0},              // activity only, no pass
+		{Day: "2026-09-15", Tokens: 100, Input: 60, Output: 40, Turns: 1, Models: map[string]ModelTokens{"test-model": {Input: 60, Output: 40}}}, // estimated
+		{Day: "2026-09-16", Tokens: 100, Input: 60, Output: 40, Turns: 1, Cost: 9.0},                                                             // stored, no pricing pass
+		{Day: "2026-09-17", Tokens: 0, Turns: 0}, // no telemetry, skipped entirely
 	}
 	rep := Aggregate(days, GrainDay, AggregateOptions{Order: "asc"}, pricer)
+	if len(rep.Rows) != 2 {
+		t.Fatalf("expected 2 rows, empty day skipped, got %d", len(rep.Rows))
+	}
 	if pricer.calls != 1 {
 		t.Errorf("pricer calls = %d, want 1", pricer.calls)
 	}
@@ -177,6 +180,87 @@ func TestAggregatePricingRule(t *testing.T) {
 	}
 	if rep.Totals.Cost != 11.5 || rep.Totals.EstimatedCost != 2.5 || rep.Totals.StoredCost != 9.0 {
 		t.Errorf("totals = %+v", rep.Totals)
+	}
+}
+
+func TestAggregateSkipsDaysWithoutTokenData(t *testing.T) {
+	days := []DailyRow{
+		{Day: "2026-09-10", Tokens: 21, Turns: 21},                                                // activity count, no telemetry
+		{Day: "2026-09-11", Tokens: 0, Turns: 2},                                                  // empty session, turns but no tokens
+		{Day: "2026-09-12", Tokens: 0, Turns: 0},                                                  // fully empty
+		{Day: "2026-09-13", Tokens: 0, Turns: 0, Models: map[string]ModelTokens{"ghost": {}}},     // zero-count model only
+		{Day: "2026-09-14", Tokens: 10, Input: 10, Turns: 1},                                      // kept: classified tokens
+		{Day: "2026-09-15", Tokens: 0, Turns: 1, Cost: 1.5},                                       // kept: recorded cost
+		{Day: "2026-09-16", Tokens: 0, Turns: 0, Models: map[string]ModelTokens{"m": {Input: 5}}}, // kept: positive model
+	}
+	rep := Aggregate(days, GrainDay, AggregateOptions{Order: "asc"}, nil)
+	if len(rep.Rows) != 3 {
+		t.Fatalf("expected 3 token-bearing rows, got %d: %+v", len(rep.Rows), rep.Rows)
+	}
+	for i, want := range []string{"2026-09-14", "2026-09-15", "2026-09-16"} {
+		if rep.Rows[i].Period != want {
+			t.Errorf("row %d = %s, want %s", i, rep.Rows[i].Period, want)
+		}
+	}
+	if rep.Totals.Tokens != 10 || rep.Totals.Turns != 2 || rep.Totals.ActiveDays != 2 {
+		t.Errorf("totals = %+v, want 10 tokens / 2 turns / 2 active days", rep.Totals)
+	}
+	if rep.Totals.Cost != 1.5 || rep.Totals.StoredCost != 1.5 {
+		t.Errorf("totals cost = %+v, want 1.5 stored", rep.Totals)
+	}
+}
+
+func TestAggregateSkipsZeroCountModels(t *testing.T) {
+	days := []DailyRow{
+		{Day: "2026-09-14", Tokens: 10, Input: 10, Turns: 1, Models: map[string]ModelTokens{
+			"real":  {Input: 10},
+			"ghost": {},
+		}},
+	}
+	rep := Aggregate(days, GrainDay, AggregateOptions{}, nil)
+	if len(rep.Rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(rep.Rows))
+	}
+	if _, ok := rep.Rows[0].Models["ghost"]; ok {
+		t.Errorf("zero-count model leaked into row: %v", rep.Rows[0].Models)
+	}
+	if _, ok := rep.Totals.Models["ghost"]; ok {
+		t.Errorf("zero-count model leaked into totals: %v", rep.Totals.Models)
+	}
+	if got := rep.Totals.Models["real"].Total(); got != 10 {
+		t.Errorf("real model total = %d, want 10", got)
+	}
+}
+
+func TestAggregateTotalsMatchAcrossGrains(t *testing.T) {
+	days := []DailyRow{
+		{Day: "2026-08-31", Tokens: 10, Input: 6, Output: 4, Turns: 1, Cost: 1.5},
+		{Day: "2026-09-01", Tokens: 20, Input: 10, Output: 10, Turns: 1, Models: map[string]ModelTokens{"m": {Input: 10, Output: 10}}},
+		{Day: "2026-09-02", Tokens: 30, Input: 10, Output: 20, Turns: 1, Cost: 2.0},
+		{Day: "2026-09-03", Tokens: 7, Turns: 7}, // activity only, excluded everywhere
+	}
+	pricer := &stubPricer{cost: 2.5, missing: []string{"unknown-model"}}
+	daily := Aggregate(days, GrainDay, AggregateOptions{}, pricer)
+	if pricer.calls != 1 {
+		t.Fatalf("daily pricer calls = %d, want 1 (activity day skipped)", pricer.calls)
+	}
+	pricer.calls = 0
+	weekly := Aggregate(days, GrainWeek, AggregateOptions{StartOfWeek: time.Sunday}, pricer)
+	pricer.calls = 0
+	monthly := Aggregate(days, GrainMonth, AggregateOptions{}, pricer)
+	for _, pair := range [][2]PeriodRow{{daily.Totals, monthly.Totals}, {weekly.Totals, monthly.Totals}} {
+		a, b := pair[0], pair[1]
+		if a.Tokens != b.Tokens || a.Input != b.Input || a.Output != b.Output ||
+			a.Turns != b.Turns || a.ActiveDays != b.ActiveDays ||
+			a.StoredCost != b.StoredCost || a.EstimatedCost != b.EstimatedCost || a.Cost != b.Cost {
+			t.Errorf("grain totals differ:\n a=%+v\n b=%+v", a, b)
+		}
+		if len(a.Models) != len(b.Models) || a.Models["m"].Total() != b.Models["m"].Total() {
+			t.Errorf("grain model totals differ: %v vs %v", a.Models, b.Models)
+		}
+	}
+	if monthly.Totals.Tokens != 60 || monthly.Totals.StoredCost != 3.5 || monthly.Totals.EstimatedCost != 2.5 {
+		t.Errorf("totals = %+v, want 60 tokens / 3.5 stored / 2.5 estimated", monthly.Totals)
 	}
 }
 
