@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/jadmadi/thermal/compare/v0.6.0...v0.7.0) (2026-09-19)
+
+
+### Features
+
+* **analytics:** add mix, stats, and trend verbs ([#22](https://github.com/jadmadi/thermal/issues/22)) ([9c28a0a](https://github.com/jadmadi/thermal/commit/9c28a0af26a610ebaff49a8b02cc9635e8120e85))
+* **docs:** add author links, schema, FAQ, and crawler files to the docs site (goals/report-period-totals/goal.md) ([ccc7bc1](https://github.com/jadmadi/thermal/commit/ccc7bc1226aba6dc183de09f35dfa4358d31d2ab))
+* **docs:** docs site, corrected report totals, and Pages publishing ([7a470d1](https://github.com/jadmadi/thermal/commit/7a470d15c49c290cbe27f9b631e62d11185a60e6))
+* **reports:** --chart, dashboard docs, and the rules ([656db32](https://github.com/jadmadi/thermal/commit/656db32151827d2a6afa84160dd5d49201d40574))
+* **reports:** add --chart, document the dashboard, and record the rules ([1cb2f50](https://github.com/jadmadi/thermal/commit/1cb2f501825abb429f30940eb3da20e8fa715567))
+* **reports:** keep token-bearing periods only, grain-independent totals (goals/report-period-totals/goal.md) ([9c27be4](https://github.com/jadmadi/thermal/commit/9c27be46c625036754c9637b447bbe85d43372fd))
+* **tui:** add the dashboard shell and Overview view ([050f4a5](https://github.com/jadmadi/thermal/commit/050f4a5bcf2cf4f27f08a42807f6b233285720d5))
+* **tui:** add the Mix and Models views ([6a591f8](https://github.com/jadmadi/thermal/commit/6a591f8d72fb895bf374d50f98acf929792d073c))
+* **tui:** add the Projects view with drill-down ([e15056f](https://github.com/jadmadi/thermal/commit/e15056f8cf5c4c4c40c1bbe38bec0b279b45683c))
+* **tui:** add the Stats view ([338b8bd](https://github.com/jadmadi/thermal/commit/338b8bd833ab14bd45fb77ef8ed1ec758904cdc2))
+* **tui:** dashboard shell and Overview view ([e8a5dbb](https://github.com/jadmadi/thermal/commit/e8a5dbb8436baed6829d004766104e9e574d02df))
+* **tui:** Mix and Models views ([70c6239](https://github.com/jadmadi/thermal/commit/70c62399ad1daf7a32fc585bb243112b0e4684af))
+* **tui:** Projects view with drill-down ([c5bb23c](https://github.com/jadmadi/thermal/commit/c5bb23c21486c5e61ea27781d96b8b8ff27c8a6d))
+* **tui:** Stats view ([76b4fba](https://github.com/jadmadi/thermal/commit/76b4fba65c99b78427328e530c15f97dba835328))
+
+
+### Bug Fixes
+
+* **cost:** show the recorded and estimated split everywhere the total appears ([b76b9a5](https://github.com/jadmadi/thermal/commit/b76b9a538ea1c0ad6bf6b0507ebe825c7b019226))
+* **cost:** show the recorded and estimated split everywhere the total appears ([66a7466](https://github.com/jadmadi/thermal/commit/66a74664fab3b6d5b6d58912da62ad340e3cbc11))
+* **pages:** move the JSON reference inside the reports section and reindent it (goals/report-period-totals/goal.md) ([c9c6af8](https://github.com/jadmadi/thermal/commit/c9c6af80892ec4f8fa0e1a284db251ee1e7f3abe))
+* **tools:** drop the ambiguous cc alias and point tool links at their sites (goals/report-period-totals/goal.md) ([2a81533](https://github.com/jadmadi/thermal/commit/2a81533383ea852f0f274f205a2aa47133a86c02))
+* **tui:** keep the cursor on screen and the frame inside the terminal ([b1df32b](https://github.com/jadmadi/thermal/commit/b1df32bae06bf0eaec9a45db9c6a59ac309a0e78))
+* **tui:** keep the cursor on screen and the frame inside the terminal ([0619190](https://github.com/jadmadi/thermal/commit/0619190fa2bba9f8486274318687771c36ab11ff))
+
 ## [0.6.0](https://github.com/jadmadi/thermal/compare/v0.5.0...v0.6.0) (2026-09-16)
 
 
