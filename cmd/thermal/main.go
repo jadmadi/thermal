@@ -45,6 +45,11 @@ Commands:
 
 Reports accept an optional tool: "thermal opencode weekly",
 "thermal weekly" (all tools). Tool defaults to all.
+
+Cost: the leaderboard prints recorded cost only, and states the sum
+under the tables. Reports add an estimate for days a source left
+blank and name the split under the total, so the two will differ.
+Run either with --no-estimate to see recorded cost alone.
 Projects collapse to the nearest git root and merge across tools.
 --sort picks the ranking: streak|tokens|cost for the leaderboard,
 tokens|cost|days|recent for projects, tokens|cost for models.
@@ -80,7 +85,7 @@ Options:
   --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
-  --no-estimate      Report stored cost only, skip pricing estimates
+  --no-estimate      Recorded cost only, no pricing estimates (leaderboard and reports)
   --json             Output JSON instead of dashboard
   --no-color         Disable ANSI colors
   -h, --help         Show this help`
@@ -118,7 +123,7 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
-	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Skip pricing estimates, stored cost only")
+	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
@@ -341,10 +346,12 @@ func validateReportFlags(opts thermal.Options) error {
 		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
 		}
+		// --no-estimate and --offline also apply to the leaderboard, which is
+		// the one place a reader compares recorded cost against reports.
 		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
-			opts.Breakdown || opts.Chart || opts.Offline || opts.NoEstimate ||
+			opts.Breakdown || opts.Chart ||
 			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
-			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --chart, --order, --start-of-week, --offline, --no-estimate) need a report command: daily, weekly, monthly, projects, or models")
+			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --chart, --order, --start-of-week) need a report command: daily, weekly, monthly, projects, or models")
 		}
 		return nil
 	}
@@ -517,7 +524,7 @@ func main() {
 			return
 		}
 
-		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort))
+		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort, !opts.NoEstimate))
 		return
 	}
 

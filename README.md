@@ -283,6 +283,36 @@ thermal models --json
 
 Cost in this view is always an estimate from models.dev list prices, because recorded cost belongs to a session or a day, never to one model. Model names are compared case insensitively, so `GLM-5.3-Flash` from ZCode and `glm-5.3-flash` from OpenCode count as one model.
 
+## Where the cost numbers come from
+
+Two commands answer different questions, and their totals do not match by design.
+
+`thermal` prints **recorded** cost only: what each tool wrote into its own
+database. Nothing is estimated, and a tool that records no cost shows a dash.
+A line above the footer states the sum, so you never have to add the column up.
+
+`thermal projects`, `models`, `daily`, `weekly`, and `monthly` print a **total**
+that fills the gap, because a report whose total is missing most of its rows is
+not useful. The footer names the split:
+
+```
+Total = $112.41 recorded + ~$557.87 estimated from pricing data.
+```
+
+On the same machine and window, that is why the leaderboard can read `$112.41`
+while projects reads `$670.28`: same data, different question. To make the two
+agree exactly, run the report with `--no-estimate`, which drops the estimate and
+the footer with it. `--no-estimate` works on the leaderboard too, where it only
+changes the note.
+
+Model cost is always an estimate, because recorded cost belongs to a session or
+a day and never to one model.
+
+The estimate is not a floor. For a tool that records neither cost nor model
+names, such as Devin, it prices every day at a conservative rate, so the real
+figure could sit on either side of it. Treat the recorded part as fact and the
+estimated part as an indication.
+
 ## Cost estimation
 
 Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
