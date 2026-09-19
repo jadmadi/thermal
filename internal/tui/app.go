@@ -207,11 +207,11 @@ func (m Model) View() tea.View {
 	case m.tab == tabProjects && m.drill != "":
 		b.WriteString(indent(renderProjectDetail(m.detail, m.innerWidth(), m.palette), "  "))
 	case m.tab == tabProjects:
-		b.WriteString(indent(renderProjects(m.adapter.BuildProjects(m.rng, m.projSort, m.projFilter), m.innerWidth(), m.palette), "  "))
+		b.WriteString(indent(renderProjects(m.adapter.BuildProjects(m.rng, m.projSort, m.projFilter), m.innerWidth(), m.height, m.projSel, m.palette), "  "))
 	case m.tab == tabMix:
-		b.WriteString(indent(renderMix(m.buildMixView(), m.innerWidth(), m.palette), "  "))
+		b.WriteString(indent(renderMix(m.buildMixView(), m.innerWidth(), m.height, m.palette), "  "))
 	case m.tab == tabModels:
-		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.palette), "  "))
+		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.height, m.modelsSel, m.palette), "  "))
 	case m.tab == tabStats:
 		sv := m.adapter.BuildStats(m.rng, m.metric)
 		if m.statsLog {
@@ -220,9 +220,9 @@ func (m Model) View() tea.View {
 				sv.LogReason = "log scale: set by hand"
 			}
 		}
-		b.WriteString(indent(renderStats(sv, m.innerWidth(), m.palette), "  "))
+		b.WriteString(indent(renderStats(sv, m.innerWidth(), m.height, m.palette), "  "))
 	case m.tab == 0:
-		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.palette), "  "))
+		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.height, m.palette), "  "))
 	default:
 		b.WriteString(indent(m.placeholder(), "  "))
 	}

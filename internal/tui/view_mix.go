@@ -9,29 +9,26 @@ import (
 
 // renderMix draws the Mix tab: a stacked chart over time, a legend that carries
 // the numbers, and a switching panel.
-func renderMix(mv MixView, width int, p Palette) string {
-	var b strings.Builder
-
+func renderMix(mv MixView, width, height int, p Palette) string {
 	right := fmt.Sprintf("by %s · %s · %s to %s", mv.By, mv.Grain, mv.Start, mv.End)
-	b.WriteString(spread(p.Emphasis.Render("Mix"), p.Muted.Render(right), width))
-	b.WriteString("\n\n")
+	title := spread(p.Emphasis.Render("Mix"), p.Muted.Render(right), width)
 
 	if len(mv.Series) == 0 || len(mv.Buckets) == 0 {
-		b.WriteString(p.Muted.Render("No activity in this window."))
-		return b.String()
+		return title + "\n\n" + p.Muted.Render("No activity in this window.")
 	}
-
-	b.WriteString(renderStacked(mv, width, p))
-	b.WriteString("\n\n")
-	b.WriteString(mixLegend(mv, width, p))
-	b.WriteString("\n\n")
-	b.WriteString(switchingPanel(mv, width, p))
-
+	note := ""
 	if mv.Estimated {
-		b.WriteString("\n\n")
-		b.WriteString(p.Muted.Render("cost is estimated from pricing data for days with no recorded cost"))
+		note = p.Muted.Render("cost is estimated from pricing data for days with no recorded cost")
 	}
-	return strings.TrimRight(b.String(), "\n")
+	// Priority order: the chart, then the legend that explains it, then the
+	// switching panel, then the footnote.
+	return fitBlocks(height-4,
+		title,
+		renderStacked(mv, width, p),
+		mixLegend(mv, width, p),
+		switchingPanel(mv, width, p),
+		note,
+	)
 }
 
 // renderStacked draws one column per bucket. Each column is filled from the
@@ -233,9 +230,10 @@ func concNote(conc float64) string {
 	}
 }
 
-// renderModels draws the ranked model table with a share strip and a top-N
-// trend, the same shape the models report prints.
-func renderModels(mv ModelsView, width int, p Palette) string {
+// renderModels draws the ranked model table with a share strip and the tool
+// split. Like the projects table it is windowed, because a machine with sixty
+// models would otherwise push the cursor off screen.
+func renderModels(mv ModelsView, width, height, cursor int, p Palette) string {
 	var b strings.Builder
 
 	right := fmt.Sprintf("estimated cost · %s to %s", mv.Start, mv.End)
@@ -289,7 +287,35 @@ func renderModels(mv ModelsView, width int, p Palette) string {
 	b.WriteString(p.Dim.Render(strings.Repeat("─", minInt(width, lipglossWidth(header)))))
 	b.WriteString("\n")
 
-	for i, row := range mv.Rows {
+	// Chrome: tab bar and blank, title and blank, header and rule, the rows,
+	// then a rule, the total, the coverage note, the tool block and the hint.
+	// The tool block is a fixed three lines below, never one line per tool,
+	// because a long tool list would otherwise squeeze the table to a single
+	// row and make the cursor useless.
+	const minRows = 6
+	chrome := 16
+	if mv.CovNote != "" {
+		chrome++
+	}
+	if len(mv.Tools) > 0 {
+		chrome += 3
+	}
+	available := height - chrome
+	showExtra := true
+	if available < minRows {
+		// Shed the optional blocks before the table: a table with one row is
+		// worse than a missing footnote. showExtra keeps the renderer below in
+		// step with the budget, so a dropped block is also not printed.
+		showExtra = false
+		available = height - 16
+		if available < minRows {
+			available = minRows
+		}
+	}
+	first, last := viewportWindow(len(mv.Rows), cursor, available)
+
+	for i := first; i < last; i++ {
+		row := mv.Rows[i]
 		cells := []string{
 			padTo(fmt.Sprintf("%d.", i+1), pcolRank),
 			padTo(truncateRunes(row.Name, 30), 30),
@@ -312,23 +338,43 @@ func renderModels(mv ModelsView, width int, p Palette) string {
 
 	b.WriteString(p.Dim.Render(strings.Repeat("─", minInt(width, lipglossWidth(header)))))
 	b.WriteString("\n")
+	if hidden := len(mv.Rows) - (last - first); hidden > 0 {
+		var parts []string
+		if first > 0 {
+			parts = append(parts, fmt.Sprintf("%d above", first))
+		}
+		if below := len(mv.Rows) - last; below > 0 {
+			parts = append(parts, fmt.Sprintf("%d below", below))
+		}
+		b.WriteString(p.Dim.Render(fmt.Sprintf("  rows %d-%d of %d (%s)",
+			first+1, last, len(mv.Rows), strings.Join(parts, ", "))))
+		b.WriteString("\n")
+	}
 	b.WriteString(p.Emphasis.Render(padTo("Total", pcolRank+30)) +
 		padLeft(thermal.CompactNumber(mv.Tokens), pcolTokens) + tableGap +
 		padLeft(Money(mv.Cost), pcolCost))
 	b.WriteString("\n")
 
-	if mv.CovNote != "" {
+	if showExtra && mv.CovNote != "" {
 		b.WriteString(p.Muted.Render(mv.CovNote))
 		b.WriteString("\n")
 	}
-	if mv.Tools != nil {
+	if showExtra && len(mv.Tools) > 0 {
+		// One line, top four tools, remainder counted: three lines total,
+		// whatever the machine has installed.
 		b.WriteString("\n")
-		b.WriteString(p.Muted.Render("By tool"))
-		b.WriteString("\n")
-		for _, t := range mv.Tools {
-			b.WriteString("  " + padTo(truncateRunes(t.Name, 14), 16) +
-				padLeft(fmt.Sprintf("%.1f%%", t.Pct), colShare) + "\n")
+		b.WriteString(p.Muted.Render("By tool") + "  ")
+		const shown = 4
+		var parts []string
+		for i, t := range mv.Tools {
+			if i == shown {
+				parts = append(parts, fmt.Sprintf("+%d more", len(mv.Tools)-shown))
+				break
+			}
+			parts = append(parts, fmt.Sprintf("%s %.1f%%", t.Name, t.Pct))
 		}
+		b.WriteString(p.Muted.Render(strings.Join(parts, " · ")))
+		b.WriteString("\n")
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
