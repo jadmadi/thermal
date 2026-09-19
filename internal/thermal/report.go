@@ -88,12 +88,17 @@ func TopModels(models map[string]ModelTokens) []string {
 	return names
 }
 
-// hasTokenData reports whether a day carries token or cost telemetry: a
-// classified token count, recorded cost, or a model with positive tokens.
-// Activity-only days (message or step counts with no breakdown, cost, or
-// model) return false, so period reports never mix steps into token columns
-// and totals. Streaks and the leaderboard keep that activity separately.
+// hasTokenData reports whether a day carries tokens or cost. A positive Tokens
+// total counts on its own: a source that reports a session total without a
+// type breakdown, such as codewhale, is a token source, and dropping it would
+// hide real spend. Activity-only days, where Tokens holds a message or step
+// count and no cost or model is recorded, return false so period reports never
+// mix steps into token columns and totals. Streaks and the leaderboard keep
+// that activity separately.
 func hasTokenData(day DailyRow) bool {
+	if day.Tokens > 0 {
+		return true
+	}
 	if day.Input != 0 || day.Output != 0 || day.Reasoning != 0 || day.Cache != 0 {
 		return true
 	}
@@ -203,6 +208,13 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 			}
 			set[day.Day] = true
 			totalActive[day.Day] = true
+		}
+
+		// A day whose source names no model can never be priced. Count those
+		// tokens so the footer can state them instead of staying silent.
+		if day.Cost == 0 && len(day.Models) == 0 && day.Tokens > 0 {
+			row.UnattributedTokens += day.Tokens
+			total.UnattributedTokens += day.Tokens
 		}
 
 		// Estimate only days with no stored cost. A day with recorded cost

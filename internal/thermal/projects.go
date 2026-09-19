@@ -61,6 +61,10 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 			row.ToolTokens[day.Tool] += day.Tokens
 		}
 
+		if day.Cost == 0 && len(day.Models) == 0 && day.Tokens > 0 {
+			row.UnattributedTokens += day.Tokens
+		}
+
 		if pricer != nil && day.Cost == 0 && day.Tokens > 0 {
 			cost, missing := pricer.PriceDay(DailyRow{
 				Day:       day.Day,
@@ -173,6 +177,7 @@ func sumProjects(rows []ProjectRow) ProjectRow {
 		total.ActiveDays += row.ActiveDays
 		total.StoredCost += row.StoredCost
 		total.EstimatedCost += row.EstimatedCost
+		total.UnattributedTokens += row.UnattributedTokens
 		if total.FirstDay == "" || (row.FirstDay != "" && row.FirstDay < total.FirstDay) {
 			total.FirstDay = row.FirstDay
 		}

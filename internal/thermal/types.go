@@ -179,6 +179,10 @@ type PeriodRow struct {
 	EstimatedCost  float64                `json:"estimatedCost,omitempty"`
 	Cost           float64                `json:"cost"`
 	MissingPricing []string               `json:"missingPricing,omitempty"`
+	// UnattributedTokens counts tokens whose source names no model. They are
+	// not in EstimatedCost and not in MissingPricing either, so a reader has to
+	// be told about them or the estimate looks complete when it is not.
+	UnattributedTokens int64 `json:"unattributedTokens,omitempty"`
 }
 
 // Report is the payload behind thermal daily, weekly, and monthly. Rows are
@@ -211,23 +215,26 @@ type ProjectDay struct {
 
 // ProjectRow aggregates usage for one project across tools and time.
 type ProjectRow struct {
-	Project        string                 `json:"project"`
-	Tools          []string               `json:"tools,omitempty"`
-	ToolTokens     map[string]int64       `json:"toolTokens,omitempty"`
-	Input          int64                  `json:"inputTokens"`
-	Output         int64                  `json:"outputTokens"`
-	Reasoning      int64                  `json:"reasoningTokens"`
-	Cache          int64                  `json:"cacheTokens"`
-	Tokens         int64                  `json:"totalTokens"`
-	Turns          int                    `json:"turns"`
-	ActiveDays     int                    `json:"activeDays"`
-	FirstDay       string                 `json:"firstDay,omitempty"`
-	LastDay        string                 `json:"lastDay,omitempty"`
-	StoredCost     float64                `json:"storedCost"`
-	EstimatedCost  float64                `json:"estimatedCost,omitempty"`
-	Cost           float64                `json:"cost"`
-	MissingPricing []string               `json:"missingPricing,omitempty"`
-	Models         map[string]ModelTokens `json:"models,omitempty"`
+	Project        string           `json:"project"`
+	Tools          []string         `json:"tools,omitempty"`
+	ToolTokens     map[string]int64 `json:"toolTokens,omitempty"`
+	Input          int64            `json:"inputTokens"`
+	Output         int64            `json:"outputTokens"`
+	Reasoning      int64            `json:"reasoningTokens"`
+	Cache          int64            `json:"cacheTokens"`
+	Tokens         int64            `json:"totalTokens"`
+	Turns          int              `json:"turns"`
+	ActiveDays     int              `json:"activeDays"`
+	FirstDay       string           `json:"firstDay,omitempty"`
+	LastDay        string           `json:"lastDay,omitempty"`
+	StoredCost     float64          `json:"storedCost"`
+	EstimatedCost  float64          `json:"estimatedCost,omitempty"`
+	Cost           float64          `json:"cost"`
+	MissingPricing []string         `json:"missingPricing,omitempty"`
+	// UnattributedTokens counts tokens whose source names no model, which can
+	// never be priced.
+	UnattributedTokens int64                  `json:"unattributedTokens,omitempty"`
+	Models             map[string]ModelTokens `json:"models,omitempty"`
 }
 
 // ProjectReport is the payload behind thermal projects.

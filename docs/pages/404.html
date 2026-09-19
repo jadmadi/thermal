@@ -1098,7 +1098,7 @@ thermal models --top 10</code></pre>
           <tr>
             <td class="mono">thermal projects</td>
             <td>Recorded cost plus an estimate for the days a source left blank, with the split named under the total.</td>
-            <td class="mono nowrap">$670.28</td>
+            <td class="mono nowrap">$670.66</td>
           </tr>
           <tr>
             <td class="mono">thermal projects --no-estimate</td>
@@ -1115,11 +1115,24 @@ thermal models --top 10</code></pre>
     </div>
 
     <p class="note">
-      <strong>The estimate is an indication, not a floor.</strong>
-      For a tool that records neither cost nor model names, such as Devin, every
-      day is priced at a conservative rate, so the real figure can sit on either
-      side of it. Treat the recorded part as fact and the estimated part as a
-      shape: recorded spend is $112.41, and the rest is inference from list prices.
+      <strong>The estimate covers only what the sources name.</strong>
+      A day is priced when its source records a model and that model has a list
+      price. A day whose source records neither cost nor a model is counted, not
+      priced, and the footer says so:
+      <span class="mono">19.2B tokens have no model recorded, so no price is
+      applied to them.</span> Treat the recorded part as fact, the estimated
+      part as inference from list prices, and read that line to see what is
+      missing rather than assuming the total is complete.
+    </p>
+
+    <p class="muted">
+      Two tools need attention here. Devin records a model per session, which
+      the daily, weekly and monthly reports now use, so its spend appears there.
+      The projects view aggregates project rows, which carry no model, so its
+      total for Devin lands in the unpriceable line instead. Models with no list
+      price, such as <span class="mono">swe-1-7</span>, are named in the
+      <span class="mono">No pricing for</span> footer rather than counted as
+      free.
     </p>
 
     <div class="prose">

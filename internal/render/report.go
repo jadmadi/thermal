@@ -152,6 +152,9 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 			"Total = %s recorded + ~%s estimated from pricing data.",
 			formatCost(rep.Totals.StoredCost), formatCost(rep.Totals.EstimatedCost)))))
 	}
+	if note := unpriceableNote(rep.Totals.UnattributedTokens); note != "" {
+		sb.WriteString("  " + dim(note) + "\n")
+	}
 	if len(rep.Totals.MissingPricing) > 0 {
 		models := rep.Totals.MissingPricing
 		if len(models) > 4 {

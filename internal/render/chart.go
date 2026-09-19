@@ -88,6 +88,17 @@ func titleCase(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
+// unpriceableNote states the tokens the estimate does not cover, because the
+// source names no model for them. Without it an estimated total reads as
+// complete when it is not.
+func unpriceableNote(tokens int64) string {
+	if tokens <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s tokens have no model recorded, so no price is applied to them.",
+		thermal.CompactNumber(tokens))
+}
+
 // truncateLabel shortens a name to fit the label column.
 func truncateLabel(s string, width int) string {
 	r := []rune(s)
