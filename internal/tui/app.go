@@ -51,6 +51,7 @@ type Model struct {
 	// Mix and Models view state.
 	mixBy       string // "tool" or "model"
 	mixSel      int
+	statsLog    bool // histogram scale override
 	modelsSort  ModelSort
 	modelsSel   int
 	modelsTools []ToolShare
@@ -123,6 +124,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case tabModels:
 			if handled, model, cmd := (&m).updateModels(pressed); handled {
+				return model, cmd
+			}
+		case tabStats:
+			if handled, model, cmd := (&m).updateStats(pressed); handled {
 				return model, cmd
 			}
 		}
@@ -207,6 +212,15 @@ func (m Model) View() tea.View {
 		b.WriteString(indent(renderMix(m.buildMixView(), m.innerWidth(), m.palette), "  "))
 	case m.tab == tabModels:
 		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.palette), "  "))
+	case m.tab == tabStats:
+		sv := m.adapter.BuildStats(m.rng, m.metric)
+		if m.statsLog {
+			sv.UseLog = true
+			if sv.LogReason == "" {
+				sv.LogReason = "log scale: set by hand"
+			}
+		}
+		b.WriteString(indent(renderStats(sv, m.innerWidth(), m.palette), "  "))
 	case m.tab == 0:
 		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.palette), "  "))
 	default:
@@ -263,6 +277,12 @@ func (m Model) hint() string {
 			m.rng, m.metric, m.mixBy, m.sort)
 	case tabModels:
 		return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.modelsSort)
+	case tabStats:
+		scale := "auto"
+		if m.statsLog {
+			scale = "log"
+		}
+		return fmt.Sprintf("r range %s  ·  t metric %s  ·  l scale %s", m.rng, m.metric, scale)
 	}
 	return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.sort)
 }
@@ -290,6 +310,23 @@ func (m *Model) buildModelsView() ModelsView {
 	out := m.adapter.BuildModels(m.rng, m.metric, m.modelsSort)
 	out.Tools = m.adapter.toolSharesFor(m.rng)
 	return out
+}
+
+// updateStats handles the keys the Stats view owns.
+func (m *Model) updateStats(pressed string) (bool, tea.Model, tea.Cmd) {
+	switch pressed {
+	case "l":
+		m.statsLog = !m.statsLog
+		if m.statsLog {
+			m.status = "distribution: log scale"
+		} else {
+			m.status = "distribution: linear scale"
+		}
+		return true, m, nil
+	case "s", "?":
+		return false, m, nil
+	}
+	return false, m, nil
 }
 
 // updateMix handles the keys the Mix view owns, with the same address trick as

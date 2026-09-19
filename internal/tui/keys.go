@@ -19,6 +19,7 @@ type keyMap struct {
 	Range     []string
 	Filter    []string
 	FilterCyc []string
+	Scale     []string
 	Drill     []string
 	Back      []string
 }
@@ -38,6 +39,7 @@ func defaultKeys() keyMap {
 		Range:     []string{"r"},
 		Filter:    []string{"/"},
 		FilterCyc: []string{"f"},
+		Scale:     []string{"l"},
 		Drill:     []string{"enter"},
 		Back:      []string{"esc"},
 	}
@@ -54,6 +56,7 @@ func (k keyMap) helpRows() [][2]string {
 		{"g / G", "first and last row"},
 		{"s", "cycle sort"},
 		{"f", "cycle the tool filter (Projects)"},
+		{"l", "toggle the histogram scale (Stats)"},
 		{"t", "toggle tokens and cost"},
 		{"r", "cycle range (30d, 90d, 1y, all)"},
 		{"esc", "back"},
