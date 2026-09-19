@@ -47,18 +47,27 @@ type Model struct {
 	cached      Overview
 	cacheKey    string
 	cacheFilled bool
+
+	// Projects view state.
+	projSort   ProjectSort
+	projFilter string
+	projSel    int
+	projOffset int
+	drill      string // non-empty means the project detail is open
+	detail     ProjectDetail
 }
 
 // New builds a dashboard model over already-loaded data.
 func New(adapter Adapter, colorful bool) Model {
 	return Model{
-		adapter: adapter,
-		palette: newPalette(colorful),
-		rng:     Range30d,
-		metric:  MetricTokens,
-		sort:    SortTokens,
-		width:   80,
-		height:  24,
+		adapter:  adapter,
+		palette:  newPalette(colorful),
+		rng:      Range30d,
+		metric:   MetricTokens,
+		sort:     SortTokens,
+		projSort: ProjectSortTokens,
+		width:    80,
+		height:   24,
 	}
 }
 
@@ -92,6 +101,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	keys := defaultKeys()
 
+	// Views that own keys consume them before the shell does.
+	if m.tab == tabProjects && !m.showHe {
+		if handled, model, cmd := m.updateProjects(pressed); handled {
+			return model, cmd
+		}
+	}
+
 	switch {
 	case matches(keys.Quit, pressed):
 		return m, tea.Quit
@@ -119,6 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case matches(keys.Range, pressed):
 		m.rng = m.rng.next()
 		m.status = "range " + string(m.rng)
+		m.projOffset = 0
 		return m, nil
 
 	case matches(keys.Metric, pressed):
@@ -159,11 +176,16 @@ func (m Model) View() tea.View {
 	}
 	b.WriteString("\n")
 
-	if m.showHe {
+	switch {
+	case m.showHe:
 		b.WriteString(indent(m.helpScreen(), "  "))
-	} else if m.tab == 0 {
+	case m.tab == tabProjects && m.drill != "":
+		b.WriteString(indent(renderProjectDetail(m.detail, m.innerWidth(), m.palette), "  "))
+	case m.tab == tabProjects:
+		b.WriteString(indent(renderProjects(m.adapter.BuildProjects(m.rng, m.projSort, m.projFilter), m.innerWidth(), m.palette), "  "))
+	case m.tab == 0:
 		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.palette), "  "))
-	} else {
+	default:
 		b.WriteString(indent(m.placeholder(), "  "))
 	}
 
@@ -201,7 +223,105 @@ func (m Model) tabBar() string {
 }
 
 func (m Model) hint() string {
+	if m.tab == tabProjects {
+		if m.drill != "" {
+			return fmt.Sprintf("esc back  ·  r range %s", m.rng)
+		}
+		filter := m.projFilter
+		if filter == "" {
+			filter = "all"
+		}
+		return fmt.Sprintf("r range %s  ·  s sort %s  ·  f tool %s  ·  enter detail",
+			m.rng, m.projSort, filter)
+	}
 	return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.sort)
+}
+
+// tabProjects is the index of the Projects tab in Tabs.
+const tabProjects = 1
+
+// updateProjects handles the keys the Projects view owns. It reports whether it
+// consumed the key so the shell can fall through to its own bindings.
+func (m Model) updateProjects(pressed string) (bool, tea.Model, tea.Cmd) {
+	if m.drill != "" {
+		if pressed == "esc" || pressed == "q" {
+			m.drill = ""
+			m.status = ""
+			return true, m, nil
+		}
+		return false, m, nil
+	}
+
+	data := m.adapter.BuildProjects(m.rng, m.projSort, m.projFilter)
+	rows := len(data.Rows)
+
+	switch pressed {
+	case "j", "down":
+		if rows > 0 {
+			m.projSel = (m.projSel + 1) % rows
+		}
+		return true, m, nil
+	case "k", "up":
+		if rows > 0 {
+			m.projSel = (m.projSel - 1 + rows) % rows
+		}
+		return true, m, nil
+	case "g":
+		m.projSel = 0
+		return true, m, nil
+	case "G":
+		if rows > 0 {
+			m.projSel = rows - 1
+		}
+		return true, m, nil
+	case "s":
+		m.projSort = m.projSort.next()
+		m.projSel = 0
+		m.status = "sort " + string(m.projSort)
+		return true, m, nil
+	case "f":
+		m.projFilter = m.adapter.nextToolFilter(m.rng, m.projFilter)
+		m.projSel = 0
+		if m.projFilter == "" {
+			m.status = "tool filter cleared"
+		} else {
+			m.status = "tool filter " + m.projFilter
+		}
+		return true, m, nil
+	case "enter":
+		if rows == 0 || m.projSel >= rows {
+			return true, m, nil
+		}
+		name := data.Rows[m.projSel].Project
+		m.drill = name
+		m.detail = m.adapter.BuildProjectDetail(name, m.rng)
+		m.status = ""
+		return true, m, nil
+	case "?":
+		return false, m, nil
+	}
+	return false, m, nil
+}
+
+// nextToolFilter cycles through no filter, then each tool that has project rows
+// in the window, then back to no filter.
+func (a Adapter) nextToolFilter(r Range, current string) string {
+	options := a.toolFilterOptions(r)
+	if len(options) == 0 {
+		return ""
+	}
+	if current == "" {
+		return options[0]
+	}
+	for i, name := range options {
+		if name == current {
+			if i+1 < len(options) {
+				return options[i+1]
+			}
+			return ""
+		}
+	}
+	return ""
 }
 
 func (m Model) placeholder() string {

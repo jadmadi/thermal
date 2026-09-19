@@ -1,0 +1,14 @@
+   1 Overview  [2 Projects]  3 Mix   4 Models   5 Stats 
+
+  Projects                                                                                    2026-08-20 to 2026-09-18
+
+  #     Project                   Tokens        Cost   Days         Last  Tools                               Tokens
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  1.    atlas-gateway             902.2M      $53.50      1        09-18  Devin,OpenC…  ████████████████████████████
+  2.    northwind-cli              42.0M           —      1        09-16  ZCode         █···························
+  3.    beacon-api                  1.8M       $8.25      1        09-17  OpenCode      ····························
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Total                       946.0M        $61.75   3 projects · 3 active days
+  model rows cover 46.0M of 946.0M tokens; the rest comes from tools that record no model
+
+  r range 30d  ·  s sort tokens  ·  f tool all  ·  enter detail  ·  ? help

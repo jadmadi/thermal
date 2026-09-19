@@ -809,14 +809,18 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
   q        quit                          r    range: 30d, 90d, 1y, all
   1-5      jump to a view               t    metric: tokens or cost
   tab      next view                     s    sort: tokens, cost, name
-  j / k    move down and up              ?    help</code></pre>
+  j / k    move down and up              ?    help
+  f        tool filter (Projects)        enter  open a project detail</code></pre>
     </div>
 
     <p class="muted" style="margin-top:var(--s5)">
       The Overview view opens with totals, then ranks every tool that recorded
       usage in the window, with a bar, a twelve-week sparkline, and the current
-      streak. Every total equals the matching report command for the same
-      window, and a test asserts that rather than eyeballing it.
+      streak. The Projects view ranks repositories and opens a detail on enter,
+      with the tool split, the model split, a weekly trend, and a heatmap
+      scoped to the selected range. Every total equals the matching report
+      command for the same window, and a test asserts that rather than
+      eyeballing it.
     </p>
 
     <p class="note">
