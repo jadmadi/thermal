@@ -48,6 +48,13 @@ type Model struct {
 	cacheKey    string
 	cacheFilled bool
 
+	// Mix and Models view state.
+	mixBy       string // "tool" or "model"
+	mixSel      int
+	modelsSort  ModelSort
+	modelsSel   int
+	modelsTools []ToolShare
+
 	// Projects view state.
 	projSort   ProjectSort
 	projFilter string
@@ -60,14 +67,16 @@ type Model struct {
 // New builds a dashboard model over already-loaded data.
 func New(adapter Adapter, colorful bool) Model {
 	return Model{
-		adapter:  adapter,
-		palette:  newPalette(colorful),
-		rng:      Range30d,
-		metric:   MetricTokens,
-		sort:     SortTokens,
-		projSort: ProjectSortTokens,
-		width:    80,
-		height:   24,
+		adapter:    adapter,
+		palette:    newPalette(colorful),
+		rng:        Range30d,
+		metric:     MetricTokens,
+		sort:       SortTokens,
+		projSort:   ProjectSortTokens,
+		mixBy:      "tool",
+		modelsSort: ModelSortTokens,
+		width:      80,
+		height:     24,
 	}
 }
 
@@ -102,9 +111,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	keys := defaultKeys()
 
 	// Views that own keys consume them before the shell does.
-	if m.tab == tabProjects && !m.showHe {
-		if handled, model, cmd := m.updateProjects(pressed); handled {
-			return model, cmd
+	if !m.showHe {
+		switch m.tab {
+		case tabProjects:
+			if handled, model, cmd := m.updateProjects(pressed); handled {
+				return model, cmd
+			}
+		case tabMix:
+			if handled, model, cmd := (&m).updateMix(pressed); handled {
+				return model, cmd
+			}
+		case tabModels:
+			if handled, model, cmd := (&m).updateModels(pressed); handled {
+				return model, cmd
+			}
 		}
 	}
 
@@ -183,6 +203,10 @@ func (m Model) View() tea.View {
 		b.WriteString(indent(renderProjectDetail(m.detail, m.innerWidth(), m.palette), "  "))
 	case m.tab == tabProjects:
 		b.WriteString(indent(renderProjects(m.adapter.BuildProjects(m.rng, m.projSort, m.projFilter), m.innerWidth(), m.palette), "  "))
+	case m.tab == tabMix:
+		b.WriteString(indent(renderMix(m.buildMixView(), m.innerWidth(), m.palette), "  "))
+	case m.tab == tabModels:
+		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.palette), "  "))
 	case m.tab == 0:
 		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.palette), "  "))
 	default:
@@ -223,7 +247,8 @@ func (m Model) tabBar() string {
 }
 
 func (m Model) hint() string {
-	if m.tab == tabProjects {
+	switch m.tab {
+	case tabProjects:
 		if m.drill != "" {
 			return fmt.Sprintf("esc back  ·  r range %s", m.rng)
 		}
@@ -233,12 +258,103 @@ func (m Model) hint() string {
 		}
 		return fmt.Sprintf("r range %s  ·  s sort %s  ·  f tool %s  ·  enter detail",
 			m.rng, m.projSort, filter)
+	case tabMix:
+		return fmt.Sprintf("r range %s  ·  t metric %s  ·  v by %s  ·  s sort %s",
+			m.rng, m.metric, m.mixBy, m.sort)
+	case tabModels:
+		return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.modelsSort)
 	}
 	return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.sort)
 }
 
-// tabProjects is the index of the Projects tab in Tabs.
-const tabProjects = 1
+// Tab indexes, in the order Tabs declares them.
+const (
+	tabOverview = 0
+	tabProjects = 1
+	tabMix      = 2
+	tabModels   = 3
+	tabStats    = 4
+)
+
+// buildMixView assembles the Mix tab for the current range, metric and subject.
+func (m Model) buildMixView() MixView {
+	if m.mixBy == "model" {
+		return m.adapter.BuildModelMix(m.rng, m.metric)
+	}
+	return m.adapter.BuildMix(m.rng, m.metric)
+}
+
+// buildModelsView assembles the Models tab and stashes the tool split so the
+// view can print it without a second aggregation pass.
+func (m *Model) buildModelsView() ModelsView {
+	out := m.adapter.BuildModels(m.rng, m.metric, m.modelsSort)
+	out.Tools = m.adapter.toolSharesFor(m.rng)
+	return out
+}
+
+// updateMix handles the keys the Mix view owns, with the same address trick as
+// updateModels.
+func (m *Model) updateMix(pressed string) (bool, tea.Model, tea.Cmd) {
+	switch pressed {
+	case "v":
+		if m.mixBy == "model" {
+			m.mixBy = "tool"
+		} else {
+			m.mixBy = "model"
+		}
+		m.status = "mix by " + m.mixBy
+		return true, m, nil
+	case "j", "down":
+		m.mixSel++
+		return true, m, nil
+	case "k", "up":
+		if m.mixSel > 0 {
+			m.mixSel--
+		}
+		return true, m, nil
+	case "g":
+		m.mixSel = 0
+		return true, m, nil
+	case "s", "?":
+		return false, m, nil
+	}
+	return false, m, nil
+}
+
+// updateModels handles the keys the Models view owns. The body takes the
+// address of the value it was given, so the mutation lands on the copy Update
+// returns rather than on the caller's stack value.
+func (m *Model) updateModels(pressed string) (bool, tea.Model, tea.Cmd) {
+	rows := len(m.adapter.BuildModels(m.rng, m.metric, m.modelsSort).Rows)
+	switch pressed {
+	case "j", "down":
+		if rows > 0 {
+			m.modelsSel = (m.modelsSel + 1) % rows
+		}
+		return true, m, nil
+	case "k", "up":
+		if rows > 0 {
+			m.modelsSel = (m.modelsSel - 1 + rows) % rows
+		}
+		return true, m, nil
+	case "g":
+		m.modelsSel = 0
+		return true, m, nil
+	case "G":
+		if rows > 0 {
+			m.modelsSel = rows - 1
+		}
+		return true, m, nil
+	case "s":
+		m.modelsSort = m.modelsSort.next()
+		m.modelsSel = 0
+		m.status = "sort " + string(m.modelsSort)
+		return true, m, nil
+	case "?":
+		return false, m, nil
+	}
+	return false, m, nil
+}
 
 // updateProjects handles the keys the Projects view owns. It reports whether it
 // consumed the key so the shell can fall through to its own bindings.

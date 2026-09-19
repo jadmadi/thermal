@@ -23,7 +23,14 @@ func projectsFixture() Adapter {
 			{
 				Name: "OpenCode",
 				Days: []thermal.DailyRow{
-					{Day: "2026-09-18", Tokens: 2_193_493, Input: 101_725, Output: 6_712, Cache: 2_064_256, Turns: 3, Cost: 12.5},
+					{
+						Day: "2026-09-18", Tokens: 2_193_493, Input: 101_725, Output: 6_712, Cache: 2_064_256, Turns: 3, Cost: 12.5,
+						// A tool day carries its own model split: the Models
+						// view reads days, not project rows.
+						Models: map[string]thermal.ModelTokens{
+							"deepseek-v4.1-flash": {Input: 101_725, Output: 6_712, CacheRead: 2_064_256},
+						},
+					},
 				},
 				Projects: []thermal.ProjectDay{
 					{
@@ -45,7 +52,12 @@ func projectsFixture() Adapter {
 			{
 				Name: "Devin",
 				Days: []thermal.DailyRow{
-					{Day: "2026-09-18", Tokens: 900_000_000, Turns: 8},
+					{
+						Day: "2026-09-18", Tokens: 900_000_000, Turns: 8,
+						Models: map[string]thermal.ModelTokens{
+							"omen-alpha": {Input: 700_000_000, Output: 200_000_000},
+						},
+					},
 				},
 				Projects: []thermal.ProjectDay{
 					// Devin records no models: this row is what makes the note appear.
@@ -55,7 +67,12 @@ func projectsFixture() Adapter {
 			{
 				Name: "ZCode",
 				Days: []thermal.DailyRow{
-					{Day: "2026-09-16", Tokens: 42_000_000, Turns: 4},
+					{
+						Day: "2026-09-16", Tokens: 42_000_000, Turns: 4,
+						Models: map[string]thermal.ModelTokens{
+							"glm-5.3-flash": {Input: 40_000_000, Output: 2_000_000},
+						},
+					},
 				},
 				Projects: []thermal.ProjectDay{
 					{

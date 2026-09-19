@@ -1,0 +1,28 @@
+   1 Overview   2 Projects  [3 Mix]  4 Models   5 Stats 
+
+  Mix                               by tool · daily · 2026-08-20 to 2026-09-18
+
+   █
+   █
+   █
+   █
+   █
+   █
+   █
+  ▓█
+  2026-09-162026-09-18
+  902.2M tokens per bucket at peak
+
+  Series, tokens of the window
+    █ Devin           ████████████████████████████████████████   95.3%
+    ▓ ZCode           █·······································    4.4%
+    ▒ OpenCode        ········································    0.2%
+    3 active series
+
+  Switching
+    dominant      Devin
+    concentration 0.911  one series dominates
+    switches      1
+    by month      2026-09 1
+
+  r range 30d  ·  t metric tokens  ·  v by tool  ·  s sort tokens  ·  ? help

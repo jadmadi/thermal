@@ -1,0 +1,18 @@
+   1 Overview   2 Projects   3 Mix  [4 Models]  5 Stats 
+
+  Models                                                                     estimated cost · 2026-08-20 to 2026-09-18
+
+  #     Model                             Tokens        Cost   Share   Days  Tools           
+  ───────────────────────────────────────────────────────────────────────────────────────────
+  1.    omen-alpha                        900.0M           —   95.3%      1  Devin           
+  2.    glm-5.3-flash                      42.0M           —    4.4%      1  ZCode           
+  3.    deepseek-v4.1-flash                 2.2M           —    0.2%      1  OpenCode        
+  ───────────────────────────────────────────────────────────────────────────────────────────
+  Total                               944.2M           —
+
+  By tool
+    Devin            95.3%
+    ZCode             4.4%
+    OpenCode          0.2%
+
+  r range 30d  ·  t metric tokens  ·  s sort tokens  ·  ? help

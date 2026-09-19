@@ -11,11 +11,22 @@ import (
 )
 
 // press sends a single printable key press through Update.
+// press sends a printable key and returns the model Update produced. It takes
+// the value by address so a handler that mutates a pointer receiver still
+// updates the model the caller holds.
 func press(t *testing.T, m Model, ch string) Model {
 	t.Helper()
 	r := []rune(ch)[0]
 	updated, _ := m.Update(tea.KeyPressMsg{Code: r, Text: ch})
-	return updated.(Model)
+	switch v := updated.(type) {
+	case Model:
+		return v
+	case *Model:
+		return *v
+	default:
+		t.Fatalf("Update returned %T, want Model or *Model", updated)
+		return m
+	}
 }
 
 // TestKeyFlow covers the interactions the shell owns: tab switching, the three
