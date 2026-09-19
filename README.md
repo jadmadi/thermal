@@ -153,6 +153,58 @@ or message counts, empty sessions) are skipped so the Tokens column and the
 Total row stay in tokens. That activity still counts toward streaks and the
 leaderboard.
 
+## Charts
+
+Every report takes `--chart` to print bar rows under the table. The bars are
+plain text, so they survive being pasted into a chat, an issue, or a commit
+message, where a terminal heatmap does not.
+
+```bash
+thermal projects --chart          # bars under the project table
+thermal models --chart            # bars plus estimated cost per model
+thermal weekly --chart            # one bar per week
+thermal weekly --chart --sort cost
+```
+
+Each bar prints its number beside it, so nothing depends on colour, and the
+caption names the scale. A chart draws its first twelve rows and says how many
+it left out, because a bar chart with eighty rows is a second copy of the table
+rather than a chart. `--chart` never changes `--json` output.
+
+## The dashboard
+
+`thermal dashboard` opens the same numbers as an interactive screen: Overview,
+Projects, Mix, Models and Stats, aggregated from one load of the data.
+
+```bash
+thermal dashboard
+```
+
+| Key | Does |
+|---------|------------------------------------------|
+| `q` | quit |
+| `1`-`5` | jump to a view |
+| `tab` | next view |
+| `j` / `k` | move down and up |
+| `g` / `G` | first and last row |
+| `s` | cycle sort |
+| `t` | toggle tokens and cost |
+| `r` | cycle range: 30d, 90d, 1y, all |
+| `f` | cycle the tool filter (Projects) |
+| `v` | mix by tool or model (Mix) |
+| `l` | histogram scale (Stats) |
+| `enter` | open a project detail |
+| `esc` | back |
+| `?` | help |
+
+Every view total equals the matching report command for the same window, and a
+test asserts that rather than leaving it to inspection. A piped stdout is told
+to use the static commands instead, and `--json` never opens a terminal UI.
+
+Cost is estimated for the tools that record none, and the estimated share is
+labelled wherever it appears. Day granularity limits switching analysis: a
+change that happens twice in one day shows as one switch.
+
 ## Projects
 
 Group tokens, cost, and activity by project. thermal walks each recorded directory up to its nearest git repository, so subdirectories and worktrees fold into one project, and the same project is merged across every tool that touched it.

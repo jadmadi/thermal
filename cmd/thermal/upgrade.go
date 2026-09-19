@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	githubAPI    = "https://api.github.com/repos/jadmadi/thermal/releases/latest"
+	githubAPI      = "https://api.github.com/repos/jadmadi/thermal/releases/latest"
 	githubReleases = "https://github.com/jadmadi/thermal/releases"
 )
 
