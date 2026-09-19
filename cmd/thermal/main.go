@@ -12,10 +12,14 @@ import (
 	"syscall"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/mattn/go-isatty"
+
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
+	"github.com/jadmadi/thermal/internal/tui"
 	"github.com/jadmadi/thermal/internal/version"
 )
 
@@ -26,6 +30,7 @@ Don't break the streak.
 Terminal usage profile for AI coding tools.
 
 Commands:
+  dashboard      Interactive dashboard (needs a terminal)
   daily          Daily report (tokens and cost per day)
   weekly         Weekly report
   monthly        Monthly report
@@ -408,6 +413,8 @@ func main() {
 	switch opts.Tool {
 	case "upgrade":
 		os.Exit(runUpgrade())
+	case "dashboard":
+		os.Exit(runDashboard(opts))
 	case "version", "--version", "-v":
 		fmt.Printf("thermal %s\n", version.String())
 		if version.Commit != "unknown" {
@@ -708,6 +715,41 @@ func runReport(opts thermal.Options) {
 		return
 	}
 	fmt.Print(render.RenderReport(rep, opts.NoColor))
+}
+
+// runDashboard launches the interactive dashboard. Two guards keep scripts and
+// pipes safe: a non-TTY stdout is told to use the static commands, and --json
+// never opens a terminal UI.
+func runDashboard(opts thermal.Options) int {
+	if opts.JSON {
+		fmt.Fprintln(os.Stderr, "thermal: --json does not apply to the dashboard; use a report command, for example: thermal weekly --json")
+		return 1
+	}
+	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		fmt.Println("thermal dashboard is interactive and needs a terminal.")
+		fmt.Println("For scripts and pipes use the static commands:")
+		fmt.Println()
+		fmt.Println("  thermal                  leaderboard across every tool")
+		fmt.Println("  thermal weekly           weekly tokens and cost")
+		fmt.Println("  thermal projects         tokens and cost per repository")
+		fmt.Println("  thermal models           tokens and estimated cost per model")
+		fmt.Println("  thermal weekly --json    the same numbers, machine readable")
+		return 0
+	}
+
+	adapter := tui.LoadTools(newPricer(opts))
+	if note := tui.LoadNote(adapter); note != "" && adapter.Latest == "" {
+		fmt.Fprintf(os.Stderr, "thermal: %s\n", note)
+		return 1
+	}
+
+	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
+	p := tea.NewProgram(tui.New(adapter, colorful))
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: dashboard failed: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 // runProjectReport ranks projects by token usage across tools and time.

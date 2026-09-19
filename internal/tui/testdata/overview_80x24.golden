@@ -1,0 +1,24 @@
+  [1 Overview]  2 Projects   3 Mix   4 Models   5 Stats 
+
+  Overview                               range 30d · 2026-08-20 to 2026-09-18
+
+  tokens                    cost                      tools
+  1.2B tok                  $66.75                    3
+
+  projects                               streak
+  2                                      4d / best 4d
+
+  #    Tool               Tokens        Cost   Share  Last 12 weeks    Streak
+  ───────────────────────────────────────────────────────────────────────────
+  1.   Codex                1.2B      $42.00   99.6%  ░░░░░░░░░░░█        1d
+  2.   OpenCode             4.9M      $24.75    0.4%  ░░░░░░░░░░▄█        2d
+  3.   Agy                101.1K           —    0.0%  ░░░░░░░░░░░█        1d
+
+  Share of the window
+
+  ██████████████████████████████████████████████████████████████████████▓▒
+    █ Codex             99.6%
+    ▓ OpenCode           0.4%
+    ▒ Agy                0.0%
+
+  r range 30d  ·  t metric tokens  ·  s sort tokens  ·  ? help
