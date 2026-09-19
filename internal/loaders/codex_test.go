@@ -2,10 +2,10 @@ package loaders
 
 import (
 	"database/sql"
+	_ "modernc.org/sqlite"
 	"os"
 	"path/filepath"
 	"testing"
-	_ "modernc.org/sqlite"
 )
 
 func TestLoadCodexData_NestedTokenTypes(t *testing.T) {

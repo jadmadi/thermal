@@ -490,3 +490,91 @@ func TestLoadDevinData_DeltaScan(t *testing.T) {
 		t.Errorf("expected cached lifetime=470, got %d", sum3.LifetimeTokens)
 	}
 }
+
+// TestLoadDevinData_ModelAttribution pins the join that lets the estimator
+// price Devin's tokens. Without a model on the day, Catalog.PriceDay returns
+// zero and the cost silently vanishes from every report, which is what used to
+// happen to 19.2B tokens.
+func TestLoadDevinData_ModelAttribution(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin_models.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql open error: %v", err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`
+		CREATE TABLE sessions (
+			id TEXT PRIMARY KEY,
+			created_at INTEGER,
+			last_activity_at INTEGER,
+			hidden INTEGER,
+			working_directory TEXT,
+			model TEXT
+		);
+		CREATE TABLE message_nodes (
+			row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+			created_at INTEGER,
+			session_id TEXT,
+			chat_message TEXT
+		);
+	`)
+	if err != nil {
+		t.Fatalf("exec create error: %v", err)
+	}
+
+	msg := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":100,"output_tokens":50,"cache_read_tokens":10,"cache_creation_tokens":20}}}'`
+	_, err = db.Exec(`
+		INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0, '/work/atlas', 'glm-5-2');
+		INSERT INTO sessions VALUES ('s2', 1710504000, 1710504060, 0, '/work/atlas', 'GLM-5-2');
+		INSERT INTO sessions VALUES ('s3', 1710504000, 1710504060, 0, '/work/atlas', '');
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg + `);
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's2', ` + msg + `);
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's3', ` + msg + `);
+	`)
+	if err != nil {
+		t.Fatalf("exec insert error: %v", err)
+	}
+	t.Setenv("HOME", dir)
+
+	_, daily, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatalf("LoadDevinData: %v", err)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected one day, got %d", len(daily))
+	}
+	day := daily[0]
+
+	// Two sessions name the same model in different cases: one model, one key.
+	if len(day.Models) != 1 {
+		t.Fatalf("expected 1 model after normalisation, got %d: %v", len(day.Models), day.Models)
+	}
+	counts, ok := day.Models["glm-5-2"]
+	if !ok {
+		t.Fatalf("model key is not normalised; got %v", day.Models)
+	}
+
+	// The invariant that makes the estimate trustworthy: attributed tokens add
+	// up to the day total, never more and never less. The third session names no
+	// model, so it must not appear here.
+	wantInput := int64(200)
+	wantOutput := int64(100)
+	wantCache := int64(20 + 40)
+	if counts.Input != wantInput || counts.Output != wantOutput || counts.CacheRead != 20 || counts.CacheWrite != 40 {
+		t.Errorf("attributed counts = %+v, want input %d output %d cache read 20 write 40",
+			counts, wantInput, wantOutput)
+	}
+
+	// The day totals stay whole, including the unattributed session.
+	wantDayTokens := int64(3 * (100 + 50 + 10 + 20))
+	if day.Tokens != wantDayTokens {
+		t.Errorf("day tokens = %d, want %d", day.Tokens, wantDayTokens)
+	}
+	attributed := counts.Input + counts.Output + counts.CacheRead + counts.CacheWrite
+	if attributed >= day.Tokens {
+		t.Errorf("attributed %d covers the whole day %d, but one session had no model", attributed, day.Tokens)
+	}
+	_ = wantCache
+}

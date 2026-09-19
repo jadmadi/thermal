@@ -515,11 +515,18 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 
 	// Project attribution needs the session working directory, which older
-	// Devin schemas may not carry.
+	// Devin schemas may not carry. The session also names the model, and that
+	// name is the only thing that lets the estimator price Devin's tokens:
+	// without it every day is priced at zero and the cost disappears from
+	// reports. Both columns come from the same join.
 	projectSelect, projectJoin := "''", ""
+	modelSelect := "''"
 	if hasColumn(db, "sessions", "working_directory") {
 		projectSelect = "COALESCE(s.working_directory, '')"
 		projectJoin = " LEFT JOIN sessions s ON s.id = m.session_id"
+		if hasColumn(db, "sessions", "model") {
+			modelSelect = "COALESCE(s.model, '')"
+		}
 	}
 
 	// If session count is unchanged and new messages were simply appended (maxRowID > c.MaxRowID),
@@ -531,6 +538,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		deltaRows, err := db.Query(`
 			SELECT m.created_at,
 			       `+projectSelect+`,
+			       `+modelSelect+`,
 			       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
 			       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
 			       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
@@ -568,9 +576,9 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 
 			for deltaRows.Next() {
 				var createdAt int64
-				var workingDir string
+				var workingDir, sessionModel string
 				var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
-				if err := deltaRows.Scan(&createdAt, &workingDir, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
+				if err := deltaRows.Scan(&createdAt, &workingDir, &sessionModel, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
 					break
 				}
 				day := thermal.UnixDay(createdAt)
@@ -585,6 +593,20 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 				agg.outTok += outTok.Int64
 				agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 				agg.turns++
+
+				// New messages carry the same session-level model attribution as
+				// a full scan, so a delta run cannot quietly drop it.
+				if model := modelName(sessionModel); model != "" {
+					if modelsByDay[day] == nil {
+						modelsByDay[day] = make(map[string]thermal.ModelTokens)
+					}
+					modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
+						Input:      inTok.Int64,
+						Output:     outTok.Int64,
+						CacheRead:  cacheRead.Int64,
+						CacheWrite: cacheCreate.Int64,
+					})
+				}
 
 				if project := thermal.ProjectKey(workingDir); project != "" {
 					key := projectDayKey{day, project}
@@ -648,6 +670,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	rows, err := db.Query(`
 		SELECT m.created_at,
 		       ` + projectSelect + `,
+		       ` + modelSelect + `,
 		       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
 		       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
 		       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
@@ -670,11 +693,12 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	byDay := make(map[string]*dayAgg)
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	var scanned int64
+	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
 	for rows.Next() {
 		var createdAt int64
-		var workingDir string
+		var workingDir, sessionModel string
 		var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
-		if err := rows.Scan(&createdAt, &workingDir, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
+		if err := rows.Scan(&createdAt, &workingDir, &sessionModel, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
 			progress.Done()
 			return thermal.Summary{}, nil, nil, err
 		}
@@ -688,6 +712,23 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		agg.outTok += outTok.Int64
 		agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 		agg.turns++
+
+		// Attribute the message to its session's model. Devin records the
+		// model per session, not per message, so this is session-level
+		// attribution carried down to the day the tokens were spent. A session
+		// with no model leaves the day's tokens unattributed rather than
+		// inventing a name, and the report footer states that remainder.
+		if model := modelName(sessionModel); model != "" {
+			if modelsByDay[day] == nil {
+				modelsByDay[day] = make(map[string]thermal.ModelTokens)
+			}
+			modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
+				Input:      inTok.Int64,
+				Output:     outTok.Int64,
+				CacheRead:  cacheRead.Int64,
+				CacheWrite: cacheCreate.Int64,
+			})
+		}
 
 		if project := thermal.ProjectKey(workingDir); project != "" {
 			key := projectDayKey{day, project}
@@ -728,6 +769,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			Output: agg.outTok,
 			Cache:  agg.cacheTok,
 			Turns:  agg.turns,
+			Models: modelsByDay[day],
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
