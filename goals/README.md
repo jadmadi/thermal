@@ -27,10 +27,19 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 8
+- **Total Goals**: 9
 - 🟢 **Implemented & Verified**: 8
+- 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 42/42 completed (100%)
+- 📋 **Execution Tasks Progress**: 42/48 completed (87%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :--- | :--- | :--- |
+| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | `@opencode` | Devin model join, cache bump, unestimated disclosure | 0s ago |
 
 ---
 
@@ -41,9 +50,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fa74fe7` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9c28a0a` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `050f4a5` |
-| [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `e15056f` |
+| [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `0619190` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `6a591f8` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `338b8bd` |
-| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `1cb2f50` |
+| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `66a7466` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 

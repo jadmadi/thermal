@@ -1,8 +1,8 @@
 package loaders
 
 import (
-	"testing"
 	"github.com/jadmadi/thermal/internal/thermal"
+	"testing"
 )
 
 func TestResolveTool_Aliases(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 
 // devinCacheVersion bumps whenever the cached snapshot shape changes, so an
 // old cache file is ignored instead of decoded into stale zero fields.
-const devinCacheVersion = 3
+const devinCacheVersion = 4
 
 // DevinCache is a disk-backed snapshot of the expensive message_nodes
 // aggregation. Invalidation is keyed on MAX(row_id) (covers new appends —
