@@ -175,8 +175,11 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		// threads.tokens_used, so scale the breakdown to tokens_used before
 		// attributing it to the thread's day and model.
 		t := threads[i]
+		if t.tokensUsed <= 0 {
+			continue
+		}
 		breakdownTotal := b.input + b.output + b.reasoning + b.cache
-		if t.tokensUsed <= 0 || breakdownTotal <= 0 {
+		if breakdownTotal <= 0 {
 			continue
 		}
 		ratio := float64(t.tokensUsed) / float64(breakdownTotal)
@@ -292,8 +295,13 @@ func readLastTokenBreakdown(rolloutPath string) *tokenBreakdown {
 	}
 	defer f.Close()
 
+	// A rollout line can be large: this format carries whole file contents as
+	// input_text parts, and a 1.3MB line is normal. The buffer must be big
+	// enough to reach the token_count frame that usually sits near the end, or
+	// the scan stops early and the thread looks like it has no breakdown at
+	// all, which silently removed its model from the estimate.
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+	scanner.Buffer(make([]byte, 0, 1024*1024), 32*1024*1024)
 
 	var last *tokenBreakdown
 	for scanner.Scan() {

@@ -185,9 +185,8 @@ func TestAggregatePricingRule(t *testing.T) {
 
 func TestAggregateSkipsDaysWithoutTokenData(t *testing.T) {
 	days := []DailyRow{
-		// A positive Tokens total counts on its own: a source that reports a
-		// session total without a breakdown is a token source. It cannot be
-		// priced, so it is also counted as unattributed.
+		// A step count: Tokens equals Turns and nothing else is recorded, so it
+		// is activity, not tokens, and it is skipped.
 		{Day: "2026-09-10", Tokens: 21, Turns: 21},
 		{Day: "2026-09-11", Tokens: 0, Turns: 2},                                                  // empty session, turns but no tokens
 		{Day: "2026-09-12", Tokens: 0, Turns: 0},                                                  // fully empty
@@ -197,20 +196,20 @@ func TestAggregateSkipsDaysWithoutTokenData(t *testing.T) {
 		{Day: "2026-09-16", Tokens: 0, Turns: 0, Models: map[string]ModelTokens{"m": {Input: 5}}}, // kept: positive model
 	}
 	rep := Aggregate(days, GrainDay, AggregateOptions{Order: "asc"}, nil)
-	if len(rep.Rows) != 4 {
-		t.Fatalf("expected 4 rows, got %d: %+v", len(rep.Rows), rep.Rows)
+	if len(rep.Rows) != 3 {
+		t.Fatalf("expected 3 rows, got %d: %+v", len(rep.Rows), rep.Rows)
 	}
-	for i, want := range []string{"2026-09-10", "2026-09-14", "2026-09-15", "2026-09-16"} {
+	for i, want := range []string{"2026-09-14", "2026-09-15", "2026-09-16"} {
 		if rep.Rows[i].Period != want {
 			t.Errorf("row %d = %s, want %s", i, rep.Rows[i].Period, want)
 		}
 	}
-	if rep.Totals.Tokens != 31 || rep.Totals.Turns != 23 || rep.Totals.ActiveDays != 3 {
-		t.Errorf("totals = %+v, want 31 tokens / 23 turns / 3 active days", rep.Totals)
+	if rep.Totals.Tokens != 10 || rep.Totals.Turns != 2 || rep.Totals.ActiveDays != 2 {
+		t.Errorf("totals = %+v, want 10 tokens / 2 turns / 2 active days", rep.Totals)
 	}
-	// The days with no model and no recorded cost are what no price can cover.
-	if rep.Totals.UnattributedTokens != 31 {
-		t.Errorf("unattributed = %d, want 31 (the two model-less days)", rep.Totals.UnattributedTokens)
+	// The day with no model and no recorded cost is what no price can cover.
+	if rep.Totals.UnattributedTokens != 10 {
+		t.Errorf("unattributed = %d, want 10 (the model-less token day)", rep.Totals.UnattributedTokens)
 	}
 	if rep.Totals.Cost != 1.5 || rep.Totals.StoredCost != 1.5 {
 		t.Errorf("totals cost = %+v, want 1.5 stored", rep.Totals)
@@ -244,9 +243,10 @@ func TestAggregateTotalsMatchAcrossGrains(t *testing.T) {
 		{Day: "2026-08-31", Tokens: 10, Input: 6, Output: 4, Turns: 1, Cost: 1.5},
 		{Day: "2026-09-01", Tokens: 20, Input: 10, Output: 10, Turns: 1, Models: map[string]ModelTokens{"m": {Input: 10, Output: 10}}},
 		{Day: "2026-09-02", Tokens: 30, Input: 10, Output: 20, Turns: 1, Cost: 2.0},
-		// A token count with no model breakdown is a token day: it is counted,
-		// it cannot be priced, and the footer is told about it.
-		{Day: "2026-09-03", Tokens: 7, Turns: 7},
+		// A session total with no model breakdown is a token day: it is counted,
+		// it cannot be priced, and the footer is told about it. Its Tokens and
+		// Turns differ, which is what separates it from an activity count.
+		{Day: "2026-09-03", Tokens: 7, Turns: 1},
 	}
 	pricer := &stubPricer{cost: 2.5, missing: []string{"unknown-model"}}
 	daily := Aggregate(days, GrainDay, AggregateOptions{}, pricer)
@@ -290,5 +290,36 @@ func TestTopModels(t *testing.T) {
 		if i >= len(got) || got[i] != want[i] {
 			t.Fatalf("TopModels = %v, want %v", got, want)
 		}
+	}
+}
+
+// TestIsActivityOnly pins the rule that keeps step counts out of token totals.
+// Every activity loader writes a call count into Tokens and the same number
+// into Turns, so the shape is distinguishable from a token total.
+func TestIsActivityOnly(t *testing.T) {
+	cases := []struct {
+		name     string
+		day      DailyRow
+		activity bool // the count is calls, not tokens
+		data     bool // the row carries tokens or cost
+	}{
+		{"step count", DailyRow{Day: "2026-09-15", Tokens: 500, Turns: 500}, true, false},
+		{"message count", DailyRow{Day: "2026-09-15", Tokens: 14, Turns: 14}, true, false},
+		{"session total", DailyRow{Day: "2026-09-15", Tokens: 5000, Turns: 3}, false, true},
+		{"classified tokens", DailyRow{Day: "2026-09-15", Tokens: 500, Input: 500, Turns: 500}, false, true},
+		{"recorded cost", DailyRow{Day: "2026-09-15", Tokens: 500, Turns: 500, Cost: 1.5}, false, true},
+		{"model present", DailyRow{Day: "2026-09-15", Tokens: 500, Turns: 500, Models: map[string]ModelTokens{"m": {Input: 500}}}, false, true},
+		{"turns without tokens", DailyRow{Day: "2026-09-15", Tokens: 0, Turns: 3}, false, false},
+		{"empty", DailyRow{Day: "2026-09-15"}, false, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isActivityOnly(tc.day); got != tc.activity {
+				t.Errorf("isActivityOnly(%+v) = %v, want %v", tc.day, got, tc.activity)
+			}
+			if got := hasTokenData(tc.day); got != tc.data {
+				t.Errorf("hasTokenData(%+v) = %v, want %v", tc.day, got, tc.data)
+			}
+		})
 	}
 }
