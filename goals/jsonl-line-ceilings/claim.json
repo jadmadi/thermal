@@ -1,0 +1,11 @@
+{
+  "goal_slug": "jsonl-line-ceilings",
+  "claimed_by": "antigravity",
+  "agent": "antigravity",
+  "claimed_at": "2026-09-20T19:33:40.808635639Z",
+  "updated_at": "2026-09-20T19:38:25.23615799Z",
+  "hostname": "madi",
+  "pid": 1060256,
+  "status": "in_progress",
+  "note": "Raised scanner ceiling to 32 MiB via newJSONLScanner across all 8 JSONL scan sites; recovered 38 uncounted messages in command-code live data; all race tests pass"
+}

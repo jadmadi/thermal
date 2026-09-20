@@ -29,9 +29,18 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 ## Summary
 - **Total Goals**: 14
 - 🟢 **Implemented & Verified**: 12
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- 🔵 **In Progress (Claimed)**: 1
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 1
-- 📋 **Execution Tasks Progress**: 64/77 completed (83%)
+- 📋 **Execution Tasks Progress**: 70/77 completed (90%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :--- | :--- | :--- |
+| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | `@antigravity` | Raised scanner ceiling to 32 MiB via newJSONLScanner across all 8 JSONL scan sites; recovered 38 uncounted messages in command-code live data; all race tests pass | 5m0s ago |
 
 ---
 
@@ -39,7 +48,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :--- | :--- | :--- |
-| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `🚢 SHIP ⚡ Independent (#12)` | - | JSONL line ceilings that fit real logs — A 256KB scanner ceiling is smaller than a real command-code transcript line (409... | `/goal goals/jsonl-line-ceilings/goal.md` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🚢 SHIP ⛔ Blocked (#13)` | Prereqs: jsonl-line-ceilings | A scan that stops early is reported, never silent — No loader checks scanner.Err(), so a line over the ceiling or a read error ends ... | `/goal goals/jsonl-scan-diagnostics/goal.md` |
 
 ---

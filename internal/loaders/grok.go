@@ -1,7 +1,6 @@
 package loaders
 
 import (
-	"bufio"
 	"encoding/json"
 	"net/url"
 	"os"
@@ -90,8 +89,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 				return
 			}
 
-			scanner := bufio.NewScanner(f)
-			scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+			scanner := newJSONLScanner(f)
 			for scanner.Scan() {
 				line := strings.TrimSpace(scanner.Text())
 				if line == "" {

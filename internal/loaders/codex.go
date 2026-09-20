@@ -1,7 +1,6 @@
 package loaders
 
 import (
-	"bufio"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -300,8 +299,7 @@ func readLastTokenBreakdown(rolloutPath string) *tokenBreakdown {
 	// enough to reach the token_count frame that usually sits near the end, or
 	// the scan stops early and the thread looks like it has no breakdown at
 	// all, which silently removed its model from the estimate.
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 1024*1024), 32*1024*1024)
+	scanner := newJSONLScanner(f)
 
 	var last *tokenBreakdown
 	for scanner.Scan() {

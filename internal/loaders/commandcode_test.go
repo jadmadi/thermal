@@ -1,8 +1,10 @@
 package loaders
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -39,5 +41,35 @@ func TestLoadCommandCodeData_MockSession(t *testing.T) {
 	// Model names are lowercased so the same model merges across tools.
 	if sum.ModelBreakdown["deepseek-coder"] != 1 {
 		t.Errorf("expected deepseek-coder model in breakdown, got %v", sum.ModelBreakdown)
+	}
+}
+
+func TestLoadCommandCodeData_LineOver256KB(t *testing.T) {
+	dir := t.TempDir()
+	projDir := filepath.Join(dir, "projects", "p1")
+	if err := os.MkdirAll(projDir, 0755); err != nil {
+		t.Fatalf("failed creating directories: %v", err)
+	}
+
+	sessionFile := filepath.Join(projDir, "sess.jsonl")
+	msg1 := `{"timestamp":"2026-08-01T10:00:00Z","role":"user","source":"cli"}` + "\n"
+	largePayload := strings.Repeat("A", 300*1024)
+	msg2 := fmt.Sprintf(`{"timestamp":"2026-08-01T10:01:00Z","role":"assistant","content":"%s"}`, largePayload) + "\n"
+	msg3 := `{"timestamp":"2026-08-02T10:00:00Z","role":"user","source":"cli"}` + "\n"
+
+	if err := os.WriteFile(sessionFile, []byte(msg1+msg2+msg3), 0644); err != nil {
+		t.Fatalf("failed writing session: %v", err)
+	}
+
+	sum, daily, _, err := LoadCommandCodeData(dir)
+	if err != nil {
+		t.Fatalf("LoadCommandCodeData error: %v", err)
+	}
+
+	if sum.LifetimeTokens != 3 {
+		t.Fatalf("expected 3 messages, got %d", sum.LifetimeTokens)
+	}
+	if len(daily) != 2 {
+		t.Fatalf("expected 2 days, got %d", len(daily))
 	}
 }

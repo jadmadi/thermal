@@ -1,7 +1,6 @@
 package loaders
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -58,8 +57,7 @@ func countAgySteps(path string, res *sessionResult) int {
 	defer f.Close()
 
 	counted := 0
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+	scanner := newJSONLScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -138,8 +136,7 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 			// 2. Process transcript.jsonl for model extraction
 			transcriptPath := filepath.Join(logsDir, "transcript.jsonl")
 			if f, err := os.Open(transcriptPath); err == nil {
-				scanner := bufio.NewScanner(f)
-				scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+				scanner := newJSONLScanner(f)
 				for scanner.Scan() {
 					line := strings.TrimSpace(scanner.Text())
 					if line == "" {

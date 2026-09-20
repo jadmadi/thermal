@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,6 +13,28 @@ import (
 
 	"github.com/jadmadi/thermal/internal/thermal"
 )
+
+// maxJSONLLineBytes is the upper bound for a single line in JSONL log files.
+// Real assistant transcripts contain multi-megabyte payloads (e.g. tool results,
+// base64 images, rollout input_text chunks). A 32 MiB ceiling ensures large lines
+// are read in full without truncating the session or dropping subsequent messages.
+const maxJSONLLineBytes = 32 * 1024 * 1024
+
+// jsonlMaxLineBytes is the ceiling used by newJSONLScanner. It is a package variable
+// so unit tests can lower it to test over-ceiling behavior without generating 32 MiB files.
+var jsonlMaxLineBytes = maxJSONLLineBytes
+
+// newJSONLScanner creates a bufio.Scanner configured with an initial buffer and
+// the shared 32 MiB max line ceiling.
+func newJSONLScanner(r io.Reader) *bufio.Scanner {
+	scanner := bufio.NewScanner(r)
+	initBuf := 64 * 1024
+	if jsonlMaxLineBytes < initBuf {
+		initBuf = jsonlMaxLineBytes
+	}
+	scanner.Buffer(make([]byte, 0, initBuf), jsonlMaxLineBytes)
+	return scanner
+}
 
 func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	historyPath := filepath.Join(dataDir, "history.jsonl")
@@ -24,7 +47,7 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 	dayCounts := make(map[string]int)
 	var totalCommands int64
 
-	scanner := bufio.NewScanner(f)
+	scanner := newJSONLScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {

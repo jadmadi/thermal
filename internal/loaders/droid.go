@@ -1,7 +1,6 @@
 package loaders
 
 import (
-	"bufio"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -53,8 +52,7 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 			}
 
 			var firstTs, lastTs time.Time
-			scanner := bufio.NewScanner(f)
-			scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+			scanner := newJSONLScanner(f)
 			for scanner.Scan() {
 				line := strings.TrimSpace(scanner.Text())
 				if line == "" {
