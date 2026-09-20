@@ -1126,13 +1126,19 @@ thermal models --top 10</code></pre>
     </p>
 
     <p class="muted">
-      Two tools need attention here. Devin records a model per session, which
-      the daily, weekly and monthly reports now use, so its spend appears there.
-      The projects view aggregates project rows, which carry no model, so its
-      total for Devin lands in the unpriceable line instead. Models with no list
-      price, such as <span class="mono">swe-1-7</span>, are named in the
-      <span class="mono">No pricing for</span> footer rather than counted as
-      free.
+      A day is priced when its source names a model and that model has a price.
+      Tokens from a day with no model are counted and named in the footer, and a
+      model the catalog cannot find is listed in the
+      <span class="mono">No pricing for</span> line, such as
+      <span class="mono">swe-1-7</span> from Devin. Nothing is guessed and
+      nothing is treated as free.
+    </p>
+
+    <p class="muted">
+      Tools that record no tokens at all, such as Agy, Droid and command-code,
+      report steps or messages. Those counts stay out of token totals, because a
+      step is not a token, and they appear in the Activity Hunters leaderboard
+      and in streaks.
     </p>
 
     <div class="prose">

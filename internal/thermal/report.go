@@ -88,14 +88,43 @@ func TopModels(models map[string]ModelTokens) []string {
 	return names
 }
 
+// isActivityOnly reports whether a row is activity telemetry rather than token
+// telemetry. Loaders for tools that record no tokens write a message, step, or
+// prompt count into Tokens, and that count equals Turns because one call is one
+// turn. Every other field is empty, and there is no model or cost, which is
+// what separates these rows from a genuine session-total source such as
+// codewhale: that one writes a token total, so its Tokens and Turns differ.
+//
+// The distinction matters because reporting a step count in a Tokens column is
+// wrong, and counting it as an unpriceable token is wrong twice.
+func isActivityOnly(day DailyRow) bool {
+	if day.Tokens <= 0 || int64(day.Turns) != day.Tokens {
+		return false
+	}
+	if day.Input != 0 || day.Output != 0 || day.Reasoning != 0 || day.Cache != 0 {
+		return false
+	}
+	if day.Cost != 0 {
+		return false
+	}
+	for _, counts := range day.Models {
+		if counts.Total() > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // hasTokenData reports whether a day carries tokens or cost. A positive Tokens
-// total counts on its own: a source that reports a session total without a
-// type breakdown, such as codewhale, is a token source, and dropping it would
-// hide real spend. Activity-only days, where Tokens holds a message or step
-// count and no cost or model is recorded, return false so period reports never
-// mix steps into token columns and totals. Streaks and the leaderboard keep
-// that activity separately.
+// total counts on its own when the row is not activity telemetry, because a
+// source that reports a session total without a type breakdown is a token
+// source and dropping it would hide real spend. Activity-only rows return
+// false, so period reports never mix steps into token columns and totals.
+// Streaks and the leaderboard keep that activity separately.
 func hasTokenData(day DailyRow) bool {
+	if isActivityOnly(day) {
+		return false
+	}
 	if day.Tokens > 0 {
 		return true
 	}

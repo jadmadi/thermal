@@ -308,10 +308,18 @@ changes the note.
 Model cost is always an estimate, because recorded cost belongs to a session or
 a day and never to one model.
 
-The estimate is not a floor. For a tool that records neither cost nor model
-names, such as Devin, it prices every day at a conservative rate, so the real
-figure could sit on either side of it. Treat the recorded part as fact and the
-estimated part as an indication.
+The estimate is not a floor. It covers a day only when the source names a model
+and that model has a price. Anything else is stated rather than guessed:
+
+- Tokens from a day with no model are counted in the total and named in the
+  footer, so an estimate never reads as complete when part of it could not be
+  priced.
+- Models the catalog cannot find are named in the `No pricing for` line rather
+  than counted as free.
+
+Tools that record no tokens at all, such as Agy, Droid and command-code, report
+steps or messages instead. Those counts stay out of token totals and appear in
+the Activity Hunters leaderboard and in streaks, where they belong.
 
 ## Cost estimation
 
