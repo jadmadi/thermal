@@ -49,4 +49,4 @@ Allow: /
 User-agent: Bravebot
 Allow: /
 
-Sitemap: https://jadmadi.github.io/thermal/sitemap.xml
+Sitemap: https://thermal.jadmadi.net/sitemap.xml

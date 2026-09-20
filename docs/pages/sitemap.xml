@@ -2,7 +2,7 @@
 <!-- One page, so one URL. Update lastmod when the page content changes. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://jadmadi.github.io/thermal/</loc>
+    <loc>https://thermal.jadmadi.net/</loc>
     <lastmod>2026-09-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
