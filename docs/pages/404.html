@@ -447,6 +447,23 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebSite",
+      "@id": "https://jadmadi.github.io/thermal/#website",
+      "url": "https://jadmadi.github.io/thermal/",
+      "name": "Thermal",
+      "description": "Terminal contribution heatmap, streaks, tokens, and cost for 12 AI coding tools.",
+      "publisher": { "@id": "https://jadmadi.net/#person" }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://jadmadi.github.io/thermal/#webpage",
+      "url": "https://jadmadi.github.io/thermal/",
+      "name": "Thermal — contribution heatmap for AI coding tools",
+      "isPartOf": { "@id": "https://jadmadi.github.io/thermal/#website" },
+      "about": { "@id": "https://jadmadi.github.io/thermal/#software" },
+      "description": "Terminal heatmap, streaks, tokens, and cost for 12 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config."
+    },
+    {
       "@type": "SoftwareApplication",
       "@id": "https://jadmadi.github.io/thermal/#software",
       "name": "thermal",
@@ -454,7 +471,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "applicationCategory": "DeveloperApplication",
       "applicationSubCategory": "Command line tool",
       "operatingSystem": "Linux, macOS, Windows",
-      "softwareVersion": "0.6.0",
+      "softwareVersion": "0.10.0",
       "softwareRequirements": "Go 1.26 or a prebuilt binary",
       "programmingLanguage": "Go",
       "isAccessibleForFree": true,
