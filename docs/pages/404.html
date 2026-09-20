@@ -1551,6 +1551,19 @@ thermal: --top only applies to the projects and models commands</code></pre>
         </p>
       </li>
       <li>
+        <b>Safe JSONL ceilings and diagnostics</b>
+        <p>
+          JSONL scanners must use <span class="mono">newJSONLScanner()</span> to
+          set a 32&nbsp;MiB line ceiling so multi-megabyte tool results and
+          rollout chunks are not truncated. Check
+          <span class="mono">scanner.Err()</span> and record non-fatal errors in
+          <span class="mono">Summary.Warnings</span> with
+          <span class="mono">formatScanWarning()</span> so diagnostics ride to
+          <span class="mono">--verbose</span> stderr without polluting stdout or
+          JSON output.
+        </p>
+      </li>
+      <li>
         <b>Test the edges</b>
         <p>
           Missing databases, corrupt files, zero-token sessions, and unusual
