@@ -28,18 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 14
-- 🟢 **Implemented & Verified**: 13
-- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented & Verified**: 14
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
 - 📋 **Execution Tasks Progress**: 77/77 completed (100%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :--- | :--- | :--- |
-| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | `@antigravity` | Wired scanner.Err() and os.Open diagnostics to Summary.Warnings across all 8 JSONL scan sites; printed under --verbose; verified with unit tests and race suite | 8m0s ago |
 
 ---
 
@@ -58,6 +49,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ce31aaa` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ada5b52` |
+| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `247bb80` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
 
