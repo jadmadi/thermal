@@ -578,3 +578,73 @@ func TestLoadDevinData_ModelAttribution(t *testing.T) {
 	}
 	_ = wantCache
 }
+
+// TestLoadDevinData_ProjectModelAttribution proves project rows carry the same
+// attribution as daily rows. The projects report prices from project rows, so a
+// missing model there sends a tool's spend to the unpriceable line even though
+// its daily rows name a model.
+func TestLoadDevinData_ProjectModelAttribution(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin_projects.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql open error: %v", err)
+	}
+	defer db.Close()
+
+	if _, err := db.Exec(`
+		CREATE TABLE sessions (
+			id TEXT PRIMARY KEY,
+			created_at INTEGER,
+			last_activity_at INTEGER,
+			hidden INTEGER,
+			working_directory TEXT,
+			model TEXT
+		);
+		CREATE TABLE message_nodes (
+			row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+			created_at INTEGER,
+			session_id TEXT,
+			chat_message TEXT
+		);
+	`); err != nil {
+		t.Fatalf("exec create error: %v", err)
+	}
+
+	msg := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":100,"output_tokens":50,"cache_read_tokens":10,"cache_creation_tokens":20}}}'`
+	if _, err := db.Exec(`
+		INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0, '/work/atlas', 'glm-5-2');
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg + `);
+	`); err != nil {
+		t.Fatalf("exec insert error: %v", err)
+	}
+	t.Setenv("HOME", dir)
+
+	_, daily, projects, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatalf("LoadDevinData: %v", err)
+	}
+	if len(daily) != 1 || len(projects) == 0 {
+		t.Fatalf("expected 1 day and at least 1 project, got %d and %d", len(daily), len(projects))
+	}
+
+	var found bool
+	for _, p := range projects {
+		if len(p.Models) == 0 {
+			t.Errorf("project %s day %s has no model attribution", p.Project, p.Day)
+			continue
+		}
+		found = true
+		counts, ok := p.Models["glm-5-2"]
+		if !ok {
+			t.Errorf("project models = %v, want glm-5-2", p.Models)
+			continue
+		}
+		if counts.Input != 100 || counts.Output != 50 || counts.CacheRead != 10 || counts.CacheWrite != 20 {
+			t.Errorf("project model counts = %+v, want the daily counts", counts)
+		}
+	}
+	if !found {
+		t.Fatal("no project row carried a model")
+	}
+}

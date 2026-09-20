@@ -557,6 +557,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			}
 			byDay := make(map[string]*dayAgg)
 			modelsByDay := make(map[string]map[string]thermal.ModelTokens)
+			deltaProjectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 			for _, r := range c.Daily {
 				byDay[r.Day] = &dayAgg{
 					tokens:   r.Tokens,
@@ -597,15 +598,23 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 				// New messages carry the same session-level model attribution as
 				// a full scan, so a delta run cannot quietly drop it.
 				if model := modelName(sessionModel); model != "" {
-					if modelsByDay[day] == nil {
-						modelsByDay[day] = make(map[string]thermal.ModelTokens)
-					}
-					modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
+					counts := thermal.ModelTokens{
 						Input:      inTok.Int64,
 						Output:     outTok.Int64,
 						CacheRead:  cacheRead.Int64,
 						CacheWrite: cacheCreate.Int64,
-					})
+					}
+					if modelsByDay[day] == nil {
+						modelsByDay[day] = make(map[string]thermal.ModelTokens)
+					}
+					modelsByDay[day][model] = modelsByDay[day][model].Add(counts)
+					if projectKey := thermal.ProjectKey(workingDir); projectKey != "" {
+						key := projectDayKey{day, projectKey}
+						if deltaProjectModels[key] == nil {
+							deltaProjectModels[key] = make(map[string]thermal.ModelTokens)
+						}
+						deltaProjectModels[key][model] = deltaProjectModels[key][model].Add(counts)
+					}
 				}
 
 				if project := thermal.ProjectKey(workingDir); project != "" {
@@ -630,6 +639,13 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			}
 
 			if err := deltaRows.Err(); err == nil {
+				// Attach the delta attribution before the snapshot is saved, so
+				// an incremental run prices exactly what a full scan would.
+				for key, pd := range byProjectDay {
+					if m := deltaProjectModels[key]; len(m) > 0 {
+						pd.Models = m
+					}
+				}
 				var daily []thermal.DailyRow
 				for day, agg := range byDay {
 					daily = append(daily, thermal.DailyRow{
@@ -694,6 +710,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	var scanned int64
 	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
+	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	for rows.Next() {
 		var createdAt int64
 		var workingDir, sessionModel string
@@ -719,15 +736,25 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		// with no model leaves the day's tokens unattributed rather than
 		// inventing a name, and the report footer states that remainder.
 		if model := modelName(sessionModel); model != "" {
-			if modelsByDay[day] == nil {
-				modelsByDay[day] = make(map[string]thermal.ModelTokens)
-			}
-			modelsByDay[day][model] = modelsByDay[day][model].Add(thermal.ModelTokens{
+			counts := thermal.ModelTokens{
 				Input:      inTok.Int64,
 				Output:     outTok.Int64,
 				CacheRead:  cacheRead.Int64,
 				CacheWrite: cacheCreate.Int64,
-			})
+			}
+			if modelsByDay[day] == nil {
+				modelsByDay[day] = make(map[string]thermal.ModelTokens)
+			}
+			modelsByDay[day][model] = modelsByDay[day][model].Add(counts)
+			// The project row needs the same attribution, because the projects
+			// report prices from project rows and cannot see the daily ones.
+			if projectKey := thermal.ProjectKey(workingDir); projectKey != "" {
+				key := projectDayKey{day, projectKey}
+				if projectModels[key] == nil {
+					projectModels[key] = make(map[string]thermal.ModelTokens)
+				}
+				projectModels[key][model] = projectModels[key][model].Add(counts)
+			}
 		}
 
 		if project := thermal.ProjectKey(workingDir); project != "" {
@@ -755,6 +782,15 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 
 	if err := rows.Err(); err != nil {
 		return thermal.Summary{}, nil, nil, err
+	}
+
+	// Project rows carry the same attribution as the daily rows. The projects
+	// report prices from project rows, so without this a tool's spend lands in
+	// the unpriceable line even when its daily rows name a model.
+	for key, pd := range byProjectDay {
+		if m := projectModels[key]; len(m) > 0 {
+			pd.Models = m
+		}
 	}
 
 	var daily []thermal.DailyRow
