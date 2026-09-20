@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/jadmadi/thermal/compare/v0.8.0...v0.9.0) (2026-09-20)
+
+
+### Features
+
+* **devin:** attribute models to project rows so projects can price them ([5741f5f](https://github.com/jadmadi/thermal/commit/5741f5fc98289f3712858833391d71324489ea48))
+* **devin:** attribute models to project rows so projects can price them ([e4d542c](https://github.com/jadmadi/thermal/commit/e4d542cfce7f6df0166711b04299592a231f9b25))
+
 ## [0.8.0](https://github.com/jadmadi/thermal/compare/v0.7.0...v0.8.0) (2026-09-19)
 
 
