@@ -27,11 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 13
+- **Total Goals**: 14
 - 🟢 **Implemented & Verified**: 11
+- 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 1
-- 📋 **Execution Tasks Progress**: 60/73 completed (82%)
+- 📋 **Execution Tasks Progress**: 64/77 completed (83%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :--- | :--- | :--- |
+| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | `@antigravity` | Completed onboarding: verified strict check (12 pass, 0 warn), recorded architectural directives and lessons | 1m0s ago |
 
 ---
 

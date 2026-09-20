@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "sila": {
+      "args": [
+        "mcp"
+      ],
+      "command": "sila"
+    }
+  }
+}
