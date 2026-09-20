@@ -246,3 +246,46 @@ func TestBuildCatalogAlias(t *testing.T) {
 		t.Errorf("expected the variant alias to resolve, got %v", cat)
 	}
 }
+
+// TestLookupTierSuffix pins the mapping between the variant a tool records and
+// the base model the catalog prices. It must be narrow: folding two different
+// models onto one price is worse than naming one as unpriced.
+func TestLookupTierSuffix(t *testing.T) {
+	cat := &Catalog{Models: map[string]Price{
+		"claude-sonnet-5": {Input: 2, Output: 10},
+		"glm-5-3-flash":   {Input: 0.075, Output: 0.25},
+		"kimi-k3":         {Input: 3, Output: 15},
+		"glm-5-3":         {Input: 0.5, Output: 1.5},
+	}}
+	for _, tc := range []struct {
+		id   string
+		want float64
+		ok   bool
+	}{
+		{"claude-sonnet-5-high", 2, true},
+		{"claude-sonnet-5-medium", 2, true},
+		{"glm-5-3-flash-max", 0.075, true},
+		{"kimi-k3-high", 3, true},
+		{"claude-sonnet-5", 2, true},
+		{"glm-5-3", 0.5, true},
+		// A model that is not in the catalog must stay unpriced, whatever its
+		// suffix, rather than matching a neighbour.
+		{"swe-1-7", 0, false},
+		{"penguin-max", 0, false},
+		{"codex-auto-review", 0, false},
+	} {
+		got, ok := cat.Lookup(tc.id)
+		if ok != tc.ok {
+			t.Errorf("Lookup(%q) found = %v, want %v", tc.id, ok, tc.ok)
+			continue
+		}
+		if ok && got.Input != tc.want {
+			t.Errorf("Lookup(%q) input = %v, want %v", tc.id, got.Input, tc.want)
+		}
+	}
+
+	// The rule strips one suffix only, so it cannot collapse a chain.
+	if got := trimTierSuffix("m-high-low"); got != "m-high" {
+		t.Errorf("trimTierSuffix stripped more than one suffix: %q", got)
+	}
+}

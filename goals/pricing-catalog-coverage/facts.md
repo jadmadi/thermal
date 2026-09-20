@@ -40,3 +40,25 @@ An unpriced model is named rather than counted as free, which is honest, but it 
 ## Open question for the user
 
 Whether to fix this by adding prices for the specific ids, by a documented alias map for vendor variants, or by leaving it and documenting the workflow for a user to add their own prices. The first is data, the second is code, and the third is documentation only.
+
+
+## Classification result
+
+Measured on this machine after the tier rule landed. The footer dropped from ten unnamed models to six, and the estimated total rose by about $253 because four models began pricing.
+
+| id | class | action |
+| --- | --- | --- |
+| `claude-sonnet-5-high` | tier variant of `claude-sonnet-5` | fixed by the tier rule |
+| `glm-5-3-flash-max` | tier variant of `glm-5-3-flash` | fixed by the tier rule |
+| `kimi-k3-high` | tier variant of `kimi-k3` | fixed by the tier rule |
+| `swe-1-7` | proprietary, Cognition's own model | stays unpriced; document the override |
+| `swe-1-7-medium` | same model, tier variant of an absent base | stays unpriced |
+| `codex-auto-review` | a routing or reviewer alias, no public price | stays unpriced |
+| `penguin-max` | routing alias seen only in Codex sessions | stays unpriced |
+| `kimi-k2-7` | no exact catalog id; `kimi-k2-7-code` is a different SKU | stays unpriced rather than guessed |
+| `accounts/fireworks/models/deepseek-v4-flash-0731` | priced, but one codewhale day carries it with unclassified tokens | left unpriced by the no-half-pricing rule |
+| `accounts/fireworks/models/deepseek-v4-pro-0813` | priced | resolved |
+
+## Decision
+
+The mechanism is a narrow tier-suffix rule in `lookupCandidates`, plus the documented user override for ids with no public price. Fuzzy matching was rejected: it would fold distinct models onto one price, which is a silent error, while an unpriced model is a visible one.

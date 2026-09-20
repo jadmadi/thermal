@@ -315,7 +315,14 @@ and that model has a price. Anything else is stated rather than guessed:
   footer, so an estimate never reads as complete when part of it could not be
   priced.
 - Models the catalog cannot find are named in the `No pricing for` line rather
-  than counted as free.
+  than counted as free. A tool often records the variant it asked for, such as
+  `claude-sonnet-5-high`, while the catalog prices the base model, so a short
+  list of tier words (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco` and
+  similar) is stripped before the lookup. Only one word is stripped, so two
+  different models can never collapse onto one price.
+- A model the catalog genuinely lacks, such as Devin's `swe-1-7`, stays
+  unpriced. Give it a price in `~/.config/thermal/pricing.json` and the total
+  picks it up on the next run.
 
 Tools that record no tokens at all, such as Agy, Droid and command-code, report
 steps or messages instead. Those counts stay out of token totals and appear in

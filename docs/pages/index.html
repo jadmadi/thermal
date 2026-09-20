@@ -1127,11 +1127,23 @@ thermal models --top 10</code></pre>
 
     <p class="muted">
       A day is priced when its source names a model and that model has a price.
-      Tokens from a day with no model are counted and named in the footer, and a
-      model the catalog cannot find is listed in the
-      <span class="mono">No pricing for</span> line, such as
-      <span class="mono">swe-1-7</span> from Devin. Nothing is guessed and
-      nothing is treated as free.
+      Tools often record the variant they asked for, like
+      <span class="mono">claude-sonnet-5-high</span>, while the catalog prices
+      <span class="mono">claude-sonnet-5</span>, so a short list of tier words
+      is stripped before the lookup. Only one word is stripped, never a fuzzy
+      match, because folding two models onto one price would be worse than a
+      blank.
+    </p>
+
+    <p class="muted">
+      A model the catalog genuinely lacks stays unpriced and is named in the
+      <span class="mono">No pricing for</span> line, such as Devin's
+      <span class="mono">swe-1-7</span>, which is proprietary and will never
+      appear in a public catalog. Give it a price in
+      <span class="mono">~/.config/thermal/pricing.json</span> and the total
+      picks it up on the next run. A model whose tokens arrive with no type
+      breakdown stays unpriced too, rather than being half priced. Nothing is
+      guessed and nothing is treated as free.
     </p>
 
     <p class="muted">
