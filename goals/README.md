@@ -27,19 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 11
-- 🟢 **Implemented & Verified**: 10
-- 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 54/60 completed (90%)
+- **Total Goals**: 13
+- 🟢 **Implemented & Verified**: 11
+- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 1
+- 📋 **Execution Tasks Progress**: 60/73 completed (82%)
 
 ---
 
-## 🔵 In Progress (Claimed Goals)
+## 🟡 Ready to Execute (Pending Goals)
 
-| Goal Package | Mode | Agent | Status & Note | Started |
+| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :--- | :--- | :--- |
-| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | `@opencode` | Classify uncovered ids, pick a mechanism, implement and test | 0s ago |
+| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `🚢 SHIP ⚡ Independent (#12)` | - | JSONL line ceilings that fit real logs — A 256KB scanner ceiling is smaller than a real command-code transcript line (409... | `/goal goals/jsonl-line-ceilings/goal.md` |
+| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🚢 SHIP ⛔ Blocked (#13)` | Prereqs: jsonl-line-ceilings | A scan that stops early is reported, never silent — No loader checks scanner.Err(), so a line over the ceiling or a read error ends ... | `/goal goals/jsonl-scan-diagnostics/goal.md` |
 
 ---
 
@@ -56,5 +57,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `66a7466` |
 | [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e4d542c` |
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ce31aaa` |
+| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 
