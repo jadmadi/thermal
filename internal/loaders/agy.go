@@ -44,6 +44,7 @@ type sessionResult struct {
 	lastTs      time.Time
 	dayCounts   map[string]int
 	modelCounts map[string]int64
+	warnings    []string
 }
 
 // countAgySteps parses one JSONL log (overview.txt or transcript.jsonl — same
@@ -52,6 +53,9 @@ type sessionResult struct {
 func countAgySteps(path string, res *sessionResult) int {
 	f, err := os.Open(path)
 	if err != nil {
+		if !os.IsNotExist(err) {
+			res.warnings = append(res.warnings, formatScanWarning(path, err))
+		}
 		return 0
 	}
 	defer f.Close()
@@ -83,13 +87,15 @@ func countAgySteps(path string, res *sessionResult) int {
 		res.dayCounts[day]++
 		res.steps++
 		counted++
-
 		if res.firstTs.IsZero() || t.Before(res.firstTs) {
 			res.firstTs = t
 		}
 		if t.After(res.lastTs) {
 			res.lastTs = t
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		res.warnings = append(res.warnings, formatScanWarning(path, err))
 	}
 	return counted
 }
@@ -164,10 +170,13 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 						}
 					}
 				}
+				if err := scanner.Err(); err != nil {
+					res.warnings = append(res.warnings, formatScanWarning(transcriptPath, err))
+				}
 				f.Close()
 			}
 
-			if res.steps > 0 {
+			if res.steps > 0 || len(res.warnings) > 0 {
 				results <- res
 			}
 		}(sessionDir)
@@ -182,6 +191,10 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 	summary.Tool = "Agy"
 
 	for res := range results {
+		summary.Warnings = append(summary.Warnings, res.warnings...)
+		if res.steps == 0 {
+			continue
+		}
 		summary.Sessions++
 		summary.LifetimeTokens += int64(res.steps)
 
@@ -212,5 +225,6 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 		summary.ModelBreakdown = modelCounts
 	}
 
+	sort.Strings(summary.Warnings)
 	return summary, daily, nil, nil
 }

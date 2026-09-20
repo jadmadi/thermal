@@ -3,6 +3,7 @@ package loaders
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,15 @@ func newJSONLScanner(r io.Reader) *bufio.Scanner {
 	return scanner
 }
 
+// formatScanWarning formats a non-fatal warning when a JSONL scan encounters an error
+// or exceeds the line ceiling.
+func formatScanWarning(path string, err error) string {
+	if errors.Is(err, bufio.ErrTooLong) {
+		return fmt.Sprintf("%s: line exceeds %d byte ceiling, rest of file skipped", path, jsonlMaxLineBytes)
+	}
+	return fmt.Sprintf("%s: %v", path, err)
+}
+
 func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	historyPath := filepath.Join(dataDir, "history.jsonl")
 	f, err := os.Open(historyPath)
@@ -46,6 +56,7 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 
 	dayCounts := make(map[string]int)
 	var totalCommands int64
+	var warnings []string
 
 	scanner := newJSONLScanner(f)
 	for scanner.Scan() {
@@ -77,6 +88,9 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 		dayCounts[day]++
 		totalCommands++
 	}
+	if err := scanner.Err(); err != nil {
+		warnings = append(warnings, formatScanWarning(historyPath, err))
+	}
 
 	var daily []thermal.DailyRow
 	for day, count := range dayCounts {
@@ -91,6 +105,7 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 	summary := thermal.Summary{
 		Sessions:       0,
 		LifetimeTokens: totalCommands,
+		Warnings:       warnings,
 	}
 
 	return summary, daily, nil, nil

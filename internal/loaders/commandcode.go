@@ -41,6 +41,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 		durationMs int64
 		hasSession bool
 		dayCounts  map[string]int
+		warning    string
 	}
 
 	results := make(chan fileResult, len(sessionFiles))
@@ -60,6 +61,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 
 			f, err := os.Open(p)
 			if err != nil {
+				res.warning = formatScanWarning(p, err)
 				results <- res
 				return
 			}
@@ -101,6 +103,9 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 				res.msgCount++
 				res.dayCounts[day]++
 			}
+			if err := scanner.Err(); err != nil {
+				res.warning = formatScanWarning(p, err)
+			}
 			f.Close()
 
 			// Read meta sidecar
@@ -129,6 +134,9 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 	modelCounts := make(map[string]int64)
 
 	for res := range results {
+		if res.warning != "" {
+			summary.Warnings = append(summary.Warnings, res.warning)
+		}
 		if !res.hasSession {
 			continue
 		}
@@ -163,5 +171,6 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 		return loadJsonlData(dataDir, "t", true)
 	}
 
+	sort.Strings(summary.Warnings)
 	return summary, daily, nil, nil
 }

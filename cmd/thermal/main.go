@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strconv"
@@ -473,6 +474,7 @@ func main() {
 				}
 				continue
 			}
+			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 
 			activeDays := make(map[string]bool)
 			for _, d := range data.Daily {
@@ -547,6 +549,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
 	}
+	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 
 	activeDays := make(map[string]bool)
 	for _, d := range data.Daily {
@@ -627,6 +630,7 @@ func loadUsage(opts thermal.Options) usageSet {
 				}
 				continue
 			}
+			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 			set.days = append(set.days, data.Daily...)
 			for i := range data.Projects {
 				data.Projects[i].Tool = info.Name
@@ -652,6 +656,7 @@ func loadUsage(opts thermal.Options) usageSet {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
 	}
+	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 	set.days = data.Daily
 	set.projects = data.Projects
 	for i := range set.projects {
@@ -660,6 +665,19 @@ func loadUsage(opts thermal.Options) usageSet {
 	set.byTool = []thermal.ToolDays{{Tool: info.Name, Days: data.Daily}}
 	set.toolName = info.Name
 	return set
+}
+
+func printToolWarnings(toolName string, warnings []string, verbose bool) {
+	printToolWarningsTo(os.Stderr, toolName, warnings, verbose)
+}
+
+func printToolWarningsTo(w io.Writer, toolName string, warnings []string, verbose bool) {
+	if !verbose {
+		return
+	}
+	for _, wStr := range warnings {
+		fmt.Fprintf(w, "thermal: warning: %s: %s\n", toolName, wStr)
+	}
 }
 
 // newPricer builds the cost estimator unless estimation is disabled. It never

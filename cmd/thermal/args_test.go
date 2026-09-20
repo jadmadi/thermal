@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -69,4 +70,25 @@ func TestValidateReportFlags(t *testing.T) {
 func with(o thermal.Options, mutate func(*thermal.Options)) thermal.Options {
 	mutate(&o)
 	return o
+}
+
+func TestPrintToolWarnings(t *testing.T) {
+	warnings := []string{
+		"path/to/sess.jsonl: line exceeds 512 byte ceiling, rest of file skipped",
+	}
+
+	// When verbose is false, nothing is written.
+	var nonVerboseBuf strings.Builder
+	printToolWarningsTo(&nonVerboseBuf, "command-code", warnings, false)
+	if nonVerboseBuf.Len() != 0 {
+		t.Errorf("expected no output when verbose is false, got: %q", nonVerboseBuf.String())
+	}
+
+	// When verbose is true, formatted warning is written.
+	var verboseBuf strings.Builder
+	printToolWarningsTo(&verboseBuf, "command-code", warnings, true)
+	expected := "thermal: warning: command-code: path/to/sess.jsonl: line exceeds 512 byte ceiling, rest of file skipped\n"
+	if verboseBuf.String() != expected {
+		t.Errorf("expected %q, got %q", expected, verboseBuf.String())
+	}
 }

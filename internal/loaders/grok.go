@@ -68,6 +68,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 		project   string
 		turns     []turnAgg
 		duration  int64 // ms, from summary.json sidecar
+		warning   string
 	}
 
 	results := make(chan fileResult, len(files))
@@ -85,6 +86,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 
 			f, err := os.Open(p)
 			if err != nil {
+				res.warning = formatScanWarning(p, err)
 				results <- res
 				return
 			}
@@ -144,6 +146,9 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 					lastTs:     rec.Timestamp,
 				})
 			}
+			if err := scanner.Err(); err != nil {
+				res.warning = formatScanWarning(p, err)
+			}
 			f.Close()
 
 			if len(res.turns) == 0 {
@@ -201,6 +206,9 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 	agentCounts := make(map[string]int)
 
 	for res := range results {
+		if res.warning != "" {
+			summary.Warnings = append(summary.Warnings, res.warning)
+		}
 		if len(res.turns) == 0 {
 			continue
 		}
@@ -312,5 +320,6 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 		summary.AgentBreakdown = agentCounts
 	}
 
+	sort.Strings(summary.Warnings)
 	return summary, daily, projects, nil
 }

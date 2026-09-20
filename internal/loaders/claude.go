@@ -41,6 +41,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 		msgs     []msgAgg
 		model    string
 		duration int64 // ms between first and last timestamp
+		warning  string
 	}
 
 	results := make(chan fileResult, len(files))
@@ -58,6 +59,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 
 			f, err := os.Open(p)
 			if err != nil {
+				res.warning = formatScanWarning(p, err)
 				results <- res
 				return
 			}
@@ -114,6 +116,9 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 					project:    thermal.ProjectKey(rec.Cwd),
 				})
 			}
+			if err := scanner.Err(); err != nil {
+				res.warning = formatScanWarning(p, err)
+			}
 			f.Close()
 
 			if len(res.msgs) == 0 {
@@ -140,6 +145,9 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 	modelCounts := make(map[string]int64)
 
 	for res := range results {
+		if res.warning != "" {
+			summary.Warnings = append(summary.Warnings, res.warning)
+		}
 		if len(res.msgs) == 0 {
 			continue
 		}
@@ -233,5 +241,6 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 		summary.ModelBreakdown = modelCounts
 	}
 
+	sort.Strings(summary.Warnings)
 	return summary, daily, projects, nil
 }

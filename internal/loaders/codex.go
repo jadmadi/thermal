@@ -143,7 +143,11 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 	}
 
 	// Bounded worker pool for parallel rollout scanning
-	breakdowns := make([]*tokenBreakdown, len(threads))
+	type rolloutResult struct {
+		breakdown *tokenBreakdown
+		warning   string
+	}
+	results := make([]rolloutResult, len(threads))
 	var wg sync.WaitGroup
 	workerLimit := make(chan struct{}, 8) // max 8 concurrent workers
 
@@ -156,12 +160,17 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 			defer wg.Done()
 			workerLimit <- struct{}{}
 			defer func() { <-workerLimit }()
-			breakdowns[idx] = readLastTokenBreakdown(path)
+			b, w := readLastTokenBreakdown(path)
+			results[idx] = rolloutResult{breakdown: b, warning: w}
 		}(i, t.rolloutPath)
 	}
 	wg.Wait()
 
-	for i, b := range breakdowns {
+	for i, res := range results {
+		if res.warning != "" {
+			summary.Warnings = append(summary.Warnings, res.warning)
+		}
+		b := res.breakdown
 		if b == nil {
 			continue
 		}
@@ -276,6 +285,7 @@ func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.Da
 		return projects[i].Project < projects[j].Project
 	})
 
+	sort.Strings(summary.Warnings)
 	return summary, daily, projects, nil
 }
 
@@ -283,14 +293,14 @@ type tokenBreakdown struct {
 	input, output, reasoning, cache int64
 }
 
-func readLastTokenBreakdown(rolloutPath string) *tokenBreakdown {
+func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, string) {
 	if _, err := os.Stat(rolloutPath); err != nil {
-		return nil
+		return nil, ""
 	}
 
 	f, err := os.Open(rolloutPath)
 	if err != nil {
-		return nil
+		return nil, formatScanWarning(rolloutPath, err)
 	}
 	defer f.Close()
 
@@ -350,7 +360,11 @@ func readLastTokenBreakdown(rolloutPath string) *tokenBreakdown {
 		}
 	}
 
-	return last
+	var warning string
+	if err := scanner.Err(); err != nil {
+		warning = formatScanWarning(rolloutPath, err)
+	}
+	return last, warning
 }
 
 func nonNegative(v int64) int64 {

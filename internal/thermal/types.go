@@ -61,6 +61,7 @@ type Summary struct {
 	FilesTouched   int64            `json:"filesTouched"`
 	AgentBreakdown map[string]int   `json:"agentBreakdown,omitempty"`
 	ModelBreakdown map[string]int64 `json:"modelBreakdown,omitempty"`
+	Warnings       []string         `json:"-"`
 }
 
 // ModelTokens holds per-model token counts for a single day. Loaders fill it

@@ -29,16 +29,17 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 ## Summary
 - **Total Goals**: 14
 - 🟢 **Implemented & Verified**: 13
-- 🟡 **Ready to Execute (Pending)**: 1 (0 independent ⚡, 1 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 70/77 completed (90%)
+- 🔵 **In Progress (Claimed)**: 1
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 77/77 completed (100%)
 
 ---
 
-## 🟡 Ready to Execute (Pending Goals)
+## 🔵 In Progress (Claimed Goals)
 
-| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| Goal Package | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :--- | :--- | :--- |
-| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🚢 SHIP 🔗 Ready (#13)` | Deps met: jsonl-line-ceilings | A scan that stops early is reported, never silent — No loader checks scanner.Err(), so a line over the ceiling or a read error ends ... | `/goal goals/jsonl-scan-diagnostics/goal.md` |
+| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | `@antigravity` | Wired scanner.Err() and os.Open diagnostics to Summary.Warnings across all 8 JSONL scan sites; printed under --verbose; verified with unit tests and race suite | 8m0s ago |
 
 ---
 
