@@ -182,8 +182,33 @@ func lookupCandidates(model string) []string {
 		}
 		add(trimDateSuffix(key))
 		add(strings.TrimSuffix(key, "-latest"))
+		add(trimTierSuffix(key))
 	}
 	return out
+}
+
+// tierSuffixes are the effort and tier words tools append to a model id. A tool
+// records the variant it asked for while the catalog prices the base model, so
+// dropping the suffix is what turns claude-sonnet-5-high into claude-sonnet-5.
+//
+// The list is deliberately short and specific. A general stem match would fold
+// two different models onto one price, which is worse than naming a model as
+// unpriced.
+var tierSuffixes = []string{
+	"-high", "-medium", "-low", "-max", "-mini", "-nano",
+	"-thinking", "-reasoning", "-preview", "-fast", "-eco",
+}
+
+// trimTierSuffix removes one effort or tier word from the end of an id. It
+// strips at most one, so a model genuinely called something-low-high would need
+// a mapping rather than a guess.
+func trimTierSuffix(s string) string {
+	for _, suffix := range tierSuffixes {
+		if strings.HasSuffix(s, suffix) && len(s) > len(suffix) {
+			return s[:len(s)-len(suffix)]
+		}
+	}
+	return s
 }
 
 // trimDateSuffix removes a trailing -YYYYMMDD build stamp.
