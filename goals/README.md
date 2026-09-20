@@ -27,10 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 9
+- **Total Goals**: 11
 - 🟢 **Implemented & Verified**: 9
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 48/48 completed (100%)
+- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 1
+- 📋 **Execution Tasks Progress**: 48/56 completed (85%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :--- | :--- | :--- |
+| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `🚢 SHIP ⚡ Independent (#10)` | - | Shrink the unpriceable token line — Attribute models for the tools that still record none, so fewer tokens fall into... | `/goal goals/unpriceable-token-sources/goal.md` |
+| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🚢 SHIP ⛔ Blocked (#11)` | Prereqs: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Devins swe-1-7 and glm-5-3-flash-max and similar tool-native ids have no catalog... | `/goal goals/pricing-catalog-coverage/goal.md` |
 
 ---
 
@@ -45,6 +55,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `6a591f8` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `338b8bd` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `66a7466` |
-| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `49d6766` |
+| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e4d542c` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 
