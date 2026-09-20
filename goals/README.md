@@ -28,19 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 14
-- 🟢 **Implemented & Verified**: 11
-- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented & Verified**: 12
 - 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 1
 - 📋 **Execution Tasks Progress**: 64/77 completed (83%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :--- | :--- | :--- |
-| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | `@antigravity` | Completed onboarding: verified strict check (12 pass, 0 warn), recorded architectural directives and lessons | 1m0s ago |
 
 ---
 
@@ -68,4 +59,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ce31aaa` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
+| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
 
