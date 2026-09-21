@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thermal docs</title>
-<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 12 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
+<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 13 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0B0E13">
 <meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Thermal">
 <meta property="og:title" content="Thermal — contribution heatmap for AI coding tools">
-<meta property="og:description" content="Streaks, tokens, and cost across twelve AI coding tools, rendered in your terminal.">
+<meta property="og:description" content="Streaks, tokens, and cost across thirteen AI coding tools, rendered in your terminal.">
 <meta property="og:url" content="https://thermal.jadmadi.net/">
 <meta property="og:image" content="https://thermal.jadmadi.net/og.png">
 <meta property="og:image:width" content="1200">
@@ -580,7 +580,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "@id": "https://thermal.jadmadi.net/#website",
       "url": "https://thermal.jadmadi.net/",
       "name": "Thermal",
-      "description": "Terminal contribution heatmap, streaks, tokens, and cost for 12 AI coding tools.",
+      "description": "Terminal contribution heatmap, streaks, tokens, and cost for 13 AI coding tools.",
       "publisher": { "@id": "https://jadmadi.net/#person" }
     },
     {
@@ -590,7 +590,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "name": "Thermal — contribution heatmap for AI coding tools",
       "isPartOf": { "@id": "https://thermal.jadmadi.net/#website" },
       "about": { "@id": "https://thermal.jadmadi.net/#software" },
-      "description": "Terminal heatmap, streaks, tokens, and cost for 12 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config."
+      "description": "Terminal heatmap, streaks, tokens, and cost for 13 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config."
     },
     {
       "@type": "SoftwareApplication",
@@ -607,7 +607,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "license": "https://github.com/jadmadi/thermal/blob/main/LICENSE",
       "codeRepository": "https://github.com/jadmadi/thermal",
-      "description": "Thermal is a terminal heatmap, streak, token, and cost report for twelve AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, command-code, and Agy already write, and never modifies them.",
+      "description": "Thermal is a terminal heatmap, streak, token, and cost report for thirteen AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, dsh, command-code, and Agy already write, and never modifies them.",
       "featureList": [
         "Contribution heatmap and streak tracking per tool",
         "Daily, weekly, and monthly token and cost reports",
@@ -670,7 +670,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
         <p class="lede">
           Thermal reads the session databases your AI coding tools already
           write, and renders <strong>streaks, tokens, and cost</strong> as a
-          heatmap in the terminal. Twelve tools, one table. Nothing to
+          heatmap in the terminal. Thirteen tools, one table. Nothing to
           configure, and nothing written back to your data.
         </p>
         <div class="cmd wrap">
@@ -681,7 +681,7 @@ thermal</code></pre>
         <div class="hero-actions">
           <a class="hero-link" href="#leaderboard"><span>Leaderboard ↓</span></a>
           <a class="hero-link" href="#reports"><span>Reports ↓</span></a>
-          <a class="hero-link" href="#tools"><span>12 tools ↓</span></a>
+          <a class="hero-link" href="#tools"><span>13 tools ↓</span></a>
           <a class="hero-link" href="https://github.com/jadmadi/thermal" rel="noopener noreferrer"><span>GitHub ↗</span></a>
         </div>
       </div>
@@ -805,7 +805,7 @@ thermal version</code></pre>
       <div>
         <h3>What are the agents costing me?</h3>
         <p>
-          Spend sits in twelve different places, and none of them show a total.
+          Spend sits in thirteen different places, and none of them show a total.
           Two of them record no cost at all.
         </p>
         <p class="fix">
@@ -903,9 +903,10 @@ thermal version</code></pre>
    3. ZCode              3d      3d      5d   676.2M tok  —
    4. Devin              2d     33d     45d   19.2B tok   —
    5. MiMoCode           1d      7d     16d   1.2B tok    $56.14
-   6. Grok               1d      1d      1d   692.7K tok  $0.44
-   7. codewhale          1d      1d      3d   110.1K tok  $0.02
-   8. Claude             1d      1d      3d   0 tok       —
+   6. dsh                1d      1d      5d   18.0M tok   —
+   7. Grok               1d      1d      1d   692.7K tok  $0.44
+   8. codewhale          1d      1d      3d   110.1K tok  $0.02
+   9. Claude             1d      1d      3d   0 tok       —
 
   Activity Hunters
    #    Tool           Strk    Best    Days     Activity
@@ -937,9 +938,9 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
         <span>thermal</span>
       </div>
       <img src="shot-leaderboard.webp" width="1300" height="1343" loading="lazy" decoding="async"
-           alt="thermal leaderboard: Token Warriors ranks OpenCode first with an 11-day streak and 8.6B tokens, followed by Codex, ZCode, Devin, MiMoCode, Grok, codewhale and Claude. Activity Hunters ranks Agy first with a 36-day streak and 60.1K steps, then command-code, Droid and Muse. A note at the end reads: Agy is on fire with a 36-day streak.">
+           alt="thermal leaderboard: Token Warriors ranks OpenCode first with an 11-day streak and 8.6B tokens, followed by Codex, ZCode, Devin, MiMoCode, dsh, Grok, codewhale and Claude. Activity Hunters ranks Agy first with a 36-day streak and 60.1K steps, then command-code, Droid and Muse. A note at the end reads: Agy is on fire with a 36-day streak.">
       <figcaption>
-        The default view, captured from a real machine. Eight tools recorded
+        The default view, captured from a real machine. Nine tools recorded
         tokens, four recorded only activity. The two groups are ranked
         separately because a step count is not a token count.
       </figcaption>
@@ -1369,7 +1370,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
           <tr>
             <td><a href="https://github.com/jadmadi/thermal" rel="noopener noreferrer">thermal</a></td>
             <td class="mono">Go</td>
-            <td>Heatmap and streaks first, with reports underneath. Twelve tools, one static binary, no runtime.</td>
+            <td>Heatmap and streaks first, with reports underneath. Thirteen tools, one static binary, no runtime.</td>
             <td>No per-session view and no five-hour billing windows yet.</td>
           </tr>
           <tr>
@@ -1417,7 +1418,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
 
     <div class="tbl-wrap">
       <table>
-        <caption>Twelve tools. Names link to the project's own page. Aliases work anywhere a tool name does.</caption>
+        <caption>Thirteen tools. Names link to the project's own page. Aliases work anywhere a tool name does.</caption>
         <thead>
           <tr><th>Tool</th><th>Aliases</th><th>Metrics</th></tr>
         </thead>
@@ -1471,6 +1472,11 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
             <td><a href="https://factory.ai" rel="noopener noreferrer">Droid</a></td>
             <td class="mono">droid, factory</td>
             <td>Message activity, sessions</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/deepseek-ai" rel="noopener noreferrer">dsh</a></td>
+            <td class="mono">dsh, deepseek, deepseek-harness</td>
+            <td>Tokens, sessions, models, projects</td>
           </tr>
           <tr>
             <td><a href="https://commandcode.ai" rel="noopener noreferrer">command-code</a></td>
@@ -1622,8 +1628,8 @@ thermal: --top only applies to the projects and models commands</code></pre>
       <div>
         <div class="faq-q">Which tools does it support?</div>
         <p>
-          Twelve: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
-          Claude, Muse, Droid, command-code, and Agy. Activity-only tools rank
+          Thirteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
+          Claude, Muse, Droid, dsh, command-code, and Agy. Activity-only tools rank
           separately from tools that record tokens.
         </p>
       </div>
@@ -1930,7 +1936,7 @@ thermal: --top only applies to the projects and models commands</code></pre>
       "name": "Which AI coding tools does thermal support?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Twelve: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
+        "text": "Thirteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, dsh, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
       }
     },
     {

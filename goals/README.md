@@ -27,10 +27,19 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 14
+- **Total Goals**: 15
 - 🟢 **Implemented & Verified**: 14
+- 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 77/77 completed (100%)
+- 📋 **Execution Tasks Progress**: 77/82 completed (93%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :--- | :--- | :--- |
+| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | `@antigravity` | 100% complete. Implemented dsh loader, registered in registry, added unit tests, smoke tested against real ~/.dsh data, updated README, AGENTS.md, docs/pages/index.html, and 404.html with 100% parity. All tests and linters pass. | 19m0s ago |
 
 ---
 

@@ -587,6 +587,7 @@ var allToolOrder = []thermal.Tool{
 	thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin,
 	thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode,
 	thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid,
+	thermal.ToolDsh,
 }
 
 // toolHasData reports whether the tool's database or data directory exists.

@@ -69,14 +69,15 @@ thermal/
 * **Muse (`muse.go`)**: Reads `~/.local/share/muse/session-index.db` (sessions, prompt counts, model ids, microsecond timestamps). Activity-only: no token or cost columns exist. Prompt counts stand in for activity; upgrade to per-session `session.jsonl` when model-call frames accumulate.
 * **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for assistant `message.usage` (input/output/cache tokens) and model ids; one file per session. No cost fields, so Cost stays 0. Bounded worker pool like command-code.
 * **Droid (`droid.go`)**: Scans `~/.factory/sessions/*/*.jsonl` message records for activity; session files carry no token or cost telemetry. Bounded worker pool like command-code.
-* **Project sources (token tools)**: OpenCode `session_v2.directory` (fall back to the `project` table worktree), MiMoCode `session.directory`, ZCode `session.directory`, Codex `threads.cwd`, Devin `sessions.working_directory`, Claude per-line `cwd`, Grok `summary.json.git_root_dir` (fall back to the URL-decoded session directory), codewhale `metadata.workspace`. Muse, Droid, and command-code carry a workspace or encoded directory but are deferred; Agy records no project at all.
+* **DeepSeek harness (`dsh.go`)**: Scans `~/.dsh/storages/session_projcache/sessions/*.json` in parallel and supplements with monolithic `~/.dsh/storages/session_projcache.json` (`tables.sessions`). Honors `DSH_HOME` env or default `~/.dsh`. Token usage maps `uncachedInputTokens` to disjoint input, `outputTokens` to output, `cacheReadTokens` to cache read, and `cacheWriteTokens` to cache write. Session timestamps parse from `identity.createdAt` (Unix ms/s or RFC3339). Project attribution maps `identity.cwd` through `thermal.ProjectKey`. Defensive against null/nil pointers in `record.rows`.
+* **Project sources (token tools)**: OpenCode `session_v2.directory` (fall back to the `project` table worktree), MiMoCode `session.directory`, ZCode `session.directory`, Codex `threads.cwd`, Devin `sessions.working_directory`, Claude per-line `cwd`, Grok `summary.json.git_root_dir` (fall back to the URL-decoded session directory), codewhale `metadata.workspace`, dsh `identity.cwd`. Muse, Droid, and command-code carry a workspace or encoded directory but are deferred; Agy records no project at all.
 
 ---
 
 ## 3. Terminal Rendering & CLI (`internal/render/`)
 
 1. **Leaderboard Categories**:
-   * **Token Warriors**: Tools reporting token usage (`Devin`, `OpenCode`, `MiMoCode`, `Codex`, `codewhale`).
+   * **Token Warriors**: Tools reporting token usage (`Devin`, `OpenCode`, `MiMoCode`, `Codex`, `codewhale`, `ZCode`, `Grok`, `Claude`, `dsh`).
    * **Activity Hunters**: Tools reporting actions/messages/steps instead of tokens (`command-code`, `Agy`).
 2. **Compact Number Formatting**: Always format large numbers concisely via `CompactNumber()`: `57.2B tok`, `44.0M tok`, `22.7K tok`, `304 step`.
 3. **Color & Verbosity Flags**:

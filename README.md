@@ -34,12 +34,13 @@ thermal
 | **Muse** | SQLite session index | Prompt activity, sessions, model breakdown |
 | **Claude** | JSONL session transcripts | Token usage, sessions, model breakdown |
 | **Droid** | JSONL session transcripts | Message activity, sessions |
+| **dsh** | JSON session cache (`~/.dsh/storages`) | Token usage, sessions, model breakdown |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
 | **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`, `deepseek`.
 
 ## Install
 
@@ -258,7 +259,7 @@ thermal projects --json
 
 The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
 
-Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, and codewhale. Agy records no project.
+Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, and dsh. Agy records no project.
 
 ## Models
 
@@ -421,6 +422,7 @@ Thermal reads usage data from installed AI coding tools:
 - **Muse**: Reads the `session-index.db` session index (prompt counts, model ids, timestamps). Activity-only: the index carries no token or cost telemetry
 - **Claude**: Scans `projects/*/*.jsonl` for assistant `message.usage` token counts and model ids. No cost fields exist in transcripts
 - **Droid**: Scans `sessions/*/*.jsonl` message records for activity. Session files carry no token or cost telemetry
+- **dsh**: Reads JSON session cache files from `~/.dsh/storages/session_projcache/sessions/*.json` (and `session_projcache.json`) for fine-grained token usage (`uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`), turn counts, and model tracking. Honors `DSH_HOME`, falls back to `~/.dsh`
 
 Loaders also record per-day token types, recorded cost, and the models used, where the source provides them. Period reports fold those day rows.
 

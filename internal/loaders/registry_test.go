@@ -23,6 +23,9 @@ func TestResolveTool_Aliases(t *testing.T) {
 		{"ccode", thermal.ToolClaude, true},
 		{"droid", thermal.ToolDroid, true},
 		{"factory", thermal.ToolDroid, true},
+		{"dsh", thermal.ToolDsh, true},
+		{"deepseek", thermal.ToolDsh, true},
+		{"deepseek-harness", thermal.ToolDsh, true},
 		{"nonexistent", "", false},
 	}
 	for _, tc := range tests {

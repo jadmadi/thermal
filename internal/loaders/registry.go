@@ -101,7 +101,20 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			DataSubdir: "sessions",
 			Loader:     LoadDroidData,
 		},
+		thermal.ToolDsh: {
+			DataDir:    dshHomeDir(home),
+			Name:       "dsh",
+			DataSubdir: "storages",
+			Loader:     LoadDshData,
+		},
 	}
+}
+
+func dshHomeDir(home string) string {
+	if env := os.Getenv("DSH_HOME"); env != "" {
+		return env
+	}
+	return filepath.Join(home, ".dsh")
 }
 
 func grokHomeDir(home string) string {
@@ -112,29 +125,32 @@ func grokHomeDir(home string) string {
 }
 
 var toolAliases = map[string]thermal.Tool{
-	"mimo":         thermal.ToolMiMoCode,
-	"mimo-":        thermal.ToolMiMoCode,
-	"mimocode":     thermal.ToolMiMoCode,
-	"oc":           thermal.ToolOpenCode,
-	"opencode":     thermal.ToolOpenCode,
-	"codex":        thermal.ToolCodex,
-	"devin":        thermal.ToolDevin,
-	"agy":          thermal.ToolAgy,
-	"cmd":          thermal.ToolCommandCode,
-	"commandcode":  thermal.ToolCommandCode,
-	"command-code": thermal.ToolCommandCode,
-	"whale":        thermal.ToolCodewhale,
-	"codewhale":    thermal.ToolCodewhale,
-	"zc":           thermal.ToolZCode,
-	"zcode":        thermal.ToolZCode,
-	"grok":         thermal.ToolGrok,
-	"muse":         thermal.ToolMuse,
-	"claude":       thermal.ToolClaude,
-	"ccode":        thermal.ToolClaude,
-	"droid":        thermal.ToolDroid,
-	"factory":      thermal.ToolDroid,
-	"all":          thermal.ToolAll,
-	"auto":         thermal.ToolAuto,
+	"mimo":             thermal.ToolMiMoCode,
+	"mimo-":            thermal.ToolMiMoCode,
+	"mimocode":         thermal.ToolMiMoCode,
+	"oc":               thermal.ToolOpenCode,
+	"opencode":         thermal.ToolOpenCode,
+	"codex":            thermal.ToolCodex,
+	"devin":            thermal.ToolDevin,
+	"agy":              thermal.ToolAgy,
+	"cmd":              thermal.ToolCommandCode,
+	"commandcode":      thermal.ToolCommandCode,
+	"command-code":     thermal.ToolCommandCode,
+	"whale":            thermal.ToolCodewhale,
+	"codewhale":        thermal.ToolCodewhale,
+	"zc":               thermal.ToolZCode,
+	"zcode":            thermal.ToolZCode,
+	"grok":             thermal.ToolGrok,
+	"muse":             thermal.ToolMuse,
+	"claude":           thermal.ToolClaude,
+	"ccode":            thermal.ToolClaude,
+	"droid":            thermal.ToolDroid,
+	"factory":          thermal.ToolDroid,
+	"dsh":              thermal.ToolDsh,
+	"deepseek":         thermal.ToolDsh,
+	"deepseek-harness": thermal.ToolDsh,
+	"all":              thermal.ToolAll,
+	"auto":             thermal.ToolAuto,
 }
 
 func ResolveTool(name string) (thermal.Tool, bool) {
@@ -199,6 +215,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  muse                 Muse")
 			fmt.Fprintln(os.Stderr, "  claude               Claude Code")
 			fmt.Fprintln(os.Stderr, "  droid                Droid (Factory)")
+			fmt.Fprintln(os.Stderr, "  dsh, deepseek        DeepSeek harness")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -206,7 +223,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid, thermal.ToolDsh} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {
