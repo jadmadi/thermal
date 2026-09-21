@@ -20,7 +20,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run Tests
+        run: go test -v ./...
 
       - name: Install UPX
         run: sudo apt-get update && sudo apt-get install -y upx
