@@ -28,18 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 15
-- 🟢 **Implemented & Verified**: 14
-- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented & Verified**: 15
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 77/82 completed (93%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :--- | :--- | :--- |
-| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | `@antigravity` | 100% complete. Implemented dsh loader, registered in registry, added unit tests, smoke tested against real ~/.dsh data, updated README, AGENTS.md, docs/pages/index.html, and 404.html with 100% parity. All tests and linters pass. | 19m0s ago |
+- 📋 **Execution Tasks Progress**: 82/82 completed (100%)
 
 ---
 
@@ -59,6 +50,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ada5b52` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `247bb80` |
+| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `414a815` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
 
