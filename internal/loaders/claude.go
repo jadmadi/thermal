@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -38,10 +39,11 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 		project    string
 	}
 	type fileResult struct {
-		msgs     []msgAgg
-		model    string
-		duration int64 // ms between first and last timestamp
-		warning  string
+		msgs         []msgAgg
+		model        string
+		duration     int64 // ms between first and last timestamp
+		warning      string
+		dupesRemoved int
 	}
 
 	results := make(chan fileResult, len(files))
@@ -64,6 +66,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 				return
 			}
 
+			seenMsgIDs := make(map[string]struct{})
 			var firstTs, lastTs time.Time
 			scanner := newJSONLScanner(f)
 			for scanner.Scan() {
@@ -76,6 +79,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 					Timestamp string `json:"timestamp"`
 					Cwd       string `json:"cwd"`
 					Message   struct {
+						ID    string `json:"id"`
 						Model string `json:"model"`
 						Usage struct {
 							InputTokens              int64 `json:"input_tokens"`
@@ -90,6 +94,13 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 				}
 				if rec.Type != "assistant" {
 					continue
+				}
+				if rec.Message.ID != "" {
+					if _, seen := seenMsgIDs[rec.Message.ID]; seen {
+						res.dupesRemoved++
+						continue
+					}
+					seenMsgIDs[rec.Message.ID] = struct{}{}
 				}
 				day := ""
 				if rec.Timestamp != "" {
@@ -143,11 +154,13 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	modelCounts := make(map[string]int64)
+	var totalDupes int
 
 	for res := range results {
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
 		}
+		totalDupes += res.dupesRemoved
 		if len(res.msgs) == 0 {
 			continue
 		}
@@ -239,6 +252,9 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 
 	if len(modelCounts) > 0 {
 		summary.ModelBreakdown = modelCounts
+	}
+	if totalDupes > 0 {
+		summary.Warnings = append(summary.Warnings, fmt.Sprintf("claude: removed %d duplicate message(s)", totalDupes))
 	}
 
 	sort.Strings(summary.Warnings)

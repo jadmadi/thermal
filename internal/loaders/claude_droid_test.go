@@ -3,6 +3,7 @@ package loaders
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -68,6 +69,48 @@ func TestLoadClaudeData_AssistantUsage(t *testing.T) {
 	}
 	if len(daily[1].Models) != 1 || daily[1].Models["claude-sonnet"].Output != 5 {
 		t.Errorf("expected per-day model claude-sonnet with 5 output, got %v", daily[1].Models)
+	}
+}
+
+func TestLoadClaudeData_Deduplication(t *testing.T) {
+	dir := t.TempDir()
+	proj := filepath.Join(dir, "projects", "proj")
+	if err := os.MkdirAll(proj, 0o755); err != nil {
+		t.Fatalf("mkdir error: %v", err)
+	}
+
+	// Session with duplicate message IDs (e.g. streaming update or tool retry chunk)
+	s := `{"type":"assistant","timestamp":"2026-07-21T10:00:05Z","message":{"id":"msg_01","model":"claude-opus","usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":500,"cache_creation_input_tokens":0}}}
+{"type":"assistant","timestamp":"2026-07-21T10:00:06Z","message":{"id":"msg_01","model":"claude-opus","usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":500,"cache_creation_input_tokens":0}}}
+{"type":"assistant","timestamp":"2026-07-21T10:00:10Z","message":{"id":"msg_02","model":"claude-opus","usage":{"input_tokens":200,"output_tokens":100,"cache_read_input_tokens":1000,"cache_creation_input_tokens":100}}}
+`
+	if err := os.WriteFile(filepath.Join(proj, "s_dupe.jsonl"), []byte(s), 0o644); err != nil {
+		t.Fatalf("write error: %v", err)
+	}
+
+	sum, daily, _, err := LoadClaudeData(dir)
+	if err != nil {
+		t.Fatalf("LoadClaudeData error: %v", err)
+	}
+
+	// Only 2 unique messages: (100+50+500) + (200+100+1000+100) = 650 + 1400 = 2050.
+	if sum.LifetimeTokens != 2050 {
+		t.Errorf("expected lifetime=2050, got %d", sum.LifetimeTokens)
+	}
+	if len(daily) != 1 || daily[0].Turns != 2 {
+		t.Errorf("expected 1 day with 2 turns, got %d turns across %d days", daily[0].Turns, len(daily))
+	}
+
+	// Check warning recorded
+	var foundWarning bool
+	for _, w := range sum.Warnings {
+		if strings.Contains(w, "claude: removed 1 duplicate message(s)") {
+			foundWarning = true
+			break
+		}
+	}
+	if !foundWarning {
+		t.Errorf("expected duplicate warning in %v", sum.Warnings)
 	}
 }
 
