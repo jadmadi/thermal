@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/jadmadi/thermal/compare/v0.11.0...v0.12.0) (2026-09-21)
+
+
+### Features
+
+* **replay:** implement thermal replay simulation against subscriptions and APIs (goals/workload-replay/goal.md) ([4f7ff02](https://github.com/jadmadi/thermal/commit/4f7ff02f5e7710deabc5454265330bcbee35057a))
+* **testing:** add automated simulated user release gate and update gitignore ([b5651df](https://github.com/jadmadi/thermal/commit/b5651df195f1702078d233ba9fb3d4c5ea98c29c))
+
+
+### Bug Fixes
+
+* **testing:** ensure simulated user tests use dynamic timestamps and isolated home environment ([2c578a0](https://github.com/jadmadi/thermal/commit/2c578a0fd86e035939805ecd1a7612005d70502e))
+
 ## [Unreleased]
 
 ### Features
