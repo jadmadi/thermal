@@ -652,6 +652,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       <a href="#reports"><span>Reports</span></a>
       <a href="#projects"><span>Projects</span></a>
       <a href="#models"><span>Models</span></a>
+      <a href="#replay"><span>Replay</span></a>
       <a href="#reference"><span>Reference</span></a>
       <a class="support" href="https://paypal.me/madise" rel="noopener noreferrer"><span>Support my work</span></a>
     </nav>
@@ -1348,6 +1349,57 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
   </div>
 </section>
 
+<!-- ========================================================== REPLAY == -->
+<section id="replay">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Workload replay</h2>
+      <p>
+        Take your real local activity and replay it against commercial subscriptions
+        and API pricing. Thermal answers two questions: <em>what would have handled it</em>,
+        and <em>what would it have cost</em>.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
+      <pre><code>thermal replay                              <u># default comparison vs standard plans &amp; APIs</u>
+thermal replay --against claude-pro         <u># test a specific subscription</u>
+thermal replay --against deepseek-v3        <u># simulate API pay-as-you-go</u>
+thermal replay --compare "claude-pro,chatgpt-plus,deepseek-v3"
+thermal replay --last 30 --json             <u># machine-readable simulation report</u></code></pre>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <pre class="output"><code>  Thermal · replay (2026-08-23 to 2026-09-22, 30 days)
+  Workload: 21 active days, 3.84B total tokens (96.2% cached)
+
+  Tier / Plan             Type     Monthly Cost   Est. Spend  Capacity  Throttle%  Verdict
+  ──────────────────────────────────────────────────────────────────────────────────────────
+  Claude Pro              Sub      $20.00 / mo       $20.00   FAIL          85.7%  Exceeds burst caps
+  Claude Max (5x)         Sub      $100.00 / mo     $100.00   DEGRADED      14.3%  Peak days throttled
+  Claude Max (20x)        Sub      $200.00 / mo     $200.00   PASS           0.0%  Handles daily peaks
+  ChatGPT Plus            Sub      $20.00 / mo       $20.00   FAIL          81.0%  Exceeds burst caps
+  Cursor Pro              Sub      $20.00 / mo       $20.00   FAIL          66.7%  Exceeds fast quota
+  DeepSeek V3             API      Pay-as-you-go     $18.42   PASS           0.0%  Unmetered burst
+  Claude 3.5 Sonnet       API      Pay-as-you-go     $94.30   PASS           0.0%  Unmetered burst
+
+  Recommendation:
+  Subscription tier 'Claude Pro' would throttle on 85.7% of active days.
+  DeepSeek V3 API would handle 100% of workload for ~$18.42/mo (saving $1.58/mo vs $20 flat sub).</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+
+    <p class="note">
+      <strong>Disjoint token simulation with cache read discounts.</strong>
+      Thermal separates uncached prompt tokens from cached reads and reasoning.
+      Because 95%+ of agent tokens are prompt cache reads, pay-as-you-go API simulation
+      accurately applies tiered caching discounts (e.g. $0.14/M vs $0.014/M on DeepSeek)
+      rather than overcharging by 10x&ndash;20x.
+    </p>
+  </div>
+</section>
+
 <!-- ========================================================== COMPARE == -->
 <section id="compare">
   <div class="wrap">
@@ -1542,6 +1594,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
           <li><a href="#projects">Projects</a></li>
           <li><a href="#models">Models</a></li>
           <li><a href="#cost">Cost estimation</a></li>
+          <li><a href="#replay">Workload replay</a></li>
           <li><a href="#tools">Supported tools</a></li>
           <li><a href="#compare">How it compares</a></li>
           <li><a href="#reference">Reference</a></li>
@@ -1564,6 +1617,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
               <tr><td class="mono">thermal monthly</td><td>One row per month.</td></tr>
               <tr><td class="mono">thermal projects</td><td>One row per git repository.</td></tr>
               <tr><td class="mono">thermal models</td><td>One row per model id.</td></tr>
+              <tr><td class="mono">thermal replay</td><td>Simulate historical workload against commercial subscriptions and API models.</td></tr>
               <tr><td class="mono">thermal mix</td><td>Tool or model mix over time, with switching stats.</td></tr>
               <tr><td class="mono">thermal stats</td><td>Daily distribution: percentiles, weekday profile, token composition &amp; cache hit rate, outliers, histogram.</td></tr>
               <tr><td class="mono">thermal trend</td><td>Daily trend fit with a month-end projection.</td></tr>
@@ -1590,6 +1644,8 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
               <tr><td class="mono">--weeks &lt;n&gt;</td><td class="mono">52</td><td>Heatmap width, 4 to 104.</td></tr>
               <tr><td class="mono">--sort &lt;key&gt;</td><td class="mono">streak</td><td>Leaderboard: <span class="mono">streak</span>, <span class="mono">tokens</span>, <span class="mono">cost</span>. Projects: <span class="mono">tokens</span>, <span class="mono">cost</span>, <span class="mono">days</span>, <span class="mono">recent</span>. Models: <span class="mono">tokens</span>, <span class="mono">cost</span>.</td></tr>
               <tr><td class="mono">--top &lt;n&gt;</td><td class="mono">0</td><td>Row limit for projects and models. 0 prints every row.</td></tr>
+              <tr><td class="mono">--against &lt;target&gt;</td><td class="mono">—</td><td>Replay target subscription or model (e.g. <span class="mono">claude-pro</span>, <span class="mono">deepseek-v3</span>).</td></tr>
+              <tr><td class="mono">--compare &lt;list&gt;</td><td class="mono">—</td><td>Comma-separated plans/models or <span class="mono">all</span> for replay comparison.</td></tr>
               <tr><td class="mono">--metric &lt;name&gt;</td><td class="mono">tokens</td><td>Analytics metric: <span class="mono">tokens</span> or <span class="mono">cost</span> (mix, stats, trend).</td></tr>
               <tr><td class="mono">--by &lt;dim&gt;</td><td class="mono">tool</td><td>Mix dimension: <span class="mono">tool</span> or <span class="mono">model</span> (mix).</td></tr>
               <tr><td class="mono">--grain &lt;bucket&gt;</td><td class="mono">week</td><td>Mix bucket size: <span class="mono">day</span>, <span class="mono">week</span>, or <span class="mono">month</span> (mix).</td></tr>
@@ -1608,7 +1664,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
         </div>
 
         <div class="flag-legend">
-          <span><b>--last, --since, --until, --order, --start-of-week</b> need a report word</span>
+          <span><b>--last, --since, --until, --order, --start-of-week, --against, --compare</b> need a report or replay word</span>
           <span><b>exit code 1</b> on validation errors</span>
         </div>
 

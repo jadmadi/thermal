@@ -123,6 +123,15 @@ func (c *Catalog) Lookup(model string) (Price, bool) {
 	return Price{}, false
 }
 
+// LookupPrice implements thermal.ReplayPricer.
+func (c *Catalog) LookupPrice(model string) (input, output, cacheRead, cacheWrite float64, ok bool) {
+	p, ok := c.Lookup(model)
+	if !ok {
+		return 0, 0, 0, 0, false
+	}
+	return p.Input, p.Output, p.cacheReadRate(), p.cacheWriteRate(), true
+}
+
 // PriceDay implements thermal.Pricer. It prices each model from its token
 // types and returns the models that have no usable price. A model with
 // unclassified tokens is left unpriced rather than half-priced, because no
@@ -173,8 +182,14 @@ func lookupCandidates(model string) []string {
 	}
 
 	add(base)
+	if alias, ok := variantAliases[base]; ok {
+		add(alias)
+	}
 	if i := strings.LastIndex(base, "/"); i >= 0 {
 		add(base[i+1:])
+		if alias, ok := variantAliases[base[i+1:]]; ok {
+			add(alias)
+		}
 	}
 	for _, key := range append([]string{}, out...) {
 		if i := strings.Index(key, ":"); i >= 0 {

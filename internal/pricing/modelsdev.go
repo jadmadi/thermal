@@ -34,6 +34,11 @@ type modelsDevCost struct {
 var variantAliases = map[string]string{
 	"gemini-3-pro-high": "gemini-3-pro-preview",
 	"gemini-3-pro-low":  "gemini-3-pro-preview",
+	"claude-3-5-sonnet": "claude-3.5-sonnet-v2",
+	"claude-3.5-sonnet": "claude-3.5-sonnet-v2",
+	"claude-3-7-sonnet": "claude-3.7-sonnet",
+	"claude-sonnet":     "claude-3.7-sonnet",
+	"deepseek-chat":     "deepseek-v3",
 }
 
 // preferredProviders orders first-party catalogs ahead of resellers. Prices

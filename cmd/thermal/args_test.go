@@ -54,6 +54,12 @@ func TestValidateReportFlags(t *testing.T) {
 		{"grain on stats", with(base, func(o *thermal.Options) { o.Report = "stats"; o.Grain = "day" }), true},
 		{"metric on leaderboard", with(base, func(o *thermal.Options) { o.Metric = "cost" }), true},
 		{"grain on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Grain = "month" }), true},
+		{"replay ok", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Against = "claude-sonnet" }), false},
+		{"replay compare ok", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Compare = "claude-pro,cursor-pro" }), false},
+		{"replay bad sort", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Sort = "tokens" }), true},
+		{"replay bad chart", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Chart = true }), true},
+		{"against on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Against = "claude-sonnet" }), true},
+		{"compare on leaderboard", with(base, func(o *thermal.Options) { o.Compare = "claude-pro" }), true},
 	}
 
 	for _, tc := range cases {

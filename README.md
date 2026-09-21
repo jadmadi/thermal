@@ -405,6 +405,46 @@ thermal devin trend
   Band         0 to 855.4M
 ```
 
+### `thermal replay`
+Simulate your real local developer workload against alternative subscriptions ($20/mo Claude Pro, $200/mo Claude Max, Cursor Pro) and API price cards (DeepSeek V3, Claude 3.5/3.7 Sonnet, GPT-4o) with dynamic rate-limit throttling analysis and cache efficiency accounting:
+
+```bash
+# Compare default commercial subscription plans and pay-as-you-go API tiers
+thermal replay
+
+# Replay workload specifically against a candidate model rate card
+thermal replay --against deepseek-v3
+thermal replay --against claude-3-7-sonnet --since 2026-08-01
+
+# Compare custom plans or all available standard plans side-by-side
+thermal replay --compare all
+thermal replay --compare "claude-pro,claude-max,cursor-pro,deepseek-api"
+
+# JSON output for financial modeling
+thermal replay --json
+```
+
+```
+  Thermal · replay · 30-day workload simulation
+
+  Real Workload
+  Active days: 28 ·  Total: 18.9B  · Cache hit rate: 97.6%  · Spend/mo: ~$5897.68
+  Daily volume: Median 537.8M  · p90 burst 1.8B  · Peak 2.2B
+
+  Plan / Target Model         Type         Cost/Mo     Delta vs Actual  Capacity Verdict                
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────
+  Claude Pro ($20)            Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 28/28 days (100%))
+  Claude Team/Max ($200)      Sub          $200.00    -$5697.68 (-97%)  FAIL (throttled 26/28 days (93%))
+  Cursor Pro ($20)            Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 27/28 days (96%))
+  ★ DeepSeek V3 (API)         Payg         $983.31    -$4914.37 (-83%)  PASS (0% throttled (unmetered API))
+  Claude 3.5 Sonnet (API)     Payg        $7541.10    +$1643.42 (+28%)  PASS (0% throttled (unmetered API))
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Recommendation:
+  • Your median daily volume (537.8M) and p90 burst (1.8B) exceed flat $20/mo rate limits on heavy days.
+  • Switching to DeepSeek V3 (API) would cost ~$983.31/mo with 0% throttling, saving $4914.37/mo.
+```
+
 ## Where the cost numbers come from
 
 Thermal displays cost figures from two sources:
