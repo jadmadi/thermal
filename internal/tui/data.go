@@ -344,15 +344,15 @@ func (a Adapter) toolSpark(t ToolDay, start, end string) []int64 {
 }
 
 func maxSpark(rows []OverviewRow) int64 {
-	var max int64
+	var maxVal int64
 	for _, r := range rows {
 		for _, v := range r.Spark {
-			if v > max {
-				max = v
+			if v > maxVal {
+				maxVal = v
 			}
 		}
 	}
-	return max
+	return maxVal
 }
 
 func sortLess(a, b OverviewRow, key SortKey) bool {

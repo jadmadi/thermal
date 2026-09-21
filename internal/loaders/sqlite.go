@@ -7,7 +7,7 @@ import (
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite driver
 )
 
 // LoadOpenCodeData reads the OpenCode SQLite DB. Since the v2 storage

@@ -25,7 +25,7 @@ func renderStats(sv StatsView, width, height int, p Palette) string {
 	}
 	hist := histogramBlock(sv, width, p)
 	rhythm := rhythmBlock(sv, half, p)
-	distribution := hist
+	var distribution string
 	if maxLineWidth(hist)+maxLineWidth(rhythm)+2 <= width {
 		distribution = joinColumns([]string{hist, rhythm}, half)
 	} else {
@@ -155,10 +155,10 @@ func rhythmBlock(sv StatsView, width int, p Palette) string {
 		b.WriteString("  —\n")
 		return strings.TrimRight(b.String(), "\n")
 	}
-	var max float64
+	var maxVal float64
 	for _, wd := range sv.Weekday {
-		if wd.Mean > max {
-			max = wd.Mean
+		if wd.Mean > maxVal {
+			maxVal = wd.Mean
 		}
 	}
 	labelW := 4
@@ -175,7 +175,7 @@ func rhythmBlock(sv StatsView, width int, p Palette) string {
 			label = label[:3]
 		}
 		b.WriteString("  " + padTo(label, labelW) + "  " +
-			p.bar(int64(wd.Mean), int64(max), barW) + "  " +
+			p.bar(int64(wd.Mean), int64(maxVal), barW) + "  " +
 			padLeft(shortMetric(wd.Mean, sv.Metric), 7) + "  " +
 			p.Dim.Render(fmt.Sprintf("%dd", wd.Days)) + "\n")
 	}
@@ -199,13 +199,13 @@ func dayLists(sv StatsView, width int, p Palette) string {
 // maxLineWidth reports the widest line in a block, which is what decides
 // whether two blocks can share a row.
 func maxLineWidth(block string) int {
-	max := 0
+	maxVal := 0
 	for _, line := range strings.Split(block, "\n") {
-		if n := lipglossWidth(line); n > max {
-			max = n
+		if n := lipglossWidth(line); n > maxVal {
+			maxVal = n
 		}
 	}
-	return max
+	return maxVal
 }
 
 func outlierTitle(sv StatsView) string {
@@ -227,10 +227,10 @@ func dayList(title string, days []thermal.DayValue, m Metric, width int, p Palet
 	if len(days) < limit {
 		limit = len(days)
 	}
-	var max float64
+	var maxVal float64
 	for _, d := range days[:limit] {
-		if d.Value > max {
-			max = d.Value
+		if d.Value > maxVal {
+			maxVal = d.Value
 		}
 	}
 	barW := width - 18
@@ -242,7 +242,7 @@ func dayList(title string, days []thermal.DayValue, m Metric, width int, p Palet
 	}
 	for _, d := range days[:limit] {
 		b.WriteString("  " + padTo(d.Day, 11) + " " +
-			p.bar(int64(d.Value), int64(max), barW) + "  " +
+			p.bar(int64(d.Value), int64(maxVal), barW) + "  " +
 			padLeft(shortMetric(d.Value, m), 8) + "\n")
 	}
 	return strings.TrimRight(b.String(), "\n")

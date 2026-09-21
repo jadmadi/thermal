@@ -93,24 +93,24 @@ func renderStacked(mv MixView, width int, p Palette) string {
 			if cells > remaining {
 				cells = remaining
 			}
-			rune := "▪"
+			glyph := "▪"
 			if si < len(seriesRunes) {
-				rune = seriesRunes[si]
+				glyph = seriesRunes[si]
 			}
 			for i := 0; i < cells; i++ {
-				grid[rows-1-filled][c] = rune
+				grid[rows-1-filled][c] = glyph
 				filled++
 			}
 			remaining -= cells
 		}
 		// Any cell left over is the largest series, so the column always
 		// reaches its computed height.
-		rune := "▪"
+		glyph := "▪"
 		if len(mv.Series) > 0 && len(seriesRunes) > 0 {
-			rune = seriesRunes[0]
+			glyph = seriesRunes[0]
 		}
 		for remaining > 0 {
-			grid[rows-1-filled][c] = rune
+			grid[rows-1-filled][c] = glyph
 			filled++
 			remaining--
 		}

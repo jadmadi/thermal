@@ -6,7 +6,7 @@ import (
 
 	"github.com/jadmadi/thermal/internal/thermal"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite driver
 )
 
 // LoadZCodeData reads the ZCode CLI SQLite DB (~/.zcode/cli/db/db.sqlite).

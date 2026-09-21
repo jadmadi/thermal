@@ -5,7 +5,7 @@ import (
 
 	"github.com/jadmadi/thermal/internal/thermal"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite driver
 )
 
 // LoadMuseData reads the Meta Muse session index

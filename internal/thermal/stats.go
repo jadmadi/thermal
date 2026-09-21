@@ -221,12 +221,12 @@ func topDays(values []DayValue, limit int) []DayValue {
 	return sorted
 }
 
-func histogram(values []float64, max float64) []HistogramBin {
-	if max <= 0 || len(values) == 0 {
+func histogram(values []float64, maxVal float64) []HistogramBin {
+	if maxVal <= 0 || len(values) == 0 {
 		return nil
 	}
 	bins := make([]HistogramBin, histogramBins)
-	width := max / float64(histogramBins)
+	width := maxVal / float64(histogramBins)
 	for i := range bins {
 		bins[i] = HistogramBin{From: float64(i) * width, To: float64(i+1) * width}
 	}

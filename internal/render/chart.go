@@ -59,12 +59,12 @@ func chartWidth(total, labelW int) int {
 	return w
 }
 
-// chartBar renders a proportional bar with its scale implied by max.
-func chartBar(value, max float64, width int, colors bool) string {
-	if max <= 0 || width <= 0 {
+// chartBar renders a proportional bar with its scale implied by maxVal.
+func chartBar(value, maxVal float64, width int, colors bool) string {
+	if maxVal <= 0 || width <= 0 {
 		return ""
 	}
-	filled := int(value / max * float64(width))
+	filled := int(value / maxVal * float64(width))
 	if filled > width {
 		filled = width
 	}
@@ -133,7 +133,7 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, widt
 		ColorCode(colors, "38;5;239", fmt.Sprintf("bar = share of the largest row, %s", thermal.CompactNumber(rep.Rows[0].Tokens)))))
 	b.WriteString("\n")
 
-	max := float64(rep.Rows[0].Tokens)
+	maxVal := float64(rep.Rows[0].Tokens)
 	shown, omitted := chartRows(len(rep.Rows))
 	for _, row := range rep.Rows[:shown] {
 		label := row.Project
@@ -145,7 +145,7 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, widt
 		name := truncateLabel(label, labelW)
 		b.WriteString(fmt.Sprintf("  %s  %s  %s\n",
 			thermal.PadRight(name, labelW),
-			chartBar(float64(row.Tokens), max, barW, colors),
+			chartBar(float64(row.Tokens), maxVal, barW, colors),
 			thermal.PadLeft(thermal.CompactNumber(row.Tokens)+" tok", 10)))
 	}
 	b.WriteString(omittedLine(omitted, colors))
@@ -168,7 +168,7 @@ func RenderModelChart(rep thermal.ModelReport, width int, noColor bool) string {
 		ColorCode(colors, "38;5;239", "estimated cost beside each bar")))
 	b.WriteString("\n")
 
-	max := float64(rep.Rows[0].Tokens)
+	maxVal := float64(rep.Rows[0].Tokens)
 	shown, omitted := chartRows(len(rep.Rows))
 	for _, row := range rep.Rows[:shown] {
 		cost := "—"
@@ -181,7 +181,7 @@ func RenderModelChart(rep thermal.ModelReport, width int, noColor bool) string {
 		}
 		b.WriteString(fmt.Sprintf("  %s  %s  %s %s\n",
 			thermal.PadRight(truncateLabel(row.Model, labelW), labelW),
-			chartBar(float64(row.Tokens), max, barW, colors),
+			chartBar(float64(row.Tokens), maxVal, barW, colors),
 			thermal.PadLeft(thermal.CompactNumber(row.Tokens), 8),
 			thermal.PadLeft(cost, 9)))
 	}
@@ -197,18 +197,18 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 	colors := chartColors(noColor)
 
 	values := make([]float64, len(rep.Rows))
-	var max float64
+	var maxVal float64
 	for i, row := range rep.Rows {
 		if metric == "cost" {
 			values[i] = row.Cost
 		} else {
 			values[i] = float64(row.Tokens)
 		}
-		if values[i] > max {
-			max = values[i]
+		if values[i] > maxVal {
+			maxVal = values[i]
 		}
 	}
-	if max == 0 {
+	if maxVal == 0 {
 		return ""
 	}
 
@@ -250,7 +250,7 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 		}
 		b.WriteString(fmt.Sprintf("  %s  %s  %s\n",
 			thermal.PadRight(truncateLabel(label, labelW), labelW),
-			chartBar(values[i], max, barW, colors),
+			chartBar(values[i], maxVal, barW, colors),
 			thermal.PadLeft(value, 10)))
 	}
 	b.WriteString(omittedLine(omitted, colors))

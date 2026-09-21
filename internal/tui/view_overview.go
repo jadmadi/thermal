@@ -212,15 +212,15 @@ func toolTable(ov Overview, width int, p Palette) string {
 			cells = append(cells, p.spark(row.Spark))
 		}
 		if include >= 3 {
-			var value, max int64
+			var value, maxVal int64
 			if ov.Metric == MetricCost {
 				value = int64(row.Cost * 100)
-				max = int64(maxCost * 100)
+				maxVal = int64(maxCost * 100)
 			} else {
 				value = row.Tokens
-				max = maxTokens
+				maxVal = maxTokens
 			}
-			cells = append(cells, p.bar(value, max, barW))
+			cells = append(cells, p.bar(value, maxVal, barW))
 		}
 		cells = append(cells, padLeft(fmt.Sprintf("%dd", row.Current), colStreak))
 		b.WriteString(strings.Join(cells, tableGap))

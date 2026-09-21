@@ -150,7 +150,7 @@ type stubPricer struct {
 	calls   int
 }
 
-func (s *stubPricer) PriceDay(day DailyRow) (float64, []string) {
+func (s *stubPricer) PriceDay(_ DailyRow) (float64, []string) {
 	s.calls++
 	return s.cost, s.missing
 }

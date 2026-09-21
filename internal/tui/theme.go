@@ -39,20 +39,20 @@ func newPalette(colorful bool) Palette {
 	return p
 }
 
-// bar renders a proportional bar. The value is scaled against max, so the
+// bar renders a proportional bar. The value is scaled against maxVal, so the
 // largest bar fills width cells. A bar carries no meaning on its own: callers
 // always print the number beside it.
-func (p Palette) bar(value, max int64, width int) string {
-	if max <= 0 || width <= 0 {
+func (p Palette) bar(value, maxVal int64, width int) string {
+	if maxVal <= 0 || width <= 0 {
 		return ""
 	}
-	filled := int(float64(value) / float64(max) * float64(width))
+	filled := int(float64(value) / float64(maxVal) * float64(width))
 	if filled > width {
 		filled = width
 	}
 	// Half a cell is the floor: a whole cell of accent at 0.4% would overstate
 	// the share, and the number is printed beside the bar anyway.
-	if filled == 0 && float64(value)/float64(max)*float64(width) >= 0.5 {
+	if filled == 0 && float64(value)/float64(maxVal)*float64(width) >= 0.5 {
 		filled = 1
 	}
 	full := strings.Repeat("█", filled)
@@ -74,19 +74,19 @@ func (p Palette) spark(values []int64) string {
 	if len(values) == 0 {
 		return ""
 	}
-	var max int64
+	var maxVal int64
 	for _, v := range values {
-		if v > max {
-			max = v
+		if v > maxVal {
+			maxVal = v
 		}
 	}
 	var b strings.Builder
 	for _, v := range values {
-		if max == 0 || v == 0 {
+		if maxVal == 0 || v == 0 {
 			b.WriteRune(p.emptyCell)
 			continue
 		}
-		ratio := float64(v) / float64(max)
+		ratio := float64(v) / float64(maxVal)
 		idx := int(math.Sqrt(ratio) * float64(len(p.barCells)-1))
 		if v > 0 && idx == 0 {
 			idx = 1 // any activity is visible as at least a low block

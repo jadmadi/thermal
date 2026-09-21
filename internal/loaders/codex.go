@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/jadmadi/thermal/internal/thermal"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite driver
 )
 
 // LoadCodexData reads Codex session data from state_5.sqlite primary source
@@ -20,12 +20,12 @@ import (
 func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	stateDB := filepath.Join(dataDir, "state_5.sqlite")
 	if _, err := os.Stat(stateDB); err == nil {
-		return loadCodexFromStateDB(dataDir, stateDB)
+		return loadCodexFromStateDB(stateDB)
 	}
 	return loadJsonlData(dataDir, "ts", false)
 }
 
-func loadCodexFromStateDB(dataDir, dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
+func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
 	if err != nil {
 		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
