@@ -28,17 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 20
-- 🟢 **Implemented & Verified**: 19
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 108/121 completed (89%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :--- | :--- | :--- |
-| [`workload-replay`](workload-replay/goal.md) | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
+- 🟢 **Implemented & Verified**: 20
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 121/121 completed (100%)
 
 ---
 
@@ -65,4 +57,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `662f25a` |
+| [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `4f7ff02` |
 
