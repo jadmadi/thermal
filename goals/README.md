@@ -28,17 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 19
-- 🟢 **Implemented & Verified**: 18
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 102/108 completed (94%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :--- | :--- | :--- |
-| [`hermes-loader`](hermes-loader/goal.md) | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
+- 🟢 **Implemented & Verified**: 19
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 108/108 completed (100%)
 
 ---
 
@@ -61,6 +53,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `6e070bd` |
 | [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `104ba23` |
 | [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `414a815` |
+| [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `9e90d01` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `662f25a` |
