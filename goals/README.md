@@ -27,10 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 16
+- **Total Goals**: 19
 - 🟢 **Implemented & Verified**: 16
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 92/92 completed (100%)
+- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 92/108 completed (85%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :--- | :--- | :--- |
+| [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
+| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader ([`internal/load... | `/goal goals/claude-message-dedupe/goal.md` |
+| [`hermes-loader`](hermes-loader/goal.md) | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
 
 ---
 
