@@ -254,6 +254,9 @@ func AggregateToolMix(batches []ToolDays, opts MixOptions, pricer Pricer) MixRep
 				a.estimated = a.estimated || estimated
 				continue
 			}
+			if isActivityOnly(day) {
+				continue
+			}
 			a.add(day.Day, batch.Tool, float64(day.Tokens))
 		}
 	}

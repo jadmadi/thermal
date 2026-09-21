@@ -61,6 +61,9 @@ func AggregateTrend(days []DailyRow, opts TrendOptions, pricer Pricer) TrendRepo
 			byDay[day.Day] += value
 			continue
 		}
+		if isActivityOnly(day) {
+			continue
+		}
 		byDay[day.Day] += float64(day.Tokens)
 	}
 

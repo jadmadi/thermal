@@ -185,56 +185,104 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(row[0], 12)), row[1]))
 	}
 
+	maxWeekdayMean := 0.0
+	for _, w := range rep.Weekday {
+		if w.Mean > maxWeekdayMean {
+			maxWeekdayMean = w.Mean
+		}
+	}
+
 	sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Weekday profile")))
 	for _, w := range rep.Weekday {
 		if w.Days == 0 {
 			continue
 		}
-		sb.WriteString(fmt.Sprintf("  %s %s %s\n",
-			dim(thermal.PadRight(w.Weekday, 12)),
+		bar := chartBar(w.Mean, maxWeekdayMean, 16, colors)
+		daysLabel := fmt.Sprintf("%d days", w.Days)
+		if w.Days == 1 {
+			daysLabel = "1 day"
+		}
+		sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
+			dim(thermal.PadRight(w.Weekday, 11)),
 			thermal.PadLeft(metric(w.Mean), 10),
-			dim(fmt.Sprintf("%d days", w.Days)),
+			bar,
+			dim(thermal.PadLeft(daysLabel, 8)),
 		))
 	}
 
 	if len(rep.Histogram) > 0 {
 		maxCount := 0
+		maxRangeW := 0
 		for _, b := range rep.Histogram {
 			if b.Count > maxCount {
 				maxCount = b.Count
 			}
+			labelLen := len(fmt.Sprintf("%s — %s", metric(b.From), metric(b.To)))
+			if labelLen > maxRangeW {
+				maxRangeW = labelLen
+			}
 		}
+		if maxRangeW < 16 {
+			maxRangeW = 16
+		}
+
 		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Distribution")))
 		for _, b := range rep.Histogram {
-			barWidth := 0
-			if maxCount > 0 {
-				barWidth = b.Count * 24 / maxCount
-			}
-			sb.WriteString(fmt.Sprintf("  %s %s %s\n",
-				dim(thermal.PadLeft(metric(b.From), 10)),
-				thermal.PadRight(strings.Repeat("#", barWidth), 24),
-				fmt.Sprintf("%d", b.Count),
+			bar := chartBar(float64(b.Count), float64(maxCount), 24, colors)
+			rangeLabel := fmt.Sprintf("%s — %s", metric(b.From), metric(b.To))
+			countLabel := fmt.Sprintf("%d", b.Count)
+			sb.WriteString(fmt.Sprintf("  %s  %s  %s\n",
+				dim(thermal.PadLeft(rangeLabel, maxRangeW)),
+				bar,
+				thermal.PadLeft(countLabel, 4),
 			))
+		}
+	}
+
+	topLimit := 5
+	if len(rep.TopDays) < topLimit {
+		topLimit = len(rep.TopDays)
+	}
+	displayedTopDays := rep.TopDays[:topLimit]
+
+	allDisplayedAreOutliers := len(displayedTopDays) > 0
+	for _, td := range displayedTopDays {
+		if td.Value <= rep.OutlierThreshold {
+			allDisplayedAreOutliers = false
+			break
 		}
 	}
 
 	if len(rep.TopDays) > 0 {
 		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Top days")))
-		for i, d := range rep.TopDays {
-			if i == 5 {
-				break
+		for _, d := range displayedTopDays {
+			tag := ""
+			if rep.OutlierThreshold > 0 && d.Value > rep.OutlierThreshold {
+				tag = fmt.Sprintf(" %s", dim("(outlier)"))
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
+			sb.WriteString(fmt.Sprintf("  %s %s%s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10), tag))
 		}
 	}
 
 	if len(rep.Outliers) > 0 {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf("Outliers above %s (median + 2 MAD)", metric(rep.OutlierThreshold)))))
-		for i, d := range rep.Outliers {
-			if i == 5 {
-				break
+		header := fmt.Sprintf("Outliers above %s (median + 2 MAD)", metric(rep.OutlierThreshold))
+		if allDisplayedAreOutliers {
+			if len(rep.Outliers) > topLimit {
+				extra := len(rep.Outliers) - topLimit
+				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), fmt.Sprintf("all %d top days above, plus %d more", topLimit, extra)))
+			} else if topLimit == 1 {
+				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), "top day above"))
+			} else {
+				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), fmt.Sprintf("all %d top days above", topLimit)))
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
+		} else {
+			sb.WriteString(fmt.Sprintf("\n  %s\n", dim(header)))
+			for i, d := range rep.Outliers {
+				if i == 5 {
+					break
+				}
+				sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
+			}
 		}
 	}
 

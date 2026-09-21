@@ -123,8 +123,8 @@ func TestLoadDshData_MultiSessionDir(t *testing.T) {
 		t.Fatalf("LoadDshData failed: %v", err)
 	}
 
-	if summary.Tool != "dsh" {
-		t.Errorf("expected Tool dsh, got %s", summary.Tool)
+	if summary.Tool != "DeepSeek (DSH)" {
+		t.Errorf("expected Tool DeepSeek (DSH), got %s", summary.Tool)
 	}
 	if summary.Sessions != 2 {
 		t.Errorf("expected 2 active sessions, got %d", summary.Sessions)

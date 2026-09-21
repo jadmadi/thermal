@@ -126,3 +126,17 @@ func TestAggregateStatsCostFlagsEstimate(t *testing.T) {
 		t.Error("median should be non-zero")
 	}
 }
+
+func TestAggregateStatsExcludesActivityOnly(t *testing.T) {
+	days := []DailyRow{
+		{Day: "2026-09-01", Tokens: 1000, Turns: 1, Input: 800, Output: 200},
+		{Day: "2026-09-02", Tokens: 417, Turns: 417}, // activity-only
+	}
+	rep := AggregateStats(days, StatsOptions{Metric: "tokens"}, nil)
+	if rep.Days != 1 {
+		t.Fatalf("expected 1 day, got %d", rep.Days)
+	}
+	if rep.Total != 1000 {
+		t.Errorf("expected total 1000, got %v", rep.Total)
+	}
+}

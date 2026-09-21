@@ -95,3 +95,49 @@ func TestLeaderboardStatesCostProvenance(t *testing.T) {
 		t.Errorf("cost line printed with no recorded cost:\n%s", dash)
 	}
 }
+
+func TestLeaderboardEstimatedCost(t *testing.T) {
+	results := []thermal.ToolResult{
+		{
+			Tool: thermal.ToolDevin, Name: "Devin", CurrentStreak: 5, LongestStreak: 10,
+			ActiveDays: 20, TotalActivity: 5000000, Summary: thermal.Summary{Cost: 0},
+			EstimatedCost: 45.50,
+		},
+	}
+	out := RenderLeaderboard(results, 52, true, "", true)
+	if !strings.Contains(out, "~$45.50") {
+		t.Errorf("expected ~$45.50 in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Estimated: ~$45.50") {
+		t.Errorf("expected estimated summary in footer, got:\n%s", out)
+	}
+
+	// With estimation disabled
+	outNoEst := RenderLeaderboard(results, 52, true, "", false)
+	if strings.Contains(outNoEst, "~$45.50") {
+		t.Errorf("did not expect ~$45.50 when estimate is false, got:\n%s", outNoEst)
+	}
+	if !strings.Contains(outNoEst, "—") {
+		t.Errorf("expected dash when estimate is false, got:\n%s", outNoEst)
+	}
+}
+
+func TestRenderLeaderboardSortKeys_EstimatedCost(t *testing.T) {
+	results := []thermal.ToolResult{
+		{
+			Tool: thermal.ToolOpenCode, Name: "recorded", CurrentStreak: 1,
+			TotalActivity: 100, Summary: thermal.Summary{Cost: 10},
+		},
+		{
+			Tool: thermal.ToolDevin, Name: "estimated", CurrentStreak: 1,
+			TotalActivity: 100, Summary: thermal.Summary{Cost: 0},
+			EstimatedCost: 50,
+		},
+	}
+	out := RenderLeaderboard(results, 52, true, "cost", true)
+	idxEst := strings.Index(out, "estimated")
+	idxRec := strings.Index(out, "recorded")
+	if idxEst == -1 || idxRec == -1 || idxEst > idxRec {
+		t.Errorf("expected estimated before recorded under sort=cost, got:\n%s", out)
+	}
+}

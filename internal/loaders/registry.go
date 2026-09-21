@@ -103,7 +103,7 @@ func AllTools() map[thermal.Tool]ToolInfo {
 		},
 		thermal.ToolDsh: {
 			DataDir:    dshHomeDir(home),
-			Name:       "dsh",
+			Name:       "DeepSeek (DSH)",
 			DataSubdir: "storages",
 			Loader:     LoadDshData,
 		},
@@ -215,7 +215,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  muse                 Muse")
 			fmt.Fprintln(os.Stderr, "  claude               Claude Code")
 			fmt.Fprintln(os.Stderr, "  droid                Droid (Factory)")
-			fmt.Fprintln(os.Stderr, "  dsh, deepseek        DeepSeek harness")
+			fmt.Fprintln(os.Stderr, "  dsh, deepseek        DeepSeek (DSH)")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}

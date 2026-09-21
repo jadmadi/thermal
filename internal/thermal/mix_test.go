@@ -108,3 +108,22 @@ func TestAggregateMixEmptyWindow(t *testing.T) {
 		t.Errorf("expected an empty report, got %+v", rep)
 	}
 }
+
+func TestAggregateToolMixExcludesActivityOnly(t *testing.T) {
+	batches := []ToolDays{
+		{Tool: "OpenCode", Days: []DailyRow{
+			{Day: "2026-09-07", Tokens: 1000, Turns: 1, Input: 800, Output: 200},
+		}},
+		{Tool: "Agy", Days: []DailyRow{
+			// Activity-only: Tokens == Turns, no input/output/cache/reasoning/cost/models
+			{Day: "2026-09-07", Tokens: 417, Turns: 417},
+		}},
+	}
+	rep := AggregateToolMix(batches, MixOptions{Grain: GrainDay, Metric: "tokens"}, nil)
+	if len(rep.Series) != 1 || rep.Series[0].Name != "OpenCode" {
+		t.Fatalf("expected only OpenCode series, got %+v", rep.Series)
+	}
+	if rep.Total != 1000 {
+		t.Errorf("expected total 1000, got %v", rep.Total)
+	}
+}

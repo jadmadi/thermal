@@ -131,6 +131,7 @@ type ToolResult struct {
 	ActiveDays    int
 	TotalActivity int64
 	DataPath      string
+	EstimatedCost float64
 }
 
 // Grain is the bucket size for a period report.

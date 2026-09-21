@@ -9,7 +9,7 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
-func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool) string {
+func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool, estimatedCost ...float64) string {
 	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
 
 	activeDays := make(map[string]bool)
@@ -81,8 +81,22 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 
 	// Extra analytics line: cost, code changes, sessions, agent breakdown.
 	var extra []string
+	var est float64
+	if len(estimatedCost) > 0 {
+		est = estimatedCost[0]
+	}
 	if summary.Cost > 0 {
-		extra = append(extra, fmt.Sprintf("$%.2f spent", summary.Cost))
+		if summary.Cost < 0.01 {
+			extra = append(extra, fmt.Sprintf("$%.4f spent", summary.Cost))
+		} else {
+			extra = append(extra, fmt.Sprintf("$%.2f spent", summary.Cost))
+		}
+	} else if est > 0 {
+		if est < 0.01 {
+			extra = append(extra, fmt.Sprintf("~$%.4f spent (est)", est))
+		} else {
+			extra = append(extra, fmt.Sprintf("~$%.2f spent (est)", est))
+		}
 	}
 	if summary.LinesAdded > 0 || summary.LinesDeleted > 0 {
 		extra = append(extra, fmt.Sprintf("%s+ / %s- lines", thermal.CompactNumber(summary.LinesAdded), thermal.CompactNumber(summary.LinesDeleted)))

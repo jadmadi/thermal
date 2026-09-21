@@ -47,10 +47,10 @@ Commands:
 Reports accept an optional tool: "thermal opencode weekly",
 "thermal weekly" (all tools). Tool defaults to all.
 
-Cost: the leaderboard prints recorded cost only, and states the sum
-under the tables. Reports add an estimate for days a source left
-blank and name the split under the total, so the two will differ.
-Run either with --no-estimate to see recorded cost alone.
+Cost: recorded cost comes from the tool source; estimated cost
+(prefixed with ~) is calculated from models.dev pricing for tools
+that record model usage without costs. Reports name the split
+under the total. Run with --no-estimate to see recorded cost alone.
 Projects collapse to the nearest git root and merge across tools.
 --sort picks the ranking: streak|tokens|cost for the leaderboard,
 tokens|cost|days|recent for projects, tokens|cost for models.
@@ -71,6 +71,7 @@ Supported tools:
   muse          Muse
   claude        Claude Code
   droid         Droid (Factory)
+  dsh           DeepSeek (DSH)
 
 Options:
   --tool <name>      Tool to show (default: all)
@@ -108,7 +109,7 @@ func parseArgs() thermal.Options {
 	}
 
 	var opts thermal.Options
-	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, agy, command-code, codewhale, zcode, grok, muse, claude, droid")
+	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, devin, agy, command-code, codewhale, zcode, grok, muse, claude, droid, dsh")
 	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
 	flag.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
@@ -460,6 +461,7 @@ func main() {
 	if opts.Tool == "all" {
 		tools := loaders.AllTools()
 		var results []thermal.ToolResult
+		pricer := newPricer(opts)
 
 		for _, t := range allToolOrder {
 			info := tools[t]
@@ -475,6 +477,16 @@ func main() {
 				continue
 			}
 			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
+
+			var estCost float64
+			if pricer != nil && data.Summary.Cost == 0 {
+				for _, d := range data.Daily {
+					if len(d.Models) > 0 {
+						c, _ := pricer.PriceDay(d)
+						estCost += c
+					}
+				}
+			}
 
 			activeDays := make(map[string]bool)
 			for _, d := range data.Daily {
@@ -494,6 +506,7 @@ func main() {
 				ActiveDays:    len(activeDays),
 				TotalActivity: data.Summary.LifetimeTokens,
 				DataPath:      data.Path,
+				EstimatedCost: estCost,
 			})
 		}
 
@@ -578,7 +591,18 @@ func main() {
 		return
 	}
 
-	fmt.Print(render.RenderDashboard(info.Name, data.Summary, data.Daily, data.Path, opts.Weeks, opts.NoColor))
+	var estCost float64
+	pricer := newPricer(opts)
+	if pricer != nil && data.Summary.Cost == 0 {
+		for _, d := range data.Daily {
+			if len(d.Models) > 0 {
+				c, _ := pricer.PriceDay(d)
+				estCost += c
+			}
+		}
+	}
+
+	fmt.Print(render.RenderDashboard(info.Name, data.Summary, data.Daily, data.Path, opts.Weeks, opts.NoColor, estCost))
 }
 
 // allToolOrder is the stable display order shared by the leaderboard and the

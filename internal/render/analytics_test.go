@@ -89,7 +89,7 @@ func TestRenderStats_SummaryAndHistogram(t *testing.T) {
 	}
 	rep.OutlierThreshold = 50
 	out := RenderStats(rep, true)
-	for _, want := range []string{"stats", "Active days", "Median", "p90", "Monday", "Distribution", "#", "Top days", "Outliers above", "2026-09-11"} {
+	for _, want := range []string{"stats", "Active days", "Median", "p90", "Monday", "Distribution", "█", "Top days", "Outliers above", "2026-09-11"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("expected %q in output:\n%s", want, out)
 		}

@@ -304,7 +304,7 @@ func loadDshSingleFile(path string) ([]dshSessionResult, error) {
 // and attributes projects and models.
 func LoadDshData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
-	summary.Tool = "dsh"
+	summary.Tool = "DeepSeek (DSH)"
 
 	info, err := os.Stat(dataDir)
 	if err != nil {

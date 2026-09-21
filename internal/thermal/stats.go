@@ -78,6 +78,9 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 			byDay[day.Day] += value
 			continue
 		}
+		if isActivityOnly(day) {
+			continue
+		}
 		byDay[day.Day] += float64(day.Tokens)
 	}
 	// Rows arrive per tool per day, so sum them before describing a day.

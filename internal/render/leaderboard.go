@@ -101,8 +101,16 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 					return a.TotalActivity > b.TotalActivity
 				}
 			case "cost":
-				if a.Summary.Cost != b.Summary.Cost {
-					return a.Summary.Cost > b.Summary.Cost
+				aCost := a.Summary.Cost
+				if aCost == 0 && estimate {
+					aCost = a.EstimatedCost
+				}
+				bCost := b.Summary.Cost
+				if bCost == 0 && estimate {
+					bCost = b.EstimatedCost
+				}
+				if aCost != bCost {
+					return aCost > bCost
 				}
 			}
 			if a.CurrentStreak != b.CurrentStreak {
@@ -166,6 +174,12 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 					costStr = fmt.Sprintf("$%.4f", r.Summary.Cost)
 				} else {
 					costStr = fmt.Sprintf("$%.2f", r.Summary.Cost)
+				}
+			} else if estimate && r.EstimatedCost > 0 {
+				if r.EstimatedCost < 0.01 {
+					costStr = fmt.Sprintf("~$%.4f", r.EstimatedCost)
+				} else {
+					costStr = fmt.Sprintf("~$%.2f", r.EstimatedCost)
 				}
 			}
 
@@ -240,25 +254,35 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		}
 	}
 
-	// Cost provenance. The leaderboard prints recorded cost only, which is not
-	// the number a report prints: reports estimate the days a source left
-	// blank. Saying so here stops the two from looking like a bug.
+	// Cost provenance: distinguish recorded cost from estimated cost.
 	var recorded float64
+	var estimated float64
 	recording := 0
+	estimating := 0
 	for _, r := range results {
 		if r.Summary.Cost > 0 {
 			recorded += r.Summary.Cost
 			recording++
+		} else if estimate && r.EstimatedCost > 0 {
+			estimated += r.EstimatedCost
+			estimating++
 		}
 	}
-	if recording > 0 {
-		line := fmt.Sprintf("Recorded cost: %s from %d tools.", formatCost(recorded), recording)
-		if estimate {
-			line += " Reports estimate the rest from pricing data; the leaderboard does not."
-		} else {
-			line += " Estimates are off. Reports would show the same figure."
+	if recording > 0 || estimating > 0 {
+		var parts []string
+		if recording > 0 {
+			parts = append(parts, fmt.Sprintf("Recorded cost: %s from %d tools.", formatCost(recorded), recording))
 		}
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(line)))
+		if estimate {
+			if estimating > 0 {
+				parts = append(parts, fmt.Sprintf("Estimated: ~%s across %d tools (~ prefix).", formatCost(estimated), estimating))
+			} else {
+				parts = append(parts, "Reports estimate the rest from pricing data; the leaderboard does not.")
+			}
+		} else {
+			parts = append(parts, "Estimates are off. Reports would show the same figure.")
+		}
+		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(strings.Join(parts, " "))))
 	}
 
 	sb.WriteString(fmt.Sprintf("\n  %s\n\n", dim("Keep the heat going. Don't break the streak.")))

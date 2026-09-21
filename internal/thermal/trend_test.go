@@ -77,3 +77,17 @@ func TestAggregateTrendEmpty(t *testing.T) {
 		t.Errorf("empty trend = %+v", rep)
 	}
 }
+
+func TestAggregateTrendExcludesActivityOnly(t *testing.T) {
+	days := []DailyRow{
+		{Day: "2026-09-01", Tokens: 1000, Turns: 1, Input: 800, Output: 200},
+		{Day: "2026-09-02", Tokens: 417, Turns: 417}, // activity-only
+	}
+	rep := AggregateTrend(days, TrendOptions{Metric: "tokens"}, nil)
+	if len(rep.Points) != 1 {
+		t.Fatalf("expected 1 point, got %d", len(rep.Points))
+	}
+	if rep.Mean != 1000 {
+		t.Errorf("expected mean 1000, got %v", rep.Mean)
+	}
+}
