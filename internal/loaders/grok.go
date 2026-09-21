@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -63,12 +64,13 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 		lastTs     int64
 	}
 	type fileResult struct {
-		sessionID string
-		agent     string
-		project   string
-		turns     []turnAgg
-		duration  int64 // ms, from summary.json sidecar
-		warning   string
+		sessionID    string
+		agent        string
+		project      string
+		turns        []turnAgg
+		duration     int64 // ms, from summary.json sidecar
+		dupesRemoved int
+		warning      string
 	}
 
 	results := make(chan fileResult, len(files))
@@ -91,6 +93,7 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 				return
 			}
 
+			seenTurns := make(map[string]struct{})
 			scanner := newJSONLScanner(f)
 			for scanner.Scan() {
 				line := strings.TrimSpace(scanner.Text())
@@ -100,10 +103,17 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 				var rec struct {
 					Timestamp int64  `json:"timestamp"`
 					Method    string `json:"method"`
-					Params    struct {
+					Meta      struct {
+						EventID string `json:"eventId"`
+					} `json:"_meta"`
+					Params struct {
 						SessionID string `json:"sessionId"`
 						Update    struct {
 							SessionUpdate string    `json:"sessionUpdate"`
+							PromptID      string    `json:"prompt_id"`
+							PromptIDCamel string    `json:"promptId"`
+							TurnID        string    `json:"turn_id"`
+							TurnIDCamel   string    `json:"turnId"`
 							Usage         grokUsage `json:"usage"`
 						} `json:"update"`
 					} `json:"params"`
@@ -118,6 +128,26 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 				u := rec.Params.Update.Usage
 				if u.TotalTokens == 0 && u.InputTokens == 0 && u.OutputTokens == 0 {
 					continue
+				}
+				turnKey := rec.Params.Update.PromptID
+				if turnKey == "" {
+					turnKey = rec.Params.Update.PromptIDCamel
+				}
+				if turnKey == "" {
+					turnKey = rec.Params.Update.TurnID
+				}
+				if turnKey == "" {
+					turnKey = rec.Params.Update.TurnIDCamel
+				}
+				if turnKey == "" {
+					turnKey = rec.Meta.EventID
+				}
+				if turnKey != "" {
+					if _, seen := seenTurns[turnKey]; seen {
+						res.dupesRemoved++
+						continue
+					}
+					seenTurns[turnKey] = struct{}{}
 				}
 				if res.sessionID == "" {
 					res.sessionID = rec.Params.SessionID
@@ -204,11 +234,13 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 	projectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
 	modelCounts := make(map[string]int64)
 	agentCounts := make(map[string]int)
+	var totalDupes int
 
 	for res := range results {
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
 		}
+		totalDupes += res.dupesRemoved
 		if len(res.turns) == 0 {
 			continue
 		}
@@ -318,6 +350,9 @@ func LoadGrokData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 	if len(agentCounts) > 0 {
 		summary.AgentBreakdown = agentCounts
+	}
+	if totalDupes > 0 {
+		summary.Warnings = append(summary.Warnings, fmt.Sprintf("grok: removed %d duplicate turn(s)", totalDupes))
 	}
 
 	sort.Strings(summary.Warnings)

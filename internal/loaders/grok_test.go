@@ -109,3 +109,64 @@ func TestLoadGrokData_EmptyDir(t *testing.T) {
 		t.Errorf("expected empty result, got sessions=%d rows=%d", sum.Sessions, len(daily))
 	}
 }
+
+func TestLoadGrokData_Deduplication(t *testing.T) {
+	dir := t.TempDir()
+
+	writeGrokSession(t, dir, "proj", "s1",
+		`{"agent_name":"grok-build","created_at":"2026-07-21T21:00:00Z","updated_at":"2026-07-21T21:10:00Z"}`,
+		[]string{
+			// First turn p1
+			`{"timestamp":1784667819,"method":"_x.ai/session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"turn_completed","prompt_id":"p1","usage":{"inputTokens":1000,"outputTokens":100,"totalTokens":1100,"costUsdTicks":1000000000,"modelUsage":{"grok-4.5-build":{"modelCalls":1}}}}}}`,
+			// Duplicate turn p1 (re-streamed or duplicate event)
+			`{"timestamp":1784667820,"method":"_x.ai/session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"turn_completed","prompt_id":"p1","usage":{"inputTokens":1000,"outputTokens":100,"totalTokens":1100,"costUsdTicks":1000000000,"modelUsage":{"grok-4.5-build":{"modelCalls":1}}}}}}`,
+			// Second distinct turn p2
+			`{"timestamp":1784667825,"method":"_x.ai/session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"turn_completed","prompt_id":"p2","usage":{"inputTokens":500,"outputTokens":50,"totalTokens":550,"costUsdTicks":500000000,"modelUsage":{"grok-4.5-build":{"modelCalls":1}}}}}}`,
+			// Duplicate turn p2 via eventId fallback when prompt_id matches
+			`{"timestamp":1784667826,"method":"_x.ai/session/update","params":{"sessionId":"s1","update":{"sessionUpdate":"turn_completed","prompt_id":"p2","usage":{"inputTokens":500,"outputTokens":50,"totalTokens":550,"costUsdTicks":500000000,"modelUsage":{"grok-4.5-build":{"modelCalls":1}}}}}}`,
+		})
+
+	sum, daily, _, err := LoadGrokData(dir)
+	if err != nil {
+		t.Fatalf("LoadGrokData error: %v", err)
+	}
+
+	// Should only count 1100 + 550 = 1650 lifetime tokens (not 1100*2 + 550*2 = 3300)
+	if sum.LifetimeTokens != 1650 {
+		t.Errorf("expected lifetime tokens=1650, got %d", sum.LifetimeTokens)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if daily[0].Turns != 2 {
+		t.Errorf("expected 2 turns, got %d", daily[0].Turns)
+	}
+	if len(sum.Warnings) != 1 || sum.Warnings[0] != "grok: removed 2 duplicate turn(s)" {
+		t.Errorf("expected duplicate warning, got %v", sum.Warnings)
+	}
+
+	// Test fallback identifiers: turn_id and _meta.eventId
+	dir2 := t.TempDir()
+	writeGrokSession(t, dir2, "proj", "s2",
+		`{"agent_name":"grok-build"}`,
+		[]string{
+			`{"timestamp":1784667819,"method":"_x.ai/session/update","params":{"sessionId":"s2","update":{"sessionUpdate":"turn_completed","turn_id":"t1","usage":{"inputTokens":100,"outputTokens":10,"totalTokens":110}}}}`,
+			`{"timestamp":1784667820,"method":"_x.ai/session/update","params":{"sessionId":"s2","update":{"sessionUpdate":"turn_completed","turn_id":"t1","usage":{"inputTokens":100,"outputTokens":10,"totalTokens":110}}}}`,
+			`{"timestamp":1784667821,"method":"_x.ai/session/update","_meta":{"eventId":"ev-1"},"params":{"sessionId":"s2","update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":200,"outputTokens":20,"totalTokens":220}}}}`,
+			`{"timestamp":1784667822,"method":"_x.ai/session/update","_meta":{"eventId":"ev-1"},"params":{"sessionId":"s2","update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":200,"outputTokens":20,"totalTokens":220}}}}`,
+		})
+
+	sum2, daily2, _, err2 := LoadGrokData(dir2)
+	if err2 != nil {
+		t.Fatalf("LoadGrokData error: %v", err2)
+	}
+	if sum2.LifetimeTokens != 330 {
+		t.Errorf("expected lifetime tokens=330, got %d", sum2.LifetimeTokens)
+	}
+	if len(daily2) != 1 || daily2[0].Turns != 2 {
+		t.Errorf("expected 2 turns, got %v", daily2)
+	}
+	if len(sum2.Warnings) != 1 || sum2.Warnings[0] != "grok: removed 2 duplicate turn(s)" {
+		t.Errorf("expected 2 removed turns warning, got %v", sum2.Warnings)
+	}
+}
