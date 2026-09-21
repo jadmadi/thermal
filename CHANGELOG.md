@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/jadmadi/thermal/compare/v0.10.0...v0.11.0) (2026-09-21)
+
+
+### Features
+
+* **analytics,render:** expose disjoint token composition and cache efficiency metrics (goals/cache-efficiency-metrics/goal.md) ([6e070bd](https://github.com/jadmadi/thermal/commit/6e070bd87108f8b6994d5adaeba7e5cff1d4cc48))
+* **loaders:** add Nous Hermes agent loader and registry (goals/hermes-loader/goal.md) ([9e90d01](https://github.com/jadmadi/thermal/commit/9e90d017e24a4a4cdd04bcdd9b32f166a824b941))
+* **loaders:** add prompt-level turn deduplication to Grok loader ([e589226](https://github.com/jadmadi/thermal/commit/e5892265a86dd65f07b7ab1dfb5df6e34543bab8))
+* **loaders:** implement message-level deduplication in Claude Code loader (goals/claude-message-dedupe/goal.md) ([104ba23](https://github.com/jadmadi/thermal/commit/104ba23a39bdaacfe4d16e9e34d4dbbe2ed61da8))
+
 ## [0.10.0](https://github.com/jadmadi/thermal/compare/v0.9.1...v0.10.0) (2026-09-21)
 
 
