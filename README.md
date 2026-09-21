@@ -1,5 +1,10 @@
 # Thermal
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/jadmadi/thermal)](https://goreportcard.com/report/github.com/jadmadi/thermal)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/jadmadi/thermal)](https://pkg.go.dev/github.com/jadmadi/thermal)
+[![CI](https://github.com/jadmadi/thermal/actions/workflows/ci.yml/badge.svg)](https://github.com/jadmadi/thermal/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 > Don't break the streak.
 
 GitHub-style contribution heatmap for AI coding tools.
@@ -147,6 +152,8 @@ thermal weekly --order asc --start-of-week monday
 thermal weekly --json
 ```
 
+![Thermal weekly report](docs/pages/shot-weekly.webp)
+
 Daily, weekly, and monthly tables list token-bearing periods only: days with
 no classified tokens, no recorded cost, and no model attribution (pure step
 or message counts, empty sessions) are skipped so the Tokens column and the
@@ -234,6 +241,8 @@ thermal projects --top 10
 # JSON carries every project and the full path
 thermal projects --json
 ```
+
+![Thermal projects report](docs/pages/shot-projects.webp)
 
 ```
   Thermal · projects
