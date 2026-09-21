@@ -14,7 +14,7 @@ var toolOrder = []thermal.Tool{
 	thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin,
 	thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode,
 	thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid,
-	thermal.ToolDsh,
+	thermal.ToolDsh, thermal.ToolHermes,
 }
 
 // Range is the window a view aggregates over.

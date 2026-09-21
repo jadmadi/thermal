@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thermal docs</title>
-<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 13 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
+<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0B0E13">
 <meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Thermal">
 <meta property="og:title" content="Thermal — contribution heatmap for AI coding tools">
-<meta property="og:description" content="Streaks, tokens, and cost across thirteen AI coding tools, rendered in your terminal.">
+<meta property="og:description" content="Streaks, tokens, and cost across fourteen AI coding tools, rendered in your terminal.">
 <meta property="og:url" content="https://thermal.jadmadi.net/">
 <meta property="og:image" content="https://thermal.jadmadi.net/og.png">
 <meta property="og:image:width" content="1200">
@@ -607,7 +607,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "license": "https://github.com/jadmadi/thermal/blob/main/LICENSE",
       "codeRepository": "https://github.com/jadmadi/thermal",
-      "description": "Thermal is a terminal heatmap, streak, token, and cost report for thirteen AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), command-code, and Agy already write, and never modifies them.",
+      "description": "Thermal is a terminal heatmap, streak, token, and cost report for fourteen AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy already write, and never modifies them.",
       "featureList": [
         "Contribution heatmap and streak tracking per tool",
         "Daily, weekly, and monthly token and cost reports",
@@ -670,7 +670,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
         <p class="lede">
           Thermal reads the session databases your AI coding tools already
           write, and renders <strong>streaks, tokens, and cost</strong> as a
-          heatmap in the terminal. Thirteen tools, one table. Nothing to
+          heatmap in the terminal. Fourteen tools, one table. Nothing to
           configure, and nothing written back to your data.
         </p>
         <div class="cmd wrap">
@@ -681,7 +681,7 @@ thermal</code></pre>
         <div class="hero-actions">
           <a class="hero-link" href="#leaderboard"><span>Leaderboard ↓</span></a>
           <a class="hero-link" href="#reports"><span>Reports ↓</span></a>
-          <a class="hero-link" href="#tools"><span>13 tools ↓</span></a>
+          <a class="hero-link" href="#tools"><span>14 tools ↓</span></a>
           <a class="hero-link" href="https://github.com/jadmadi/thermal" rel="noopener noreferrer"><span>GitHub ↗</span></a>
         </div>
       </div>
@@ -805,7 +805,7 @@ thermal version</code></pre>
       <div>
         <h3>What are the agents costing me?</h3>
         <p>
-          Spend sits in thirteen different places, and none of them show a total.
+          Spend sits in fourteen different places, and none of them show a total.
           Two of them record no cost at all.
         </p>
         <p class="fix">
@@ -1370,7 +1370,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
           <tr>
             <td><a href="https://github.com/jadmadi/thermal" rel="noopener noreferrer">thermal</a></td>
             <td class="mono">Go</td>
-            <td>Heatmap and streaks first, with reports underneath. Thirteen tools, one static binary, no runtime.</td>
+            <td>Heatmap and streaks first, with reports underneath. Fourteen tools, one static binary, no runtime.</td>
             <td>No per-session view and no five-hour billing windows yet.</td>
           </tr>
           <tr>
@@ -1418,7 +1418,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
 
     <div class="tbl-wrap">
       <table>
-        <caption>Thirteen tools. Names link to the project's own page. Aliases work anywhere a tool name does.</caption>
+        <caption>Fourteen tools. Names link to the project's own page. Aliases work anywhere a tool name does.</caption>
         <thead>
           <tr><th>Tool</th><th>Aliases</th><th>Metrics</th></tr>
         </thead>
@@ -1477,6 +1477,11 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
             <td><a href="https://github.com/deepseek-ai" rel="noopener noreferrer">DeepSeek (DSH)</a></td>
             <td class="mono">dsh, deepseek, deepseek-harness</td>
             <td>Tokens, sessions, models, projects</td>
+          </tr>
+          <tr>
+            <td><a href="https://nousresearch.com" rel="noopener noreferrer">Nous Hermes</a></td>
+            <td class="mono">hermes, nous, nous-hermes</td>
+            <td>Tokens, sessions, cost, models, projects</td>
           </tr>
           <tr>
             <td><a href="https://commandcode.ai" rel="noopener noreferrer">command-code</a></td>
@@ -1593,6 +1598,7 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
               <tr><td class="mono">--json</td><td class="mono">off</td><td>Machine-readable output on stdout.</td></tr>
               <tr><td class="mono">--no-color</td><td class="mono">off</td><td>Strip ANSI colour, for logs and CI.</td></tr>
               <tr><td class="mono">DSH_HOME</td><td class="mono">~/.dsh</td><td>Environment variable. Sets the DeepSeek harness (dsh) data root.</td></tr>
+              <tr><td class="mono">HERMES_HOME</td><td class="mono">~/.hermes</td><td>Environment variable. Sets the Nous Hermes data root.</td></tr>
               <tr><td class="mono">GROK_HOME</td><td class="mono">~/.grok</td><td>Environment variable. Sets the Grok data root; the only path a tool lets you move today.</td></tr>
               <tr><td class="mono">--verbose</td><td class="mono">off</td><td>Non-fatal loader warnings to stderr. stdout stays clean.</td></tr>
               <tr><td class="mono">--offline</td><td class="mono">off</td><td>Use cached prices, never fetch. Reports only.</td></tr>
@@ -1636,8 +1642,8 @@ thermal: --top only applies to the projects and models commands</code></pre>
       <div>
         <div class="faq-q">Which tools does it support?</div>
         <p>
-          Thirteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
-          Claude, Muse, Droid, DeepSeek (DSH), command-code, and Agy. Activity-only tools rank
+          Fourteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
+          Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy. Activity-only tools rank
           separately from tools that record tokens.
         </p>
       </div>
@@ -1944,7 +1950,7 @@ thermal: --top only applies to the projects and models commands</code></pre>
       "name": "Which AI coding tools does thermal support?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Thirteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
+        "text": "Fourteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
       }
     },
     {

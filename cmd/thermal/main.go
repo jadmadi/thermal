@@ -72,6 +72,7 @@ Supported tools:
   claude        Claude Code
   droid         Droid (Factory)
   dsh           DeepSeek (DSH)
+  hermes        Nous Hermes
 
 Options:
   --tool <name>      Tool to show (default: all)
@@ -113,7 +114,7 @@ func parseArgs() thermal.Options {
 	}
 
 	var opts thermal.Options
-	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, devin, agy, command-code, codewhale, zcode, grok, muse, claude, droid, dsh")
+	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, devin, agy, command-code, codewhale, zcode, grok, muse, claude, droid, dsh, hermes")
 	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
 	flag.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
@@ -615,7 +616,7 @@ var allToolOrder = []thermal.Tool{
 	thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin,
 	thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode,
 	thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid,
-	thermal.ToolDsh,
+	thermal.ToolDsh, thermal.ToolHermes,
 }
 
 // toolHasData reports whether the tool's database or data directory exists.

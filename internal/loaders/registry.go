@@ -107,7 +107,20 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			DataSubdir: "storages",
 			Loader:     LoadDshData,
 		},
+		thermal.ToolHermes: {
+			DBPath:  filepath.Join(hermesHomeDir(home), "state.db"),
+			DataDir: hermesHomeDir(home),
+			Name:    "Nous Hermes",
+			Loader:  LoadHermesData,
+		},
 	}
+}
+
+func hermesHomeDir(home string) string {
+	if env := os.Getenv("HERMES_HOME"); env != "" {
+		return env
+	}
+	return filepath.Join(home, ".hermes")
 }
 
 func dshHomeDir(home string) string {
@@ -149,6 +162,9 @@ var toolAliases = map[string]thermal.Tool{
 	"dsh":              thermal.ToolDsh,
 	"deepseek":         thermal.ToolDsh,
 	"deepseek-harness": thermal.ToolDsh,
+	"hermes":           thermal.ToolHermes,
+	"nous":             thermal.ToolHermes,
+	"nous-hermes":      thermal.ToolHermes,
 	"all":              thermal.ToolAll,
 	"auto":             thermal.ToolAuto,
 }
@@ -162,7 +178,7 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 
 func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error) {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
 		p := dbPath
 		if p == "" {
 			p = info.DBPath
@@ -216,6 +232,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  claude               Claude Code")
 			fmt.Fprintln(os.Stderr, "  droid                Droid (Factory)")
 			fmt.Fprintln(os.Stderr, "  dsh, deepseek        DeepSeek (DSH)")
+			fmt.Fprintln(os.Stderr, "  hermes, nous         Nous Hermes")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -223,14 +240,13 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid, thermal.ToolDsh} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid, thermal.ToolDsh, thermal.ToolHermes} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {
 				return t
 			}
-		}
-		if info.DataDir != "" {
+		} else if info.DataDir != "" {
 			if _, err := os.Stat(info.DataDir); err == nil {
 				return t
 			}

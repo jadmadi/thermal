@@ -35,12 +35,13 @@ thermal
 | **Claude** | JSONL session transcripts | Token usage, sessions, model breakdown |
 | **Droid** | JSONL session transcripts | Message activity, sessions |
 | **DeepSeek (DSH)** | JSON session cache (`~/.dsh/storages`) | Token usage, sessions, model breakdown |
+| **Nous Hermes** | SQLite DB (`~/.hermes/state.db`) | Token usage, sessions, cost, model breakdown |
 | **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
 | **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
-Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`, `dsh`, `deepseek`.
+Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`, `dsh`, `deepseek`, `hermes`, `nous`.
 
 ## Install
 
@@ -259,7 +260,7 @@ thermal projects --json
 
 The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
 
-Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, and DeepSeek (DSH). Agy records no project.
+Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, DeepSeek (DSH), and Nous Hermes. Agy records no project.
 
 ## Models
 
@@ -528,6 +529,7 @@ Thermal reads usage data from installed AI coding tools:
 - **Claude**: Scans `projects/*/*.jsonl` for assistant `message.usage` token counts and model ids. No cost fields exist in transcripts
 - **Droid**: Scans `sessions/*/*.jsonl` message records for activity. Session files carry no token or cost telemetry
 - **DeepSeek (DSH)**: Reads JSON session cache files from `~/.dsh/storages/session_projcache/sessions/*.json` (and `session_projcache.json`) for fine-grained token usage (`uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`), turn counts, and model tracking. Honors `DSH_HOME`, falls back to `~/.dsh`
+- **Nous Hermes**: Reads the SQLite database from `~/.hermes/state.db` (honoring `HERMES_HOME`) for sessions, disjoint token usage (input, output, cache read/write, reasoning), cost estimates, and per-model breakdowns
 
 Loaders also record per-day token types, recorded cost, and the models used, where the source provides them. Period reports fold those day rows.
 
