@@ -27,10 +27,18 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 19
+- **Total Goals**: 20
 - 🟢 **Implemented & Verified**: 19
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 108/108 completed (100%)
+- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 108/121 completed (89%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :--- | :--- | :--- |
+| [`workload-replay`](workload-replay/goal.md) | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
 
 ---
 
