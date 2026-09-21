@@ -9,6 +9,10 @@
 # IDE
 .idea/
 .vscode/
+.devin/
+.devin
+.cursor/
+.cursor
 *.swp
 *.swo
 

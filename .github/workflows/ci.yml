@@ -37,3 +37,6 @@ jobs:
 
       - name: Verify Build
         run: go build -v ./cmd/thermal
+
+      - name: Simulated User Testing Release Gate
+        run: ./scripts/simulated_user_gate.sh
