@@ -43,11 +43,17 @@ if [[ ! -d "${HOME}/.gemini/antigravity-cli" && ! -d "${HOME}/.codewhale" && ! -
     mkdir -p "${MOCK_HOME}/.codewhale/sessions"
     mkdir -p "${MOCK_HOME}/.claude/projects/mockproj"
 
+    NOW_SEC=$(date +%s)
+    RECENT_MS=$(( (NOW_SEC - 86400) * 1000 ))
+    RECENT_ISO=$(date -u -d "@$((NOW_SEC - 86400))" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+
     cat <<EOF > "${MOCK_HOME}/.codewhale/sessions/session_1.json"
 {
   "session_id": "gate-sess-1",
-  "timestamp": 1726000000000,
   "metadata": {
+    "created_at": "${RECENT_ISO}",
+    "updated_at": "${RECENT_ISO}",
+    "message_count": 10,
     "total_tokens": 750000,
     "cost": { "session_cost_usd": 1.75 },
     "model": "claude-3-5-sonnet",
@@ -58,7 +64,7 @@ if [[ ! -d "${HOME}/.gemini/antigravity-cli" && ! -d "${HOME}/.codewhale" && ! -
 EOF
 
     cat <<EOF > "${MOCK_HOME}/.claude/projects/mockproj/session.jsonl"
-{"type":"message","timestamp":"2026-09-18T10:00:00Z","cwd":"${MOCK_REPO}","message":{"usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000},"model":"claude-3-5-sonnet"}}
+{"type":"assistant","timestamp":"${RECENT_ISO}","cwd":"${MOCK_REPO}","message":{"id":"gate-msg-1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000}}}
 EOF
     export HOME="${MOCK_HOME}"
     echo -e "   ${GREEN}✔${RESET} Mock fixture environment ready at: ${MOCK_HOME}\n"

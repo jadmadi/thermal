@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -43,38 +44,46 @@ func setupMockHome(homeDir string) {
 	mockRepo := filepath.Join(homeDir, "projects", "repo-alpha")
 	_ = os.MkdirAll(filepath.Join(mockRepo, ".git"), 0755)
 
+	now := time.Now()
+	recentISO := now.AddDate(0, 0, -1).Format(time.RFC3339)
+
 	// Create CodeWhale session
 	cwDir := filepath.Join(homeDir, ".codewhale", "sessions")
 	_ = os.MkdirAll(cwDir, 0755)
 	cwSession := fmt.Sprintf(`{
 		"session_id": "sim-sess-1",
-		"timestamp": 1726000000000,
 		"metadata": {
+			"created_at": %q,
+			"updated_at": %q,
+			"message_count": 10,
 			"total_tokens": 524000,
 			"cost": { "session_cost_usd": 1.25 },
 			"model": "claude-3-5-sonnet",
 			"mode": "chat",
 			"workspace": %q
 		}
-	}`, mockRepo)
+	}`, recentISO, recentISO, mockRepo)
 	_ = os.WriteFile(filepath.Join(cwDir, "session_1.json"), []byte(cwSession), 0644)
 
 	// Create Claude project transcript
 	claudeDir := filepath.Join(homeDir, ".claude", "projects", "proj1")
 	_ = os.MkdirAll(claudeDir, 0755)
-	claudeTranscript := fmt.Sprintf(`{"type":"message","timestamp":"2026-09-18T10:00:00Z","cwd":%q,"message":{"usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000},"model":"claude-3-5-sonnet"}}`+"\n", mockRepo)
+	claudeTranscript := fmt.Sprintf(`{"type":"assistant","timestamp":%q,"cwd":%q,"message":{"id":"msg-sim-1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000}}}`+"\n", recentISO, mockRepo)
 	_ = os.WriteFile(filepath.Join(claudeDir, "session.jsonl"), []byte(claudeTranscript), 0644)
 }
 
 func runSim(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
 	cmd := exec.Command(testThermalBin, args...)
-	// If running on host with real tool data, use host environment; otherwise fallback to testFixtureHome
-	if _, err := os.Stat(os.ExpandEnv("$HOME/.codewhale")); os.IsNotExist(err) {
-		if _, err2 := os.Stat(os.ExpandEnv("$HOME/.gemini/antigravity-cli")); os.IsNotExist(err2) {
-			cmd.Env = append(os.Environ(), "HOME="+testFixtureHome)
+
+	// Always filter and explicitly set HOME so subprocesses see testFixtureHome
+	var env []string
+	for _, e := range os.Environ() {
+		if !strings.HasPrefix(e, "HOME=") {
+			env = append(env, e)
 		}
 	}
+	cmd.Env = append(env, "HOME="+testFixtureHome)
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
