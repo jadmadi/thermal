@@ -259,7 +259,7 @@ thermal projects --json
 
 The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
 
-Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, and dsh. Agy records no project.
+Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, and DeepSeek (DSH). Agy records no project.
 
 ## Models
 
@@ -293,54 +293,143 @@ thermal models --json
 
 Cost in this view is always an estimate from models.dev list prices, because recorded cost belongs to a session or a day, never to one model. Model names are compared case insensitively, so `GLM-5.3-Flash` from ZCode and `glm-5.3-flash` from OpenCode count as one model.
 
+## Analytics: mix, stats, trend
+
+Beyond tabular period reports, Thermal provides three analytical lenses into agent usage:
+
+### `thermal stats`
+Daily volume distribution, statistical percentiles (p50/median, p90, mean, max), weekday profile, and outlier detection:
+
+```bash
+thermal stats
+thermal stats --metric cost       # daily spend distribution
+thermal opencode stats            # single tool stats
+```
+
+```
+  Thermal · stats · tokens
+
+  Active days  67
+  Total        32.8B
+  Mean         489.2M
+  Median       306.6M
+  p90          1.2B
+  Max          2.2B
+
+  Weekday profile
+  Sunday          462.5M  ██████████······   10 days
+  Monday          451.6M  ██████████······   11 days
+  Tuesday         342.8M  ████████········    8 days
+  Wednesday       618.9M  ██████████████··   10 days
+  Thursday        674.8M  ████████████████   10 days
+  Friday          477.2M  ███████████·····    9 days
+  Saturday        356.5M  ████████········    9 days
+
+  Distribution
+       0 — 224.5M  ████████████████████████    28
+  224.5M — 449.1M  █████████···············    11
+  449.1M — 673.6M  ██████··················     8
+  673.6M — 898.2M  ████████················    10
+    898.2M — 1.1B  █·······················     2
+      1.1B — 1.3B  █·······················     2
+      1.3B — 1.6B  █·······················     2
+      1.6B — 1.8B  ························     0
+      1.8B — 2.0B  ██······················     3
+      2.0B — 2.2B  █·······················     1
+
+  Top days
+  2026-08-31         2.2B (outlier)
+  2026-09-17         2.0B (outlier)
+  2026-08-07         1.9B (outlier)
+  2026-09-16         1.8B (outlier)
+  2026-09-12         1.5B (outlier)
+
+  Outliers above 888.7M (median + 2 MAD): all 5 top days above, plus 5 more
+```
+
+### `thermal mix`
+Tool or model market-share evolution over time, dominant tool identification, tool switching frequency, and Shannon entropy spread:
+
+```bash
+thermal mix                       # tool mix by week
+thermal mix --grain month         # monthly mix
+thermal mix --by model            # model mix
+thermal mix --metric cost         # spend share mix
+```
+
+```
+  Thermal · mix · by tool · tokens
+
+  Period        Devin         OpenCode      MiMoCode      Codex         other (4)          Total
+  ──────────────────────────────────────────────────────────────────────────────────────────────
+  2026-07       99%           0%            0%            0%            0%                  1.8B
+  2026-08       85%           4%            7%            4%            0%                 16.3B
+  2026-09       24%           68%           0%            2%            6%                 14.6B
+  ──────────────────────────────────────────────────────────────────────────────────────────────
+  Total         59%           32%           4%            3%            3%                 32.8B
+
+  Dominant   Devin
+  Switches   24 (2 in 2026-06, 3 in 2026-07, 9 in 2026-08, 10 in 2026-09)
+  Spread     0.45 (1 = one tool, 0 = even spread)
+```
+
+### `thermal trend`
+Ordinary least squares linear regression over daily activity with projection and confidence band to the next period end:
+
+```bash
+thermal trend
+thermal trend --metric cost
+thermal devin trend
+```
+
+```
+  Thermal · trend · tokens
+
+  Range        2025-09-26 to 2026-09-21
+  Days         361
+  Mean         90.8M
+  Slope        +1.3M per day
+  Direction    rising
+
+  Projection to 2026-09-30 (9 days)
+  Expected     336.3M
+  Band         0 to 855.4M
+```
+
 ## Where the cost numbers come from
 
-Two commands answer different questions, and their totals do not match by design.
+Thermal displays cost figures from two sources:
 
-`thermal` prints **recorded** cost only: what each tool wrote into its own
-database. Nothing is estimated, and a tool that records no cost shows a dash.
-A line above the footer states the sum, so you never have to add the column up.
+- **Recorded cost**: What tools wrote directly into their databases (OpenCode, MiMoCode, codewhale, Grok).
+- **Estimated cost**: For tools that record tokens and models but no dollar spend (ZCode, Codex, Devin, DeepSeek (DSH), Claude), Thermal estimates cost using current list prices from [models.dev](https://models.dev). Estimated values are prefixed with `~` (for example, `~$24.97` on the leaderboard or `~$20134.07 spent (est)` on single-tool views).
 
-`thermal projects`, `models`, `daily`, `weekly`, and `monthly` print a **total**
-that fills the gap, because a report whose total is missing most of its rows is
-not useful. The footer names the split:
+On the default leaderboard, a footer details both amounts:
 
 ```
-Total = $112.41 recorded + ~$557.87 estimated from pricing data.
+Recorded cost: $118.57 from 4 tools. Estimated: ~$20621.71 across 4 tools (~ prefix).
 ```
 
-On the same machine and window, that is why the leaderboard can read `$112.41`
-while projects reads `$670.28`: same data, different question. To make the two
-agree exactly, run the report with `--no-estimate`, which drops the estimate and
-the footer with it. `--no-estimate` works on the leaderboard too, where it only
-changes the note.
+In period reports (`daily`, `weekly`, `monthly`), `projects`, and `models`, Thermal combines recorded and estimated costs into a unified total, disclosing the split in the footer:
 
-Model cost is always an estimate, because recorded cost belongs to a session or
-a day and never to one model.
+```
+Total = $118.57 recorded + ~$557.87 estimated from pricing data.
+```
 
-The estimate is not a floor. It covers a day only when the source names a model
-and that model has a price. Anything else is stated rather than guessed:
+To view recorded costs only and skip all estimates, pass `--no-estimate`.
 
-- Tokens from a day with no model are counted in the total and named in the
-  footer, so an estimate never reads as complete when part of it could not be
-  priced.
-- Models the catalog cannot find are named in the `No pricing for` line rather
-  than counted as free. A tool often records the variant it asked for, such as
-  `claude-sonnet-5-high`, while the catalog prices the base model, so a short
-  list of tier words (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco` and
-  similar) is stripped before the lookup. Only one word is stripped, so two
-  different models can never collapse onto one price.
-- A model the catalog genuinely lacks, such as Devin's `swe-1-7`, stays
-  unpriced. Give it a price in `~/.config/thermal/pricing.json` and the total
-  picks it up on the next run.
+Model cost is always an estimate, because recorded cost belongs to a session or a day and never to one model.
 
-Tools that record no tokens at all, such as Agy, Droid and command-code, report
-steps or messages instead. Those counts stay out of token totals and appear in
-the Activity Hunters leaderboard and in streaks, where they belong.
+The estimate is not a floor. It covers a day only when the source names a model and that model has a price. Anything else is stated rather than guessed:
+
+- Tokens from a day with no model are counted in the total and named in the footer, so an estimate never reads as complete when part of it could not be priced.
+- Models the catalog cannot find are named in the `No pricing for` line rather than counted as free. A tool often records the variant it asked for, such as `claude-sonnet-5-high`, while the catalog prices the base model, so a short list of tier words (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco` and similar) is stripped before the lookup. Only one word is stripped, so two different models can never collapse onto one price.
+- A model the catalog genuinely lacks, such as Devin's `swe-1-7`, stays unpriced. Give it a price in `~/.config/thermal/pricing.json` and the total picks it up on the next run.
+
+Tools that record no tokens at all, such as Agy, Droid and command-code, report steps or messages instead. Those counts stay out of token totals and appear in the Activity Hunters leaderboard and in streaks, where they belong.
 
 ## Cost estimation
 
-Cost comes from what each tool records. When a source records none but names the models (Claude, Codex, ZCode, and Grok turns that used a single model), thermal estimates it from the [models.dev](https://models.dev) catalog and marks the estimated share below the table. Recorded cost always wins over an estimate, and sources with no model names, such as Devin, stay unpriced. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
+When a source records no cost but names the models (Claude, Codex, ZCode, Devin, DeepSeek (DSH), and Grok turns that used a single model), Thermal estimates spend from the [models.dev](https://models.dev) catalog. Recorded cost always wins over an estimate. Models with no price, including subscription-only models, appear in a "No pricing for" line instead of being treated as free.
 
 ```bash
 # Cached pricing only, never touch the network
@@ -366,19 +455,27 @@ Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hour
   Token Warriors
    #    Tool           Strk    Best    Days     Tokens      Cost
    ─────────────────────────────────────────────────────────────────
-   1. Devin             38d     38d     67d   57.2B tok   —
-   2. OpenCode           2d     10d     46d   1.8B tok    $234.37
-   3. MiMoCode           1d      7d     23d   1.7B tok    $419.00
-   4. Codex              1d      2d      9d   44.0M tok   —
-   5. codewhale          1d      1d      1d   22.7K tok   $0.0032
+   1. ZCode              6d      6d      8d   860.3M tok  ~$24.97
+   2. Devin              2d     33d     45d   19.2B tok   ~$20134.07
+   3. Codex              2d      7d     45d   978.6M tok  ~$462.60
+   4. OpenCode           1d     11d     28d   10.5B tok   $61.97
+   5. MiMoCode           1d      7d     16d   1.2B tok    $56.14
+   6. DeepSeek (DSH)     1d      1d      5d   18.0M tok   ~$0.07
+   7. Grok               1d      1d      1d   692.7K tok  $0.44
+   8. codewhale          1d      1d      3d   110.1K tok  $0.02
+   9. Claude             1d      1d      3d   0 tok       —
 
   Activity Hunters
    #    Tool           Strk    Best    Days     Activity
    ───────────────────────────────────────────────────────
-   1. Agy               32d     32d     39d   56.9K step
-   2. command-code       1d      9d     28d   5.6K msg
+   1. Agy               40d     40d     47d   76.7K step
+   2. command-code       1d      9d     46d   10.8K msg
+   3. Droid              1d      1d      2d   14 msg
+   4. Muse               1d      1d      1d   1 prompt
 
-  >> Devin is on fire with a 38-day streak!
+  >> Agy is on fire with a 40-day streak!
+
+  Recorded cost: $118.57 from 4 tools. Estimated: ~$20621.71 across 4 tools (~ prefix).
 
   Keep the heat going. Don't break the streak.
 ```

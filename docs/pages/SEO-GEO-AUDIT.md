@@ -74,14 +74,14 @@ The category is crowded and growing. Search for the obvious terms surfaces:
 | goccc | Go | 1 tool | Claude Code only, statusline provider |
 | VibeUsage | Node | 7 tools | Cloud sync, public profiles |
 | aiusage | TypeScript | 20+ tools | Sync across machines, leaderboard |
-| thermal | Go | 12 tools | Contribution heatmap and streaks first |
+| thermal | Go | 13 tools | Contribution heatmap and streaks first |
 
 Where thermal differs, and where the content should push:
 
 1. Heatmap and streaks as the primary view. Every competitor is an accounting
    table first; thermal's default output is the GitHub-style grid.
-2. Twelve tools that most trackers skip: Devin, Muse, Droid, command-code,
-   Agy, codewhale.
+2. Thirteen tools that most trackers skip: Devin, DeepSeek (DSH), Muse, Droid,
+   command-code, Agy, codewhale.
 3. A single static binary with no runtime. ccusage needs bun or node,
    tokscale needs a Rust toolchain or a binary, the Python tools need Python.
 4. Read-only by construction, with the delta cache inside the tool's own

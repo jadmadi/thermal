@@ -83,6 +83,9 @@ Options:
   --order <dir>      Report sort order: asc or desc (default: desc)
   --sort <key>       Ranking key; see Commands above for valid keys per command
   --top <num>        Project or model rows to print, 0 for all (default: 0)
+  --metric <name>    Analytics metric: tokens or cost (default: tokens)
+  --by <dimension>   Mix dimension: tool or model (default: tool)
+  --grain <bucket>   Mix bucket size: day, week, or month (default: week)
   --breakdown        Show per-model rows in reports, per-project detail for projects
   --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
   --start-of-week    Week start day, sunday-saturday (default: sunday)
@@ -90,6 +93,7 @@ Options:
   --no-estimate      Recorded cost only, no pricing estimates (leaderboard and reports)
   --json             Output JSON instead of dashboard
   --no-color         Disable ANSI colors
+  --verbose          Enable verbose diagnostic warnings on stderr
   -h, --help         Show this help`
 }
 
