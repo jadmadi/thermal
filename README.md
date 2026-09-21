@@ -298,7 +298,7 @@ Cost in this view is always an estimate from models.dev list prices, because rec
 Beyond tabular period reports, Thermal provides three analytical lenses into agent usage:
 
 ### `thermal stats`
-Daily volume distribution, statistical percentiles (p50/median, p90, mean, max), weekday profile, and outlier detection:
+Daily volume distribution, statistical percentiles (p50/median, p90, mean, max), weekday profile, token composition & cache efficiency, and outlier detection:
 
 ```bash
 thermal stats
@@ -324,6 +324,14 @@ thermal opencode stats            # single tool stats
   Thursday        674.8M  ████████████████   10 days
   Friday          477.2M  ███████████·····    9 days
   Saturday        356.5M  ████████········    9 days
+
+  Token composition
+  Cache read           31.3B  ████████████████   95.6%
+  Cache write          23.5M  █···············    0.1%
+  Uncached input        1.3B  █···············    4.0%
+  Output               83.9M  █···············    0.3%
+  Reasoning            13.2M  █···············    0.0%
+  Cache hit rate: 95.9% of prompt tokens read from cache
 
   Distribution
        0 — 224.5M  ████████████████████████    28

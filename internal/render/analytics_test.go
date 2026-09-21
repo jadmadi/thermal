@@ -96,6 +96,38 @@ func TestRenderStats_SummaryAndHistogram(t *testing.T) {
 	}
 }
 
+func TestRenderStats_TokenComposition(t *testing.T) {
+	rep := thermal.StatsReport{
+		Type:   "stats",
+		Metric: "tokens",
+		Days:   2,
+		Total:  10000,
+		Composition: &thermal.TokenComposition{
+			UncachedInput: 500,
+			Output:        300,
+			Reasoning:     0,
+			CacheRead:     9000,
+			CacheWrite:    200,
+			Total:         10000,
+			CacheHitRate:  9000.0 / 9700.0,
+		},
+	}
+	out := RenderStats(rep, true)
+	for _, want := range []string{
+		"Token composition",
+		"Cache read",
+		"Cache write",
+		"Uncached input",
+		"Output",
+		"Reasoning",
+		"92.8% of prompt tokens read from cache",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in output:\n%s", want, out)
+		}
+	}
+}
+
 func TestRenderStats_Empty(t *testing.T) {
 	out := RenderStats(thermal.StatsReport{Type: "stats", Metric: "cost"}, true)
 	if !strings.Contains(out, "No activity") {

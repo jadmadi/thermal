@@ -140,3 +140,47 @@ func TestAggregateStatsExcludesActivityOnly(t *testing.T) {
 		t.Errorf("expected total 1000, got %v", rep.Total)
 	}
 }
+
+func TestAggregateStatsTokenComposition(t *testing.T) {
+	days := []DailyRow{
+		{
+			Day:    "2026-09-01",
+			Tokens: 10000,
+			Turns:  5,
+			Input:  500,
+			Output: 300,
+			Cache:  9200,
+			Models: map[string]ModelTokens{
+				"claude-sonnet": {
+					Input:      500,
+					Output:     300,
+					CacheRead:  9000,
+					CacheWrite: 200,
+				},
+			},
+		},
+	}
+	rep := AggregateStats(days, StatsOptions{Metric: "tokens"}, nil)
+	if rep.Composition == nil {
+		t.Fatal("expected Composition to be non-nil")
+	}
+	c := rep.Composition
+	if c.UncachedInput != 500 {
+		t.Errorf("expected uncached input 500, got %d", c.UncachedInput)
+	}
+	if c.Output != 300 {
+		t.Errorf("expected output 300, got %d", c.Output)
+	}
+	if c.CacheRead != 9000 {
+		t.Errorf("expected cache read 9000, got %d", c.CacheRead)
+	}
+	if c.CacheWrite != 200 {
+		t.Errorf("expected cache write 200, got %d", c.CacheWrite)
+	}
+	if c.Total != 10000 {
+		t.Errorf("expected total 10000, got %d", c.Total)
+	}
+	if diff := c.CacheHitRate - (9000.0 / 9700.0); diff > 0.001 || diff < -0.001 {
+		t.Errorf("expected cache hit rate ~0.9278, got %f", c.CacheHitRate)
+	}
+}

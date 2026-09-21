@@ -35,23 +35,36 @@ type HistogramBin struct {
 	Count int     `json:"count"`
 }
 
+// TokenComposition breaks down total tokens into canonical disjoint categories
+// and calculates prompt cache efficiency.
+type TokenComposition struct {
+	UncachedInput int64   `json:"uncachedInput"`
+	Output        int64   `json:"output"`
+	Reasoning     int64   `json:"reasoning"`
+	CacheRead     int64   `json:"cacheRead"`
+	CacheWrite    int64   `json:"cacheWrite"`
+	Total         int64   `json:"total"`
+	CacheHitRate  float64 `json:"cacheHitRate"` // CacheRead / (UncachedInput + CacheRead + CacheWrite)
+}
+
 // StatsReport is the payload behind thermal stats. Percentiles and outliers
 // use active days only, because zero days would drag every percentile to zero.
 type StatsReport struct {
-	Type             string         `json:"type"`
-	Metric           string         `json:"metric"`
-	Days             int            `json:"activeDays"`
-	Total            float64        `json:"total"`
-	Mean             float64        `json:"mean"`
-	Median           float64        `json:"median"`
-	P90              float64        `json:"p90"`
-	Max              float64        `json:"max"`
-	Weekday          []WeekdayStat  `json:"weekday"`
-	TopDays          []DayValue     `json:"topDays"`
-	Outliers         []DayValue     `json:"outliers"`
-	OutlierThreshold float64        `json:"outlierThreshold"`
-	Histogram        []HistogramBin `json:"histogram"`
-	Estimated        bool           `json:"estimatedCost,omitempty"`
+	Type             string            `json:"type"`
+	Metric           string            `json:"metric"`
+	Days             int               `json:"activeDays"`
+	Total            float64           `json:"total"`
+	Mean             float64           `json:"mean"`
+	Median           float64           `json:"median"`
+	P90              float64           `json:"p90"`
+	Max              float64           `json:"max"`
+	Weekday          []WeekdayStat     `json:"weekday"`
+	TopDays          []DayValue        `json:"topDays"`
+	Outliers         []DayValue        `json:"outliers"`
+	OutlierThreshold float64           `json:"outlierThreshold"`
+	Histogram        []HistogramBin    `json:"histogram"`
+	Estimated        bool              `json:"estimatedCost,omitempty"`
+	Composition      *TokenComposition `json:"composition,omitempty"`
 }
 
 const histogramBins = 10
@@ -65,6 +78,13 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 	var values []DayValue
 	estimated := false
 	byDay := make(map[string]float64)
+	var (
+		uncachedInput int64
+		output        int64
+		reasoning     int64
+		cacheRead     int64
+		cacheWrite    int64
+	)
 	for _, day := range days {
 		t, ok := ParseDay(day.Day)
 		if !ok || !inWindow(t, since, until, lastStart) {
@@ -82,6 +102,25 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 			continue
 		}
 		byDay[day.Day] += float64(day.Tokens)
+
+		if len(day.Models) > 0 {
+			for _, m := range day.Models {
+				uncachedInput += m.Input
+				output += m.Output
+				reasoning += m.Reasoning
+				cacheRead += m.CacheRead
+				cacheWrite += m.CacheWrite
+			}
+		} else {
+			uncachedInput += day.Input
+			output += day.Output
+			reasoning += day.Reasoning
+			cacheRead += day.Cache
+			typedSum := day.Input + day.Output + day.Reasoning + day.Cache
+			if day.Tokens > typedSum {
+				uncachedInput += (day.Tokens - typedSum)
+			}
+		}
 	}
 	// Rows arrive per tool per day, so sum them before describing a day.
 	for day, value := range byDay {
@@ -96,6 +135,25 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 		Metric:    metric,
 		Estimated: estimated,
 		Days:      len(values),
+	}
+	if metric == "tokens" {
+		compTotal := uncachedInput + output + reasoning + cacheRead + cacheWrite
+		if compTotal > 0 {
+			var hitRate float64
+			promptTotal := uncachedInput + cacheRead + cacheWrite
+			if promptTotal > 0 {
+				hitRate = float64(cacheRead) / float64(promptTotal)
+			}
+			rep.Composition = &TokenComposition{
+				UncachedInput: uncachedInput,
+				Output:        output,
+				Reasoning:     reasoning,
+				CacheRead:     cacheRead,
+				CacheWrite:    cacheWrite,
+				Total:         compTotal,
+				CacheHitRate:  hitRate,
+			}
+		}
 	}
 	if len(values) == 0 {
 		return rep

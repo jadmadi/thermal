@@ -104,7 +104,11 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	if summary.FilesTouched > 0 {
 		extra = append(extra, fmt.Sprintf("%s files", thermal.CompactNumber(summary.FilesTouched)))
 	}
-	if summary.Sessions > 0 && summary.LongestSessionMs > 0 {
+	if summary.LifetimeTokens > 0 && summary.CacheTokens > 0 {
+		cachePct := float64(summary.CacheTokens) / float64(summary.LifetimeTokens) * 100
+		extra = append(extra, fmt.Sprintf("%.0f%% cache", cachePct))
+	}
+	if summary.Sessions > 0 {
 		extra = append(extra, fmt.Sprintf("%d sessions", summary.Sessions))
 	}
 	if len(extra) > 0 {

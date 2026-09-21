@@ -210,6 +210,52 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		))
 	}
 
+	if rep.Composition != nil && rep.Composition.Total > 0 {
+		c := rep.Composition
+		totalF := float64(c.Total)
+
+		maxPart := float64(c.CacheRead)
+		for _, v := range []int64{c.CacheWrite, c.UncachedInput, c.Output, c.Reasoning} {
+			if float64(v) > maxPart {
+				maxPart = float64(v)
+			}
+		}
+		if maxPart <= 0 {
+			maxPart = 1
+		}
+
+		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Token composition")))
+		type part struct {
+			label string
+			val   int64
+		}
+		parts := []part{
+			{"Cache read", c.CacheRead},
+			{"Cache write", c.CacheWrite},
+			{"Uncached input", c.UncachedInput},
+			{"Output", c.Output},
+			{"Reasoning", c.Reasoning},
+		}
+		for _, p := range parts {
+			share := 0.0
+			if totalF > 0 {
+				share = float64(p.val) / totalF
+			}
+			bar := chartBar(float64(p.val), maxPart, 16, colors)
+			shareLabel := fmt.Sprintf("%5.1f%%", share*100)
+			sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
+				dim(thermal.PadRight(p.label, 15)),
+				thermal.PadLeft(metric(float64(p.val)), 10),
+				bar,
+				dim(shareLabel),
+			))
+		}
+		if c.CacheRead > 0 || c.UncachedInput > 0 || c.CacheWrite > 0 {
+			sb.WriteString(fmt.Sprintf("  %s: %.1f%% of prompt tokens read from cache\n",
+				dim("Cache hit rate"), c.CacheHitRate*100))
+		}
+	}
+
 	if len(rep.Histogram) > 0 {
 		maxCount := 0
 		maxRangeW := 0
