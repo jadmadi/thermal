@@ -74,7 +74,7 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
-p{margin:0}
+p{margin:0;text-wrap:pretty}
 a{
   color:var(--fg);text-decoration:none;
   text-underline-offset:2px;text-decoration-skip-ink:auto;
@@ -144,12 +144,21 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
   .top nav a{font-size:.74rem}
   .top nav a.support{padding:.15rem .4rem}
 }
-@media (max-width:720px){.top nav{display:none}}
+@media (max-width:720px){
+  .top-in{flex-wrap:wrap;padding:var(--s2) var(--s4);gap:var(--s2)}
+  .top nav{
+    width:100%;display:flex;overflow-x:auto;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    padding:var(--s1) 0 var(--s2);margin:0;gap:var(--s3);
+  }
+  .top nav::-webkit-scrollbar{display:none}
+  .top nav a{font-size:.82rem;white-space:nowrap;flex:none}
+}
 
 /* ------------------------------------------------------------------- hero */
 .hero{padding:var(--s9) 0 var(--s8)}
 .hero-grid{
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);
+  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
   gap:var(--s8);align-items:start;
 }
 @media (max-width:940px){.hero-grid{grid-template-columns:1fr;gap:var(--s7)}}
@@ -166,12 +175,36 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
 }
 .hero .lede strong{color:var(--fg);font-weight:600}
 
+.hero-actions{
+  display:flex;flex-wrap:wrap;gap:var(--s3);
+  margin-top:var(--s5);font-size:var(--step--1);font-family:var(--mono);
+}
+.hero-link{
+  color:var(--muted);padding:.35rem .75rem;background:var(--raised);
+  border:1px solid var(--line);border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;gap:.35rem;
+  transition:color var(--motion-fast) var(--ease-out),
+              border-color var(--motion-fast) var(--ease-out),
+              background var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .hero-link:hover{
+    color:var(--fg);border-color:var(--heat-3);
+    background:color-mix(in srgb,var(--heat-1) 16%,var(--raised));
+    text-decoration:none;transform:translateY(-1px);
+  }
+}
+.hero-link:active{transform:translateY(0)}
+
 /* heat panel — the one decorative risk on the page, and it is the product.
    Cell size is a variable so the grid shrinks as one unit, never clipping. */
 .panel{
+  position:relative;
   background:var(--raised);border:1px solid var(--line);
   border-radius:var(--r-lg);padding:var(--s5);
   min-width:0;
+  box-shadow:0 16px 36px -12px rgba(0,0,0,.45);
 }
 .hm{margin:0}
 .hm-ruler{
@@ -195,36 +228,51 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
    at any width instead of forcing a minimum. */
 .hm-cell{
   aspect-ratio:1;border-radius:2px;background:var(--heat-0);
-  display:block;width:100%;
+  display:block;width:100%;cursor:default;
+  transition:transform var(--motion-fast) var(--ease-out),
+             box-shadow var(--motion-fast) var(--ease-out),
+             outline var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .hm-cell:hover{
+    transform:scale(1.38);z-index:5;
+    box-shadow:0 0 10px var(--heat-4);
+    outline:1.5px solid var(--fg);
+  }
 }
 .hm-lv0{background:var(--heat-0)}
 .hm-lv1{background:var(--heat-1)}
 .hm-lv2{background:var(--heat-2)}
 .hm-lv3{background:var(--heat-3)}
 .hm-lv4{background:var(--heat-4)}
+
+@keyframes pulse-today{
+  0%,100%{box-shadow:0 0 0 1.5px var(--heat-4),0 0 12px -2px var(--heat-4)}
+  50%{box-shadow:0 0 0 2.5px var(--heat-4),0 0 22px 2px color-mix(in srgb,var(--heat-4) 75%,transparent)}
+}
+.hm-today{
+  box-shadow:0 0 0 1.5px var(--heat-4),0 0 12px -2px var(--heat-4);
+  animation:pulse-today 2.4s ease-in-out infinite;
+}
+
 /* Windows High Contrast collapses background colours, which would flatten the
    ramp into one shade. The heatmap has a text alternative, so keep its data. */
 @media (forced-colors:active){
   .hm-cell,.hm-foot .hm-cell{forced-color-adjust:none}
-  .hm-today{box-shadow:none;outline:2px solid CanvasText;outline-offset:1px}
+  .hm-today{box-shadow:none;outline:2px solid CanvasText;outline-offset:1px;animation:none}
 }
-.hm-today{box-shadow:0 0 0 1.5px var(--heat-4),0 0 12px -2px var(--heat-4)}
+
 /* Cells are visible by default and only animate when motion is welcome, so a
    failed animation can never leave the heatmap blank. Opacity and background
    only: no transform, which would promote all 371 cells to their own layer. */
-.js .hm-cell{animation:scan var(--motion-base) var(--ease-soft) backwards}
-.js .hm-row:nth-child(2) .hm-cell{animation-delay:8ms}
-.js .hm-row:nth-child(3) .hm-cell{animation-delay:16ms}
-.js .hm-row:nth-child(4) .hm-cell{animation-delay:24ms}
-.js .hm-row:nth-child(5) .hm-cell{animation-delay:32ms}
-.js .hm-row:nth-child(6) .hm-cell{animation-delay:40ms}
-.js .hm-row:nth-child(7) .hm-cell{animation-delay:48ms}
-.js .hm-cell:nth-child(4n+1){animation-delay:6ms}
-.js .hm-cell:nth-child(4n+2){animation-delay:12ms}
-.js .hm-cell:nth-child(4n+3){animation-delay:18ms}
+.js .hm-cell{
+  animation:scan var(--motion-base) var(--ease-soft) backwards;
+  animation-delay:var(--delay,0ms);
+}
 @keyframes scan{from{opacity:0;background:var(--heat-4)}}
 @media (prefers-reduced-motion:reduce){
   .js .hm-cell{animation:none}
+  .hm-today{animation:none}
   /* Reduced motion removes gratuitous motion, not signal. Focus rings and the
      copy button's confirmation still change state, just without travel. */
   *,*::before,*::after{
@@ -234,21 +282,41 @@ code,kbd,pre,.mono{font-family:var(--mono);font-size:.92em;overflow-wrap:anywher
   }
 }
 .hm-foot{
-  display:flex;align-items:center;gap:var(--s2);margin-top:var(--s4);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s2);margin-top:var(--s4);
   font-family:var(--mono);font-size:var(--step--1);color:var(--faint);
 }
+.hm-foot-legend{display:flex;align-items:center;gap:var(--s2)}
 .hm-foot .hm-cell{animation:none;width:9px;height:9px}
+
+.hm-tip{
+  position:absolute;bottom:var(--s4);right:var(--s5);
+  font-family:var(--mono);font-size:var(--step--1);color:var(--muted);
+  background:var(--sunken);border:1px solid var(--line-strong);
+  border-radius:var(--r-sm);padding:4px 10px;pointer-events:none;
+  opacity:0;transform:translateY(3px);
+  box-shadow:0 8px 20px rgba(0,0,0,.6);
+  transition:opacity var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out);
+}
+.hm-tip.active{opacity:1;transform:translateY(0)}
+.hm-tip strong{color:var(--heat-4)}
 
 /* ------------------------------------------------------------------ stats */
 .stats{
-  display:flex;flex-wrap:wrap;gap:var(--s6);
-  margin-top:var(--s7);padding-top:var(--s5);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:var(--s4);
+  margin-top:var(--s7);padding:var(--s4) var(--s5);
+  background:var(--raised);border:1px solid var(--line);border-radius:var(--r-md);
 }
+.stat{display:flex;flex-direction:column;gap:2px}
 .stat .n{
-  font-family:var(--mono);font-size:var(--step-2);font-weight:600;
-  letter-spacing:-.03em;display:block;
+  font-family:var(--mono);font-size:var(--step-1);font-weight:600;
+  letter-spacing:-.02em;color:var(--fg);display:flex;align-items:center;gap:var(--s2);
 }
-.stat .k{font-size:var(--step--1);color:var(--faint)}
+.stat .n::before{
+  content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--heat-3);box-shadow:0 0 6px var(--heat-3);
+}
+.stat .k{font-size:var(--step--1);color:var(--faint);line-height:1.4}
 
 /* ---------------------------------------------------------------- section */
 section{padding:var(--s8) 0;border-top:1px solid var(--line)}
@@ -351,7 +419,7 @@ td:first-child{color:var(--fg);white-space:nowrap}
 td.mono,th.mono{font-family:var(--mono);font-size:var(--step--1)}
 td.nowrap,th.nowrap{white-space:nowrap}
 td{transition:background var(--motion-fast) var(--ease-soft)}
-tbody tr:hover td{background:#0E131A}
+tbody tr:hover td{background:color-mix(in srgb,var(--heat-1) 12%,var(--sunken))}
 td .yes{color:var(--heat-3)}
 td a{color:var(--heat-3)}
 @media (hover:hover) and (pointer:fine){td a:hover{text-decoration:underline}}
@@ -396,42 +464,104 @@ td a{color:var(--heat-3)}
 
 /* -------------------------------------------------------------------- faq */
 .faq-grid{
-  display:grid;gap:var(--s6) var(--s8);
+  display:grid;gap:var(--s5);
   grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));
   max-width:var(--container);
 }
+.faq-grid > div{
+  background:var(--raised);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:var(--s5);
+  transition:border-color var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .faq-grid > div:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+}
 .faq-grid .faq-q{
   font-size:var(--step-0);font-weight:600;margin-bottom:var(--s2);
-  font-family:var(--sans);letter-spacing:-.01em;
+  font-family:var(--sans);letter-spacing:-.01em;color:var(--fg);
 }
-.faq-grid p{color:var(--muted);max-width:52ch;font-size:.98rem}
+.faq-grid p{color:var(--muted);max-width:52ch;font-size:.96rem;line-height:1.55}
 
 /* ---------------------------------------------------------------- answers */
 .answers{
-  display:grid;gap:var(--s6) var(--s8);
+  display:grid;gap:var(--s5);
   grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));
   max-width:var(--container);
 }
+.answers > div{
+  background:var(--raised);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:var(--s5);
+  display:flex;flex-direction:column;justify-content:space-between;
+  transition:border-color var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .answers > div:hover{
+    border-color:var(--line-strong);transform:translateY(-2px);
+    box-shadow:0 12px 28px -10px rgba(0,0,0,.5);
+  }
+}
 .answers h3{
   font-size:var(--step-0);font-weight:600;letter-spacing:-.01em;
-  margin-bottom:var(--s2);
+  margin-bottom:var(--s2);color:var(--fg);
 }
 .answers p{
-  color:var(--muted);max-width:56ch;font-size:.98rem;
-  margin-bottom:var(--s3);
+  color:var(--muted);font-size:.96rem;line-height:1.55;
+  margin-bottom:var(--s4);
 }
-.answers .fix{color:var(--fg);font-size:.95rem;max-width:56ch}
+.answers .fix{
+  margin:0;color:var(--fg);font-size:.92rem;line-height:1.5;
+  padding:var(--s2) var(--s3);border-left:2px solid var(--heat-3);
+  background:color-mix(in srgb,var(--heat-1) 14%,transparent);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;
+}
 
 /* ---------------------------------------------------------------- shots */
-figure.shot{margin:var(--s7) 0 0;max-width:var(--container)}
+figure.shot{
+  margin:var(--s7) 0 0;max-width:var(--container);
+  border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--raised);overflow:hidden;
+  box-shadow:0 20px 48px -16px rgba(0,0,0,.65),0 0 0 1px var(--line);
+  transition:border-color var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  figure.shot:hover{
+    border-color:var(--line-strong);
+    box-shadow:0 24px 56px -14px rgba(0,0,0,.75),0 0 0 1px var(--line-strong);
+  }
+}
+.shot-bar{
+  display:flex;align-items:center;gap:var(--s2);padding:8px 12px;
+  background:var(--sunken);border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:var(--step--1);color:var(--faint);
+}
+.shot-dots{display:flex;gap:6px;margin-right:var(--s2)}
+.shot-dots span{
+  width:9px;height:9px;border-radius:50%;background:var(--line-strong);
+}
+.shot-dots span:nth-child(1){background:color-mix(in srgb,#FF5F56 65%,transparent)}
+.shot-dots span:nth-child(2){background:color-mix(in srgb,#FFBD2E 65%,transparent)}
+.shot-dots span:nth-child(3){background:color-mix(in srgb,#27C93F 65%,transparent)}
 figure.shot img{
   display:block;width:100%;height:auto;
-  border:1px solid var(--line);border-radius:var(--r-md);
-  background:var(--sunken);
+  border:0;border-radius:0;background:var(--sunken);
 }
 figure.shot figcaption{
-  margin-top:var(--s3);color:var(--faint);
-  font-size:var(--step--1);max-width:var(--prose);
+  padding:var(--s3) var(--s4);color:var(--faint);
+  font-size:var(--step--1);max-width:100%;
+  border-top:1px solid var(--line);background:var(--raised);
+}
+
+.js .reveal-on-scroll{
+  opacity:0;transform:translateY(14px);
+  transition:opacity 380ms var(--ease-out),transform 380ms var(--ease-out);
+}
+.js .reveal-on-scroll.in-view{opacity:1;transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){
+  .js .reveal-on-scroll{opacity:1 !important;transform:none !important;transition:none !important}
 }
 
 /* ---------------------------------------------------------------- closing */
@@ -548,33 +678,43 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
           <pre><code>go install github.com/jadmadi/thermal/cmd/thermal@latest
 thermal</code></pre>
         </div>
+        <div class="hero-actions">
+          <a class="hero-link" href="#leaderboard"><span>Leaderboard ↓</span></a>
+          <a class="hero-link" href="#reports"><span>Reports ↓</span></a>
+          <a class="hero-link" href="#tools"><span>12 tools ↓</span></a>
+          <a class="hero-link" href="https://github.com/jadmadi/thermal" rel="noopener noreferrer"><span>GitHub ↗</span></a>
+        </div>
       </div>
 
       <div class="panel">
-        <p class="hm-foot" style="margin:0 0 .75rem">
+        <div class="hm-foot" style="margin:0 0 .75rem">
           <span>Last 53 weeks</span>
-        </p>
-              <div class="hm" aria-hidden="true">
-        <div class="hm-ruler"><span>Oct</span><span></span><span></span><span></span><span>Nov</span><span></span><span></span><span></span><span>Dec</span><span></span><span></span><span></span><span></span><span>Jan</span><span></span><span></span><span></span><span>Feb</span><span></span><span></span><span></span><span>Mar</span><span></span><span></span><span></span><span></span><span>Apr</span><span></span><span></span><span></span><span>May</span><span></span><span></span><span></span><span></span><span>Jun</span><span></span><span></span><span></span><span>Jul</span><span></span><span></span><span></span><span></span><span>Aug</span><span></span><span></span><span></span><span>Sep</span><span></span><span></span><span></span><span></span></div>
-        <div class="hm-grid">
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
-          <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          <span style="font-size:0.8em;color:var(--heat-3)">live terminal telemetry</span>
         </div>
-      </div>
-        <p class="hm-foot">
-          <span>less</span>
-          <span class="hm-cell hm-lv0"></span>
-          <span class="hm-cell hm-lv1"></span>
-          <span class="hm-cell hm-lv2"></span>
-          <span class="hm-cell hm-lv3"></span>
-          <span class="hm-cell hm-lv4"></span>
-          <span>more</span>
-        </p>
+        <div class="hm" aria-label="53-week contribution heatmap">
+          <div class="hm-ruler"><span>Oct</span><span></span><span></span><span></span><span>Nov</span><span></span><span></span><span></span><span>Dec</span><span></span><span></span><span></span><span></span><span>Jan</span><span></span><span></span><span></span><span>Feb</span><span></span><span></span><span></span><span>Mar</span><span></span><span></span><span></span><span></span><span>Apr</span><span></span><span></span><span></span><span>May</span><span></span><span></span><span></span><span></span><span>Jun</span><span></span><span></span><span></span><span>Jul</span><span></span><span></span><span></span><span></span><span>Aug</span><span></span><span></span><span></span><span>Sep</span><span></span><span></span><span></span><span></span></div>
+          <div class="hm-grid">
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+            <div class="hm-row"><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv0"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv1"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv3"></span><span class="hm-cell hm-lv2"></span><span class="hm-cell hm-lv4"></span><span class="hm-cell hm-lv4 hm-today"></span></div>
+          </div>
+        </div>
+        <div class="hm-foot">
+          <span>Less</span>
+          <div class="hm-foot-legend">
+            <span class="hm-cell hm-lv0"></span>
+            <span class="hm-cell hm-lv1"></span>
+            <span class="hm-cell hm-lv2"></span>
+            <span class="hm-cell hm-lv3"></span>
+            <span class="hm-cell hm-lv4"></span>
+          </div>
+          <span>More</span>
+        </div>
+        <div class="hm-tip" id="hmTip" aria-hidden="true"></div>
       </div>
     </div>
 
@@ -792,6 +932,10 @@ thermal --no-color      <u># strip ANSI for logs and CI</u></code></pre>
     </div>
 
     <figure class="shot">
+      <div class="shot-bar">
+        <div class="shot-dots"><span></span><span></span><span></span></div>
+        <span>thermal</span>
+      </div>
       <img src="shot-leaderboard.webp" width="1300" height="1343" loading="lazy" decoding="async"
            alt="thermal leaderboard: Token Warriors ranks OpenCode first with an 11-day streak and 8.6B tokens, followed by Codex, ZCode, Devin, MiMoCode, Grok, codewhale and Claude. Activity Hunters ranks Agy first with a 36-day streak and 60.1K steps, then command-code, Droid and Muse. A note at the end reads: Agy is on fire with a 36-day streak.">
       <figcaption>
@@ -920,6 +1064,10 @@ thermal weekly --json                   <u># unchanged shape, scripts first</u><
     </p>
 
     <figure class="shot">
+      <div class="shot-bar">
+        <div class="shot-dots"><span></span><span></span><span></span></div>
+        <span>thermal weekly</span>
+      </div>
       <img src="shot-weekly.webp" width="1300" height="854" loading="lazy" decoding="async"
            alt="thermal weekly report: six weeks of totals, newest first, with columns for input, output, reasoning, cache and total tokens, and cost. Totals read 969.6M input, 59.9M output, 11.3M reasoning, 23.6B cache, 24.7B tokens, 610.48 dollars, with a footnote that 506.08 dollars of it is estimated from pricing data.">
       <figcaption>
@@ -1013,6 +1161,10 @@ thermal projects --json              <u># full paths, every row</u></code></pre>
     </div>
 
     <figure class="shot">
+      <div class="shot-bar">
+        <div class="shot-dots"><span></span><span></span><span></span></div>
+        <span>thermal projects</span>
+      </div>
       <img src="shot-projects.webp" width="1300" height="793" loading="lazy" decoding="async"
            alt="thermal projects report: five repositories ranked by tokens. atlas-gateway leads with 6.7B tokens and 232.73 dollars across 16 days, followed by beacon-api, northwind-cli, hopstack and solaris-notes. A total line reads 30.6B tokens, 623.54 dollars, 248 days, and a note says 514.59 dollars of the total is estimated.">
       <figcaption>
@@ -1620,11 +1772,48 @@ thermal: --top only applies to the projects and models commands</code></pre>
 
 <script>
 (function () {
-  // Give every heatmap cell its stagger index once, so the scan animation
-  // sweeps left to right instead of firing all at once.
-  var cells = document.querySelectorAll('.hm-cell');
-  for (var i = 0; i < cells.length; i++) {
-    cells[i].style.setProperty('--i', i % 53);
+  // Give every heatmap cell a 2D diagonal stagger delay, sweeping smoothly
+  // from top-left to bottom-right across the matrix.
+  var rows = document.querySelectorAll('.hm-row');
+  for (var r = 0; r < rows.length; r++) {
+    var rowCells = rows[r].querySelectorAll('.hm-cell');
+    for (var c = 0; c < rowCells.length; c++) {
+      var delay = (c * 12 + r * 18);
+      rowCells[c].style.setProperty('--delay', delay + 'ms');
+      rowCells[c].setAttribute('data-r', r);
+      rowCells[c].setAttribute('data-c', c);
+    }
+  }
+
+  // Interactive telemetry tooltip on heatmap cells
+  var tip = document.getElementById('hmTip');
+  var grid = document.querySelector('.hm-grid');
+  var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var levels = [
+    'No recorded activity',
+    'Low activity · ~45K tokens',
+    'Medium activity · ~320K tokens',
+    'High activity · ~1.2M tokens',
+    'Peak activity · ~4.8M tokens'
+  ];
+  if (grid && tip) {
+    grid.addEventListener('mouseover', function (e) {
+      var cell = e.target.closest('.hm-cell');
+      if (!cell || !grid.contains(cell)) return;
+      var r = parseInt(cell.getAttribute('data-r'), 10);
+      var lv = 0;
+      for (var l = 0; l <= 4; l++) {
+        if (cell.classList.contains('hm-lv' + l)) { lv = l; break; }
+      }
+      var isToday = cell.classList.contains('hm-today');
+      var dayName = !isNaN(r) ? days[r] : 'Day';
+      var text = '<strong>' + dayName + (isToday ? ' (today)' : '') + '</strong>: ' + levels[lv];
+      tip.innerHTML = text;
+      tip.classList.add('active');
+    });
+    grid.addEventListener('mouseleave', function () {
+      tip.classList.remove('active');
+    });
   }
 
   // Copy buttons. Feedback is honest: the button confirms only when the text
@@ -1703,6 +1892,23 @@ thermal: --top only applies to the projects and models commands</code></pre>
       });
     }, { rootMargin: '-15% 0px -70% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
     targets.forEach(function (t) { obs.observe(t.el); });
+  }
+
+  // Scroll reveal: gentle progressive entrance for terminal captures and key cards
+  if ('IntersectionObserver' in window) {
+    var reveals = document.querySelectorAll('figure.shot, .answers > div');
+    var revObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          revObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(function (el) {
+      el.classList.add('reveal-on-scroll');
+      revObs.observe(el);
+    });
   }
 })();
 </script>
