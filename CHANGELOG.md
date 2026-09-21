@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/jadmadi/thermal/compare/v0.9.1...v0.10.0) (2026-09-21)
+
+
+### Features
+
+* **docs:** polish layout, motion choreography, and window chrome in html docs ([d9ab799](https://github.com/jadmadi/thermal/commit/d9ab7997b7c5e56be42354f858ac69f72ebc3161))
+* **docs:** switch canonical site domain to thermal.jadmadi.net ([a1c9c4d](https://github.com/jadmadi/thermal/commit/a1c9c4dd5002a62b4954ee3a820a5817b9d0fc43))
+* **loaders:** add DeepSeek harness (dsh) loader and registry (goals/dsh-loader/goal.md) ([414a815](https://github.com/jadmadi/thermal/commit/414a8151615119ca3f043a8beafe8a67f9bfb194))
+* **loaders:** report JSONL scans that stop early via Summary.Warnings (goals/jsonl-scan-diagnostics/goal.md) ([247bb80](https://github.com/jadmadi/thermal/commit/247bb80b2a49ceb455beb3cb76d650a5f43bb8f1))
+* **pricing:** map tier variants to the base model, and classify the rest ([b361693](https://github.com/jadmadi/thermal/commit/b361693abb24a963f62b5fc0769288dd9322b5ac))
+* **render,analytics:** telemetry accuracy, pricing estimates, and stats UI polish (goals/telemetry-and-ui-audit/goal.md) ([662f25a](https://github.com/jadmadi/thermal/commit/662f25a3e9c761f4369cd20425e75c268299dbee))
+* **sila:** complete sila onboarding and wire repository (goals/sila-onboarding/goal.md) ([92ea6ee](https://github.com/jadmadi/thermal/commit/92ea6ee123cb044818dab401ce450f59e83617d3))
+
+
+### Bug Fixes
+
+* **loaders:** raise JSONL line ceilings to 32 MiB (goals/jsonl-line-ceilings/goal.md) ([ada5b52](https://github.com/jadmadi/thermal/commit/ada5b526722e6f20b3b8281a65b574d616ab7170))
+
 ## [0.9.1](https://github.com/jadmadi/thermal/compare/v0.9.0...v0.9.1) (2026-09-20)
 
 
