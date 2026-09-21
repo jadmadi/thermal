@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 19
-- 🟢 **Implemented & Verified**: 16
-- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 92/108 completed (85%)
+- 🟢 **Implemented & Verified**: 17
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- 📋 **Execution Tasks Progress**: 97/108 completed (89%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :--- | :--- | :--- |
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
-| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader ([`internal/load... | `/goal goals/claude-message-dedupe/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
 
 ---
@@ -60,6 +59,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ada5b52` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `247bb80` |
+| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `104ba23` |
 | [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `414a815` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
