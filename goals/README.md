@@ -28,20 +28,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 49
-- 🟢 **Implemented & Verified**: 11
-- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented & Verified**: 12
 - 🟡 **Ready to Execute (Pending)**: 22 (22 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 0 immediate (Tier 1), 49 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 199/233 completed (85%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Implemented daily non-blocking background update check caching GitHub releases in ~/.cache/thermal/update.json with interactive TTY notifications on stderr, verified across 57 simulated user gate checks and unit tests | 2m0s ago |
 
 ---
 
@@ -98,6 +89,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
 | [`ard-capability-manifest`](ard-capability-manifest/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dbbb856` |
 | [`auth-md-agent-registration`](auth-md-agent-registration/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8483316` |
+| [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `2c387fb` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
