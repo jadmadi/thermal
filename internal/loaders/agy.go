@@ -1,0 +1,233 @@
+// Copyright (C) 2026 Jad Madi. All rights reserved.
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package loaders
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/jadmadi/thermal/internal/thermal"
+)
+
+// resolveAgyBrainDir accepts either the Antigravity data root (containing
+// brain/) or the brain dir itself. The active root moved from
+// ~/.gemini/antigravity to ~/.gemini/antigravity-cli, so a missing brain/
+// falls back to the sibling root before failing.
+func resolveAgyBrainDir(dataDir string) string {
+	if filepath.Base(dataDir) == "brain" {
+		return dataDir
+	}
+	primary := filepath.Join(dataDir, "brain")
+	if st, err := os.Stat(primary); err == nil && st.IsDir() {
+		return primary
+	}
+	switch filepath.Base(dataDir) {
+	case "antigravity":
+		if st, err := os.Stat(filepath.Join(filepath.Dir(dataDir), "antigravity-cli", "brain")); err == nil && st.IsDir() {
+			return filepath.Join(filepath.Dir(dataDir), "antigravity-cli", "brain")
+		}
+	case "antigravity-cli":
+		if st, err := os.Stat(filepath.Join(filepath.Dir(dataDir), "antigravity", "brain")); err == nil && st.IsDir() {
+			return filepath.Join(filepath.Dir(dataDir), "antigravity", "brain")
+		}
+	}
+	return primary
+}
+
+type sessionResult struct {
+	steps       int
+	firstTs     time.Time
+	lastTs      time.Time
+	dayCounts   map[string]int
+	modelCounts map[string]int64
+	warnings    []string
+}
+
+// countAgySteps parses one JSONL log (overview.txt or transcript.jsonl — same
+// schema) and folds step counts, per-day buckets, and session bounds into res.
+// It returns the number of steps counted in this file.
+func countAgySteps(path string, res *sessionResult) int {
+	f, err := os.Open(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			res.warnings = append(res.warnings, formatScanWarning(path, err))
+		}
+		return 0
+	}
+	defer f.Close()
+
+	counted := 0
+	scanner := newJSONLScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		var rec struct {
+			CreatedAt string `json:"created_at"`
+			Source    string `json:"source"`
+			Type      string `json:"type"`
+			Content   string `json:"content"`
+		}
+		if json.Unmarshal([]byte(line), &rec) != nil {
+			continue
+		}
+		if rec.CreatedAt == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, rec.CreatedAt)
+		if err != nil {
+			continue
+		}
+		day := thermal.LocalDay(t)
+		res.dayCounts[day]++
+		res.steps++
+		counted++
+		if res.firstTs.IsZero() || t.Before(res.firstTs) {
+			res.firstTs = t
+		}
+		if t.After(res.lastTs) {
+			res.lastTs = t
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		res.warnings = append(res.warnings, formatScanWarning(path, err))
+	}
+	return counted
+}
+
+// LoadAgyData reads Google Antigravity session data in parallel using a bounded worker pool.
+func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
+	brainDir := resolveAgyBrainDir(dataDir)
+	entries, err := os.ReadDir(brainDir)
+	if err != nil {
+		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot read %s: %w", brainDir, err)
+	}
+
+	results := make(chan sessionResult, len(entries))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8) // max 8 concurrent workers
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		sessionDir := filepath.Join(brainDir, entry.Name())
+		sem <- struct{}{}
+		wg.Add(1)
+
+		go func(sDir string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			res := sessionResult{
+				dayCounts:   make(map[string]int),
+				modelCounts: make(map[string]int64),
+			}
+
+			logsDir := filepath.Join(sDir, ".system_generated", "logs")
+
+			// 1. Process overview.txt (legacy) and transcript.jsonl (current).
+			// Old sessions carry overview.txt, new ones only transcript.jsonl;
+			// both share the same JSON schema, so one parser covers both.
+			// If both exist, overview wins to avoid double counting.
+			if countAgySteps(filepath.Join(logsDir, "overview.txt"), &res) == 0 {
+				countAgySteps(filepath.Join(logsDir, "transcript.jsonl"), &res)
+			}
+
+			// 2. Process transcript.jsonl for model extraction
+			transcriptPath := filepath.Join(logsDir, "transcript.jsonl")
+			if f, err := os.Open(transcriptPath); err == nil {
+				scanner := newJSONLScanner(f)
+				for scanner.Scan() {
+					line := strings.TrimSpace(scanner.Text())
+					if line == "" {
+						continue
+					}
+					if strings.Contains(line, "Model Selection") {
+						var rec struct {
+							Content string `json:"content"`
+						}
+						if json.Unmarshal([]byte(line), &rec) == nil {
+							if idx := strings.Index(rec.Content, "Model Selection"); idx >= 0 {
+								rest := rec.Content[idx:]
+								if toIdx := strings.Index(rest, " to "); toIdx >= 0 {
+									model := strings.TrimSpace(rest[toIdx+4:])
+									if idx := strings.IndexAny(model, "\r\n\""); idx >= 0 {
+										model = strings.TrimSpace(model[:idx])
+									}
+									model = strings.TrimSuffix(model, ".")
+									model = strings.TrimSpace(model)
+									if model != "" && model != "None" {
+										res.modelCounts[modelName(model)]++
+									}
+								}
+							}
+						}
+					}
+				}
+				if err := scanner.Err(); err != nil {
+					res.warnings = append(res.warnings, formatScanWarning(transcriptPath, err))
+				}
+				f.Close()
+			}
+
+			if res.steps > 0 || len(res.warnings) > 0 {
+				results <- res
+			}
+		}(sessionDir)
+	}
+
+	wg.Wait()
+	close(results)
+
+	byDay := make(map[string]int)
+	modelCounts := make(map[string]int64)
+	var summary thermal.Summary
+	summary.Tool = "Agy"
+
+	for res := range results {
+		summary.Warnings = append(summary.Warnings, res.warnings...)
+		if res.steps == 0 {
+			continue
+		}
+		summary.Sessions++
+		summary.LifetimeTokens += int64(res.steps)
+
+		durationMs := res.lastTs.Sub(res.firstTs).Milliseconds()
+		if durationMs > summary.LongestSessionMs {
+			summary.LongestSessionMs = durationMs
+		}
+
+		for day, count := range res.dayCounts {
+			byDay[day] += count
+		}
+		for model, count := range res.modelCounts {
+			modelCounts[model] += count
+		}
+	}
+
+	var daily []thermal.DailyRow
+	for day, count := range byDay {
+		daily = append(daily, thermal.DailyRow{
+			Day:    day,
+			Tokens: int64(count),
+			Turns:  count,
+		})
+	}
+	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
+
+	if len(modelCounts) > 0 {
+		summary.ModelBreakdown = modelCounts
+	}
+
+	sort.Strings(summary.Warnings)
+	return summary, daily, nil, nil
+}

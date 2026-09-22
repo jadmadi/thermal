@@ -1,0 +1,36 @@
+# Binaries (always root-anchored per AGENTS.md)
+/thermal
+/thermal-debug
+/thermal-test
+/dist/
+*.exe
+__debug_bin*
+
+# Go & Test Artifacts
+/vendor/
+*.test
+coverage.out
+coverage.html
+*.prof
+*.pprof
+
+# IDE & AI Agents
+.idea/
+.vscode/
+.devin/
+.devin
+.cursor/
+.cursor
+.claude/
+.opencode/
+*.swp
+*.swo
+*~
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compose plans
+docs/compose/

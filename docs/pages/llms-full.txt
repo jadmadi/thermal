@@ -1,0 +1,152 @@
+# Thermal — Complete Technical Specification & Agent Reference
+
+> High-performance terminal contribution heatmap, streak tracker, and leaderboard tool for AI coding assistants.
+> Canonical documentation: https://thermal.jadmadi.net
+> Repository: https://github.com/jadmadi/thermal
+> Governance: https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md
+
+---
+
+## 1. Architectural Invariants
+
+1. **Strict Read-Only Access**: All SQLite connections are opened using URI parameters with `mode=ro` (`file:<path>?mode=ro`). Thermal never writes to user agent databases.
+2. **Memory-Mapped I/O**: Multi-gigabyte SQLite databases are scanned with `PRAGMA mmap_size=268435456` (256 MB) for sub-second ingestion.
+3. **Disjoint Token Accounting**: Token fields (`Input`, `Output`, `Reasoning`, `CacheRead`, `CacheWrite`) are strictly disjoint:
+   - Nested tokens reported by source tools (e.g., Codex and Grok nesting reasoning in output; ZCode nesting cache in input) are subtracted at the loader boundary.
+   - `Input + Output + CacheRead + CacheWrite + Reasoning == Total`.
+4. **Canonical Model Normalization**: Model identifiers are normalized through `modelName()` before map indexing. Case differences across tools (`GLM-5.3-Flash` vs `glm-5.3-flash`) fold into a single canonical row.
+5. **Project Root Attribution**: Project paths are normalized through `thermal.ProjectKey`, resolving symlinks and collapsing subdirectories into their nearest git repository root.
+6. **Sub-10ms Cached Invocations**: Multi-file and large log directories use incremental caching (`~/.cache/thermal/<tool>.json`) tracking file modification timestamps and sizes.
+
+---
+
+## 2. CLI Invocation & Flag Reference
+
+### Syntax
+```bash
+thermal [options] [tool] [report]
+```
+
+### Supported Report Commands
+- `dashboard`: Interactive fullscreen terminal UI (requires TTY).
+- `daily`: Daily token and cost breakdown.
+- `weekly`: Weekly aggregated tokens, costs, and activity.
+- `monthly`: Calendar-month rollups.
+- `projects`: Repository attribution ranked by tokens or cost.
+- `models`: Model usage ranked by token consumption.
+- `mix`: Usage distribution across tools or models with switching statistics.
+- `stats`: Percentile distributions, weekday seasonality, and outlier detection.
+- `trend`: Linear trend regression with month-end projection.
+- `replay`: Historical workload simulation against commercial plans and API rate cards.
+- `license`: Display AGPL-3.0 terms, Community Reciprocity Covenant, and enterprise licensing.
+- `upgrade`: Self-update binary to latest release from GitHub.
+- `version`: Print SemVer, git commit SHA, and build timestamp.
+
+### Global Flags
+- `--tool <name>`: Filter by specific tool (or specify as positional argument).
+- `--db <path>`: Override database or session data directory path.
+- `--weeks <N>`: Heatmap width in weeks (range: 4 to 104, default: 52).
+- `--since <date>`: Filter start date (`YYYY-MM-DD` or `YYYYMMDD`).
+- `--until <date>`: Filter end date (`YYYY-MM-DD` or `YYYYMMDD`).
+- `--last <N>`: Limit report to last N days, weeks, or months.
+- `--order <asc|desc>`: Sort ordering for table rows (default: `desc`).
+- `--sort <field>`: Sorting criterion:
+  - Leaderboard: `streak`, `tokens`, `cost`.
+  - Projects: `tokens`, `cost`, `days`, `recent`.
+  - Models: `tokens`, `cost`.
+- `--top <N>`: Limit displayed rows for projects and models tables.
+- `--metric <tokens|cost>`: Metric for `mix`, `stats`, and `trend` (default: `tokens`).
+- `--by <tool|model>`: Breakdown dimension for `mix` (default: `tool`).
+- `--grain <day|week|month>`: Time window for `mix` (default: `week`).
+- `--against <model>`: Single target model rate-card simulation for `replay`.
+- `--compare <plans>`: Comma-separated plans or `all` for `replay`.
+- `--breakdown`: Display per-model sub-rows under period tables.
+- `--chart`: Render ASCII bar charts beneath report tables.
+- `--start-of-week <day>`: First day of week (`sunday` through `saturday`).
+- `--offline`: Use cached pricing catalog only, never query network.
+- `--no-estimate`: Omit catalog pricing estimates; display recorded cost only.
+- `--json`: Emit machine-readable JSON to stdout (bypasses terminal UI).
+- `--no-color`: Disable ANSI escape sequences in stdout and stderr.
+- `--verbose`, `-v`: Output non-fatal loader diagnostics exclusively to stderr.
+
+---
+
+## 3. Workload Replay Simulation Engine (`thermal replay`)
+
+Evaluates historical token workloads against subscription plans and API model pricing cards from `models.dev`.
+
+### Predefined Subscription Plans
+- `claude-pro`: Anthropic Claude Pro ($20/mo, 250k daily token ceiling).
+- `claude-max`: Anthropic Claude Max ($100/mo, 1.25M daily token ceiling).
+- `chatgpt-plus`: OpenAI ChatGPT Plus ($20/mo, 200k daily token ceiling).
+- `chatgpt-pro`: OpenAI ChatGPT Pro ($200/mo, 2.0M daily token ceiling).
+- `cursor-pro`: Cursor Pro ($20/mo, 300k daily token ceiling).
+
+### Capacity Verdicts
+- `PASS`: Historical daily peaks remained safely within plan limits.
+- `DEGRADED`: Workload occasionally exceeded daily ceilings (throttling expected).
+- `FAIL`: Daily workloads routinely saturated tier limits.
+
+---
+
+## 4. Machine-Readable JSON Schema Examples
+
+### `thermal license --json`
+```json
+{
+  "name": "thermal",
+  "author": "Jad Madi",
+  "license": "AGPL-3.0-only",
+  "spdx": "AGPL-3.0-only",
+  "dual_license_available": true,
+  "description": "GNU Affero General Public License v3.0 (Community) / Commercial Enterprise License",
+  "commercial_licensing": {
+    "available": true,
+    "contact": "contact@jadmadi.net",
+    "github": "https://github.com/jadmadi/thermal",
+    "use_cases": [
+      "proprietary_embedding",
+      "closed_source_saas",
+      "enterprise_ospo_compliance",
+      "dedicated_support_sla"
+    ]
+  },
+  "covenant": {
+    "irrevocable_agpl": true,
+    "non_relicensing_of_contributions": true,
+    "no_artificial_feature_gating": true,
+    "description": "Thermal guarantees that the core CLI, agent loaders, TUI, and local analytics engine will remain available under OSI-approved copyleft (GNU AGPL-3.0) in perpetuity, without retroactive conversion of community contributions to proprietary terms."
+  },
+  "third_party_notices": "NOTICES.md"
+}
+```
+
+### `thermal replay --json`
+```json
+{
+  "summary": {
+    "total_tokens": 1500000,
+    "active_days": 28
+  },
+  "targets": [
+    {
+      "name": "Claude Pro ($20/mo)",
+      "target_type": "subscription",
+      "verdict": "PASS",
+      "monthly_cost_usd": 20.00,
+      "monthly_delta_usd": -12.50,
+      "headroom_pct": 34.2
+    }
+  ],
+  "generatedAt": "2026-09-22T08:00:00Z"
+}
+```
+
+---
+
+## 5. Governance & Licensing
+
+Thermal is dual-licensed under:
+- **GNU Affero General Public License v3.0 (AGPL-3.0)** for the open-source community edition.
+- **Commercial Enterprise License** for proprietary software embedding, closed-source SaaS dashboards, and corporate OSPO compliance.
+Commercial inquiries: `contact@jadmadi.net`.

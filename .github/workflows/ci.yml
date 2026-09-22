@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test & Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Contributor Sign-off (CLA / DCO)
+        if: github.event_name == 'pull_request'
+        run: |
+          base="origin/${{ github.base_ref || 'main' }}"
+          echo "Verifying Signed-off-by trailers on PR commits against $base..."
+          missing=0
+          for commit in $(git rev-list --no-merges "${base}..HEAD"); do
+            subject=$(git log -1 --format="%s" "$commit")
+            body=$(git log -1 --format="%B" "$commit")
+            if ! echo "$body" | grep -E -q "^Signed-off-by: [^<]+ <[^@]+@[^>]+>"; then
+              echo "❌ Error: Commit $commit lacks a valid 'Signed-off-by' trailer."
+              echo "   Subject: $subject"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "========================================================================"
+            echo "Thermal requires all external contributions to accept the Contributor"
+            echo "License Agreement (CLA) documented in CONTRIBUTING.md."
+            echo "Every code commit must carry a 'Signed-off-by: Name <email>' trailer."
+            echo ""
+            echo "To fix your commits:"
+            echo "  Single commit:  git commit --amend -s && git push --force-with-lease"
+            echo "  Multi-commit:   git rebase --signoff $base && git push --force-with-lease"
+            echo "========================================================================"
+            exit 1
+          fi
+          echo "✅ All PR commits contain valid Signed-off-by trailers."
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify Formatting (gofmt)
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not formatted with gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (with race detection)
+        run: go test -v -race ./...
+
+      - name: Verify Build
+        run: go build -v ./cmd/thermal
+
+      - name: Simulated User Testing Release Gate
+        run: ./scripts/simulated_user_gate.sh
+
+      - name: Vulnerability Check (govulncheck)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
