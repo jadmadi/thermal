@@ -600,7 +600,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "applicationCategory": "DeveloperApplication",
       "applicationSubCategory": "Command line tool",
       "operatingSystem": "Linux, macOS, Windows",
-      "softwareVersion": "0.10.0",
+      "softwareVersion": "0.13.0",
       "softwareRequirements": "Go 1.26 or a prebuilt binary",
       "programmingLanguage": "Go",
       "isAccessibleForFree": true,
@@ -1621,6 +1621,7 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">thermal mix</td><td>Tool or model mix over time, with switching stats.</td></tr>
               <tr><td class="mono">thermal stats</td><td>Daily distribution: percentiles, weekday profile, token composition &amp; cache hit rate, outliers, histogram.</td></tr>
               <tr><td class="mono">thermal trend</td><td>Daily trend fit with a month-end projection.</td></tr>
+              <tr><td class="mono">thermal license</td><td>Display software license, AGPL-3.0 terms, and commercial dual-licensing options.</td></tr>
               <tr><td class="mono">thermal upgrade</td><td>Self-update from GitHub Releases.</td></tr>
               <tr><td class="mono">thermal version</td><td>Version, commit, and build date.</td></tr>
             </tbody>
@@ -1659,6 +1660,12 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">--verbose</td><td class="mono">off</td><td>Non-fatal loader warnings to stderr. stdout stays clean.</td></tr>
               <tr><td class="mono">--offline</td><td class="mono">off</td><td>Use cached prices, never fetch. Reports only.</td></tr>
               <tr><td class="mono">--no-estimate</td><td class="mono">off</td><td>Recorded cost only, no pricing estimates. Works on the leaderboard and on reports.</td></tr>
+              <tr><td class="mono">--license</td><td class="mono">off</td><td>(Deprecated) Display license details. Use <span class="mono">thermal license</span>.</td></tr>
+              <tr><td class="mono">--since &lt;date&gt;</td><td class="mono">—</td><td>Start date (YYYY-MM-DD or YYYYMMDD) for report filtering.</td></tr>
+              <tr><td class="mono">--until &lt;date&gt;</td><td class="mono">—</td><td>End date (YYYY-MM-DD or YYYYMMDD) for report filtering.</td></tr>
+              <tr><td class="mono">--last &lt;n&gt;</td><td class="mono">0</td><td>Limit report to the most recent N days/weeks/months.</td></tr>
+              <tr><td class="mono">--order &lt;dir&gt;</td><td class="mono">desc</td><td>Row chronological sort order (<span class="mono">asc</span> or <span class="mono">desc</span>).</td></tr>
+              <tr><td class="mono">--start-of-week &lt;day&gt;</td><td class="mono">sunday</td><td>First day of week for weekly report (e.g. <span class="mono">monday</span>).</td></tr>
             </tbody>
           </table>
         </div>
@@ -1831,8 +1838,7 @@ thermal: --top only applies to the projects and models commands</code></pre>
 <footer>
   <div class="wrap foot-grid">
     <p>
-      Thermal is MIT-licensed and reads local files only. It never uploads
-      usage data anywhere.
+      Thermal is dual-licensed under the GNU AGPLv3 (free &amp; open source) and a Commercial Enterprise License. It reads local files only and never uploads usage data anywhere.
     </p>
     <nav aria-label="Project and author links">
       <a href="https://jadmadi.net" rel="noopener noreferrer">Blog</a>
@@ -1840,6 +1846,10 @@ thermal: --top only applies to the projects and models commands</code></pre>
       <a href="https://paypal.me/madise" rel="noopener noreferrer">Support my work</a>
       <a href="https://github.com/jadmadi/thermal" rel="noopener noreferrer">GitHub</a>
       <a href="https://github.com/jadmadi/thermal/releases" rel="noopener noreferrer">Releases</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/LICENSE" rel="noopener noreferrer">License (AGPL-3.0)</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/DUAL-LICENSE.md" rel="noopener noreferrer">Dual-License</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md" rel="noopener noreferrer">Governance</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/CONTRIBUTING.md" rel="noopener noreferrer">Contributing</a>
       <a href="https://github.com/jadmadi/thermal/blob/main/docs/MIGRATION.md" rel="noopener noreferrer">Migration Guide</a>
       <a href="https://github.com/jadmadi/thermal/blob/main/README.md" rel="noopener noreferrer">README</a>
       <a href="#top">Back to top</a>
