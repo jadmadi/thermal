@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agentskills.io/schema/v0.2.0/index.json",
+  "version": "0.2.0",
+  "name": "thermal",
+  "description": "Skills and tools for discovering and querying Thermal AI telemetry and streak heatmaps",
+  "homepage": "https://thermal.jadmadi.net",
+  "skills": [
+    {
+      "name": "thermal-streak-tracker",
+      "type": "cli-tool",
+      "description": "Inspect and report local contribution heatmaps, active coding streaks, and token metrics across 14 AI coding tools.",
+      "url": "https://thermal.jadmadi.net/llms-full.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "thermal-replay-simulator",
+      "type": "cli-tool",
+      "description": "Simulate and stress-test historical AI token workloads against commercial subscription ceilings and target model rate cards.",
+      "url": "https://thermal.jadmadi.net/#replay",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "thermal-mcp-server",
+      "type": "mcp-server",
+      "description": "Model Context Protocol server card for AI agent integration.",
+      "url": "https://thermal.jadmadi.net/.well-known/mcp/server-card.json",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}
