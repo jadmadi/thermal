@@ -27,10 +27,65 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 37
-- 🟢 **Implemented & Verified**: 37
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 📋 **Execution Tasks Progress**: 183/183 completed (100%)
+- **Total Goals**: 49
+- 🟢 **Implemented & Verified**: 11
+- 🔵 **In Progress (Claimed)**: 1
+- 🟡 **Ready to Execute (Pending)**: 22 (22 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 15
+- 🎯 **By Tier**: 0 immediate (Tier 1), 49 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 199/233 completed (85%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Implemented daily non-blocking background update check caching GitHub releases in ~/.cache/thermal/update.json with interactive TTY notifications on stderr, verified across 57 simulated user gate checks and unit tests | 2m0s ago |
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`charting-dep-spike`](charting-dep-spike/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Charting dependency spike: ntcharts v2 against the stock charm stack — Verify ntcharts v2.2.0 builds and renders against stock charm.land/bubbletea v2.... | `/goal goals/charting-dep-spike/goal.md` |
+| [`governance-foundations`](governance-foundations/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Written Solo Authority Governance, Scope Defense & Decision Rules — Establish formal GOVERNANCE.md with Solo Authority model, Scope & Anti-Goals, de... | `/goal goals/governance-foundations/goal.md` |
+| [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#2)` | - | Repository Alignment, Code Ownership, PR Lifecycle & Security Policy — Establish .github/CODEOWNERS, MAINTAINERS.md, comprehensive SECURITY.md with 48h... | `/goal goals/repo-alignment-and-security/goal.md` |
+| [`version-migration-guide`](version-migration-guide/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#7)` | - | Version Migration Guide Architecture & docs/MIGRATION.md — Establish Thermal's formal migration guide (docs/MIGRATION.md) conforming strict... | `/goal goals/version-migration-guide/goal.md` |
+| [`devin-model-attribution`](devin-model-attribution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#8)` | - | Devin model attribution and honest unestimated reporting — Emit Devin per-model daily tokens from sessions.model so the estimator can price... | `/goal goals/devin-model-attribution/goal.md` |
+| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#10)` | - | Shrink the unpriceable token line — Shrink the UnattributedTokens line. Investigation found two causes: one Codex da... | `/goal goals/unpriceable-token-sources/goal.md` |
+| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#12)` | - | JSONL line ceilings that fit real logs — A 256KB scanner ceiling is smaller than a real command-code transcript line (409... | `/goal goals/jsonl-line-ceilings/goal.md` |
+| [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | AGPL-3.0 Relicensing, Commercial Dual-Licensing & Contributor Gating — Relicense Thermal to GNU AGPLv3, establish commercial dual-licensing track, impl... | `/goal goals/agpl-dual-licensing/goal.md` |
+| [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
+| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader (`internal/loade... | `/goal goals/claude-message-dedupe/goal.md` |
+| [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Archive Extraction Deduplication and File Write Close Verification in CLI Self-Updater — In `cmd/thermal/upgrade.go`, binary extraction from `.tar.gz` archives had dupli... | `/goal goals/cli-upgrade-file-integrity/goal.md` |
+| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Robust SQLite Rows Iteration Safety and rows.Err Checking — Database queries in `database/sql` iterate results using `for rows.Next() { ... ... | `/goal goals/database-loader-iteration-safety/goal.md` |
+| [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
+| [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
+| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Preallocated Slice Capacity in Leaderboard Rendering — In `internal/render/leaderboard.go`, `RenderLeaderboard` splits all discovered t... | `/goal goals/leaderboard-slice-preallocation/goal.md` |
+| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | OSS License Strategy Evaluation, CI Enforcement & Licensing Hardening — Evaluate Thermal's licensing strategy using the oss-license-strategy framework. ... | `/goal goals/license-strategy-and-enforcement/goal.md` |
+| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
+| [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
+| [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
+| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Defensive Timestamp Parsing and Malformed Date Guards in Streak Computation — `ComputeStreaks` calculates current active streaks and longest historical streak... | `/goal goals/streak-parsing-defensive-guards/goal.md` |
+| [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
+| [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
+| [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
+| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#3)` | Prereqs: governance-foundations | Community Reciprocity Covenant, Scope Demarcation & Fork Guidelines — Establish Thermal Community Reciprocity Covenant in DUAL-LICENSE.md and CONTRIBU... | `/goal goals/community-covenant-neutrality/goal.md` |
+| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#3)` | Prereqs: charting-analytics | TUI shell and Overview view — Add the thermal dashboard command: a Bubble Tea v2 application shell with tab ro... | `/goal goals/tui-shell-overview/goal.md` |
+| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: community-covenant-neutrality | Retire Legacy MIT Releases and Reset Release Line to AGPL-3.0 — Audit, purge, and archive legacy pre-AGPL-3.0 releases, assets, and git tags fro... | `/goal goals/purge-legacy-mit-releases/goal.md` |
+| [`tui-projects-view`](tui-projects-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
+| [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
+| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: governance-foundations, repo-alignment-and-security | Staged Trust Ladder, Succession Protocol & Absence Factor Monitoring — Implement staged trust ladder (contributor to key holder) separating merge right... | `/goal goals/trust-ladder-and-succession/goal.md` |
+| [`tui-stats-view`](tui-stats-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: tui-shell-overview | TUI Stats view — Histogram of daily tokens or cost with a log toggle, weekday profile, top days, ... | `/goal goals/tui-stats-view/goal.md` |
+| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: governance-foundations, repo-alignment-and-security, community-covenant-neutrality | Contributor Onboarding Path, Preflight Gate & Retention Loop — Establish Thermal's contributor onboarding path to pass all 4 blocking checks (B... | `/goal goals/contributor-onboarding/goal.md` |
+| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#7)` | Prereqs: tui-projects-view, tui-mix-models-views, tui-stats-view | Chart flags, docs, and 0.7.0 release — Add --chart to projects, models and the period reports, print concrete bar rows ... | `/goal goals/charting-flags-docs-release/goal.md` |
+| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#8)` | Prereqs: version-migration-guide | CLI Staged Deprecation Warnings & Self-Updater Migration Notifications — Implement runtime deprecation warnings and upgrade alerting in Thermal CLI. 1. A... | `/goal goals/cli-staged-deprecation-and-upgrade/goal.md` |
+| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#9)` | Prereqs: purge-legacy-mit-releases, cli-staged-deprecation-and-upgrade | Release Communication, Editorial Changelog & Automation Alignment — Adapt the changelog-writing discipline to Thermal while preserving automated rel... | `/goal goals/release-communication-and-changelog/goal.md` |
+| [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#10)` | Prereqs: release-communication-and-changelog, contributor-onboarding | Coverage-First Distribution: Homebrew Tap, Standalone Installer, Agent Docs \u0026 Curated Showcases — Implement Thermal's Coverage-First distribution mix: 1. Configure automated Home... | `/goal goals/distribution-coverage-foundation/goal.md` |
+| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#11)` | Prereqs: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Classify each model id the catalog cannot price, then choose a mechanism with th... | `/goal goals/pricing-catalog-coverage/goal.md` |
+| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#13)` | Prereqs: jsonl-line-ceilings | A scan that stops early is reported, never silent — No loader checks scanner.Err(), so a line over the ceiling or a read error ends ... | `/goal goals/jsonl-scan-diagnostics/goal.md` |
 
 ---
 
@@ -38,41 +93,15 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Mode | Shape | Task / Ref | Commit |
 | :--- | :---: | :--- | :--- | :--- |
-| [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fa74fe7` |
-| [`governance-foundations`](governance-foundations/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f482308` |
-| [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9c28a0a` |
-| [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `00c4920` |
-| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `ec50e2d` |
-| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `050f4a5` |
-| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `f627899` |
-| [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `0619190` |
-| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `d820840` |
-| [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `6a591f8` |
-| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `498281f` |
-| [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `338b8bd` |
-| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `66a7466` |
-| [`version-migration-guide`](version-migration-guide/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `536f69b` |
-| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `87dcd44` |
-| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e4d542c` |
-| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `aabdfef` |
-| [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `932661c` |
-| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ce31aaa` |
-| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `774f634` |
-| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ada5b52` |
-| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `247bb80` |
-| [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `aa9e241` |
-| [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `6e070bd` |
-| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `104ba23` |
-| [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `287e1b8` |
-| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `287e1b8` |
-| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `414a815` |
-| [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `9e90d01` |
-| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `287e1b8` |
-| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ccbc83c` |
-| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `287e1b8` |
-| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9c6af8` |
-| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `92ea6ee` |
-| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `287e1b8` |
-| [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `662f25a` |
-| [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `4f7ff02` |
+| [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
+| [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
+| [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
+| [`ard-capability-manifest`](ard-capability-manifest/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dbbb856` |
+| [`auth-md-agent-registration`](auth-md-agent-registration/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8483316` |
+| [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
+| [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
+| [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
+| [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
+| [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
+| [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 

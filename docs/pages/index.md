@@ -59,6 +59,9 @@ thermal trend --chart
 # Replay historical workload against subscription caps
 thermal replay --against "Claude Pro"
 thermal replay --against "ChatGPT Plus"
+
+# Self-update binary in place
+thermal upgrade
 ```
 
 ---
@@ -108,6 +111,11 @@ Thermal automatically ingests activity and disjoint token metrics from 14 AI cod
 ### 5. Zero Telemetry & Privacy Invariant
 - 100% local operation: scans local databases and logs in strictly read-only mode (`mode=ro`).
 - Zero network telemetry, zero background daemons, zero external analytics.
+
+### 6. Self-Update & Release Checks (`thermal upgrade`)
+- Checks GitHub Releases and atomically updates the running binary in place.
+- Daily background check caches the latest tag in `~/.cache/thermal/update.json` and notifies users on stderr in interactive sessions.
+- Fully controllable via `--no-update-check` or `THERMAL_NO_UPDATE_CHECK=1`.
 
 ---
 

@@ -12,12 +12,16 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mattn/go-isatty"
+
+	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/version"
 )
 
@@ -82,6 +86,7 @@ func runUpgrade() int {
 		fmt.Printf("  latest:  %s\n", release.TagName)
 	} else if current == latest {
 		fmt.Printf("  already up to date — %s\n", release.TagName)
+		_ = saveUpdateCache(updateCache{CheckedAt: time.Now().UTC(), LatestVersion: release.TagName})
 		return 0
 	} else {
 		fmt.Printf("  update available: %s → %s\n", "v"+current, release.TagName)
@@ -165,6 +170,7 @@ func runUpgrade() int {
 	_ = os.Remove(oldPath)
 
 	printUpgradeSuccess(os.Stdout, current, release.TagName)
+	_ = saveUpdateCache(updateCache{CheckedAt: time.Now().UTC(), LatestVersion: release.TagName})
 	return 0
 }
 
@@ -333,4 +339,177 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(out, in)
 	return err
+}
+
+type updateCache struct {
+	CheckedAt     time.Time `json:"checked_at"`
+	LatestVersion string    `json:"latest_version"`
+}
+
+func updateCachePath() string {
+	home := thermal.HomeDir()
+	return filepath.Join(home, ".cache", "thermal", "update.json")
+}
+
+func loadUpdateCache() (updateCache, error) {
+	p := updateCachePath()
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return updateCache{}, err
+	}
+	var c updateCache
+	if err := json.Unmarshal(b, &c); err != nil {
+		return updateCache{}, err
+	}
+	return c, nil
+}
+
+func saveUpdateCache(c updateCache) error {
+	p := updateCachePath()
+	dir := filepath.Dir(p)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(p, b, 0o644)
+}
+
+// semverCompare compares two semver strings (vX.Y.Z or X.Y.Z).
+// Returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal.
+func semverCompare(v1, v2 string) int {
+	v1 = strings.TrimPrefix(v1, "v")
+	v2 = strings.TrimPrefix(v2, "v")
+	if v1 == v2 {
+		return 0
+	}
+	if v1 == "dev" || v1 == "" {
+		return -1
+	}
+	if v2 == "dev" || v2 == "" {
+		return 1
+	}
+	p1 := strings.Split(strings.Split(v1, "-")[0], ".")
+	p2 := strings.Split(strings.Split(v2, "-")[0], ".")
+	for i := 0; i < 3; i++ {
+		var n1, n2 int
+		if i < len(p1) {
+			n1, _ = strconv.Atoi(p1[i])
+		}
+		if i < len(p2) {
+			n2, _ = strconv.Atoi(p2[i])
+		}
+		if n1 > n2 {
+			return 1
+		}
+		if n1 < n2 {
+			return -1
+		}
+	}
+	return 0
+}
+
+func fetchLatestReleaseTag() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPI, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", "thermal-update-check")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("HTTP %s", resp.Status)
+	}
+
+	var rel githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		return "", err
+	}
+	return rel.TagName, nil
+}
+
+func runBackgroundUpdateCheck() {
+	tag, err := fetchLatestReleaseTag()
+	if err != nil || tag == "" {
+		return
+	}
+	_ = saveUpdateCache(updateCache{
+		CheckedAt:     time.Now().UTC(),
+		LatestVersion: tag,
+	})
+}
+
+func spawnBackgroundUpdateCheck() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	if strings.HasSuffix(exe, ".test") || strings.Contains(exe, "__debug_bin") {
+		return
+	}
+	exe, err = filepath.EvalSymlinks(exe)
+	if err != nil {
+		exe, _ = os.Executable()
+	}
+
+	cmd := exec.Command(exe, "--check-update-bg")
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	setDetachedProcess(cmd)
+	_ = cmd.Start()
+}
+
+func maybeCheckForUpdate(opts thermal.Options) {
+	if opts.JSON || opts.Offline || opts.NoUpdateCheck {
+		return
+	}
+	if os.Getenv("THERMAL_NO_UPDATE_CHECK") != "" || os.Getenv("CI") != "" {
+		return
+	}
+	if opts.Tool == "upgrade" || opts.Tool == "--check-update-bg" {
+		return
+	}
+	// Do not nag if not in an interactive terminal
+	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsTerminal(os.Stderr.Fd()) {
+		return
+	}
+
+	cache, err := loadUpdateCache()
+	now := time.Now().UTC()
+
+	// If cache has a newer version, notify user
+	current := version.Version
+	if current != "dev" && current != "" && cache.LatestVersion != "" {
+		if semverCompare(cache.LatestVersion, current) > 0 {
+			curTag := "v" + strings.TrimPrefix(current, "v")
+			latTag := "v" + strings.TrimPrefix(cache.LatestVersion, "v")
+			msg := fmt.Sprintf("A new version of thermal is available: %s → %s. Run 'thermal upgrade' to update.", curTag, latTag)
+			if !opts.NoColor {
+				fmt.Fprintf(os.Stderr, "\n\033[2m%s\033[0m\n", msg)
+			} else {
+				fmt.Fprintf(os.Stderr, "\n%s\n", msg)
+			}
+		}
+	}
+
+	// If never checked, or last check is older than 24 hours, trigger background check
+	if err != nil || now.Sub(cache.CheckedAt) > 24*time.Hour {
+		// Update checked_at timestamp to avoid stampedes
+		_ = saveUpdateCache(updateCache{
+			CheckedAt:     now,
+			LatestVersion: cache.LatestVersion,
+		})
+		spawnBackgroundUpdateCheck()
+	}
 }

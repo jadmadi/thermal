@@ -27,29 +27,30 @@ const (
 )
 
 type Options struct {
-	Tool        string
-	DBPath      string
-	Weeks       int
-	JSON        bool
-	NoColor     bool
-	Verbose     bool
-	Report      string // "", "daily", "weekly", "monthly", "projects"
-	Since       string // YYYY-MM-DD or YYYYMMDD
-	Until       string
-	Last        int
-	Order       string // "asc" or "desc", default "desc"
-	Breakdown   bool
-	Chart       bool   // print bar rows under report tables
-	StartOfWeek string // sunday..saturday, default sunday
-	Offline     bool   // never fetch pricing, use cache only
-	NoEstimate  bool   // report stored cost only, skip pricing
-	Sort        string // tokens, cost, days, recent; default tokens
-	Top         int    // project rows to print, 0 means all
-	Metric      string // tokens or cost; analytics verbs
-	By          string // tool or model; mix verb
-	Grain       string // day, week, month; mix verb
-	Against     string // target model for replay simulation
-	Compare     string // comma-separated plans/models for replay comparison
+	Tool          string
+	DBPath        string
+	Weeks         int
+	JSON          bool
+	NoColor       bool
+	Verbose       bool
+	Report        string // "", "daily", "weekly", "monthly", "projects"
+	Since         string // YYYY-MM-DD or YYYYMMDD
+	Until         string
+	Last          int
+	Order         string // "asc" or "desc", default "desc"
+	Breakdown     bool
+	Chart         bool   // print bar rows under report tables
+	StartOfWeek   string // sunday..saturday, default sunday
+	Offline       bool   // never fetch pricing, use cache only
+	NoEstimate    bool   // report stored cost only, skip pricing
+	NoUpdateCheck bool   // disable daily automatic update check
+	Sort          string // tokens, cost, days, recent; default tokens
+	Top           int    // project rows to print, 0 means all
+	Metric        string // tokens or cost; analytics verbs
+	By            string // tool or model; mix verb
+	Grain         string // day, week, month; mix verb
+	Against       string // target model for replay simulation
+	Compare       string // comma-separated plans/models for replay comparison
 }
 
 type Summary struct {
