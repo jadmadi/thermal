@@ -2112,5 +2112,71 @@ thermal: --top only applies to the projects and models commands</code></pre>
   ]
 }
 </script>
+<script>
+// WebMCP: Expose site tools to AI agents via browser navigator.modelContext
+(function() {
+  if (typeof navigator !== 'undefined' && navigator.modelContext && typeof navigator.modelContext.provideContext === 'function') {
+    navigator.modelContext.provideContext({
+      tools: [
+        {
+          name: 'getStreakStatus',
+          description: 'Get documentation and CLI commands for inspecting current active streaks and heatmaps in Thermal.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tool: { type: 'string', description: 'Optional specific tool name (e.g. devin, opencode, claude, codex)' }
+            }
+          },
+          execute: function(args) {
+            var target = (args && args.tool) ? args.tool : 'all';
+            return Promise.resolve({
+              status: 'success',
+              message: 'Thermal tracks contribution streaks locally across 14 AI tools.',
+              recommendedCommand: target === 'all' ? 'thermal' : 'thermal ' + target,
+              docsUrl: 'https://thermal.jadmadi.net/#streaks'
+            });
+          }
+        },
+        {
+          name: 'listSupportedTools',
+          description: 'List all 14 AI coding agents and tools supported by Thermal for telemetry and heatmap tracking.',
+          inputSchema: { type: 'object', properties: {} },
+          execute: function() {
+            return Promise.resolve({
+              supportedTools: [
+                'Devin', 'OpenCode', 'MiMoCode', 'Codex', 'codewhale',
+                'ZCode', 'Grok', 'Muse', 'Claude Code', 'Droid',
+                'command-code', 'Agy', 'DeepSeek (DSH)', 'Nous Hermes'
+              ],
+              count: 14,
+              telemetryTypes: ['disjoint tokens (input, output, reasoning, cache read/write)', 'activity steps/turns']
+            });
+          }
+        },
+        {
+          name: 'calculateEstimate',
+          description: 'Calculate pricing estimate rules and command line syntax for historical AI workload replay.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              tokens: { type: 'number', description: 'Total token volume' },
+              model: { type: 'string', description: 'Model identifier (e.g. claude-3-7-sonnet, deepseek-v3)' }
+            },
+            required: ['tokens', 'model']
+          },
+          execute: function(args) {
+            return Promise.resolve({
+              status: 'simulated',
+              replayCommand: 'thermal replay --against ' + args.model,
+              disjointTokensRequired: true,
+              cacheDiscountNote: 'Thermal applies tiered cache discounts for prompt cache reads.'
+            });
+          }
+        }
+      ]
+    });
+  }
+})();
+</script>
 </body>
 </html>
