@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/jadmadi/thermal/compare/v0.13.0...v0.14.0) (2026-09-22)
+
+
+### Features
+
+* **cli:** add daily cached background update check and upgrade notification ([2c387fb](https://github.com/jadmadi/thermal/commit/2c387fb58f9452000d0f6d4cbfdcb1c1947105cc))
+* **discovery:** declare Content-Signal directives in robots.txt ([fd5ca83](https://github.com/jadmadi/thermal/commit/fd5ca8395d31dbcfe8f46fd7120883562ae1315d))
+* **discovery:** support Markdown for Agents with content negotiation ([3de20b6](https://github.com/jadmadi/thermal/commit/3de20b6d4b5864b9aa34bfe5de744427dcee9b46))
+* **docs:** add analytics suite and charting showcase to documentation ([de17df6](https://github.com/jadmadi/thermal/commit/de17df6387b70e7cbc2ad9d03b3d395c1609fb44))
+* **docs:** update documentation licensing and governance parity ([a95a4ca](https://github.com/jadmadi/thermal/commit/a95a4cafff5d83d6735e50cfa7e26364daae1de4))
+
+
+### Bug Fixes
+
+* **docs:** sanitize project names and paths across documentation and test suites ([345afbe](https://github.com/jadmadi/thermal/commit/345afbe8e7887aa85bf5644784a0d92375a0c0ad))
+* **docs:** prune unbacked discovery manifests and ensure strictly authentic documentation ([5ebccda](https://github.com/jadmadi/thermal/commit/5ebccdaae3ee5f41dc68cb7297e6840742f9b1c7))
+* **discovery:** remove hallucinated payment, OAuth, and openapi references ([33895c6](https://github.com/jadmadi/thermal/commit/33895c634c38547503e11209c022f73d9704f40a))
+
 ## [0.13.0](https://github.com/jadmadi/thermal/compare/v0.12.0...v0.13.0) (2026-09-22)
 
 
