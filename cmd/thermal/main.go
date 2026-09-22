@@ -149,6 +149,7 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
+	flag.BoolVar(&opts.NoUpdateCheck, "no-update-check", false, "Disable daily automatic update check")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
@@ -483,11 +484,17 @@ func validateReportFlags(opts thermal.Options) error {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--check-update-bg" {
+		runBackgroundUpdateCheck()
+		os.Exit(0)
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	_ = ctx
 
 	opts := parseArgs()
+	defer maybeCheckForUpdate(opts)
 
 	if usedLicenseFlag() {
 		emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", opts.NoColor)

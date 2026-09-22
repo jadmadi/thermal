@@ -65,6 +65,7 @@ thermal [options] [tool] [report]
 - `--start-of-week <day>`: First day of week (`sunday` through `saturday`).
 - `--offline`: Use cached pricing catalog only, never query network.
 - `--no-estimate`: Omit catalog pricing estimates; display recorded cost only.
+- `--no-update-check`: Disable daily background update check.
 - `--json`: Emit machine-readable JSON to stdout (bypasses terminal UI).
 - `--no-color`: Disable ANSI escape sequences in stdout and stderr.
 - `--verbose`, `-v`: Output non-fatal loader diagnostics exclusively to stderr.

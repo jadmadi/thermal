@@ -52,6 +52,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 - `thermal trend`: Daily linear trend fit with month-end token projection.
 - `thermal replay`: Historical simulation against subscription tiers (Claude Pro/Max, ChatGPT Plus/Pro, Cursor Pro) and API rate cards.
 - `thermal dashboard`: Fullscreen interactive Bubble Tea terminal user interface.
+- `thermal upgrade`: Self-update binary in place to the latest GitHub release.
 - `thermal license`: Open-source AGPLv3 terms, Community Reciprocity Covenant, and commercial dual-licensing.
 
 ## Machine-Readable Output

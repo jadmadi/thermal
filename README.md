@@ -83,6 +83,8 @@ thermal upgrade
 
 This checks GitHub for a newer release, downloads the matching binary for your OS/arch, and atomically replaces the running binary. Upgrading across minor versions? Consult **[docs/MIGRATION.md](docs/MIGRATION.md)** for breaking changes, retired aliases, and JSON schema updates.
 
+Thermal also checks for newer releases in the background once a day (cached in `~/.cache/thermal/update.json`) and prints an update reminder to stderr during interactive terminal sessions when a new release is available. You can opt out at any time with `--no-update-check` or by setting `THERMAL_NO_UPDATE_CHECK=1`.
+
 If you installed via `go install`, you can also update with:
 
 ```bash
