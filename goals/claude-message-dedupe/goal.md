@@ -1,7 +1,7 @@
 # Goal: Claude Code Message-Level Deduplication
 
 ## Goal Description
-Implement message-level deduplication in the Claude Code loader ([`internal/loaders/claude.go`](file:///mnt/Jad/github/lab/thermal-streak/internal/loaders/claude.go)) to eliminate duplicate streaming chunks, tool retries, and repeated turns from session transcripts.
+Implement message-level deduplication in the Claude Code loader (`internal/loaders/claude.go`) to eliminate duplicate streaming chunks, tool retries, and repeated turns from session transcripts.
 
 Claude Code writes session transcripts as JSONL lines in `~/.claude/projects/*/*.jsonl`. In sessions with streaming turn records, tool execution retries, or subagent message propagation, assistant message events can be logged with identical message IDs or duplicate usage structures.
 
