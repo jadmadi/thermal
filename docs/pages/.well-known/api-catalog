@@ -1,0 +1,37 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://thermal.jadmadi.net/",
+      "service-desc": [
+        {
+          "href": "https://thermal.jadmadi.net/openapi.json",
+          "type": "application/json"
+        },
+        {
+          "href": "https://thermal.jadmadi.net/.well-known/mcp/server-card.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://thermal.jadmadi.net/",
+          "type": "text/html"
+        },
+        {
+          "href": "https://thermal.jadmadi.net/llms.txt",
+          "type": "text/plain"
+        },
+        {
+          "href": "https://thermal.jadmadi.net/llms-full.txt",
+          "type": "text/plain"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://thermal.jadmadi.net/",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}
