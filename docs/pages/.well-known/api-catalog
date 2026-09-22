@@ -4,10 +4,6 @@
       "anchor": "https://thermal.jadmadi.net/",
       "service-desc": [
         {
-          "href": "https://thermal.jadmadi.net/openapi.json",
-          "type": "application/json"
-        },
-        {
           "href": "https://thermal.jadmadi.net/.well-known/mcp/server-card.json",
           "type": "application/json"
         }
