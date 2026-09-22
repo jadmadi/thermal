@@ -652,6 +652,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       <a href="#reports"><span>Reports</span></a>
       <a href="#projects"><span>Projects</span></a>
       <a href="#models"><span>Models</span></a>
+      <a href="#analytics"><span>Analytics</span></a>
       <a href="#replay"><span>Replay</span></a>
       <a href="#reference"><span>Reference</span></a>
       <a class="support" href="https://paypal.me/madise" rel="noopener noreferrer"><span>Support my work</span></a>
@@ -1346,6 +1347,58 @@ thermal weekly --no-estimate  <u># recorded cost only, works on the leaderboard 
         deliberate: a blank is honest, a zero is not.
       </p>
     </div>
+  </div>
+</section>
+
+<!-- ======================================================= ANALYTICS == -->
+<section id="analytics">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Analytics &amp; Charting</h2>
+      <p>
+        Deep statistical insight into your AI tool workflow. Track tool and model share over time, analyze daily token distributions with percentiles and cache efficiency, and fit trend slopes with month-end projections.
+      </p>
+    </div>
+
+    <div class="cmd">
+      <div class="cmd-bar"><span class="lang">shell</span><button class="copy" type="button" data-copy aria-live="polite" aria-atomic="true"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Copy</span></button></div>
+      <pre><code>thermal stats                               <u># percentiles, cache efficiency, weekday profile</u>
+thermal mix --by tool --grain week          <u># tool share over time and switching velocity</u>
+thermal trend --last 30                     <u># daily volume fit and 14-day month-end projection</u>
+thermal weekly --chart                      <u># append clean text bars to reports, projects &amp; models</u></code></pre>
+    </div>
+
+    <div class="prose" style="margin-top:var(--s7)">
+      <pre class="output"><code>  Thermal · stats (all tools, 2026-06-25 to 2026-09-22)
+  Window: 90 days · 67 active (74.4%) · 5.82B total tokens · ~$214.30
+
+  Distribution (tokens / active day)
+    Median:   64.2M tok       Outliers: 2 days &gt; 180.4M tok
+    p90:     122.8M tok       Max:      248.1M tok (2026-08-14)
+
+  Token composition &amp; cache efficiency
+    Cache read:       5.59B tok  ████████████████████████████████████████  (96.1%)
+    Cache write:     112.4M tok  █                                         ( 1.9%)
+    Uncached input:   64.1M tok  ░                                         ( 1.1%)
+    Output:           42.0M tok  ░                                         ( 0.7%)
+    Reasoning:        11.5M tok  ░                                         ( 0.2%)
+    Cache hit rate: 97.0% of prompt tokens read from cache
+
+  Weekday profile
+    Mon:   84.2M tok/day  ████████████
+    Tue:   92.5M tok/day  █████████████
+    Wed:  104.1M tok/day  ███████████████
+    Thu:   88.3M tok/day  ████████████
+    Fri:   76.0M tok/day  ███████████
+    Sat:   31.4M tok/day  ████
+    Sun:   28.1M tok/day  ████</code></pre>
+      <p class="scroll-hint">Scrolls sideways to show every column.</p>
+    </div>
+
+    <p class="note" style="margin-top:var(--s6)">
+      <strong>Copy-pasteable Unicode bar charts with <span class="mono">--chart</span>.</strong>
+      Append <span class="mono">--chart</span> to <span class="mono">daily</span>, <span class="mono">weekly</span>, <span class="mono">monthly</span>, <span class="mono">projects</span>, or <span class="mono">models</span> to render clean proportional bars right in stdout. Bar rows are width-aware, capped at twelve rows with a stated remainder, and never touch <span class="mono">--json</span>.
+    </p>
   </div>
 </section>
 
