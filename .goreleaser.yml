@@ -51,6 +51,7 @@ brews:
       owner: jadmadi
       name: homebrew-tap
       branch: main
+    skip_upload: true
     commit_author:
       name: jadmadi
       email: contact@jadmadi.net
