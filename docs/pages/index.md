@@ -111,15 +111,11 @@ Thermal automatically ingests activity and disjoint token metrics from 14 AI cod
 
 ---
 
-## Agent & Machine Discovery Endpoints
+## Documentation & Project Links
 
-Thermal publishes standards-compliant discovery endpoints for autonomous AI agents:
-
-- **API Catalog (RFC 9727)**: `/.well-known/api-catalog`
-- **Agent Skills Discovery (RFC v0.2.0)**: `/.well-known/agent-skills/index.json`
-- **MCP Server Card**: `/.well-known/mcp/server-card.json`
-- **ARD Capability Manifest**: `/.well-known/ai-catalog.json`
-- **ACP Commerce Discovery**: `/.well-known/acp.json`
-- **Agent Registration Documentation**: `/auth.md`
-- **DNS for AI Discovery**: `/DNS-AID.md`
-- **Markdown for Agents**: Content negotiation via `Accept: text/markdown` on `/` returns this document.
+- **Documentation**: https://thermal.jadmadi.net/
+- **Repository**: https://github.com/jadmadi/thermal
+- **License Terms**: Dual-licensed under GNU AGPL-3.0 (Community Edition) and Commercial Enterprise License
+- **Governance & Scope**: [GOVERNANCE.md](https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md)
+- **Migration Guide**: [docs/MIGRATION.md](https://github.com/jadmadi/thermal/blob/main/docs/MIGRATION.md)
+- **Contributing & CLA**: [CONTRIBUTING.md](https://github.com/jadmadi/thermal/blob/main/CONTRIBUTING.md)

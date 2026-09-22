@@ -1,9 +1,5 @@
 # Cloudflare Pages / Static Hosting Custom Headers
 /*
-  Link: </.well-known/api-catalog>; rel="api-catalog", </.well-known/agent-skills/index.json>; rel="agent-skills", </.well-known/mcp/server-card.json>; rel="mcp-server-card", </index.html>; rel="service-doc"
   Access-Control-Allow-Origin: *
   X-Content-Type-Options: nosniff
-
-/.well-known/*
-  Access-Control-Allow-Origin: *
-  Content-Type: application/json
+  Link: </index.md>; rel="alternate"; type="text/markdown"
