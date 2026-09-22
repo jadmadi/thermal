@@ -17,8 +17,12 @@ jobs:
           fetch-depth: 0
 
       - name: Verify Contributor Sign-off (CLA / DCO)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--') && github.actor != 'github-actions[bot]'
         run: |
+          if [[ "${{ github.head_ref }}" =~ ^release-please-- ]] || [[ "${{ github.actor }}" == *"bot"* ]]; then
+            echo "Skipping CLA check for automated bot PR."
+            exit 0
+          fi
           base="origin/${{ github.base_ref || 'main' }}"
           echo "Verifying Signed-off-by trailers on PR commits against $base..."
           missing=0
