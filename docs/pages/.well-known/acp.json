@@ -9,7 +9,7 @@
     "url": "https://thermal.jadmadi.net",
     "contact": "contact@jadmadi.net"
   },
-  "api_base_url": "https://thermal.jadmadi.net/api",
+  "api_base_url": "https://thermal.jadmadi.net",
   "transports": ["https"],
   "capabilities": {
     "services": [

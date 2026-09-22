@@ -29,7 +29,3 @@ For commercial enterprise licenses, multi-tenant fleet distribution rights, or p
 - **Contact**: `contact@jadmadi.net`
 - **License Terms**: [`DUAL-LICENSE.md`](https://github.com/jadmadi/thermal/blob/main/DUAL-LICENSE.md)
 - **Governance**: [`GOVERNANCE.md`](https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md)
-
-## 4. Protected Resource Metadata
-
-See [`/.well-known/oauth-protected-resource`](/.well-known/oauth-protected-resource) for OAuth 2.0 Protected Resource Metadata (RFC 9728).
