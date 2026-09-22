@@ -4,6 +4,10 @@
 User-agent: *
 Allow: /
 
+# Content Signals (https://contentsignals.org, draft-romm-aipref-contentsignals)
+# Declare AI content usage preferences: allow search & real-time input, disallow training
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
 # Answer engines listed explicitly, so permission is stated rather than
 # merely implied by the absence of a block.
 
