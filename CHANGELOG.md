@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/jadmadi/thermal/compare/v0.13.0...v0.14.0) (2026-09-22)
+
+
+### Features
+
+* **cli:** add daily cached background update check and upgrade notification (goals/cli-daily-update-check/goal.md) ([2c387fb](https://github.com/jadmadi/thermal/commit/2c387fb58f9452000d0f6d4cbfdcb1c1947105cc))
+* **discovery:** declare Content-Signal directives in robots.txt (goals/robots-content-signals/goal.md) ([fd5ca83](https://github.com/jadmadi/thermal/commit/fd5ca8395d31dbcfe8f46fd7120883562ae1315d))
+* **discovery:** include RFC 8288 Link headers and discovery link relations (goals/agent-link-headers/goal.md) ([cf43a37](https://github.com/jadmadi/thermal/commit/cf43a37a7cc198b2c84f776d7cd61be095bba236))
+* **discovery:** publish ACP commerce discovery document (goals/acp-commerce-discovery/goal.md) ([c9ee829](https://github.com/jadmadi/thermal/commit/c9ee829f094009691894c2992c19f9fc45890f3e))
+* **discovery:** publish agent skills discovery index per RFC v0.2.0 (goals/agent-skills-discovery/goal.md) ([e087bf4](https://github.com/jadmadi/thermal/commit/e087bf4c646b27a7b97d65b27874fb310fa07887))
+* **discovery:** publish ARD capability manifest ai-catalog.json (goals/ard-capability-manifest/goal.md) ([dbbb856](https://github.com/jadmadi/thermal/commit/dbbb856b42c91047934c02c6aeee22641bfa16e9))
+* **discovery:** publish Auth.md metadata for agent registration (goals/auth-md-agent-registration/goal.md) ([8483316](https://github.com/jadmadi/thermal/commit/8483316a5b778bd78d35aaba425db7e3ad9238ab))
+* **discovery:** publish DNS-AID zone records and DNSSEC documentation (goals/dns-aid-discovery/goal.md) ([769b9d6](https://github.com/jadmadi/thermal/commit/769b9d6dad50c4f55bb7536a4349dd640202355a))
+* **discovery:** publish MCP server card for agent discovery (goals/mcp-server-card/goal.md) ([f7350bf](https://github.com/jadmadi/thermal/commit/f7350bf1a681231f2b9935986afbf0f6f10bf886))
+* **discovery:** publish RFC 9727 API catalog for automated API discovery (goals/rfc9727-api-catalog/goal.md) ([e657745](https://github.com/jadmadi/thermal/commit/e6577458d7ba5136b92a5fb26037ecf2b62b7d25))
+* **discovery:** support Markdown for Agents with content negotiation (goals/markdown-for-agents/goal.md) ([3de20b6](https://github.com/jadmadi/thermal/commit/3de20b6d4b5864b9aa34bfe5de744427dcee9b46))
+* **discovery:** support WebMCP browser tools in documentation homepage (goals/webmcp-browser-tools/goal.md) ([02f3ef6](https://github.com/jadmadi/thermal/commit/02f3ef6191a7a2d6fbef2fee2589302c2490a021))
+* **docs:** add analytics suite and charting showcase to GitHub Pages (goals/html-docs-features-and-analytics/goal.md) ([de17df6](https://github.com/jadmadi/thermal/commit/de17df6387b70e7cbc2ad9d03b3d395c1609fb44))
+* **docs:** update GitHub Pages licensing and governance parity (goals/html-docs-licensing-parity/goal.md) ([a95a4ca](https://github.com/jadmadi/thermal/commit/a95a4cafff5d83d6735e50cfa7e26364daae1de4))
+
+
+### Bug Fixes
+
+* **discovery:** remove hallucinated payment, OAuth, and openapi references ([33895c6](https://github.com/jadmadi/thermal/commit/33895c634c38547503e11209c022f73d9704f40a))
+
 ## [0.13.0](https://github.com/jadmadi/thermal/compare/v0.12.0...v0.13.0) (2026-09-22)
 
 
