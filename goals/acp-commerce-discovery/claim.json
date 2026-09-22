@@ -1,0 +1,14 @@
+{
+  "goal_slug": "acp-commerce-discovery",
+  "claimed_by": "antigravity",
+  "agent": "antigravity",
+  "claimed_at": "2026-09-22T10:26:07.431373264Z",
+  "updated_at": "2026-09-22T10:26:07.431373264Z",
+  "hostname": "madi",
+  "pid": 427691,
+  "status": "in_progress",
+  "note": "Publishing ACP commerce discovery metadata acp.json",
+  "files_to_touch": [
+    "docs/pages/.well-known/acp.json"
+  ]
+}
