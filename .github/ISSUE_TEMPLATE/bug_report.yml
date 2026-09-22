@@ -1,0 +1,58 @@
+name: Bug Report
+description: Report a defect, incorrect metric calculation, or crash in Thermal
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem in Thermal! Before filing, please verify that you are running the latest release via `thermal version` or `thermal upgrade`.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear, concise description of what the bug is.
+    validations:
+      required: true
+  - type: input
+    id: thermal-version
+    attributes:
+      label: Thermal Version
+      description: Run `thermal version` and paste the output here.
+      placeholder: "thermal v0.12.0 (linux/amd64)"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating System & Terminal
+      description: What OS and terminal emulator are you running?
+      placeholder: "Ubuntu 24.04 / Kitty, macOS 14 / Ghostty, Windows 11 / Windows Terminal"
+    validations:
+      required: true
+  - type: input
+    id: affected-tool
+    attributes:
+      label: Affected AI Tool(s)
+      description: Which AI coding tool database/logs are involved?
+      placeholder: "e.g., Devin, OpenCode, Codex, Grok, Claude, Agy, etc."
+    validations:
+      required: false
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide commands or configuration to reproduce the issue.
+      placeholder: |
+        1. Run 'thermal devin --last 7'
+        2. Notice token counts mismatch
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal Output / Verbose Logs
+      description: Run the failing command with `--verbose` and paste stderr/stdout here.
+      render: shell
+    validations:
+      required: false

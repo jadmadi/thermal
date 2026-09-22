@@ -1,0 +1,36 @@
+# CODEOWNERS — Automated Review Assignment & Subsystem Ownership
+# Syntax: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default fallback: Project Lead owns all repository paths
+* @jadmadi
+
+# Core CLI binary & command handling
+/cmd/ @jadmadi
+
+# Tool-specific ingestion engines and incremental delta-caching
+/internal/loaders/ @jadmadi
+
+# Aggregation algorithms, streak logic, time parsing, and project attribution
+/internal/thermal/ @jadmadi
+
+# Model catalog pricing, cache, and cost estimation
+/internal/pricing/ @jadmadi
+
+# Terminal rendering, ANSI formatting, charts, and leaderboard UI
+/internal/render/ @jadmadi
+
+# Interactive Terminal User Interface (TUI)
+/internal/tui/ @jadmadi
+
+# Build scripts, packaging, and CI/CD automation
+/build.sh @jadmadi
+/.github/ @jadmadi
+/.goreleaser.yml @jadmadi
+
+# Constitutional, governance, licensing, and security policies
+/GOVERNANCE.md @jadmadi
+/DUAL-LICENSE.md @jadmadi
+/LICENSE @jadmadi
+/SECURITY.md @jadmadi
+/MAINTAINERS.md @jadmadi
+/CONTRIBUTING.md @jadmadi

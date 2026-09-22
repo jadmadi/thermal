@@ -1,0 +1,71 @@
+name: New Tool Loader Proposal
+description: Propose support for a new AI coding assistant or agent framework
+title: "[Loader Proposal]: "
+labels: ["enhancement", "loader"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thermal welcomes loaders for AI coding assistants that record local telemetry!
+        Please review [AGENTS.md](https://github.com/jadmadi/thermal/blob/main/AGENTS.md) and [GOVERNANCE.md](https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md) before submitting.
+  - type: input
+    id: tool-name
+    attributes:
+      label: Tool Name & Homepage
+      description: Name of the AI assistant and link to its documentation or repository.
+      placeholder: "e.g., Cursor, Continue, Roo Code"
+    validations:
+      required: true
+  - type: dropdown
+    id: storage-format
+    attributes:
+      label: Local Storage Architecture
+      description: How does the tool record sessions and metrics on disk?
+      options:
+        - "SQLite Database"
+        - "JSONL Session Transcripts"
+        - "JSON Session Files"
+        - "Other Local Storage"
+    validations:
+      required: true
+  - type: input
+    id: default-path
+    attributes:
+      label: Default Storage Path
+      description: Where are the database or log files located across Linux, macOS, and Windows?
+      placeholder: "~/.cursor/... or ~/.config/..."
+    validations:
+      required: true
+  - type: checkboxes
+    id: metrics-available
+    attributes:
+      label: Available Telemetry Metrics
+      description: Check all metrics that this tool records locally:
+      options:
+        - label: "Input Tokens (uncached)"
+        - label: "Output Tokens"
+        - label: "Reasoning / Thinking Tokens"
+        - label: "Cache Read / Cache Write Tokens"
+        - label: "Recorded Cost ($USD)"
+        - label: "Model Identifier (e.g. gpt-4o, claude-3-5-sonnet)"
+        - label: "Project / Repository Path (git root)"
+        - label: "Activity / Step / Message counts only"
+  - type: textarea
+    id: sample-schema
+    attributes:
+      label: Sample Database Schema or Log Snippet
+      description: Paste an excerpt of the SQLite schema (`.schema`) or a sanitized JSON/JSONL line.
+      render: shell
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Invariant Acknowledgments
+      options:
+        - label: "I confirm the data source is strictly local and does not require cloud credentials or remote API calls."
+          required: true
+        - label: "I understand that SQLite ingestion must be strictly read-only (?mode=ro) with PRAGMA mmap_size."
+          required: true
+        - label: "I am willing to provide a sanitized test fixture for unit testing."
+          required: false

@@ -1,0 +1,66 @@
+# Thermal
+
+> Don't break the streak. High-performance terminal contribution heatmap and leaderboard tool for AI coding assistants.
+
+Thermal scans local databases and session transcripts across 15 AI coding tools (Claude Code, Devin, OpenCode, Codex, Grok, Agy, DeepSeek DSH, Nous Hermes, MiMoCode, codewhale, ZCode, Muse, Droid, command-code), aggregates tokens and cost metrics, and renders beautiful terminal heatmaps and reports.
+
+- Canonical Site: https://thermal.jadmadi.net
+- Repository: https://github.com/jadmadi/thermal
+- Full Specification: https://thermal.jadmadi.net/llms-full.txt
+- Migration Guide: https://thermal.jadmadi.net/migration
+
+## Quickstart & Installation
+
+```bash
+# Homebrew (macOS & Linux)
+brew install jadmadi/tap/thermal
+
+# Standalone Shell Installer (Linux & macOS)
+curl -fsSL https://thermal.jadmadi.net/install.sh | sh
+
+# Go Toolchain
+go install github.com/jadmadi/thermal/cmd/thermal@latest
+```
+
+## Supported AI Coding Tools
+
+- **Claude Code** (`claude`): Scans `~/.claude/projects/*/*.jsonl` for assistant message usage.
+- **Devin** (`devin`): Queries SQLite DB joining `message_nodes` against `sessions`.
+- **OpenCode** (`opencode`): Reads `session_v2` and legacy tables with pre-aggregated tokens.
+- **Codex CLI** (`codex`): Reads `state_5.sqlite` supplemented with rollout JSONL logs.
+- **Grok** (`grok`): Scans `~/.grok/sessions/*/*/updates.jsonl` with turn deduplication.
+- **DeepSeek Harness** (`dsh`): Scans `~/.dsh/storages/session_projcache/sessions/*.json`.
+- **Nous Hermes** (`hermes`): Reads `~/.hermes/state.db` with memory-mapped SQLite.
+- **Agy / Antigravity** (`agy`): Scans `~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl`.
+- **MiMoCode** (`mimocode`): SQLite pre-aggregated tokens and session directories.
+- **codewhale** (`codewhale`): Reads `~/.codewhale/sessions/*.json`.
+- **ZCode** (`zcode`): Reads `~/.zcode/cli/db/db.sqlite` completed model usage.
+- **command-code** (`command-code`): Scans `~/.commandcode/sessions/*/transcript.jsonl`.
+- **Muse** (`muse`): Reads `~/.local/share/muse/session-index.db` prompt counts.
+- **Droid** (`droid`): Scans `~/.factory/sessions/*/*.jsonl` message records.
+
+## Core Commands
+
+- `thermal`: All-tools contribution leaderboard.
+- `thermal [tool] daily`: Daily tokens, cost, and turn activity (`--last N`, `--since`, `--until`).
+- `thermal [tool] weekly`: Weekly activity overview (`--chart` for ASCII bars).
+- `thermal [tool] monthly`: Monthly rollup table.
+- `thermal projects`: Token and cost distribution aggregated by git repository root.
+- `thermal models`: Token breakdown and estimated cost per model.
+- `thermal mix`: Switching statistics and usage mix (`--by tool|model`, `--grain day|week|month`).
+- `thermal stats`: Daily percentile distribution, weekday seasonality, and outliers.
+- `thermal trend`: Daily linear trend fit with month-end token projection.
+- `thermal replay`: Historical simulation against subscription tiers (Claude Pro/Max, ChatGPT Plus/Pro, Cursor Pro) and API rate cards.
+- `thermal dashboard`: Fullscreen interactive Bubble Tea terminal user interface.
+- `thermal license`: Open-source AGPLv3 terms, Community Reciprocity Covenant, and commercial dual-licensing.
+
+## Machine-Readable Output
+
+Every report command supports `--json` for scripting and pipelines:
+
+```bash
+thermal weekly --json
+thermal replay --against deepseek-chat --json
+thermal projects --top 10 --json
+thermal license --json
+```

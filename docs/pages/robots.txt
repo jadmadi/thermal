@@ -1,0 +1,52 @@
+# thermal documentation site
+# Static HTML on GitHub Pages or Cloudflare Pages. All crawlers welcome.
+
+User-agent: *
+Allow: /
+
+# Answer engines listed explicitly, so permission is stated rather than
+# merely implied by the absence of a block.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Bravebot
+Allow: /
+
+Sitemap: https://thermal.jadmadi.net/sitemap.xml
