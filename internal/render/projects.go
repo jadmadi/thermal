@@ -163,8 +163,8 @@ func formatCostOrDash(v float64) string {
 }
 
 // displayNames maps each path to a short label. A lone repository shows as its
-// own directory name, mahak-bench. When two paths share a name, the
-// distinguishing parent segment is added in parentheses, mahak-bench (Jad).
+// own directory name, atlas-gateway. When two paths share a name, the
+// distinguishing parent segment is added in parentheses, atlas-gateway (core).
 // The full path stays in the JSON output.
 func displayNames(paths []string) map[string]string {
 	return thermal.ProjectDisplayNames(paths)

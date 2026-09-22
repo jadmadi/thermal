@@ -94,26 +94,26 @@ func TestRenderProjects_CapsRows(t *testing.T) {
 
 func TestDisplayNames(t *testing.T) {
 	rows := []thermal.ProjectRow{
-		{Project: "/home/user/projects/waqftech/mahak-bench"},
-		{Project: "/mnt/Jad/github/lab/sila"},
-		{Project: "/home/user/work/other/mahak-bench"},
+		{Project: "/home/user/projects/core/atlas-gateway"},
+		{Project: "/home/user/repos/engine"},
+		{Project: "/home/user/work/infra/atlas-gateway"},
 		{Project: "/srv/app"},
 	}
 	names := displayNames(projectPaths(rows))
 
-	if names["/home/user/projects/waqftech/mahak-bench"] != "mahak-bench (waqftech)" {
+	if names["/home/user/projects/core/atlas-gateway"] != "atlas-gateway (core)" {
 		t.Errorf("colliding name should carry a parent hint, got %q",
-			names["/home/user/projects/waqftech/mahak-bench"])
+			names["/home/user/projects/core/atlas-gateway"])
 	}
-	if names["/home/user/work/other/mahak-bench"] != "mahak-bench (other)" {
+	if names["/home/user/work/infra/atlas-gateway"] != "atlas-gateway (infra)" {
 		t.Errorf("colliding name should carry a parent hint, got %q",
-			names["/home/user/work/other/mahak-bench"])
+			names["/home/user/work/infra/atlas-gateway"])
 	}
 	if names["/srv/app"] != "app" {
 		t.Errorf("unique name = %q, want app", names["/srv/app"])
 	}
-	if names["/mnt/Jad/github/lab/sila"] != "sila" {
-		t.Errorf("unique name = %q, want sila", names["/mnt/Jad/github/lab/sila"])
+	if names["/home/user/repos/engine"] != "engine" {
+		t.Errorf("unique name = %q, want engine", names["/home/user/repos/engine"])
 	}
 }
 

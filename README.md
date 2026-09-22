@@ -253,14 +253,14 @@ thermal projects --json
 
   #    Project                       Tools                    Tokens       Cost  Days  Last
   ───────────────────────────────────────────────────────────────────────────────────────────────
-   1.  mahak-bench (Jad)             OpenCode,Devin +4          5.1B    $216.85    14  2026-09-16
+   1.  atlas-gateway (core)          OpenCode,Devin +4          5.1B    $216.85    14  2026-09-16
         tools   OpenCode 2.9B · Devin 2.0B · Codex 250.3M · +3
         models  deepseek-v4.1-flash 1.4B · muse-spark-1.3-contributor-free 820.4M · +7
-   2.  tree.waqf.app                 Devin,MiMoCode +2          3.8B      $4.10    10  2026-08-12
-   3.  etba3.app (aqaba-dev)         Codex,Devin,OpenCode     688.8M      $0.07     7  2026-09-07
+   2.  beacon-api                    Devin,MiMoCode +2          3.8B      $4.10    10  2026-08-12
+   3.  solaris-engine (infra)        Codex,Devin,OpenCode     688.8M      $0.07     7  2026-09-07
 ```
 
-The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `mahak-bench (Jad)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
+The Project column shows the repository directory name. When two projects share one, the distinguishing parent appears in parentheses, like `atlas-gateway (core)`. Tools rank by the tokens they contributed, and the breakdown lines show tokens rather than shares because some tools record no model attribution.
 
 Project attribution uses the token tools: OpenCode, MiMoCode, ZCode, Codex, Devin, Claude, Grok, codewhale, DeepSeek (DSH), and Nous Hermes. Agy records no project.
 
