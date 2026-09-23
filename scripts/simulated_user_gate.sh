@@ -196,11 +196,15 @@ run_check "Replay against DeepSeek V3 API" 0 text "${BIN_PATH}" replay --against
 run_check "Replay compare all plans" 0 text "${BIN_PATH}" replay --compare all --no-color
 run_check "Replay JSON export" 0 json "${BIN_PATH}" replay --json
 
-echo -e "\n${BOLD}7. Token Yield & Code Delta Telemetry:${RESET}"
+echo -e "\n${BOLD}7. Token Yield & Verifiable Work Receipts:${RESET}"
 run_check "Yield report standard output" 0 text "${BIN_PATH}" yield --no-color
 run_check "Yield report sorted by lines" 0 text "${BIN_PATH}" yield --sort lines --no-color
 run_check "Yield report sorted by yield" 0 text "${BIN_PATH}" yield --sort yield --no-color
 run_check "Yield report JSON export" 0 json "${BIN_PATH}" yield --json
+run_check "Receipt report standard output" 0 text "${BIN_PATH}" receipt --no-color
+run_check "Receipt report sorted by verified" 0 text "${BIN_PATH}" receipt --sort verified --no-color
+run_check "Receipt report sorted by rate" 0 text "${BIN_PATH}" receipt --sort rate --no-color
+run_check "Receipt report JSON export" 0 json "${BIN_PATH}" receipt --json
 
 echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
 run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
@@ -222,6 +226,7 @@ run_check "Rejects --against on projects" 1 error "${BIN_PATH}" projects --again
 run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
+run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then

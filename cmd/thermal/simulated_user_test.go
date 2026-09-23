@@ -522,3 +522,69 @@ func TestSimulatedUser_YieldCommand(t *testing.T) {
 		t.Errorf("'thermal codewhale yield' missing header: %s", stdout)
 	}
 }
+
+func TestSimulatedUser_ReceiptCommand(t *testing.T) {
+	// 1. Text mode
+	stdout, stderr, code := runSim(t, "receipt", "--no-color", "--top", "5")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal receipt', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "receipt") {
+		t.Errorf("'thermal receipt' missing header: %s", stdout)
+	}
+	if strings.Contains(stdout, "\x1b[") {
+		t.Errorf("'thermal receipt' contains ANSI escapes under --no-color")
+	}
+	checkLanguageSanity(t, stdout)
+
+	// 2. JSON mode
+	jsonOut, stderr, code := runSim(t, "receipt", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal receipt --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal receipt --json': %v. stdout: %s", err, jsonOut)
+	}
+	if res["type"] != "receipt" {
+		t.Errorf("expected type == receipt in JSON, got %v", res["type"])
+	}
+	if _, ok := res["summary"]; !ok {
+		t.Errorf("expected summary in JSON, got %v", res)
+	}
+
+	// 3. Flags: --sort tokens, --sort verified, --sort cost, --sort rate
+	for _, sortKey := range []string{"tokens", "verified", "cost", "rate"} {
+		_, _, code := runSim(t, "receipt", "--sort", sortKey, "--no-color")
+		if code != 0 {
+			t.Errorf("expected exit code 0 for 'thermal receipt --sort %s', got %d", sortKey, code)
+		}
+	}
+
+	// 4. Invalid sort flag rejected
+	_, stderr, code = runSim(t, "receipt", "--sort", "invalid_sort")
+	if code == 0 {
+		t.Errorf("expected non-zero exit code for invalid --sort in receipt, got 0")
+	}
+	if !strings.Contains(stderr, "--sort must be tokens, verified, cost, or rate") {
+		t.Errorf("unexpected error message for invalid --sort: %s", stderr)
+	}
+
+	// 5. Negative flags rejection
+	for _, badFlag := range []string{"--against=claude-3-5-sonnet", "--breakdown", "--chart"} {
+		_, _, code := runSim(t, "receipt", badFlag)
+		if code == 0 {
+			t.Errorf("expected non-zero exit code for 'thermal receipt %s', got 0", badFlag)
+		}
+	}
+
+	// 6. Single tool receipt
+	stdout, stderr, code = runSim(t, "codewhale", "receipt", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal codewhale receipt', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "receipt") {
+		t.Errorf("'thermal codewhale receipt' missing header: %s", stdout)
+	}
+}
+

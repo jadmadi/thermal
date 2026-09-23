@@ -48,6 +48,7 @@ Commands:
   trend          Daily trend fit with a month-end projection
   replay         Simulate workload against subscriptions & API pricing
   yield          Token yield & code output delta telemetry
+  receipt        Verifiable work receipts & session verification outcomes
   share          Generate a stateless, private share URL for your streak
   audit          Audit local agent setup and context health
   license        Show license, dual-licensing & commercial terms
@@ -317,7 +318,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt":
 		return true
 	}
 	return false
@@ -442,6 +443,21 @@ func validateReportFlags(opts thermal.Options) error {
 		case "", "tokens", "lines", "yield":
 		default:
 			return fmt.Errorf("--sort must be tokens, lines, or yield for the yield command")
+		}
+	case "receipt":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the receipt command")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
+		switch sortKey {
+		case "", "tokens", "verified", "cost", "rate":
+		default:
+			return fmt.Errorf("--sort must be tokens, verified, cost, or rate for the receipt command")
 		}
 	case "projects":
 		if opts.Against != "" || opts.Compare != "" {
@@ -579,6 +595,8 @@ func main() {
 			runReplayReport(opts)
 		case "yield":
 			runYieldReport(opts)
+		case "receipt":
+			runReceiptReport(opts)
 		case "audit":
 			runAudit(opts)
 		case "share":
@@ -1422,3 +1440,66 @@ func runYieldReport(opts thermal.Options) {
 
 	fmt.Print(render.RenderYield(rep, opts.Top, opts.NoColor))
 }
+
+// runReceiptReport links agent token spend to concrete verification outcomes.
+func runReceiptReport(opts thermal.Options) {
+	receiptOpts := thermal.ReceiptOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Sort:  opts.Sort,
+		Top:   opts.Top,
+	}
+
+	targetTool := opts.Tool
+	if targetTool == "receipt" {
+		targetTool = "all"
+	}
+	opts.Tool = targetTool
+
+	home := thermal.HomeDir()
+	pricer := newPricer(opts)
+
+	// Scan real session transcripts from local tool stores
+	receipts := thermal.ScanSessionReceipts(home, targetTool, pricer)
+
+	// If no transcript files found (e.g. blank environment or tools storing aggregates only),
+	// synthesize receipts from loaded tool sessions
+	if len(receipts) == 0 {
+		set := loadUsage(opts)
+		for _, res := range set.results {
+			for _, day := range res.Daily {
+				if day.Turns == 0 && day.Tokens == 0 {
+					continue
+				}
+				receipts = append(receipts, thermal.WorkReceipt{
+					SessionID: fmt.Sprintf("%s-%s", strings.ToLower(res.Name), day.Day),
+					Tool:      res.Name,
+					Day:       day.Day,
+					Tokens:    day.Tokens,
+					Cost:      day.Cost,
+					Tier:      thermal.Tier2Claimed,
+					Status:    "CLAIMED",
+				})
+			}
+		}
+	}
+
+	rep := thermal.AggregateReceipts(receipts, receiptOpts)
+	rep.Tool = targetTool
+
+	if opts.JSON {
+		type jsonReceiptReport struct {
+			thermal.ReceiptReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonReceiptReport{
+			ReceiptReport: rep,
+			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderReceipt(rep, opts.Top, opts.NoColor))
+}
+
