@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 20
+- 🟢 **Implemented & Verified**: 21
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 22 (22 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 16 (16 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 220/264 completed (83%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Preallocated tokenResults and activityResults slices capacity to avoid dynamic reallocation, added benchmark to leaderboard_test.go. | 0s ago |
+| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Verified rows.Err checks in codex, hermes, and muse loaders, codified standard 11 in AGENTS.md, verified unit tests. | 0s ago |
 
 ---
 
@@ -60,7 +60,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
 | [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader (`internal/loade... | `/goal goals/claude-message-dedupe/goal.md` |
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Archive Extraction Deduplication and File Write Close Verification in CLI Self-Updater — In `cmd/thermal/upgrade.go`, binary extraction from `.tar.gz` archives had dupli... | `/goal goals/cli-upgrade-file-integrity/goal.md` |
-| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Robust SQLite Rows Iteration Safety and rows.Err Checking — Database queries in `database/sql` iterate results using `for rows.Next() { ... ... | `/goal goals/database-loader-iteration-safety/goal.md` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Comprehensive Documentation Parity, Full Scan & Simulated Human User Audit — Update all repository Markdown documentation (README.md, AGENTS.md, docs/*.md) a... | `/goal goals/docs-parity-and-human-simulation/goal.md` |
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Embedded Local Web Dashboard for Agent Telemetry & Streak Visualization — Implement a local-first web dashboard served via 'thermal serve' on localhost. E... | `/goal goals/embedded-web-dashboard/goal.md` |
@@ -101,6 +100,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`auth-md-agent-registration`](auth-md-agent-registration/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8483316` |
 | [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `2c387fb` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
+| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
