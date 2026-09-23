@@ -32,5 +32,5 @@
   - Run `./scripts/simulated_user_gate.sh` (46/46 checks pass).
   - Verify `thermal license` and `thermal license --json` output.
 
-- [ ] **Phase 6 — Attribution Commit**:
+- [x] **Phase 6 — Attribution Commit**:
   - Commit changes with subject: `feat(license): harden licensing architecture, CI enforcement & SPDX headers (goals/license-strategy-and-enforcement/goal.md)`
