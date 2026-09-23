@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 40
+- 🟢 **Implemented & Verified**: 41
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 11 (11 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 7
+- 🟡 **Ready to Execute (Pending)**: 11 (10 independent ⚡, 1 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 6
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Fixed Codex model attribution across date rollups, implemented isActivityOnly guard separating action steps from token totals across reports and analytics. | 0s ago |
+| [`charting-dep-spike`](charting-dep-spike/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | in progress | 0s ago |
 
 ---
 
@@ -49,7 +49,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`charting-dep-spike`](charting-dep-spike/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Charting dependency spike: ntcharts v2 against the stock charm stack — Verify ntcharts v2.2.0 builds and renders against stock charm.land/bubbletea v2.... | `/goal goals/charting-dep-spike/goal.md` |
 | [`devin-model-attribution`](devin-model-attribution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#8)` | - | Devin model attribution and honest unestimated reporting — Emit Devin per-model daily tokens from sessions.model so the estimator can price... | `/goal goals/devin-model-attribution/goal.md` |
 | [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | AGPL-3.0 Relicensing, Commercial Dual-Licensing & Contributor Gating — Relicense Thermal to GNU AGPLv3, establish commercial dual-licensing track, impl... | `/goal goals/agpl-dual-licensing/goal.md` |
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
@@ -60,8 +59,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
+| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#11)` | Deps met: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Classify each model id the catalog cannot price, then choose a mechanism with th... | `/goal goals/pricing-catalog-coverage/goal.md` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
-| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#11)` | Prereqs: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Classify each model id the catalog cannot price, then choose a mechanism with th... | `/goal goals/pricing-catalog-coverage/goal.md` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#3)` | Prereqs: charting-analytics | TUI shell and Overview view — Add the thermal dashboard command: a Bubble Tea v2 application shell with tab ro... | `/goal goals/tui-shell-overview/goal.md` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
@@ -77,6 +76,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`governance-foundations`](governance-foundations/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `332ad26` |
 | [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `bee76ff` |
 | [`version-migration-guide`](version-migration-guide/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `12d9833` |
+| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `09eb367` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `86d6ebb` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
