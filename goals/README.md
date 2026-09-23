@@ -28,11 +28,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 52
+- 🟢 **Implemented & Verified**: 53
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 6 (6 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 232/264 completed (87%)
+- 📋 **Execution Tasks Progress**: 237/264 completed (89%)
 
 ---
 
@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | in progress | 0s ago |
+| [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | in progress | 0s ago |
 
 ---
 
@@ -49,7 +49,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | AGPL-3.0 Relicensing, Commercial Dual-Licensing & Contributor Gating — Relicense Thermal to GNU AGPLv3, establish commercial dual-licensing track, impl... | `/goal goals/agpl-dual-licensing/goal.md` |
-| [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
@@ -81,6 +80,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `64d1837` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dceba19` |
+| [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ad2d523` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `98772b5` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `0c4fffb` |
