@@ -45,6 +45,7 @@ thermal/
 8. **Canonical Model Names**: Model ids MUST pass through `modelName()` before they become map keys (`DailyRow.Models`, `ProjectDay.Models`, `Summary.ModelBreakdown`), because tools disagree on case (`GLM-5.3-Flash` in ZCode versus `glm-5.3-flash` in OpenCode). One model is one row everywhere, including `thermal models`.
 9. **JSONL Scanner Line Ceilings**: Every JSONL scan MUST set an explicit ceiling that fits real data, using the shared `newJSONLScanner()` constructor (32 MiB ceiling today). A smaller ceiling truncates multi-megabyte tool results, rollout chunks, or transcripts and silently drops all subsequent lines.
 10. **JSONL Scan Diagnostics**: Every JSONL scan loop MUST check `scanner.Err()` and report errors through `Summary.Warnings` using `formatScanWarning()`. Diagnostics ride `Summary.Warnings` (`json:"-"`) to `--verbose` stderr only and MUST never pollute stdout or `--json` output.
+11. **SQLite Rows Iteration Safety**: Every database query iterating over `rows.Next()` MUST explicitly check `rows.Err()` immediately after loop termination. Query truncation or connection failures during iteration return `false` on `Next()`; unhandled `rows.Err()` causes silent session omission.
 
 ### B. TUI Boundary (`internal/tui/`)
 1. **Imports stay inside the package**: `internal/tui` may import `internal/thermal`, `internal/loaders`, `internal/pricing`, and the charm stack. Nothing outside it imports `internal/tui` except `cmd/thermal`, and the CLI must never render a TUI frame itself.
