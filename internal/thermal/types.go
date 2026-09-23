@@ -52,6 +52,9 @@ type Options struct {
 	Against       string // target model for replay simulation
 	Compare       string // comma-separated plans/models for replay comparison
 	Dense         bool   // high-density 9-box FinOps grid view
+	Port          int    // port for embedded web server (serve verb, default 8080)
+	Host          string // host for embedded web server (serve verb, default 127.0.0.1)
+	Open          bool   // open browser automatically on serve
 }
 
 type Summary struct {

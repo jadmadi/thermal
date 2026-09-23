@@ -24,6 +24,7 @@ import (
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
+	"github.com/jadmadi/thermal/internal/server"
 	"github.com/jadmadi/thermal/internal/share"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/tui"
@@ -104,6 +105,9 @@ Options:
   --breakdown        Show per-model rows under each period (daily, weekly, monthly)
   --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
   --dense            High-density 9-box FinOps grid view (stats)
+  --port <port>      Port for embedded web server (serve, default: 8080)
+  --host <host>      Host for embedded web server (serve, default: 127.0.0.1)
+  --open             Open browser automatically on serve
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
   --no-estimate      Recorded cost only, no pricing estimates (leaderboard and reports)
@@ -154,6 +158,9 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
 	flag.BoolVar(&opts.Dense, "dense", false, "High-density 9-box FinOps grid view (stats)")
+	flag.IntVar(&opts.Port, "port", 8080, "Port for embedded web server (default: 8080)")
+	flag.StringVar(&opts.Host, "host", "127.0.0.1", "Host for embedded web server (default: 127.0.0.1)")
+	flag.BoolVar(&opts.Open, "open", false, "Open browser automatically on serve")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
@@ -322,7 +329,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt", "serve":
 		return true
 	}
 	return false
@@ -391,7 +398,7 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	if opts.Report == "" {
-		if opts.Tool == "audit" || opts.Tool == "share" {
+		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "serve" {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" || opts.Last != 0 || opts.Top != 0 {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
@@ -424,6 +431,22 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	switch opts.Report {
+	case "serve":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the serve command")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top only applies to the projects and models commands")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
+		if sortKey != "" {
+			return fmt.Errorf("--sort does not apply to the serve command")
+		}
 	case "replay":
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the replay command")
@@ -573,6 +596,9 @@ func main() {
 	case "share":
 		runShare(opts)
 		return
+	case "serve":
+		runServe(opts)
+		return
 	case "license", "--license":
 		runLicense(opts)
 		return
@@ -609,6 +635,8 @@ func main() {
 			runAudit(opts)
 		case "share":
 			runShare(opts)
+		case "serve":
+			runServe(opts)
 		default:
 			runReport(opts)
 		}
@@ -1543,5 +1571,24 @@ func runReceiptReport(opts thermal.Options) {
 	}
 
 	fmt.Print(render.RenderReceipt(rep, opts.Top, opts.NoColor))
+}
+
+// runServe starts the embedded local web dashboard and telemetry API server.
+func runServe(opts thermal.Options) {
+	if opts.JSON {
+		data, err := server.CollectTelemetry(opts.Offline)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+			os.Exit(1)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		_ = enc.Encode(data)
+		return
+	}
+	if err := server.StartServer(opts.Host, opts.Port, opts.Offline, opts.Open); err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+		os.Exit(1)
+	}
 }
 

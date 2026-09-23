@@ -208,11 +208,12 @@ run_check "Receipt report sorted by verified" 0 text "${BIN_PATH}" receipt --sor
 run_check "Receipt report sorted by rate" 0 text "${BIN_PATH}" receipt --sort rate --no-color
 run_check "Receipt report JSON export" 0 json "${BIN_PATH}" receipt --json
 
-echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
+echo -e "\n${BOLD}8. Local Setup Audit, Stateless URL Sharing & Embedded Web Dashboard:${RESET}"
 run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
 run_check "Audit command JSON export" 0 json "${BIN_PATH}" audit --json
 run_check "Share command standard output" 0 text "${BIN_PATH}" share --no-color
 run_check "Share command JSON export" 0 json "${BIN_PATH}" share --json
+run_check "Serve command JSON export" 0 json "${BIN_PATH}" serve --json
 
 echo -e "\n${BOLD}9. Info, Version & License Commands:${RESET}"
 run_check "Version output" 0 text "${BIN_PATH}" version
@@ -226,6 +227,7 @@ run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects --by on replay" 1 error "${BIN_PATH}" replay --by model
 run_check "Rejects --against on projects" 1 error "${BIN_PATH}" projects --against claude-pro
 run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
+run_check "Rejects --chart on serve" 1 error "${BIN_PATH}" serve --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
