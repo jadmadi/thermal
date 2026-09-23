@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 34
+- 🟢 **Implemented & Verified**: 35
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 12 (12 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 10
+- 🟡 **Ready to Execute (Pending)**: 13 (13 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 9
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Implemented emitDeprecationWarning to os.Stderr preserving clean JSON stdout, updated thermal upgrade with migration pointers, and added automated release gate checks. | 0s ago |
+| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Configured release-please changelog-sections to filter internal commit types, codified commit hygiene and editorial release PR polish standards in AGENTS.md, verified with release gate. | 0s ago |
 
 ---
 
@@ -70,7 +70,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: tui-shell-overview | TUI Stats view — Histogram of daily tokens or cost with a log toggle, weekday profile, top days, ... | `/goal goals/tui-stats-view/goal.md` |
-| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#9)` | Prereqs: cli-staged-deprecation-and-upgrade | Release Communication, Editorial Changelog & Automation Alignment — Adapt the changelog-writing discipline to Thermal while preserving automated rel... | `/goal goals/release-communication-and-changelog/goal.md` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#7)` | Prereqs: tui-projects-view, tui-mix-models-views, tui-stats-view | Chart flags, docs, and 0.7.0 release — Add --chart to projects, models and the period reports, print concrete bar rows ... | `/goal goals/charting-flags-docs-release/goal.md` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#10)` | Prereqs: release-communication-and-changelog | Coverage-First Distribution: Homebrew Tap, Standalone Installer, Agent Docs \u0026 Curated Showcases — Implement Thermal's Coverage-First distribution mix: 1. Configure automated Home... | `/goal goals/distribution-coverage-foundation/goal.md` |
 
@@ -112,6 +111,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 | [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9a82384` |
 | [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9fa6245` |
+| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `2842f1a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `3bd8d0a` |
 
