@@ -89,7 +89,10 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COALESCE(SUM(tokens_cache_write), 0),
 				COALESCE(SUM(cost), 0),
 				COUNT(*),
-				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0)
+				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
+				COALESCE(SUM(summary_additions), 0),
+				COALESCE(SUM(summary_deletions), 0),
+				COALESCE(SUM(summary_files), 0)
 			FROM ` + src + `
 			GROUP BY day, project, model
 			ORDER BY day
@@ -266,6 +269,12 @@ type projectDayKey struct{ day, project string }
 // stay separate for pricing, and their sum feeds DailyRow.Cache. Project paths
 // are normalized to their git root, and blank projects are skipped.
 func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.ProjectDay, error) {
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, nil, err
+	}
+	hasDiffCols := len(cols) >= 14
+
 	byDay := make(map[string]*thermal.DailyRow)
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
 	modelsByDay := make(map[string]map[string]thermal.ModelTokens)
@@ -279,8 +288,15 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 		var cost float64
 		var turns int
 		var total int64
-		if err := rows.Scan(&day, &project, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
-			return nil, nil, err
+		var linesAdded, linesDeleted, filesTouched int64
+		if hasDiffCols {
+			if err := rows.Scan(&day, &project, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total, &linesAdded, &linesDeleted, &filesTouched); err != nil {
+				return nil, nil, err
+			}
+		} else {
+			if err := rows.Scan(&day, &project, &model, &input, &output, &reasoning, &cacheRead, &cacheWrite, &cost, &turns, &total); err != nil {
+				return nil, nil, err
+			}
 		}
 		model = modelName(model)
 		projectKey := thermal.ProjectKey(project)
@@ -298,6 +314,20 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 		row.Tokens += total
 		row.Cost += cost
 		row.Turns += turns
+		row.LinesAdded += linesAdded
+		row.LinesDeleted += linesDeleted
+		row.FilesTouched += filesTouched
+
+		if hasDiffCols && model != "" && (linesAdded > 0 || linesDeleted > 0 || filesTouched > 0) {
+			if row.ModelLines == nil {
+				row.ModelLines = make(map[string]thermal.LineDelta)
+			}
+			ml := row.ModelLines[model]
+			ml.Added += linesAdded
+			ml.Deleted += linesDeleted
+			ml.Files += filesTouched
+			row.ModelLines[model] = ml
+		}
 
 		if projectKey != "" {
 			key := projectDayKey{day, projectKey}
@@ -315,6 +345,9 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 			pd.Tokens += total
 			pd.Cost += cost
 			pd.Turns += turns
+			pd.LinesAdded += linesAdded
+			pd.LinesDeleted += linesDeleted
+			pd.FilesTouched += filesTouched
 		}
 
 		if model != "" {

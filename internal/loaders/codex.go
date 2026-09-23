@@ -53,13 +53,17 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	defer rows.Close()
 
 	type dayAgg struct {
-		tokens    int64
-		turns     int
-		input     int64
-		output    int64
-		reasoning int64
-		cache     int64
-		models    map[string]thermal.ModelTokens
+		tokens       int64
+		turns        int
+		input        int64
+		output       int64
+		reasoning    int64
+		cache        int64
+		linesAdded   int64
+		linesDeleted int64
+		filesTouched int64
+		models       map[string]thermal.ModelTokens
+		modelLines   map[string]thermal.LineDelta
 	}
 	byDay := make(map[string]*dayAgg)
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
@@ -99,9 +103,24 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 			summary.LongestSessionMs = durationMs
 		}
 
+		canonicalModel := modelName(model.String)
+		t.model = canonicalModel
+		if canonicalModel != "" {
+			modelCounts[canonicalModel] += t.tokensUsed
+		}
+		if source.String != "" {
+			sourceCounts[source.String]++
+		}
+		if reasoning.String != "" {
+			reasoningCounts[reasoning.String]++
+		}
+
+		summary.Sessions++
+		summary.LifetimeTokens += t.tokensUsed
+
 		agg := byDay[t.day]
 		if agg == nil {
-			agg = &dayAgg{}
+			agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
 			byDay[t.day] = agg
 		}
 		agg.tokens += t.tokensUsed
@@ -116,20 +135,6 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 			}
 			pd.Tokens += t.tokensUsed
 			pd.Turns++
-		}
-
-		summary.Sessions++
-		summary.LifetimeTokens += t.tokensUsed
-
-		if model.Valid && model.String != "" {
-			t.model = modelName(model.String)
-			modelCounts[t.model]++
-		}
-		if source.Valid && source.String != "" {
-			sourceCounts[source.String]++
-		}
-		if reasoning.Valid && reasoning.String != "" {
-			reasoningCounts[reasoning.String]++
 		}
 
 		if rolloutPath.Valid {
@@ -150,8 +155,11 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 
 	// Bounded worker pool for parallel rollout scanning
 	type rolloutResult struct {
-		breakdown *tokenBreakdown
-		warning   string
+		breakdown    *tokenBreakdown
+		linesAdded   int64
+		linesDeleted int64
+		filesTouched int64
+		warning      string
 	}
 	results := make([]rolloutResult, len(threads))
 	var wg sync.WaitGroup
@@ -166,8 +174,14 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		go func(idx int, path string) {
 			defer wg.Done()
 			defer func() { <-workerLimit }()
-			b, w := readLastTokenBreakdown(path)
-			results[idx] = rolloutResult{breakdown: b, warning: w}
+			b, la, ld, ft, w := readLastTokenBreakdown(path)
+			results[idx] = rolloutResult{
+				breakdown:    b,
+				linesAdded:   la,
+				linesDeleted: ld,
+				filesTouched: ft,
+				warning:      w,
+			}
 		}(i, t.rolloutPath)
 	}
 	wg.Wait()
@@ -176,6 +190,36 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
 		}
+		summary.LinesAdded += res.linesAdded
+		summary.LinesDeleted += res.linesDeleted
+		summary.FilesTouched += res.filesTouched
+
+		t := threads[i]
+		agg := byDay[t.day]
+		if agg != nil {
+			agg.linesAdded += res.linesAdded
+			agg.linesDeleted += res.linesDeleted
+			agg.filesTouched += res.filesTouched
+			if t.model != "" && (res.linesAdded > 0 || res.linesDeleted > 0 || res.filesTouched > 0) {
+				if agg.modelLines == nil {
+					agg.modelLines = make(map[string]thermal.LineDelta)
+				}
+				ml := agg.modelLines[t.model]
+				ml.Added += res.linesAdded
+				ml.Deleted += res.linesDeleted
+				ml.Files += res.filesTouched
+				agg.modelLines[t.model] = ml
+			}
+		}
+		if t.project != "" {
+			key := projectDayKey{t.day, t.project}
+			if pd := byProjectDay[key]; pd != nil {
+				pd.LinesAdded += res.linesAdded
+				pd.LinesDeleted += res.linesDeleted
+				pd.FilesTouched += res.filesTouched
+			}
+		}
+
 		b := res.breakdown
 		if b == nil {
 			continue
@@ -188,7 +232,6 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		// The rollout total is cumulative for the thread and can drift from
 		// threads.tokens_used, so scale the breakdown to tokens_used before
 		// attributing it to the thread's day and model.
-		t := threads[i]
 		if t.tokensUsed <= 0 {
 			continue
 		}
@@ -203,7 +246,7 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 			reasoning: int64(float64(b.reasoning) * ratio),
 			cache:     int64(float64(b.cache) * ratio),
 		}
-		agg := byDay[t.day]
+		agg = byDay[t.day]
 		if agg == nil {
 			continue
 		}
@@ -267,14 +310,18 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	var daily []thermal.DailyRow
 	for day, agg := range byDay {
 		daily = append(daily, thermal.DailyRow{
-			Day:       day,
-			Tokens:    agg.tokens,
-			Input:     agg.input,
-			Output:    agg.output,
-			Reasoning: agg.reasoning,
-			Cache:     agg.cache,
-			Turns:     agg.turns,
-			Models:    agg.models,
+			Day:          day,
+			Tokens:       agg.tokens,
+			Input:        agg.input,
+			Output:       agg.output,
+			Reasoning:    agg.reasoning,
+			Cache:        agg.cache,
+			Turns:        agg.turns,
+			Models:       agg.models,
+			LinesAdded:   agg.linesAdded,
+			LinesDeleted: agg.linesDeleted,
+			FilesTouched: agg.filesTouched,
+			ModelLines:   agg.modelLines,
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
@@ -299,14 +346,14 @@ type tokenBreakdown struct {
 	input, output, reasoning, cache int64
 }
 
-func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, string) {
+func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, int64, int64, int64, string) {
 	if _, err := os.Stat(rolloutPath); err != nil {
-		return nil, ""
+		return nil, 0, 0, 0, ""
 	}
 
 	f, err := os.Open(rolloutPath)
 	if err != nil {
-		return nil, formatScanWarning(rolloutPath, err)
+		return nil, 0, 0, 0, formatScanWarning(rolloutPath, err)
 	}
 	defer f.Close()
 
@@ -318,9 +365,47 @@ func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, string) {
 	scanner := newJSONLScanner(f)
 
 	var last *tokenBreakdown
+	var linesAdded, linesDeleted, filesTouched int64
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" || !strings.Contains(line, `"token_count"`) {
+		if line == "" {
+			continue
+		}
+
+		if strings.Contains(line, `"FileChange"`) {
+			var rec struct {
+				Type    string          `json:"type"`
+				Payload json.RawMessage `json:"payload"`
+			}
+			if json.Unmarshal([]byte(line), &rec) == nil && rec.Type == "event_msg" {
+				var ev struct {
+					Item *struct {
+						Type    string `json:"type"`
+						Changes map[string]struct {
+							Type        string `json:"type"`
+							UnifiedDiff string `json:"unified_diff"`
+							Content     string `json:"content"`
+						} `json:"changes"`
+					} `json:"item"`
+				}
+				if json.Unmarshal(rec.Payload, &ev) == nil && ev.Item != nil && ev.Item.Type == "FileChange" && ev.Item.Changes != nil {
+					filesTouched += int64(len(ev.Item.Changes))
+					for _, ch := range ev.Item.Changes {
+						if ch.UnifiedDiff != "" {
+							add, del := thermal.ParseDiffStats(ch.UnifiedDiff)
+							linesAdded += add
+							linesDeleted += del
+						} else if ch.Content != "" && ch.Type == "add" {
+							linesAdded += thermal.CountLines(ch.Content)
+						}
+					}
+				}
+			}
+			continue
+		}
+
+		if !strings.Contains(line, `"token_count"`) {
 			continue
 		}
 
@@ -370,7 +455,7 @@ func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, string) {
 	if err := scanner.Err(); err != nil {
 		warning = formatScanWarning(rolloutPath, err)
 	}
-	return last, warning
+	return last, linesAdded, linesDeleted, filesTouched, warning
 }
 
 func nonNegative(v int64) int64 {

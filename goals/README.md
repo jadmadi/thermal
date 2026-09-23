@@ -28,7 +28,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 14
+- 🟢 **Implemented & Verified**: 15
 - 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 23 (23 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | Implemented stateless URL hash sharing with compressed URL-safe tokens (v1.<checksum>.<deflate-b64>), tamper verification, and privacy envelope | 4m0s ago |
+| [`token-yield-metrics`](token-yield-metrics/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | Implemented yield calculation, diff stat parsing, terminal rendering, simulated user gate, and unit tests | 18m0s ago |
 
 ---
 
@@ -74,7 +74,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | SLSA Level 3 Build Provenance & Supply Chain Attestation via OpenSSF — Implement SLSA Level 3 build provenance and cryptographic attestation for Therma... | `/goal goals/slsa3-release-provenance/goal.md` |
 | [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Defensive Timestamp Parsing and Malformed Date Guards in Streak Computation — `ComputeStreaks` calculates current active streaks and longest historical streak... | `/goal goals/streak-parsing-defensive-guards/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
-| [`token-yield-metrics`](token-yield-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Token Yield & Code Output Delta Telemetry ('thermal yield') — Implement code output delta tracking and token yield telemetry ('thermal yield')... | `/goal goals/token-yield-metrics/goal.md` |
 | [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Dimensional FinOps TUI Grid, Activity Taxonomy & Sub-Tool Decomposition — Implement high-density 9-box FinOps grid view in the Bubble Tea TUI ('thermal st... | `/goal goals/tui-dense-finops-grid/goal.md` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Verifiable Work Receipts & Session Outcome Correlation ('thermal receipt') — Implement verifiable work receipts linking agent token spend to concrete verific... | `/goal goals/verifiable-work-receipts/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
@@ -113,5 +112,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8afd798` |
+| [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `7557bf9` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 

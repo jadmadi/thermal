@@ -47,6 +47,7 @@ Commands:
   stats          Daily distribution: percentiles, weekday, outliers
   trend          Daily trend fit with a month-end projection
   replay         Simulate workload against subscriptions & API pricing
+  yield          Token yield & code output delta telemetry
   share          Generate a stateless, private share URL for your streak
   audit          Audit local agent setup and context health
   license        Show license, dual-licensing & commercial terms
@@ -316,7 +317,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield":
 		return true
 	}
 	return false
@@ -427,6 +428,21 @@ func validateReportFlags(opts thermal.Options) error {
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the replay command")
 		}
+	case "yield":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the yield command")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
+		switch sortKey {
+		case "", "tokens", "lines", "yield":
+		default:
+			return fmt.Errorf("--sort must be tokens, lines, or yield for the yield command")
+		}
 	case "projects":
 		if opts.Against != "" || opts.Compare != "" {
 			return fmt.Errorf("--against and --compare only apply to the replay command")
@@ -522,6 +538,11 @@ func main() {
 		os.Exit(runUpgrade())
 	case "dashboard":
 		os.Exit(runDashboard(opts))
+	case "yield":
+		opts.Tool = "all"
+		opts.Report = "yield"
+		runYieldReport(opts)
+		return
 	case "audit":
 		runAudit(opts)
 		return
@@ -556,6 +577,8 @@ func main() {
 			runTrendReport(opts)
 		case "replay":
 			runReplayReport(opts)
+		case "yield":
+			runYieldReport(opts)
 		case "audit":
 			runAudit(opts)
 		case "share":
@@ -740,6 +763,7 @@ type usageSet struct {
 	days     []thermal.DailyRow
 	projects []thermal.ProjectDay
 	byTool   []thermal.ToolDays
+	results  []thermal.ToolResult
 	toolName string
 }
 
@@ -770,6 +794,12 @@ func loadUsage(opts thermal.Options) usageSet {
 			}
 			set.projects = append(set.projects, data.Projects...)
 			set.byTool = append(set.byTool, thermal.ToolDays{Tool: info.Name, Days: data.Daily})
+			set.results = append(set.results, thermal.ToolResult{
+				Tool:    t,
+				Name:    info.Name,
+				Summary: data.Summary,
+				Daily:   data.Daily,
+			})
 		}
 		if len(set.days) == 0 && len(set.projects) == 0 {
 			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
@@ -797,6 +827,12 @@ func loadUsage(opts thermal.Options) usageSet {
 	}
 	set.byTool = []thermal.ToolDays{{Tool: info.Name, Days: data.Daily}}
 	set.toolName = info.Name
+	set.results = []thermal.ToolResult{{
+		Tool:    tool,
+		Name:    info.Name,
+		Summary: data.Summary,
+		Daily:   data.Daily,
+	}}
 	return set
 }
 
@@ -1353,4 +1389,36 @@ func runShare(opts thermal.Options) {
 		fmt.Printf("  • Spend Profile:  %s\n", costStr)
 	}
 	fmt.Printf("  • Privacy Notice: 100%% zero-database, client-only URL fragment. No file paths or prompt data encoded.\n\n")
+}
+
+// runYieldReport correlates token spend with code output delta telemetry.
+func runYieldReport(opts thermal.Options) {
+	if opts.Tool == "yield" {
+		opts.Tool = "all"
+	}
+	yieldOpts := thermal.YieldOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Sort:  opts.Sort,
+		Top:   opts.Top,
+	}
+
+	set := loadUsage(opts)
+	rep := thermal.AggregateYield(set.results, set.projects, yieldOpts)
+	rep.Tool = set.toolName
+
+	if opts.JSON {
+		type jsonYieldReport struct {
+			thermal.YieldReport
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonYieldReport{
+			YieldReport: rep,
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	fmt.Print(render.RenderYield(rep, opts.Top, opts.NoColor))
 }

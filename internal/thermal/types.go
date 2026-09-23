@@ -112,15 +112,25 @@ func (m ModelTokens) Add(o ModelTokens) ModelTokens {
 // activity-only tools. Cost holds cost recorded by the source, never an
 // estimate.
 type DailyRow struct {
-	Day       string                 `json:"day"`
-	Tokens    int64                  `json:"tokens"`
-	Turns     int                    `json:"turns"`
-	Input     int64                  `json:"input,omitempty"`
-	Output    int64                  `json:"output,omitempty"`
-	Reasoning int64                  `json:"reasoning,omitempty"`
-	Cache     int64                  `json:"cache,omitempty"`
-	Cost      float64                `json:"cost,omitempty"`
-	Models    map[string]ModelTokens `json:"models,omitempty"`
+	Day          string                 `json:"day"`
+	Tokens       int64                  `json:"tokens"`
+	Turns        int                    `json:"turns"`
+	Input        int64                  `json:"input,omitempty"`
+	Output       int64                  `json:"output,omitempty"`
+	Reasoning    int64                  `json:"reasoning,omitempty"`
+	Cache        int64                  `json:"cache,omitempty"`
+	Cost         float64                `json:"cost,omitempty"`
+	Models       map[string]ModelTokens `json:"models,omitempty"`
+	LinesAdded   int64                  `json:"linesAdded,omitempty"`
+	LinesDeleted int64                  `json:"linesDeleted,omitempty"`
+	FilesTouched int64                  `json:"filesTouched,omitempty"`
+	ModelLines   map[string]LineDelta   `json:"modelLines,omitempty"`
+}
+
+type LineDelta struct {
+	Added   int64 `json:"added,omitempty"`
+	Deleted int64 `json:"deleted,omitempty"`
+	Files   int64 `json:"files,omitempty"`
 }
 
 type DayActivity struct {
@@ -209,18 +219,21 @@ type Report struct {
 // recorded by the source; the type fields are disjoint and add up to it. Tool
 // is filled by the caller with the tool's display name.
 type ProjectDay struct {
-	Project    string                 `json:"project"`
-	Day        string                 `json:"day"`
-	Tool       string                 `json:"tool,omitempty"`
-	Tokens     int64                  `json:"tokens"`
-	Input      int64                  `json:"input,omitempty"`
-	Output     int64                  `json:"output,omitempty"`
-	Reasoning  int64                  `json:"reasoning,omitempty"`
-	CacheRead  int64                  `json:"cacheRead,omitempty"`
-	CacheWrite int64                  `json:"cacheWrite,omitempty"`
-	Cost       float64                `json:"cost,omitempty"`
-	Turns      int                    `json:"turns,omitempty"`
-	Models     map[string]ModelTokens `json:"models,omitempty"`
+	Project      string                 `json:"project"`
+	Day          string                 `json:"day"`
+	Tool         string                 `json:"tool,omitempty"`
+	Tokens       int64                  `json:"tokens"`
+	Input        int64                  `json:"input,omitempty"`
+	Output       int64                  `json:"output,omitempty"`
+	Reasoning    int64                  `json:"reasoning,omitempty"`
+	CacheRead    int64                  `json:"cacheRead,omitempty"`
+	CacheWrite   int64                  `json:"cacheWrite,omitempty"`
+	Cost         float64                `json:"cost,omitempty"`
+	Turns        int                    `json:"turns,omitempty"`
+	Models       map[string]ModelTokens `json:"models,omitempty"`
+	LinesAdded   int64                  `json:"linesAdded,omitempty"`
+	LinesDeleted int64                  `json:"linesDeleted,omitempty"`
+	FilesTouched int64                  `json:"filesTouched,omitempty"`
 }
 
 // ProjectRow aggregates usage for one project across tools and time.
