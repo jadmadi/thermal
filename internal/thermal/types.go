@@ -51,6 +51,7 @@ type Options struct {
 	Grain         string // day, week, month; mix verb
 	Against       string // target model for replay simulation
 	Compare       string // comma-separated plans/models for replay comparison
+	Dense         bool   // high-density 9-box FinOps grid view
 }
 
 type Summary struct {

@@ -103,6 +103,7 @@ Options:
   --compare <plans>  Plans to compare in replay: comma-separated or all
   --breakdown        Show per-model rows under each period (daily, weekly, monthly)
   --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
+  --dense            High-density 9-box FinOps grid view (stats)
   --start-of-week    Week start day, sunday-saturday (default: sunday)
   --offline          Use cached pricing only, never fetch
   --no-estimate      Recorded cost only, no pricing estimates (leaderboard and reports)
@@ -152,6 +153,7 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Compare, "compare", "", "Plans to compare in replay: comma-separated or all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
+	flag.BoolVar(&opts.Dense, "dense", false, "High-density 9-box FinOps grid view (stats)")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
@@ -214,6 +216,8 @@ func parseArgs() thermal.Options {
 			opts.Breakdown = true
 		case "--chart":
 			opts.Chart = true
+		case "--dense":
+			opts.Dense = true
 		case "--offline":
 			opts.Offline = true
 		case "--no-estimate":
@@ -380,6 +384,10 @@ func validateReportFlags(opts thermal.Options) error {
 		if _, ok := thermal.ParseDay(opts.Until); !ok {
 			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD")
 		}
+	}
+
+	if opts.Dense && opts.Report != "stats" {
+		return fmt.Errorf("--dense only applies to the stats command")
 	}
 
 	if opts.Report == "" {
@@ -1136,9 +1144,43 @@ func runMixReport(opts thermal.Options) {
 	fmt.Print(render.RenderMix(rep, opts.NoColor))
 }
 
-// runStatsReport summarises the daily distribution of tokens or cost.
+// runStatsReport summarises the daily distribution of tokens or cost,
+// or renders the high-density 9-box FinOps grid if --dense is requested.
 func runStatsReport(opts thermal.Options) {
 	set := loadUsage(opts)
+	pricer := newPricer(opts)
+
+	if opts.Dense {
+		yieldOpts := thermal.YieldOptions{
+			Since: opts.Since,
+			Until: opts.Until,
+			Last:  opts.Last,
+		}
+		yieldRep := thermal.AggregateYield(set.results, set.projects, yieldOpts)
+		grid := thermal.ComputeFinOpsGrid(set.days, set.results, set.projects, yieldRep, pricer)
+
+		if opts.JSON {
+			type jsonDenseReport struct {
+				thermal.FinOpsGridPayload
+				GeneratedAt string `json:"generatedAt"`
+			}
+			writeReportJSON(jsonDenseReport{
+				FinOpsGridPayload: grid,
+				GeneratedAt:       time.Now().UTC().Format(time.RFC3339),
+			})
+			return
+		}
+
+		colorful := !opts.NoColor && render.IsTerminal() && os.Getenv("NO_COLOR") == ""
+		if render.IsTerminal() && !opts.NoColor {
+			p := tea.NewProgram(tui.NewDense(grid, colorful))
+			if _, err := p.Run(); err == nil {
+				return
+			}
+		}
+		fmt.Print(tui.RenderDenseFinOps(grid, reportWidth(), colorful))
+		return
+	}
 
 	statsOpts := thermal.StatsOptions{
 		Since:  opts.Since,
@@ -1146,7 +1188,7 @@ func runStatsReport(opts thermal.Options) {
 		Last:   opts.Last,
 		Metric: strings.ToLower(opts.Metric),
 	}
-	rep := thermal.AggregateStats(set.days, statsOpts, newPricer(opts))
+	rep := thermal.AggregateStats(set.days, statsOpts, pricer)
 
 	if opts.JSON {
 		type jsonReport struct {
