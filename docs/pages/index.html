@@ -20,6 +20,8 @@
 <meta property="og:image:alt" content="thermal: a contribution heatmap filling toward a live streak, with the tagline Don't break the streak.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thermal.jadmadi.net/og.png">
+<link rel="icon" type="image/webp" href="thermal.webp">
+<link rel="apple-touch-icon" href="thermal.webp">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230B0E13'/%3E%3Cg transform='translate(2.5 2.5)'%3E%3Crect width='2.6' height='2.6' rx='0.7' fill='%231E2836'/%3E%3Crect x='3.6' width='2.6' height='2.6' rx='0.7' fill='%232F6C55'/%3E%3Crect y='3.6' width='2.6' height='2.6' rx='0.7' fill='%233F9270'/%3E%3Crect x='3.6' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%234FB98B'/%3E%3Crect x='7.2' y='3.6' width='2.6' height='2.6' rx='0.7' fill='%2386EFC0'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 /* ---------------------------------------------------------------------------
@@ -519,6 +521,15 @@ td a{color:var(--heat-3)}
   border-radius:0 var(--r-sm) var(--r-sm) 0;
 }
 
+.mascot-badge{
+  display:flex;align-items:center;gap:var(--s5);
+  background:var(--raised);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:var(--s5);margin-top:var(--s6);
+}
+@media (max-width:640px){
+  .mascot-badge{flex-direction:column;text-align:center}
+}
+
 /* ---------------------------------------------------------------- shots */
 figure.shot{
   margin:var(--s7) 0 0;max-width:var(--container);
@@ -638,13 +649,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
 <header class="top">
   <div class="top-in">
     <a class="brand" href="#top">
-      <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
-        <rect width="2.6" height="2.6" rx=".7" fill="#1E2836"/>
-        <rect x="3.6" width="2.6" height="2.6" rx=".7" fill="#2F6C55"/>
-        <rect y="3.6" width="2.6" height="2.6" rx=".7" fill="#3F9270"/>
-        <rect x="3.6" y="3.6" width="2.6" height="2.6" rx=".7" fill="#4FB98B"/>
-        <rect x="7.2" y="3.6" width="2.6" height="2.6" rx=".7" fill="#86EFC0"/>
-      </svg>
+      <img src="thermal.webp" width="22" height="22" alt="Thermal Go mascot logo" style="border-radius:5px;display:block">
       Thermal
     </a>
     <nav aria-label="Sections">
@@ -669,6 +674,10 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
   <div class="hero">
     <div class="hero-grid">
       <div>
+        <div style="display:inline-flex;align-items:center;gap:var(--s2);margin-bottom:var(--s3);padding:.25rem .65rem;background:var(--raised);border:1px solid var(--line);border-radius:999px">
+          <img src="thermal.webp" width="20" height="20" alt="Thermal Gopher Mascot" style="border-radius:4px;display:block">
+          <span style="font-family:var(--mono);font-size:var(--step--2);color:var(--heat-3);font-weight:600;letter-spacing:.04em">THERMAL · GO MASCOT</span>
+        </div>
         <h1>Don't break the streak.</h1>
         <p class="lede">
           Thermal reads the session databases your AI coding tools already
@@ -789,6 +798,16 @@ thermal version</code></pre>
           </div>
         </li>
       </ol>
+    </div>
+
+    <div class="mascot-badge">
+      <img src="thermal2.webp" width="140" height="140" alt="Thermal Go Gopher Mascot with Heatmap HUD" loading="lazy" decoding="async" style="border-radius:var(--r-md);flex-shrink:0;box-shadow:0 8px 24px -4px rgba(0,0,0,0.4)">
+      <div>
+        <h3 style="margin-bottom:var(--s2);font-size:var(--step-0);font-weight:600">Built for Go, designed for developer streaks</h3>
+        <p class="muted" style="font-size:var(--step--1)">
+          Thermal is a single static Go binary with zero CGO dependencies. It scans local SQLite databases and session transcripts in strictly read-only mode (<span class="mono">mode=ro</span>) with memory-mapped I/O, computing contribution heatmaps and token metrics across 14 AI coding tools in sub-10ms cached invocations.
+        </p>
+      </div>
     </div>
   </div>
 </section>

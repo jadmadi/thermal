@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="thermal.webp" alt="Thermal Gopher Mascot" width="160" />
+</p>
+
 # Thermal
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/jadmadi/thermal)](https://goreportcard.com/report/github.com/jadmadi/thermal)
@@ -21,7 +25,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 thermal
 ```
 
-![Thermal leaderboard](thermal.webp)
+![Thermal leaderboard](leaderboard.webp)
 
 ## Supported Tools
 
@@ -678,6 +682,10 @@ Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hour
 ```
 
 ## How It Works
+
+<p align="center">
+  <img src="thermal2.webp" alt="Thermal Go Gopher Mascot with HUD" width="200" />
+</p>
 
 Thermal reads usage data from installed AI coding tools:
 

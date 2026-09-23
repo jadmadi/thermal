@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="thermal.webp" alt="Thermal Gopher Mascot" width="160" />
+</p>
+
 # Thermal — Contribution Heatmap for AI Coding Tools
 
 Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.
@@ -106,6 +110,10 @@ Thermal automatically ingests activity and disjoint token metrics from 14 AI cod
 ---
 
 ## Core Capabilities
+
+<p align="center">
+  <img src="thermal2.webp" alt="Thermal Go Gopher Mascot with HUD" width="180" />
+</p>
 
 ### 1. Terminal Heatmaps & Streaks
 - Visualizes daily activity and streak continuity directly in your terminal using ANSI 256-color palettes.
