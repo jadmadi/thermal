@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 25
+- 🟢 **Implemented & Verified**: 26
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 13 (13 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 14 (14 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Evaluated OSS license strategy, implemented zero-dependency CLA/DCO sign-off CI check, added canonical SPDX headers across all Go files, and defined composite trademark policy and asset scope boundaries in DUAL-LICENSE.md. | 0s ago |
+| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Verified bounded worker concurrency across all 7 multi-file loaders (agy, claude, codex, commandcode, droid, dsh, grok) where sem/workerLimit acquisition precedes wg.Add(1) and go func(), verified race detection and simulated user gate. | 0s ago |
 
 ---
 
@@ -62,7 +62,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Archive Extraction Deduplication and File Write Close Verification in CLI Self-Updater — In `cmd/thermal/upgrade.go`, binary extraction from `.tar.gz` archives had dupli... | `/goal goals/cli-upgrade-file-integrity/goal.md` |
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
-| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
@@ -100,6 +99,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `64d1837` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dceba19` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
+| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `98772b5` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
