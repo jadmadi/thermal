@@ -432,3 +432,36 @@ func TestSimulatedUser_AuditCommand(t *testing.T) {
 		t.Errorf("expected grade key in JSON, got %v", res)
 	}
 }
+
+func TestSimulatedUser_ShareCommand(t *testing.T) {
+	// 1. Terminal text mode
+	stdout, stderr, code := runSim(t, "share", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal share', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "share · stateless streak card") {
+		t.Errorf("'thermal share' missing header: %s", stdout)
+	}
+	if !strings.Contains(stdout, "https://thermal.jadmadi.net/share#v1.") {
+		t.Errorf("'thermal share' missing valid share URL: %s", stdout)
+	}
+
+	// 2. JSON mode
+	stdout, stderr, code = runSim(t, "share", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal share --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(stdout), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal share --json': %v. stdout: %s", err, stdout)
+	}
+	if _, ok := res["url"]; !ok {
+		t.Errorf("expected url key in JSON, got %v", res)
+	}
+	if _, ok := res["token"]; !ok {
+		t.Errorf("expected token key in JSON, got %v", res)
+	}
+	if _, ok := res["snapshot"]; !ok {
+		t.Errorf("expected snapshot key in JSON, got %v", res)
+	}
+}
