@@ -12,7 +12,9 @@ import (
 func ComputeStreaks(days map[string]bool) (current int, longest int) {
 	sorted := make([]string, 0, len(days))
 	for d := range days {
-		sorted = append(sorted, d)
+		if _, err := time.Parse("2006-01-02", d); err == nil {
+			sorted = append(sorted, d)
+		}
 	}
 	sort.Strings(sorted)
 

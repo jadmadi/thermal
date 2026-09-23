@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 18
+- 🟢 **Implemented & Verified**: 19
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 25 (25 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 23 (23 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 220/264 completed (83%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `⚡ Indep` | `@antigravity` | Audited git history, added .mailmap for canonical Jad Madi contributor graph consolidation, and created deterministic purge script scripts/purge_devin_commits.sh. | 1m0s ago |
+| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Added malformed date filtering before streak sorting and walking, verified with unit tests and race detection. | 0s ago |
 
 ---
 
@@ -71,7 +71,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | SLSA Level 3 Build Provenance & Supply Chain Attestation via OpenSSF — Implement SLSA Level 3 build provenance and cryptographic attestation for Therma... | `/goal goals/slsa3-release-provenance/goal.md` |
-| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Defensive Timestamp Parsing and Malformed Date Guards in Streak Computation — `ComputeStreaks` calculates current active streaks and longest historical streak... | `/goal goals/streak-parsing-defensive-guards/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
@@ -106,6 +105,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
+| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ced4751` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8afd798` |
