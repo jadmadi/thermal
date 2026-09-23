@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 22
+- 🟢 **Implemented & Verified**: 23
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 19 (19 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 15 (15 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 223/264 completed (84%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Implemented thermal serve local HTTP server with go:embed assets, read-only telemetry APIs, CSP security headers, and responsive HTML/CSS dashboard. | 0s ago |
+| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -60,7 +60,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
 | [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader (`internal/loade... | `/goal goals/claude-message-dedupe/goal.md` |
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Archive Extraction Deduplication and File Write Close Verification in CLI Self-Updater — In `cmd/thermal/upgrade.go`, binary extraction from `.tar.gz` archives had dupli... | `/goal goals/cli-upgrade-file-integrity/goal.md` |
-| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Comprehensive Documentation Parity, Full Scan & Simulated Human User Audit — Update all repository Markdown documentation (README.md, AGENTS.md, docs/*.md) a... | `/goal goals/docs-parity-and-human-simulation/goal.md` |
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | OSS License Strategy Evaluation, CI Enforcement & Licensing Hardening — Evaluate Thermal's licensing strategy using the oss-license-strategy framework. ... | `/goal goals/license-strategy-and-enforcement/goal.md` |
@@ -100,6 +99,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `2c387fb` |
 | [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c53c32b` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
+| [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dceba19` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |

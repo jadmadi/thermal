@@ -1672,9 +1672,14 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">thermal projects</td><td>One row per git repository.</td></tr>
               <tr><td class="mono">thermal models</td><td>One row per model id.</td></tr>
               <tr><td class="mono">thermal replay</td><td>Simulate historical workload against commercial subscriptions and API models.</td></tr>
+              <tr><td class="mono">thermal yield</td><td>Token yield telemetry: lines added/deleted, tokens burned per net line, and efficiency rating.</td></tr>
+              <tr><td class="mono">thermal receipt</td><td>Verifiable work outcomes: evidence detection for test suites and linters with proof tiers.</td></tr>
               <tr><td class="mono">thermal mix</td><td>Tool or model mix over time, with switching stats.</td></tr>
               <tr><td class="mono">thermal stats</td><td>Daily distribution: percentiles, weekday profile, token composition &amp; cache hit rate, outliers, histogram.</td></tr>
               <tr><td class="mono">thermal trend</td><td>Daily trend fit with a month-end projection.</td></tr>
+              <tr><td class="mono">thermal audit</td><td>Local setup &amp; context health: verify SQLite permissions, mmap, logs, and pricing cache.</td></tr>
+              <tr><td class="mono">thermal share</td><td>Stateless zero-database URL sharing engine for streak and telemetry cards.</td></tr>
+              <tr><td class="mono">thermal serve</td><td>Embedded local web dashboard served on localhost (127.0.0.1:8080) with zero telemetry.</td></tr>
               <tr><td class="mono">thermal license</td><td>Display software license, AGPL-3.0 terms, and commercial dual-licensing options.</td></tr>
               <tr><td class="mono">thermal upgrade</td><td>Self-update from GitHub Releases.</td></tr>
               <tr><td class="mono">thermal version</td><td>Version, commit, and build date.</td></tr>
@@ -1706,6 +1711,10 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">--grain &lt;bucket&gt;</td><td class="mono">week</td><td>Mix bucket size: <span class="mono">day</span>, <span class="mono">week</span>, or <span class="mono">month</span> (mix).</td></tr>
               <tr><td class="mono">--breakdown</td><td class="mono">off</td><td>Per-model rows in reports, per-project detail in projects.</td></tr>
               <tr><td class="mono">--chart</td><td class="mono">off</td><td>Print bar rows under the table (reports, projects, models).</td></tr>
+              <tr><td class="mono">--dense</td><td class="mono">off</td><td>High-density 9-box FinOps grid and activity taxonomy view (stats).</td></tr>
+              <tr><td class="mono">--port &lt;n&gt;</td><td class="mono">8080</td><td>Port for embedded web server (serve).</td></tr>
+              <tr><td class="mono">--host &lt;addr&gt;</td><td class="mono">127.0.0.1</td><td>Host address for embedded web server (serve).</td></tr>
+              <tr><td class="mono">--open</td><td class="mono">off</td><td>Automatically open default browser upon starting serve.</td></tr>
               <tr><td class="mono">--json</td><td class="mono">off</td><td>Machine-readable output on stdout.</td></tr>
               <tr><td class="mono">--no-color</td><td class="mono">off</td><td>Strip ANSI colour, for logs and CI.</td></tr>
               <tr><td class="mono">DSH_HOME</td><td class="mono">~/.dsh</td><td>Environment variable. Sets the DeepSeek harness (dsh) data root.</td></tr>

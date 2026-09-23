@@ -449,6 +449,112 @@ thermal replay --json
   • Switching to DeepSeek V3 (API) would cost ~$983.31/mo with 0% throttling, saving $4914.37/mo.
 ```
 
+### `thermal stats --dense`
+High-density 9-box FinOps grid view and activity taxonomy decomposition. Categorizes workload into Coding, Debugging, Testing, and Exploration, while tracking prompt cache efficiency, financial savings, and MCP tool overhead:
+
+```bash
+# Interactive responsive 9-box Bubble Tea TUI
+thermal stats --dense
+
+# Non-TTY or monochrome output
+thermal stats --dense --no-color
+
+# Machine-readable JSON export
+thermal stats --dense --json
+```
+
+```
+  Thermal · FinOps 9-Box Grid & Activity Taxonomy
+  ───────────────────────────────────────────────────────────────────────────
+  Activity Taxonomy              Prompt Cache Efficiency       MCP & Tool Overhead
+  Coding:       64.2% (14.2B)    Cache Read:   95.8% (21.1B)   Total Tool Calls: 4,812
+  Debugging:    21.5% ( 4.8B)    Cache Write:   1.2% (264M)    Shell Execution:  68.4%
+  Testing:       9.1% ( 2.0B)    Uncached:      3.0% (660M)    File Operations:  24.1%
+  Exploration:   5.2% ( 1.1B)    Saved Spend:  ~$3,412.50      Context Fetch:     7.5%
+```
+
+### `thermal yield`
+Measures concrete code generation efficiency from diff patches and changesets, tracking total tokens burned per net line of code produced:
+
+```bash
+# Token yield overview across tools
+thermal yield
+
+# Rank by net lines produced or yield efficiency
+thermal yield --sort lines
+thermal yield --sort yield
+
+# Filter window and export JSON
+thermal yield --last 30 --json
+```
+
+```
+  Thermal · token yield
+
+  #    Tool / Model                Tokens        +Added      -Deleted       Net Lines       Yield (Tok/Line)   Rating
+  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1.  OpenCode / deepseek-v4.1      2.4B        42,180         8,420         +33,760             71.1 tok/l   [HIGH]
+   2.  Codex / gpt-5.6-sol         688.8M         9,120         2,410          +6,710           102.7 tok/l   [BALANCED]
+   3.  Devin / swe-1-7               1.8B        14,500         3,200         +11,300           159.3 tok/l   [VERBOSE]
+```
+
+### `thermal receipt`
+Inspects recorded agent tool runs to detect verifiable outcomes (test passes, linter runs, git commits) with zero privacy leaks:
+
+```bash
+# Verifiable work outcomes across sessions
+thermal receipt
+
+# Sort by verified tests count or verification rate
+thermal receipt --sort verified
+thermal receipt --sort rate
+
+# Single tool receipts with JSON export
+thermal opencode receipt --json
+```
+
+```
+  Thermal · verifiable work receipts
+
+  Verification Rate: 84.6% · Verified Volume: 14.8B tok (78.3%) · Spend Efficiency: $0.14 / verified task
+
+  #    Session / Tool               Date        Tokens       Cost  Outcomes Verified                Status
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1.  opencode-2026-09-22    2026-09-22        128.4M      $0.12  go test -race ./... (PASS)       [VERIFIED]
+   2.  claude-2026-09-21      2026-09-21         45.2M      $0.35  pytest tests/ (PASS)             [VERIFIED]
+   3.  codex-2026-09-20       2026-09-20         92.1M      $0.85  golangci-lint run (PASS)         [VERIFIED]
+```
+
+### `thermal audit`
+Non-destructive local setup and context health diagnostic. Verifies SQLite database permissions, 256MB memory mapping (mmap) status, transcript ceilings, and pricing cache integrity:
+
+```bash
+thermal audit
+thermal audit --json
+```
+
+### `thermal share`
+Stateless, zero-database share card engine. Generates a compact share URL encoding streaks, active days, and token volumes directly into the URL fragment for instant sharing:
+
+```bash
+thermal share
+thermal share --json
+```
+
+### `thermal serve`
+Embedded local web dashboard served on localhost. Compiles clean-room frontend assets directly into the binary via `go:embed`, binding to `127.0.0.1:8080` with zero telemetry and strict Content-Security-Policy headers:
+
+```bash
+# Start local web dashboard
+thermal serve
+
+# Custom port and automatic browser opening
+thermal serve --port 3000 --open
+
+# JSON export of complete telemetry dataset
+thermal serve --json
+```
+
 ## Where the cost numbers come from
 
 Thermal displays cost figures from two sources:

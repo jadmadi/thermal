@@ -54,11 +54,27 @@ thermal models
 # Analytics, workload mix, and trend charts
 thermal mix --chart
 thermal stats --chart
+thermal stats --dense
 thermal trend --chart
 
 # Replay historical workload against subscription caps
 thermal replay --against "Claude Pro"
 thermal replay --against "ChatGPT Plus"
+
+# Code generation token yield and net line efficiency
+thermal yield --sort lines
+
+# Verifiable work outcome proofs (test passes, linter runs)
+thermal receipt --sort verified
+
+# Local setup and context health diagnostic
+thermal audit
+
+# Stateless zero-database streak share card
+thermal share
+
+# Embedded local web dashboard
+thermal serve --open
 
 # Self-update binary in place
 thermal upgrade
@@ -116,6 +132,26 @@ Thermal automatically ingests activity and disjoint token metrics from 14 AI cod
 - Checks GitHub Releases and atomically updates the running binary in place.
 - Daily background check caches the latest tag in `~/.cache/thermal/update.json` and notifies users on stderr in interactive sessions.
 - Fully controllable via `--no-update-check` or `THERMAL_NO_UPDATE_CHECK=1`.
+
+### 7. Token Yield Telemetry (`thermal yield`)
+- Evaluates code generation productivity from git diffs and patches.
+- Calculates Token Yield (tokens burned per net line of code added) with efficiency classification ratings (`[HIGH]`, `[BALANCED]`, `[VERBOSE]`, `[EXPLORATORY]`).
+
+### 8. Verifiable Work Receipts (`thermal receipt`)
+- Parses tool-level test execution (`go test`, `pytest`, `cargo test`, `npm test`) and linter proofs (`golangci-lint`, `eslint`, `ruff`).
+- Provides 3-tier confidence classification (`Tier 1 Verified`, `Tier 2 Claimed`, `Tier 3 Failed`) with zero prompt or privacy leakage.
+
+### 9. High-Density FinOps Grid (`thermal stats --dense`)
+- Responsive 9-box Bubble Tea / Lip Gloss terminal grid.
+- Decomposes agent activity across Coding, Debugging, Testing, and Exploration, while tracking prompt cache savings and MCP tool overhead.
+
+### 10. Embedded Local Web Dashboard (`thermal serve`)
+- Embedded single-page web application served on localhost (`127.0.0.1:8080`) with assets compiled directly into the binary via `go:embed`.
+- Exposes read-only JSON telemetry APIs under strict Content-Security-Policy headers with zero cloud tracking.
+
+### 11. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
+- `thermal audit` inspects local SQLite permissions, 256MB mmap status, and pricing cache integrity.
+- `thermal share` encodes streak and telemetry metadata into compact, zero-database stateless share URLs.
 
 ---
 
