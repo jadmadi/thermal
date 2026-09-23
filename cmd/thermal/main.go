@@ -24,6 +24,7 @@ import (
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
+	"github.com/jadmadi/thermal/internal/share"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/tui"
 	"github.com/jadmadi/thermal/internal/version"
@@ -46,6 +47,7 @@ Commands:
   stats          Daily distribution: percentiles, weekday, outliers
   trend          Daily trend fit with a month-end projection
   replay         Simulate workload against subscriptions & API pricing
+  share          Generate a stateless, private share URL for your streak
   audit          Audit local agent setup and context health
   license        Show license, dual-licensing & commercial terms
   upgrade        Self-upgrade to the latest release
@@ -379,9 +381,9 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	if opts.Report == "" {
-		if opts.Tool == "audit" {
+		if opts.Tool == "audit" || opts.Tool == "share" {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" || opts.Last != 0 || opts.Top != 0 {
-				return fmt.Errorf("report options do not apply to the audit command")
+				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
 			if opts.Against != "" || opts.Compare != "" {
 				return fmt.Errorf("--against and --compare only apply to the replay command")
@@ -523,6 +525,9 @@ func main() {
 	case "audit":
 		runAudit(opts)
 		return
+	case "share":
+		runShare(opts)
+		return
 	case "license", "--license":
 		runLicense(opts)
 		return
@@ -553,6 +558,8 @@ func main() {
 			runReplayReport(opts)
 		case "audit":
 			runAudit(opts)
+		case "share":
+			runShare(opts)
 		default:
 			runReport(opts)
 		}
@@ -1278,4 +1285,72 @@ func runAudit(opts thermal.Options) {
 		return
 	}
 	fmt.Print(render.RenderAudit(rep, opts.NoColor))
+}
+
+// runShare generates a stateless, zero-database share URL for user streaks and telemetry.
+func runShare(opts thermal.Options) {
+	targetTool := "all"
+	if opts.Report == "share" && opts.Tool != "" && opts.Tool != "share" {
+		targetTool = opts.Tool
+	} else if opts.Tool != "" && opts.Tool != "share" {
+		targetTool = opts.Tool
+	}
+	opts.Tool = targetTool
+	set := loadUsage(opts)
+	toolLabel := targetTool
+	pricer := newPricer(opts)
+	var totalCost float64
+	var estimated bool
+	for _, d := range set.days {
+		if d.Cost > 0 {
+			totalCost += d.Cost
+		} else if pricer != nil && len(d.Models) > 0 {
+			c, _ := pricer.PriceDay(d)
+			if c > 0 {
+				totalCost += c
+				estimated = true
+			}
+		}
+	}
+
+	snap := share.BuildShareSnapshot(toolLabel, set.days, totalCost, estimated)
+	url, token, err := share.ShareURL(snap)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: failed generating share token: %v\n", err)
+		os.Exit(1)
+	}
+
+	if opts.JSON {
+		res := map[string]any{
+			"url":      url,
+			"token":    token,
+			"snapshot": snap,
+		}
+		b, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(b))
+		return
+	}
+
+	colors := !opts.NoColor && render.IsTerminal() && os.Getenv("NO_COLOR") == ""
+	highlight := func(s string) string { return render.ColorCode(colors, "1;38;5;255", s) }
+	dim := func(s string) string { return render.ColorCode(colors, "38;5;239", s) }
+	gold := func(s string) string { return render.ColorCode(colors, "1;33", s) }
+	cyan := func(s string) string { return render.ColorCode(colors, "1;36", s) }
+
+	fmt.Println()
+	fmt.Printf("  %s %s %s\n\n", highlight("Thermal"), dim("·"), highlight("share · stateless streak card"))
+	fmt.Printf("  %s\n", highlight("Share URL:"))
+	fmt.Printf("  %s\n\n", cyan(url))
+	fmt.Printf("  %s\n", highlight("Encoded Payload:"))
+	fmt.Printf("  • Current Streak: %s days (Longest: %s days)\n", gold(fmt.Sprintf("%d", snap.CurrentStreak)), fmt.Sprintf("%d", snap.LongestStreak))
+	fmt.Printf("  • Active Days:    %d days\n", snap.ActiveDays)
+	fmt.Printf("  • Total Volume:   %s tokens\n", thermal.CompactNumber(snap.TotalTokens))
+	if snap.TotalCost > 0 {
+		costStr := fmt.Sprintf("$%.2f", snap.TotalCost)
+		if snap.EstimatedCost {
+			costStr = "~" + costStr
+		}
+		fmt.Printf("  • Spend Profile:  %s\n", costStr)
+	}
+	fmt.Printf("  • Privacy Notice: 100%% zero-database, client-only URL fragment. No file paths or prompt data encoded.\n\n")
 }
