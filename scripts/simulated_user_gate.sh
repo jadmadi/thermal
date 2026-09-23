@@ -397,6 +397,22 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
+echo -e "\n${BOLD}15. End-to-End Human User Persona Simulation Flows:${RESET}"
+# Persona 1: Daily Developer Standup flow
+run_check "Persona: Developer daily standup flow" 0 text "${BIN_PATH}" daily --last 3 --no-color
+run_check "Persona: Developer code yield review" 0 text "${BIN_PATH}" yield --sort yield --no-color
+run_check "Persona: Developer verifiable test receipts" 0 text "${BIN_PATH}" receipt --sort rate --no-color
+
+# Persona 2: FinOps & Engineering Director flow
+run_check "Persona: FinOps dense 9-box activity audit" 0 text "${BIN_PATH}" stats --dense --no-color
+run_check "Persona: FinOps subscription replay comparison" 0 text "${BIN_PATH}" replay --compare all --no-color
+run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" projects --sort cost --top 3 --no-color
+
+# Persona 3: Security & Local Infrastructure flow
+run_check "Persona: System health and permissions audit" 0 text "${BIN_PATH}" audit --no-color
+run_check "Persona: Localhost web telemetry API export" 0 json "${BIN_PATH}" serve --json
+run_check "Persona: Stateless share card URL generation" 0 text "${BIN_PATH}" share --no-color
+
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"
 echo -e "${BOLD}Simulated User Gate Summary:${RESET} ${GREEN}${PASSED_CHECKS} passed${RESET}, ${RED}${FAILED_CHECKS} failed${RESET} (out of ${TOTAL_CHECKS} checks)"
 echo -e "${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}\n"
