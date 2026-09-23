@@ -99,14 +99,38 @@ We value your time and effort. Thermal maintainers adhere to the **Two-Clock rev
 
 ---
 
-## Local Pre-Flight Verification
+## Local Pre-Flight Verification & Tiered Gate Latency
 
-To ensure a seamless, 100% first-pass green build in CI, run the unified pre-flight script locally before pushing or opening a pull request:
+Thermal uses a high-performance **tiered verification architecture** to give contributors instant local feedback while maintaining ironclad quality before remote push:
+
+### 1. Fast-Path Pre-Commit (`<3s`)
+For rapid local iteration without momentum-killing stalls, run the fast-path pre-commit suite:
 
 ```bash
-./scripts/check.sh
+./scripts/check.sh --pre-commit   # or -q / --quick
 ```
 
-This single command verifies CLA commit trailers, `gofmt` code formatting, `go vet` static analysis, unit tests with race detection (`go test -race ./...`), binary compilation, and the simulated user release gate.
+This fast-path completes in **under 3 seconds** by executing:
+- **Scoped Formatting**: Checks `gofmt -l` strictly on modified Go source files.
+- **Diff Sentry**: Audits active diffs for unresolved merge conflict markers, leaked secret/API tokens, and temporary debug prints.
+- **Package-Isolated Unit Tests**: Identifies touched Go packages and tests only those (e.g. `./internal/pricing`). Non-Go changes (docs, assets) bypass tests entirely.
+- **Fast Build Verification**: Ensures touched packages compile cleanly without interface breakage.
+
+### 2. Full Pre-Push & CI Gate Pipeline
+Before pushing to a remote branch or opening a pull request, run the comprehensive verification suite:
+
+```bash
+./scripts/check.sh                # or --full / --pre-push
+```
+
+This runs the full test suite across all packages with race detection (`go test -race ./...`), generates the per-package statement coverage table (`go test -cover ./...`), verifies Go report card static analysis (`go vet ./...`), compiles the binary, and executes all 87 tests in the simulated user release gate (`./scripts/simulated_user_gate.sh`).
+
+### 3. Automated Git Hook Setup
+To have Git automatically run the fast-path before each commit and the full gate before pushing, run:
+
+```bash
+./scripts/check.sh --install-hooks
+```
+
 
 

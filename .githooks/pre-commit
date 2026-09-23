@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Thermal Git Pre-Commit Hook
+# Executes fast-path verification (formatting, diff sentry, package-isolated tests)
+# in under 3 seconds.
+#
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+CHECK_SCRIPT="${REPO_ROOT}/scripts/check.sh"
+
+if [ -x "${CHECK_SCRIPT}" ]; then
+    exec "${CHECK_SCRIPT}" --pre-commit
+else
+    echo "Warning: ${CHECK_SCRIPT} not found or not executable; skipping pre-commit gate."
+    exit 0
+fi

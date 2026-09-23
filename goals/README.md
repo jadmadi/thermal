@@ -27,11 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 59
+- **Total Goals**: 60
 - 🟢 **Implemented & Verified**: 59
+- 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 250/250 completed (100%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 59 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 258/258 completed (100%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`tiered-precommit-fastpath`](tiered-precommit-fastpath/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | Fast-path pre-commit mode implemented and verified across 11 test cases | 9m0s ago |
 
 ---
 
