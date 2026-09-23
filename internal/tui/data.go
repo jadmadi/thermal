@@ -385,3 +385,20 @@ func Money(v float64) string {
 	}
 	return fmt.Sprintf("$%.2f", v)
 }
+
+// BuildFinOpsGrid compiles the 9-box FinOps grid payload across loaded tools.
+func (a Adapter) BuildFinOpsGrid() thermal.FinOpsGridPayload {
+	var allDays []thermal.DailyRow
+	var allProjects []thermal.ProjectDay
+	var results []thermal.ToolResult
+	for _, t := range a.Tools {
+		allDays = append(allDays, t.Days...)
+		allProjects = append(allProjects, t.Projects...)
+		results = append(results, thermal.ToolResult{
+			Name:  t.Name,
+			Daily: t.Days,
+		})
+	}
+	yieldRep := thermal.AggregateYield(results, allProjects, thermal.YieldOptions{})
+	return thermal.ComputeFinOpsGrid(allDays, results, allProjects, yieldRep, a.Pricer)
+}

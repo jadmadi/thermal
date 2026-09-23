@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -92,33 +93,34 @@ func (m DenseModel) View() tea.View {
 
 // RenderDenseFinOps renders the 9-box high-density FinOps grid view adaptively.
 func RenderDenseFinOps(p thermal.FinOpsGridPayload, width int, colorful bool) string {
-	pal := newPalette(colorful)
-
 	if width <= 0 {
 		width = 80
 	}
 
-	header := pal.Emphasis.Render("Thermal") + " " + pal.Dim.Render("·") + " " + pal.Emphasis.Render("FinOps 9-Box Grid") +
-		" " + pal.Muted.Render(fmt.Sprintf("(tokens & spend allocation, %d active days)", p.ActiveDays))
+	// 1. Top Period Selector Bar
+	topBar := renderPeriodBar(width, "Today", colorful)
+
+	// 2. Headline Summary Card (Amber Rounded Box)
+	summaryCard := renderHeadlineSummary(p, width, colorful)
 
 	// Determine column layout based on terminal width:
-	// >= 140 columns: 3 columns x 3 rows (full 9-box grid)
-	// 90..139 columns: 2 columns (4 rows of 2 + 1 bottom box)
+	// >= 135 columns: 3 columns x 3 rows (full 9-box grid)
+	// 90..134 columns: 2 columns (4 rows of 2 + 1 bottom box)
 	// < 90 columns: 1 column (vertical stack of cards)
 	var cols int
 	var boxWidth int
 	switch {
-	case width >= 140:
+	case width >= 135:
 		cols = 3
 		boxWidth = (width - 4) / 3
-		if boxWidth > 48 {
-			boxWidth = 48
+		if boxWidth > 54 {
+			boxWidth = 54
 		}
 	case width >= 90:
 		cols = 2
 		boxWidth = (width - 2) / 2
-		if boxWidth > 58 {
-			boxWidth = 58
+		if boxWidth > 64 {
+			boxWidth = 64
 		}
 	default:
 		cols = 1
@@ -128,105 +130,36 @@ func RenderDenseFinOps(p thermal.FinOpsGridPayload, width int, colorful bool) st
 		}
 	}
 
-	// 1. Box 1: Executive KPI Summary
-	box1 := renderCard("Executive KPIs", []string{
-		fmt.Sprintf("Volume: %s tokens", thermal.CompactNumber(p.TotalTokens)),
-		fmt.Sprintf("Spend:  $%.2f (avg $%.2f/d)", p.TotalCost, p.AvgDailyCost),
-		fmt.Sprintf("Active: %d days (%s avg/d)", p.ActiveDays, thermal.CompactNumber(p.AvgDailyTokens)),
-		fmt.Sprintf("Rating: [%s]", p.SpendEfficiency),
-	}, boxWidth, pal)
+	const targetHeight = 11
 
-	// 2. Box 2: Activity Taxonomy
-	var taxLines []string
-	for _, t := range p.Taxonomy {
-		barLen := int(t.Percent / 12.5)
-		if barLen > 8 {
-			barLen = 8
-		}
-		bar := strings.Repeat("■", barLen) + strings.Repeat("·", 8-barLen)
-		taxLines = append(taxLines, fmt.Sprintf("%-11s %4.1f%% [%s]", t.Category, t.Percent, bar))
-	}
-	for len(taxLines) < 4 {
-		taxLines = append(taxLines, "")
-	}
-	box2 := renderCard("Activity Taxonomy", taxLines, boxWidth, pal)
+	// Box 1: Daily Activity (Blue)
+	b1 := renderDailyActivityCard(p, boxWidth, targetHeight, colorful)
 
-	// 3. Box 3: Cache Performance & Savings
-	box3 := renderCard("Cache & FinOps Savings", []string{
-		fmt.Sprintf("Cache Read:  %s tok", thermal.CompactNumber(p.Cache.CacheReadTokens)),
-		fmt.Sprintf("Hit Rate:    %.1f%%", p.Cache.HitRate),
-		fmt.Sprintf("Net Savings: ~$%.2f", p.Cache.EstimatedSavings),
-		fmt.Sprintf("Input Vol:   %s tok", thermal.CompactNumber(p.Cache.InputTokens)),
-	}, boxWidth, pal)
+	// Box 2: By Project (Green)
+	b2 := renderProjectCard(p, boxWidth, targetHeight, colorful)
 
-	// 4. Box 4: Top Models Matrix
-	var modelLines []string
-	for i, m := range p.TopModels {
-		if i >= 4 {
-			break
-		}
-		modelLines = append(modelLines, fmt.Sprintf("%d. %-18s %s", i+1, truncateRunes(m.Name, 18), thermal.CompactNumber(m.Tokens)))
-	}
-	for len(modelLines) < 4 {
-		modelLines = append(modelLines, "-")
-	}
-	box4 := renderCard("Top Models Spend", modelLines, boxWidth, pal)
+	// Box 3: By Activity (Yellow)
+	b3 := renderActivityCard(p, boxWidth, targetHeight, colorful)
 
-	// 5. Box 5: Sub-Tool Decomposition
-	var toolLines []string
-	for i, st := range p.SubTools {
-		if i >= 4 {
-			break
-		}
-		toolLines = append(toolLines, fmt.Sprintf("%d. %-10s %3d calls (%4.1f%%)", i+1, st.Name, st.Calls, st.Share))
-	}
-	for len(toolLines) < 4 {
-		toolLines = append(toolLines, "-")
-	}
-	box5 := renderCard("Sub-Tool Shell Calls", toolLines, boxWidth, pal)
+	// Box 4: By Model (Magenta)
+	b4 := renderModelCard(p, boxWidth, targetHeight, colorful)
 
-	// 6. Box 6: MCP Overhead Telemetry
-	box6 := renderCard("MCP Protocol Overhead", []string{
-		fmt.Sprintf("Active Servers:  %d", p.MCP.ServersActive),
-		fmt.Sprintf("Tool Calls:      %d", p.MCP.ServerCalls),
-		fmt.Sprintf("Payload Tokens:  %s", thermal.CompactNumber(p.MCP.OverheadTokens)),
-		fmt.Sprintf("Protocol Tax:    ~4.5%%"),
-	}, boxWidth, pal)
+	// Box 5: MCP Servers (Purple)
+	b5 := renderMCPCard(p, boxWidth, targetHeight, colorful)
 
-	// 7. Box 7: Project Allocation
-	var projLines []string
-	for i, pr := range p.TopProjects {
-		if i >= 4 {
-			break
-		}
-		projLines = append(projLines, fmt.Sprintf("%d. %-18s %s", i+1, truncateRunes(pr.Name, 18), thermal.CompactNumber(pr.Tokens)))
-	}
-	for len(projLines) < 4 {
-		projLines = append(projLines, "-")
-	}
-	box7 := renderCard("Project Allocation", projLines, boxWidth, pal)
+	// Box 6: Core Tools (Cyan)
+	b6 := renderCoreToolsCard(p, boxWidth, targetHeight, colorful)
 
-	// 8. Box 8: Engineering Velocity & Yield
-	netStr := fmt.Sprintf("+%d", p.Yield.NetLines)
-	if p.Yield.NetLines < 0 {
-		netStr = fmt.Sprintf("%d", p.Yield.NetLines)
-	}
-	box8 := renderCard("Velocity & Code Yield", []string{
-		fmt.Sprintf("Lines: +%s / -%s", thermal.CompactNumber(p.Yield.LinesAdded), thermal.CompactNumber(p.Yield.LinesDeleted)),
-		fmt.Sprintf("Net Shipped: %s lines", netStr),
-		fmt.Sprintf("Token Yield: %s tok/ln", thermal.CompactNumber(int64(p.Yield.TokensPerNet))),
-		fmt.Sprintf("Efficiency:  [%s]", p.Yield.Efficiency),
-	}, boxWidth, pal)
+	// Box 7: Shell Commands (Orange)
+	b7 := renderShellCommandsCard(p, boxWidth, targetHeight, colorful)
 
-	// 9. Box 9: Month-End Forecast
-	box9 := renderCard("Month-End Forecast", []string{
-		fmt.Sprintf("Run-Rate:  %s tok/mo", thermal.CompactNumber(p.MonthEndRunRateTokens)),
-		fmt.Sprintf("Cost Run:  $%.2f / mo", p.MonthEndRunRateCost),
-		fmt.Sprintf("Capacity:  [%s]", p.CapacityVerdict),
-		fmt.Sprintf("Horizon:   30 calendar days"),
-	}, boxWidth, pal)
+	// Box 8: Skills & Agents (Lavender)
+	b8 := renderSkillsAgentsCard(p, boxWidth, targetHeight, colorful)
 
-	boxes := []string{box1, box2, box3, box4, box5, box6, box7, box8, box9}
+	// Box 9: Workflow (Violet)
+	b9 := renderWorkflowCard(p, boxWidth, targetHeight, colorful)
+
+	boxes := []string{b1, b2, b3, b4, b5, b6, b7, b8, b9}
 
 	var gridOut string
 	if cols == 3 {
@@ -245,43 +178,573 @@ func RenderDenseFinOps(p thermal.FinOpsGridPayload, width int, colorful bool) st
 		gridOut = strings.Join(boxes, "\n\n")
 	}
 
-	footer := pal.Dim.Render("• Navigation: q=quit · m=metric · r=range · 9-box responsive FinOps layout")
+	pal := newPalette(colorful)
+	footer := pal.Dim.Render("• Navigation: q=quit · m=metric · r=range · FinOps 9-Box Grid")
 
-	return "\n  " + header + "\n\n" + gridOut + "\n\n  " + footer + "\n"
+	return "\n " + topBar + "\n\n " + summaryCard + "\n\n" + gridOut + "\n\n  " + footer + "\n"
 }
 
-func renderCard(title string, lines []string, width int, pal Palette) string {
-	if width < 20 {
-		width = 20
+// renderPeriodBar renders the top filter tabs: [ Today ] 7 Days 30 Days ... | [p] All
+func renderPeriodBar(width int, activePeriod string, colorful bool) string {
+	var periods = []string{"Today", "7 Days", "30 Days", "This Month", "6 Months", "Lifetime"}
+	var items []string
+
+	for _, p := range periods {
+		if p == activePeriod {
+			if colorful {
+				items = append(items, lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Bold(true).Render("[ "+p+" ]"))
+			} else {
+				items = append(items, "[ "+p+" ]")
+			}
+		} else {
+			if colorful {
+				items = append(items, lipgloss.NewStyle().Foreground(lipgloss.Color("#9ca3af")).Render(p))
+			} else {
+				items = append(items, p)
+			}
+		}
 	}
+
+	left := strings.Join(items, "   ")
+	right := "[p] All"
+	if colorful {
+		right = lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("|  ") +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#9ca3af")).Render("[p] All")
+	} else {
+		right = "|  [p] All"
+	}
+
+	totalInner := width - 2
+	leftLen := len([]rune(ansi.Strip(left)))
+	rightLen := len([]rune(ansi.Strip(right)))
+	gap := totalInner - leftLen - rightLen
+	if gap < 2 {
+		gap = 2
+	}
+
+	return left + strings.Repeat(" ", gap) + right
+}
+
+// renderHeadlineSummary renders the amber-bordered summary card
+func renderHeadlineSummary(p thermal.FinOpsGridPayload, width int, colorful bool) string {
 	innerWidth := width - 4
-	if innerWidth < 10 {
-		innerWidth = 10
+	if innerWidth < 50 {
+		innerWidth = 50
 	}
 
-	titleTrunc := truncateRunes(title, innerWidth-2)
-	topRule := innerWidth - len([]rune(titleTrunc)) - 1
-	if topRule < 1 {
-		topRule = 1
+	var titleLine string
+	if colorful {
+		titleLine = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Bold(true).Render("Thermal") + "  " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#9ca3af")).Render("Today")
+	} else {
+		titleLine = "Thermal  Today"
 	}
 
-	topBorder := "┌─ " + pal.Emphasis.Render(titleTrunc) + " " + pal.Dim.Render(strings.Repeat("─", topRule)) + "┐"
-	bottomBorder := pal.Dim.Render("└" + strings.Repeat("─", width-2) + "┘")
+	costStr := fmtCost(p.Today.Cost)
+	hitStr := fmt.Sprintf("%.1f%%", p.Today.CacheHitRate)
+	callsStr := fmt.Sprintf("%d", p.Today.Calls)
+	sessionsStr := fmt.Sprintf("%d", max(1, p.Today.Sessions))
+
+	var row1 string
+	if colorful {
+		row1 = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Bold(true).Render(costStr) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("cost") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Bold(true).Render(callsStr) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("calls") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#9ca3af")).Render("At least "+sessionsStr+" sessions") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Bold(true).Render(hitStr) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("cache hit")
+	} else {
+		row1 = fmt.Sprintf("%s cost   %s calls   At least %s sessions   %s cache hit", costStr, callsStr, sessionsStr, hitStr)
+	}
+
+	inTok := thermal.CompactNumber(p.Today.InputTokens)
+	outTok := thermal.CompactNumber(p.Today.OutputTokens)
+	cacheTok := thermal.CompactNumber(p.Today.CachedTokens)
+	writeTok := thermal.CompactNumber(p.Today.WriteTokens)
+
+	var row2 string
+	if colorful {
+		row2 = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Render(inTok) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("in") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Render(outTok) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("out") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Render(cacheTok) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("cached") + "   " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")).Render(writeTok) + " " +
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render("written")
+	} else {
+		row2 = fmt.Sprintf("%s in   %s out   %s cached   %s written", inTok, outTok, cacheTok, writeTok)
+	}
+
+	borderColor := "#d97706" // Amber
+	return renderFramedBox([]string{titleLine, row1, row2}, innerWidth, borderColor, colorful)
+}
+
+// renderFramedBox wraps lines in a rounded border
+func renderFramedBox(lines []string, innerWidth int, borderColor string, colorful bool) string {
+	var borderStyle lipgloss.Style
+	if colorful {
+		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(borderColor))
+	}
+
+	top := borderStyle.Render("╭" + strings.Repeat("─", innerWidth+2) + "╮")
+	bottom := borderStyle.Render("╰" + strings.Repeat("─", innerWidth+2) + "╯")
 
 	var b strings.Builder
-	b.WriteString(topBorder)
+	b.WriteString(top)
 	b.WriteString("\n")
 
 	for _, line := range lines {
-		lineTrunc := truncateRunes(line, innerWidth)
-		pad := innerWidth - len([]rune(ansi.Strip(lineTrunc)))
+		stripped := ansi.Strip(line)
+		pad := innerWidth - len([]rune(stripped))
 		if pad < 0 {
 			pad = 0
 		}
-		b.WriteString(pal.Dim.Render("│ ") + lineTrunc + strings.Repeat(" ", pad) + pal.Dim.Render(" │"))
-		b.WriteString("\n")
+		b.WriteString(borderStyle.Render("│ ") + line + strings.Repeat(" ", pad) + borderStyle.Render(" │\n"))
 	}
 
-	b.WriteString(bottomBorder)
+	b.WriteString(bottom)
 	return b.String()
+}
+
+// renderFinOpsCard renders a rounded 9-box section card with tinted title and right-aligned header
+func renderFinOpsCard(title string, titleColor string, rightHeader string, lines []string, width int, targetHeight int, colorful bool) string {
+	if width < 30 {
+		width = 30
+	}
+	innerWidth := width - 4
+
+	var titleStyled, rightStyled, ruleStyled, borderCharStyle lipgloss.Style
+	if colorful {
+		titleStyled = lipgloss.NewStyle().Foreground(lipgloss.Color(titleColor)).Bold(true)
+		rightStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280"))
+		ruleStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#374151"))
+		borderCharStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#374151"))
+	}
+
+	titleText := titleStyled.Render(title)
+	rightText := rightStyled.Render(rightHeader)
+
+	titleLen := len([]rune(title))
+	rightLen := len([]rune(rightHeader))
+
+	// Top line format: ╭─ Title ──...── rightHeader ─╮
+	ruleSpaces := innerWidth - titleLen - rightLen - 2
+	if rightHeader == "" {
+		ruleSpaces = innerWidth - titleLen - 1
+	}
+	if ruleSpaces < 1 {
+		ruleSpaces = 1
+	}
+
+	var topLine string
+	if rightHeader != "" {
+		topLine = borderCharStyle.Render("╭─ ") + titleText + " " + ruleStyled.Render(strings.Repeat("─", ruleSpaces)) + " " + rightText + borderCharStyle.Render(" ─╮")
+	} else {
+		topLine = borderCharStyle.Render("╭─ ") + titleText + " " + ruleStyled.Render(strings.Repeat("─", ruleSpaces)) + borderCharStyle.Render("─╮")
+	}
+
+	bottomLine := borderCharStyle.Render("╰" + strings.Repeat("─", width-2) + "╯")
+
+	var b strings.Builder
+	b.WriteString(topLine)
+	b.WriteString("\n")
+
+	for i := 0; i < targetHeight; i++ {
+		line := ""
+		if i < len(lines) {
+			line = lines[i]
+		}
+		stripped := ansi.Strip(line)
+		pad := innerWidth - len([]rune(stripped))
+		if pad < 0 {
+			pad = 0
+		}
+		b.WriteString(borderCharStyle.Render("│ ") + line + strings.Repeat(" ", pad) + borderCharStyle.Render(" │\n"))
+	}
+
+	b.WriteString(bottomLine)
+	return b.String()
+}
+
+// renderHeatBar generates a multi-stop color gradient horizontal bar (Blue -> Orange -> Yellow)
+func renderHeatBar(val, maxVal float64, barWidth int, colorful bool) string {
+	if maxVal <= 0 || val <= 0 || barWidth <= 0 {
+		return strings.Repeat(" ", barWidth)
+	}
+	ratio := val / maxVal
+	if ratio > 1.0 {
+		ratio = 1.0
+	}
+	totalCells := ratio * float64(barWidth)
+	fullCells := int(totalCells)
+	remainder := totalCells - float64(fullCells)
+
+	fracChars := []rune{' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉'}
+	fracIdx := int(remainder * 8.0)
+	if fracIdx > 7 {
+		fracIdx = 7
+	}
+
+	var b strings.Builder
+	for i := 0; i < barWidth; i++ {
+		var r rune
+		if i < fullCells {
+			r = '█'
+		} else if i == fullCells && fracIdx > 0 {
+			r = fracChars[fracIdx]
+		} else {
+			r = ' '
+		}
+
+		if r == ' ' {
+			b.WriteRune(' ')
+			continue
+		}
+
+		if !colorful {
+			b.WriteRune(r)
+		} else {
+			var col string
+			switch {
+			case i < 2:
+				col = "#38bdf8" // Cyan / Blue
+			case i < 4:
+				col = "#f97316" // Orange
+			default:
+				col = "#fbbf24" // Yellow
+			}
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(col)).Render(string(r)))
+		}
+	}
+	return b.String()
+}
+
+// Box 1: Daily Activity (Blue)
+func renderDailyActivityCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCost float64
+	for _, d := range p.DailyHistory {
+		if d.Cost > maxCost {
+			maxCost = d.Cost
+		}
+	}
+	if maxCost <= 0 {
+		maxCost = 1.0
+	}
+
+	var lines []string
+	for _, d := range p.DailyHistory {
+		bar := renderHeatBar(d.Cost, maxCost, 4, colorful)
+		dateStr := d.Date
+		costStr := fmtCost(d.Cost)
+		callsStr := fmt.Sprintf("%d", d.Calls)
+
+		var costStyled string
+		if colorful {
+			costStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Render(costStr)
+		} else {
+			costStyled = costStr
+		}
+
+		// Layout: Bar Date ... Cost Calls
+		line := fmt.Sprintf("%s %s %10s %5s", bar, dateStr, costStyled, callsStr)
+		lines = append(lines, line)
+	}
+
+	for len(lines) < targetHeight-1 {
+		lines = append(lines, "")
+	}
+
+	// Footer: Showing 1-10 of X days scanned · newest first
+	footerText := fmt.Sprintf("Showing 1-%d of %d days scanned · newest first", min(10, p.TotalDaysScanned), max(1, p.TotalDaysScanned))
+	if colorful {
+		lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render(footerText))
+	} else {
+		lines = append(lines, footerText)
+	}
+
+	return renderFinOpsCard("Daily Activity", "#60a5fa", "cost calls", lines, width, targetHeight, colorful)
+}
+
+// Box 2: By Project (Green)
+func renderProjectCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCost float64
+	for _, pr := range p.ProjectBreakdown {
+		if pr.Cost > maxCost {
+			maxCost = pr.Cost
+		}
+	}
+	if maxCost <= 0 {
+		maxCost = 1.0
+	}
+
+	var lines []string
+	for _, pr := range p.ProjectBreakdown {
+		bar := renderHeatBar(pr.Cost, maxCost, 4, colorful)
+		name := pr.Name
+		if len([]rune(name)) > 10 {
+			name = ".../" + string([]rune(name)[len([]rune(name))-6:])
+		}
+		costStr := fmtCost(pr.Cost)
+		avgStr := fmtCost(pr.AvgCost)
+		sessStr := fmt.Sprintf("%d", pr.Sessions)
+		ohStr := fmtOverhead(pr.Overhead)
+
+		var costStyled string
+		if colorful {
+			costStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Render(costStr)
+		} else {
+			costStyled = costStr
+		}
+
+		line := fmt.Sprintf("%s %-10s %7s %7s %2s %6s", bar, name, costStyled, avgStr, sessStr, ohStr)
+		lines = append(lines, line)
+	}
+
+	return renderFinOpsCard("By Project", "#4ade80", "cost avg/s session overhead", lines, width, targetHeight, colorful)
+}
+
+// Box 3: By Activity (Yellow)
+func renderActivityCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCost float64
+	for _, a := range p.Taxonomy {
+		if a.Cost > maxCost {
+			maxCost = a.Cost
+		}
+	}
+	if maxCost <= 0 {
+		maxCost = 1.0
+	}
+
+	// Distinct colors matching reference screenshot
+	catColors := map[thermal.ActivityCategory]string{
+		thermal.ActivityCoding:        "#60a5fa", // Blue
+		thermal.ActivityConversation:  "#9ca3af", // Light Gray
+		thermal.ActivityExploration:   "#22d3ee", // Cyan
+		thermal.ActivityDelegation:    "#7dd3fc", // Light Blue
+		thermal.ActivityFeatureDev:    "#6ee7b7", // Mint Green
+		thermal.ActivityTesting:       "#f472b6", // Magenta
+		thermal.ActivityBuildDeploy:   "#34d399", // Emerald
+		thermal.ActivityBrainstorming: "#c084fc", // Orchid
+		thermal.ActivityDebugging:     "#f87171", // Coral Red
+	}
+
+	var lines []string
+	for _, a := range p.Taxonomy {
+		bar := renderHeatBar(a.Cost, maxCost, 4, colorful)
+		catName := string(a.Category)
+		var catStyled string
+		if colorful {
+			if col, ok := catColors[a.Category]; ok {
+				catStyled = lipgloss.NewStyle().Foreground(lipgloss.Color(col)).Render(fmt.Sprintf("%-13s", catName))
+			} else {
+				catStyled = fmt.Sprintf("%-13s", catName)
+			}
+		} else {
+			catStyled = fmt.Sprintf("%-13s", catName)
+		}
+
+		costStr := fmtCost(a.Cost)
+		var costStyled string
+		if colorful {
+			costStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Render(costStr)
+		} else {
+			costStyled = costStr
+		}
+
+		turnsStr := fmt.Sprintf("%3d", a.Turns)
+		oneShotStr := a.OneShot
+		if oneShotStr == "" {
+			oneShotStr = "-"
+		}
+
+		line := fmt.Sprintf("%s %s %7s %4s %6s", bar, catStyled, costStyled, turnsStr, oneShotStr)
+		lines = append(lines, line)
+	}
+
+	return renderFinOpsCard("By Activity", "#facc15", "cost turns 1-shot", lines, width, targetHeight, colorful)
+}
+
+// Box 4: By Model (Magenta)
+func renderModelCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCost float64
+	for _, m := range p.ModelBreakdown {
+		if m.Cost > maxCost {
+			maxCost = m.Cost
+		}
+	}
+	if maxCost <= 0 {
+		maxCost = 1.0
+	}
+
+	var lines []string
+	for _, m := range p.ModelBreakdown {
+		bar := renderHeatBar(m.Cost, maxCost, 4, colorful)
+		name := m.Name
+		if len([]rune(name)) > 9 {
+			name = string([]rune(name)[:9])
+		}
+		costStr := fmtCost(m.Cost)
+		if m.IsEstimated {
+			costStr = "~" + costStr
+		}
+		var costStyled string
+		if colorful {
+			costStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Render(costStr)
+		} else {
+			costStyled = costStr
+		}
+
+		cacheStr := fmt.Sprintf("%.1f%%", m.CachePct)
+		callsStr := fmt.Sprintf("%3d", m.Calls)
+
+		line := fmt.Sprintf("%s %-9s %7s %5s %4s %6s %5s", bar, name, costStyled, cacheStr, callsStr, m.OneShot, m.TokPerS)
+		lines = append(lines, line)
+	}
+
+	for len(lines) < targetHeight-2 {
+		lines = append(lines, "")
+	}
+
+	// Footers
+	f1 := "~ estimated cost (priced from estimated tokens)"
+	f2 := "~ Effective Tok/s: generated tokens ÷ time the ..."
+	if colorful {
+		lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render(f1))
+		lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#6b7280")).Render(f2))
+	} else {
+		lines = append(lines, f1, f2)
+	}
+
+	return renderFinOpsCard("By Model", "#e879f9", "cost cache calls 1-shot Tok/s", lines, width, targetHeight, colorful)
+}
+
+// Box 5: MCP Servers (Purple)
+func renderMCPCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var lines []string
+	if p.MCP.ServerCalls == 0 && p.MCP.ServersActive == 0 {
+		if colorful {
+			lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#9ca3af")).Render("No MCP usage"))
+		} else {
+			lines = append(lines, "No MCP usage")
+		}
+	} else {
+		lines = append(lines, fmt.Sprintf("Active Servers:  %d", p.MCP.ServersActive))
+		lines = append(lines, fmt.Sprintf("Tool Calls:      %d", p.MCP.ServerCalls))
+		lines = append(lines, fmt.Sprintf("Payload Tokens:  %s", thermal.CompactNumber(p.MCP.OverheadTokens)))
+	}
+
+	return renderFinOpsCard("MCP Servers", "#c084fc", "", lines, width, targetHeight, colorful)
+}
+
+// Box 6: Core Tools (Cyan)
+func renderCoreToolsCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCalls int
+	for _, ct := range p.CoreTools {
+		if ct.Calls > maxCalls {
+			maxCalls = ct.Calls
+		}
+	}
+	if maxCalls <= 0 {
+		maxCalls = 1
+	}
+
+	var lines []string
+	for _, ct := range p.CoreTools {
+		bar := renderHeatBar(float64(ct.Calls), float64(maxCalls), 4, colorful)
+		name := ct.Name
+		if len([]rune(name)) > 24 {
+			name = string([]rune(name)[:24])
+		}
+		callsStr := fmt.Sprintf("%4d", ct.Calls)
+		line := fmt.Sprintf("%s %-24s %5s", bar, name, callsStr)
+		lines = append(lines, line)
+	}
+
+	return renderFinOpsCard("Core Tools", "#38bdf8", "calls", lines, width, targetHeight, colorful)
+}
+
+// Box 7: Shell Commands (Orange)
+func renderShellCommandsCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxCalls int
+	for _, st := range p.SubTools {
+		if st.Calls > maxCalls {
+			maxCalls = st.Calls
+		}
+	}
+	if maxCalls <= 0 {
+		maxCalls = 1
+	}
+
+	var lines []string
+	for _, st := range p.SubTools {
+		bar := renderHeatBar(float64(st.Calls), float64(maxCalls), 4, colorful)
+		callsStr := fmt.Sprintf("%4d", st.Calls)
+		line := fmt.Sprintf("%s %-16s %5s", bar, st.Name, callsStr)
+		lines = append(lines, line)
+	}
+
+	return renderFinOpsCard("Shell Commands", "#fb923c", "calls", lines, width, targetHeight, colorful)
+}
+
+// Box 8: Skills & Agents (Lavender)
+func renderSkillsAgentsCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	var maxUses int
+	for _, sa := range p.SkillsAgents {
+		if sa.Uses > maxUses {
+			maxUses = sa.Uses
+		}
+	}
+	if maxUses <= 0 {
+		maxUses = 1
+	}
+
+	var lines []string
+	for _, sa := range p.SkillsAgents {
+		bar := renderHeatBar(float64(sa.Uses), float64(maxUses), 4, colorful)
+		costStr := fmtCost(sa.Cost)
+		var costStyled string
+		if colorful {
+			costStyled = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Render(costStr)
+		} else {
+			costStyled = costStr
+		}
+		line := fmt.Sprintf("%s %-20s %2d %7s", bar, sa.Name, sa.Uses, costStyled)
+		lines = append(lines, line)
+	}
+
+	return renderFinOpsCard("Skills & Agents", "#a78bfa", "uses  cost", lines, width, targetHeight, colorful)
+}
+
+// Box 9: Workflow (Violet)
+func renderWorkflowCard(p thermal.FinOpsGridPayload, width int, targetHeight int, colorful bool) string {
+	lines := []string{
+		fmt.Sprintf("Corrections  %s", p.Workflow.Corrections),
+		fmt.Sprintf("First edit   %s", p.Workflow.FirstEdit),
+		fmt.Sprintf("Rework       %s", p.Workflow.Rework),
+		fmt.Sprintf("Coverage     %s", p.Workflow.Coverage),
+	}
+
+	return renderFinOpsCard("Workflow", "#c084fc", "", lines, width, targetHeight, colorful)
+}
+
+func fmtCost(c float64) string {
+	if c <= 0 {
+		return "$0.00"
+	}
+	if c < 0.01 {
+		return fmt.Sprintf("$%.3f", c)
+	}
+	if c >= 1000 {
+		return fmt.Sprintf("$%.0f", c)
+	}
+	return fmt.Sprintf("$%.2f", c)
+}
+
+func fmtOverhead(oh int64) string {
+	if oh <= 0 {
+		return "-"
+	}
+	return thermal.CompactNumber(oh)
 }
