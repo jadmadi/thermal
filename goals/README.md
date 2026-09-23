@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 12
+- 🟢 **Implemented & Verified**: 13
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 30 (30 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 23 (23 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 202/264 completed (76%)
+- 📋 **Execution Tasks Progress**: 205/264 completed (77%)
 
 ---
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | Implemented declared model identity, router alias normalization with zero-allocation fast paths, and canonical pricing catalog | 4m0s ago |
+| [`setup-health-audit`](setup-health-audit/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | Implemented read-only thermal audit command scanning rules token bloat, MCP server density, and context hygiene with zero mutations | 6m0s ago |
 
 ---
 
@@ -70,7 +70,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
-| [`setup-health-audit`](setup-health-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Read-Only Local Setup & Context Health Audit ('thermal audit') — Implement non-destructive setup and context health diagnostic ('thermal audit').... | `/goal goals/setup-health-audit/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | SLSA Level 3 Build Provenance & Supply Chain Attestation via OpenSSF — Implement SLSA Level 3 build provenance and cryptographic attestation for Therma... | `/goal goals/slsa3-release-provenance/goal.md` |
 | [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Stateless Zero-Database URL Sharing Engine for Streaks & Telemetry — Implement stateless URL hash sharing for Thermal streaks, summary badges, and te... | `/goal goals/stateless-telemetry-sharing/goal.md` |
@@ -111,6 +110,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
+| [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |

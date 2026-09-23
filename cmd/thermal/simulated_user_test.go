@@ -402,3 +402,33 @@ func TestSimulatedUser_LicenseCommand(t *testing.T) {
 		t.Errorf("expected commercial_licensing.contact == contact@jadmadi.net, got: %v", comm["contact"])
 	}
 }
+
+func TestSimulatedUser_AuditCommand(t *testing.T) {
+	// 1. Terminal text mode
+	stdout, stderr, code := runSim(t, "audit", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal audit', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "audit · local setup & context health") {
+		t.Errorf("'thermal audit' missing header: %s", stdout)
+	}
+	if !strings.Contains(stdout, "Score:") || !strings.Contains(stdout, "Context Tax:") {
+		t.Errorf("'thermal audit' missing score / tax: %s", stdout)
+	}
+
+	// 2. JSON mode
+	stdout, stderr, code = runSim(t, "audit", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal audit --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(stdout), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal audit --json': %v. stdout: %s", err, stdout)
+	}
+	if _, ok := res["score"]; !ok {
+		t.Errorf("expected score key in JSON, got %v", res)
+	}
+	if _, ok := res["grade"]; !ok {
+		t.Errorf("expected grade key in JSON, got %v", res)
+	}
+}

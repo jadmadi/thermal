@@ -20,6 +20,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"golang.org/x/term"
 
+	"github.com/jadmadi/thermal/internal/audit"
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
@@ -45,6 +46,7 @@ Commands:
   stats          Daily distribution: percentiles, weekday, outliers
   trend          Daily trend fit with a month-end projection
   replay         Simulate workload against subscriptions & API pricing
+  audit          Audit local agent setup and context health
   license        Show license, dual-licensing & commercial terms
   upgrade        Self-upgrade to the latest release
   version        Show version info
@@ -377,6 +379,15 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	if opts.Report == "" {
+		if opts.Tool == "audit" {
+			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" || opts.Last != 0 || opts.Top != 0 {
+				return fmt.Errorf("report options do not apply to the audit command")
+			}
+			if opts.Against != "" || opts.Compare != "" {
+				return fmt.Errorf("--against and --compare only apply to the replay command")
+			}
+			return nil
+		}
 		// Leaderboard flags. Sort is optional here and means streak when unset.
 		if sortKey != "" && sortKey != "streak" && sortKey != "tokens" && sortKey != "cost" {
 			return fmt.Errorf("--sort must be streak, tokens, or cost for the leaderboard")
@@ -509,6 +520,9 @@ func main() {
 		os.Exit(runUpgrade())
 	case "dashboard":
 		os.Exit(runDashboard(opts))
+	case "audit":
+		runAudit(opts)
+		return
 	case "license", "--license":
 		runLicense(opts)
 		return
@@ -537,6 +551,8 @@ func main() {
 			runTrendReport(opts)
 		case "replay":
 			runReplayReport(opts)
+		case "audit":
+			runAudit(opts)
 		default:
 			runReport(opts)
 		}
@@ -1252,4 +1268,14 @@ func runLicense(opts thermal.Options) {
 	fmt.Println("Third-Party Notices:")
 	fmt.Println("  Incorporates permissive open-source components (MIT, BSD-3, Public Domain).")
 	fmt.Println("  See NOTICES.md in the source repository for complete attributions.")
+}
+
+// runAudit executes the non-destructive local setup and context health diagnostic.
+func runAudit(opts thermal.Options) {
+	rep := audit.RunAudit("")
+	if opts.JSON {
+		fmt.Println(render.RenderAuditJSON(rep))
+		return
+	}
+	fmt.Print(render.RenderAudit(rep, opts.NoColor))
 }
