@@ -153,6 +153,9 @@ go build -o /tmp/thermal-test ./cmd/thermal
 
 When modifying loaders, ensure unit tests inside `internal/loaders/*_test.go` cover edge cases (missing databases, corrupted files, zero-token sessions, timestamp variations, and schema differences) using mock temporary files or SQLite in-memory databases.
 
+* **Tiered Gate Verification (`scripts/check.sh`)**:
+  - **Fast-Path Pre-Commit (`./scripts/check.sh --pre-commit` / `-q`)**: Runs in `<3s`. Audits active diff for secrets/merge markers/debug lines via Diff Sentry, runs `gofmt -l` strictly on modified files, and executes unit tests ONLY for modified Go packages. Install via `./scripts/check.sh --install-hooks`.
+  - **Full Pre-Push & CI Gate (`./scripts/check.sh` / `--full`)**: Runs full race detector (`go test -race ./...`), per-package statement coverage table (`go test -cover ./...`), Go report card (`go vet ./...`), binary compilation, and the simulated user release gate.
 * **Simulated User Release Gate**: Before announcing any feature or release, run `./scripts/simulated_user_gate.sh` (also enforced in CI). It runs end-to-end user flows across every CLI command and flag combination, checking exit codes, ANSI stripping under `--no-color`, numerical sanity (no NaN, Inf, or unformatted raw floats), JSON schema validity, token math and replay heuristics, and language/terminology integrity.
 * **gofmt scope**: run `gofmt` only on files the change touches. Several test files carry pre-existing drift, and a repo-wide sweep adds unrelated noise to feature diffs.
 
