@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 24
+- 🟢 **Implemented & Verified**: 25
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 16 (16 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 13 (13 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 230/264 completed (87%)
+- 📋 **Execution Tasks Progress**: 231/264 completed (87%)
 
 ---
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Chained OpenSSF generic SLSA Level 3 generator to GoReleaser workflow in release.yml, symlinked .goreleaser.yaml, added verification runbook to docs/DISTRIBUTION.md and README.md, and added automated release gate checks. | 3m0s ago |
+| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Evaluated OSS license strategy, implemented zero-dependency CLA/DCO sign-off CI check, added canonical SPDX headers across all Go files, and defined composite trademark policy and asset scope boundaries in DUAL-LICENSE.md. | 0s ago |
 
 ---
 
@@ -62,7 +62,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Archive Extraction Deduplication and File Write Close Verification in CLI Self-Updater — In `cmd/thermal/upgrade.go`, binary extraction from `.tar.gz` archives had dupli... | `/goal goals/cli-upgrade-file-integrity/goal.md` |
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
-| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | OSS License Strategy Evaluation, CI Enforcement & Licensing Hardening — Evaluate Thermal's licensing strategy using the oss-license-strategy framework. ... | `/goal goals/license-strategy-and-enforcement/goal.md` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
@@ -108,6 +107,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8afd798` |
+| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `78b8258` |
 | [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `7557bf9` |
 | [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `a2467d7` |
 | [`token-yield-metrics`](token-yield-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ef10ceb` |
