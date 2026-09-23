@@ -55,6 +55,7 @@ type Model struct {
 	mixBy       string // "tool" or "model"
 	mixSel      int
 	statsLog    bool // histogram scale override
+	statsDense  bool // 9-box dense FinOps grid toggle
 	modelsSort  ModelSort
 	modelsSel   int
 	modelsTools []ToolShare
@@ -216,14 +217,18 @@ func (m Model) View() tea.View {
 	case m.tab == tabModels:
 		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.height, m.modelsSel, m.palette), "  "))
 	case m.tab == tabStats:
-		sv := m.adapter.BuildStats(m.rng, m.metric)
-		if m.statsLog {
-			sv.UseLog = true
-			if sv.LogReason == "" {
-				sv.LogReason = "log scale: set by hand"
+		if m.statsDense {
+			b.WriteString(indent(RenderDenseFinOps(m.adapter.BuildFinOpsGrid(), m.innerWidth(), m.palette.Colorful), "  "))
+		} else {
+			sv := m.adapter.BuildStats(m.rng, m.metric)
+			if m.statsLog {
+				sv.UseLog = true
+				if sv.LogReason == "" {
+					sv.LogReason = "log scale: set by hand"
+				}
 			}
+			b.WriteString(indent(renderStats(sv, m.innerWidth(), m.height, m.palette), "  "))
 		}
-		b.WriteString(indent(renderStats(sv, m.innerWidth(), m.height, m.palette), "  "))
 	case m.tab == 0:
 		b.WriteString(indent(renderOverview(m.overview(), m.innerWidth(), m.height, m.palette), "  "))
 	default:
@@ -285,6 +290,9 @@ func (m Model) hint() string {
 		if m.statsLog {
 			scale = "log"
 		}
+		if m.statsDense {
+			return fmt.Sprintf("r range %s  ·  t metric %s  ·  d standard view", m.rng, m.metric)
+		}
 		return fmt.Sprintf("r range %s  ·  t metric %s  ·  l scale %s", m.rng, m.metric, scale)
 	}
 	return fmt.Sprintf("r range %s  ·  t metric %s  ·  s sort %s", m.rng, m.metric, m.sort)
@@ -324,6 +332,14 @@ func (m *Model) updateStats(pressed string) (bool, tea.Model, tea.Cmd) {
 			m.status = "distribution: log scale"
 		} else {
 			m.status = "distribution: linear scale"
+		}
+		return true, m, nil
+	case "d":
+		m.statsDense = !m.statsDense
+		if m.statsDense {
+			m.status = "stats: dense 9-box FinOps grid"
+		} else {
+			m.status = "stats: distribution view"
 		}
 		return true, m, nil
 	case "s", "?":

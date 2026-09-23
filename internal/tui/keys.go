@@ -60,6 +60,7 @@ func (k keyMap) helpRows() [][2]string {
 		{"s", "cycle sort"},
 		{"f", "cycle the tool filter (Projects)"},
 		{"l", "toggle the histogram scale (Stats)"},
+		{"d", "toggle dense FinOps grid (Stats)"},
 		{"t", "toggle tokens and cost"},
 		{"r", "cycle range (30d, 90d, 1y, all)"},
 		{"esc", "back"},
