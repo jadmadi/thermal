@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 17
+- 🟢 **Implemented & Verified**: 18
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 23 (23 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 25 (25 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 217/264 completed (82%)
+- 📋 **Execution Tasks Progress**: 220/264 completed (83%)
 
 ---
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Implemented 9-box high-density FinOps grid view, activity taxonomy classification, sub-tool shell command decomposition, MCP overhead telemetry, and Bubble Tea adaptive views | 0s ago |
+| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `⚡ Indep` | `@antigravity` | Audited git history, added .mailmap for canonical Jad Madi contributor graph consolidation, and created deterministic purge script scripts/purge_devin_commits.sh. | 1m0s ago |
 
 ---
 
@@ -68,7 +68,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Preallocated Slice Capacity in Leaderboard Rendering — In `internal/render/leaderboard.go`, `RenderLeaderboard` splits all discovered t... | `/goal goals/leaderboard-slice-preallocation/goal.md` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | OSS License Strategy Evaluation, CI Enforcement & Licensing Hardening — Evaluate Thermal's licensing strategy using the oss-license-strategy framework. ... | `/goal goals/license-strategy-and-enforcement/goal.md` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
-| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | SLSA Level 3 Build Provenance & Supply Chain Attestation via OpenSSF — Implement SLSA Level 3 build provenance and cryptographic attestation for Therma... | `/goal goals/slsa3-release-provenance/goal.md` |
@@ -112,6 +111,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8afd798` |
 | [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `7557bf9` |
 | [`token-yield-metrics`](token-yield-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ef10ceb` |
+| [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f720e57` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 
