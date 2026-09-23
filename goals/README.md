@@ -28,7 +28,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 26
+- 🟢 **Implemented & Verified**: 27
 - 🔵 **In Progress (Claimed)**: 1
 - 🟡 **Ready to Execute (Pending)**: 14 (14 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Verified bounded worker concurrency across all 7 multi-file loaders (agy, claude, codex, commandcode, droid, dsh, grok) where sem/workerLimit acquisition precedes wg.Add(1) and go func(), verified race detection and simulated user gate. | 0s ago |
+| [`governance-foundations`](governance-foundations/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Established Written Solo Authority governance model, anti-goals, decision classes, and SLA boundaries in GOVERNANCE.md, cross-linked in README.md and AGENTS.md. | 0s ago |
 
 ---
 
@@ -50,7 +50,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`charting-dep-spike`](charting-dep-spike/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Charting dependency spike: ntcharts v2 against the stock charm stack — Verify ntcharts v2.2.0 builds and renders against stock charm.land/bubbletea v2.... | `/goal goals/charting-dep-spike/goal.md` |
-| [`governance-foundations`](governance-foundations/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Written Solo Authority Governance, Scope Defense & Decision Rules — Establish formal GOVERNANCE.md with Solo Authority model, Scope & Anti-Goals, de... | `/goal goals/governance-foundations/goal.md` |
 | [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#2)` | - | Repository Alignment, Code Ownership, PR Lifecycle & Security Policy — Establish .github/CODEOWNERS, MAINTAINERS.md, comprehensive SECURITY.md with 48h... | `/goal goals/repo-alignment-and-security/goal.md` |
 | [`version-migration-guide`](version-migration-guide/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#7)` | - | Version Migration Guide Architecture & docs/MIGRATION.md — Establish Thermal's formal migration guide (docs/MIGRATION.md) conforming strict... | `/goal goals/version-migration-guide/goal.md` |
 | [`devin-model-attribution`](devin-model-attribution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#8)` | - | Devin model attribution and honest unestimated reporting — Emit Devin per-model daily tokens from sessions.model so the estimator can price... | `/goal goals/devin-model-attribution/goal.md` |
@@ -100,6 +99,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dceba19` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `98772b5` |
+| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `0c4fffb` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
