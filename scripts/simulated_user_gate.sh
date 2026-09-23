@@ -196,21 +196,34 @@ run_check "Replay against DeepSeek V3 API" 0 text "${BIN_PATH}" replay --against
 run_check "Replay compare all plans" 0 text "${BIN_PATH}" replay --compare all --no-color
 run_check "Replay JSON export" 0 json "${BIN_PATH}" replay --json
 
-echo -e "\n${BOLD}7. Info, Version & License Commands:${RESET}"
+echo -e "\n${BOLD}7. Token Yield & Code Delta Telemetry:${RESET}"
+run_check "Yield report standard output" 0 text "${BIN_PATH}" yield --no-color
+run_check "Yield report sorted by lines" 0 text "${BIN_PATH}" yield --sort lines --no-color
+run_check "Yield report sorted by yield" 0 text "${BIN_PATH}" yield --sort yield --no-color
+run_check "Yield report JSON export" 0 json "${BIN_PATH}" yield --json
+
+echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
+run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
+run_check "Audit command JSON export" 0 json "${BIN_PATH}" audit --json
+run_check "Share command standard output" 0 text "${BIN_PATH}" share --no-color
+run_check "Share command JSON export" 0 json "${BIN_PATH}" share --json
+
+echo -e "\n${BOLD}9. Info, Version & License Commands:${RESET}"
 run_check "Version output" 0 text "${BIN_PATH}" version
 run_check "Help output" 0 text "${BIN_PATH}" --help
 run_check "License command text" 0 text "${BIN_PATH}" license
 run_check "License flag text" 0 text "${BIN_PATH}" --license
 run_check "License JSON output" 0 json "${BIN_PATH}" license --json
 
-echo -e "\n${BOLD}8. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
+echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects --by on replay" 1 error "${BIN_PATH}" replay --by model
 run_check "Rejects --against on projects" 1 error "${BIN_PATH}" projects --against claude-pro
 run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
+run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 
-echo -e "\n${BOLD}9. License & Attribution Integrity Checks:${RESET}"
+echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then
     echo -e "   ${RED}✖ Failed:${RESET} LICENSE file missing"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
@@ -269,7 +282,7 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
-echo -e "\n${BOLD}10. Deprecation Warning Audits (Stderr Warnings & Clean JSON Stdout):${RESET}"
+echo -e "\n${BOLD}12. Deprecation Warning Audits (Stderr Warnings & Clean JSON Stdout):${RESET}"
 
 # Verify --license warning on stderr
 WARN_OUT=$("${BIN_PATH}" --license 2>&1 >/dev/null || true)
@@ -306,7 +319,7 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
-echo -e "\n${BOLD}11. Release Communication & Changelog Integrity Checks:${RESET}"
+echo -e "\n${BOLD}13. Release Communication & Changelog Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/release-please-config.json" ]]; then
     echo -e "   ${RED}✖ Failed:${RESET} release-please-config.json missing"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
@@ -331,7 +344,7 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
-echo -e "\n${BOLD}12. Distribution Coverage & Agent Discovery Checks:${RESET}"
+echo -e "\n${BOLD}14. Distribution Coverage & Agent Discovery Checks:${RESET}"
 if [[ ! -x "${ROOT_DIR}/docs/pages/install.sh" ]]; then
     echo -e "   ${RED}✖ Failed:${RESET} docs/pages/install.sh missing or not executable"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
