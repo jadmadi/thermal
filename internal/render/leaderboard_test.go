@@ -144,3 +144,19 @@ func TestRenderLeaderboardSortKeys_EstimatedCost(t *testing.T) {
 		t.Errorf("expected estimated before recorded under sort=cost, got:\n%s", out)
 	}
 }
+
+func BenchmarkRenderLeaderboard(b *testing.B) {
+	results := make([]thermal.ToolResult, 0, 12)
+	for i := 0; i < 6; i++ {
+		results = append(results, thermal.ToolResult{
+			Tool: thermal.ToolOpenCode, Name: "OpenCode", CurrentStreak: i, TotalActivity: int64(i * 1000),
+		})
+		results = append(results, thermal.ToolResult{
+			Tool: thermal.ToolAgy, Name: "Agy", CurrentStreak: i, TotalActivity: int64(i * 10),
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = RenderLeaderboard(results, 52, true, "streak", true)
+	}
+}

@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 19
+- 🟢 **Implemented & Verified**: 20
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 23 (23 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 22 (22 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 220/264 completed (83%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Added malformed date filtering before streak sorting and walking, verified with unit tests and race detection. | 0s ago |
+| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | Preallocated tokenResults and activityResults slices capacity to avoid dynamic reallocation, added benchmark to leaderboard_test.go. | 0s ago |
 
 ---
 
@@ -65,7 +65,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Embedded Local Web Dashboard for Agent Telemetry & Streak Visualization — Implement a local-first web dashboard served via 'thermal serve' on localhost. E... | `/goal goals/embedded-web-dashboard/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
-| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Preallocated Slice Capacity in Leaderboard Rendering — In `internal/render/leaderboard.go`, `RenderLeaderboard` splits all discovered t... | `/goal goals/leaderboard-slice-preallocation/goal.md` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | OSS License Strategy Evaluation, CI Enforcement & Licensing Hardening — Evaluate Thermal's licensing strategy using the oss-license-strategy framework. ... | `/goal goals/license-strategy-and-enforcement/goal.md` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
@@ -110,6 +109,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fd5ca83` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `8afd798` |
 | [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `7557bf9` |
+| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `a2467d7` |
 | [`token-yield-metrics`](token-yield-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ef10ceb` |
 | [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f720e57` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ebc550a` |
