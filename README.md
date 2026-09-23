@@ -6,6 +6,7 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Dual License: Commercial](https://img.shields.io/badge/Dual_License-Commercial-green.svg)](DUAL-LICENSE.md)
 [![Governance: Solo Authority](https://img.shields.io/badge/Governance-Solo_Authority-purple.svg)](GOVERNANCE.md)
+[![SLSA Level 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 > Don't break the streak.
 
@@ -58,6 +59,19 @@ Prefer a hosted page? The documentation site in
 output: https://thermal.jadmadi.net/
 
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
+
+All official releases provide cryptographic build provenance conforming to **SLSA Build Level 3** (`checksums.txt.intoto.jsonl`) generated via OpenSSF. You can independently verify the provenance and integrity of any release asset using [`slsa-verifier`](https://github.com/slsa-framework/slsa-verifier):
+
+```bash
+# Verify checksums.txt against SLSA Level 3 provenance
+slsa-verifier verify-artifact checksums.txt \
+  --provenance-path checksums.txt.intoto.jsonl \
+  --source-uri github.com/jadmadi/thermal \
+  --source-tag v0.6.0
+
+# Verify the downloaded archive against the verified checksums
+sha256sum --check --ignore-missing checksums.txt
+```
 
 Or build from source using the included build script:
 

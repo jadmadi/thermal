@@ -397,6 +397,24 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
+if ! grep -q "generator_generic_slsa3.yml" "${ROOT_DIR}/.github/workflows/release.yml"; then
+    echo -e "   ${RED}✖ Failed:${RESET} .github/workflows/release.yml missing SLSA Level 3 generator"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+else
+    echo -e "   ${GREEN}✔ Passed:${RESET} OpenSSF SLSA Level 3 build provenance workflow verified"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+if ! grep -q "slsa-verifier" "${ROOT_DIR}/docs/DISTRIBUTION.md"; then
+    echo -e "   ${RED}✖ Failed:${RESET} docs/DISTRIBUTION.md missing slsa-verifier instructions"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+else
+    echo -e "   ${GREEN}✔ Passed:${RESET} docs/DISTRIBUTION.md SLSA3 verification runbook verified"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
 echo -e "\n${BOLD}15. End-to-End Human User Persona Simulation Flows:${RESET}"
 # Persona 1: Daily Developer Standup flow
 run_check "Persona: Developer daily standup flow" 0 text "${BIN_PATH}" daily --last 3 --no-color

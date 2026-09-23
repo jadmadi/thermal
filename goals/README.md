@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 23
+- 🟢 **Implemented & Verified**: 24
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 15 (15 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 16 (16 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 15
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 223/264 completed (84%)
+- 📋 **Execution Tasks Progress**: 230/264 completed (87%)
 
 ---
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
+| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Chained OpenSSF generic SLSA Level 3 generator to GoReleaser workflow in release.yml, symlinked .goreleaser.yaml, added verification runbook to docs/DISTRIBUTION.md and README.md, and added automated release gate checks. | 3m0s ago |
 
 ---
 
@@ -66,7 +66,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Bounded Worker Concurrency in Multi-File Loaders — Multi-file session loaders (`agy`, `claude`, `codex`, `command-code`, `droid`, `... | `/goal goals/loader-bounded-concurrency/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
-| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | SLSA Level 3 Build Provenance & Supply Chain Attestation via OpenSSF — Implement SLSA Level 3 build provenance and cryptographic attestation for Therma... | `/goal goals/slsa3-release-provenance/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
@@ -99,6 +98,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `2c387fb` |
 | [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c53c32b` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
+| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `64d1837` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `dceba19` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f375fdf` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
