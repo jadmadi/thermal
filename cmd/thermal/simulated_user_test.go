@@ -588,3 +588,47 @@ func TestSimulatedUser_ReceiptCommand(t *testing.T) {
 	}
 }
 
+func TestSimulatedUser_DenseFinOpsCommand(t *testing.T) {
+	// 1. Static text mode
+	stdout, stderr, code := runSim(t, "stats", "--dense", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal stats --dense --no-color', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "FinOps 9-Box Grid") {
+		t.Errorf("'thermal stats --dense' missing header: %s", stdout)
+	}
+	if strings.Contains(stdout, "\x1b[") {
+		t.Errorf("'thermal stats --dense' contains ANSI escapes under --no-color")
+	}
+	checkLanguageSanity(t, stdout)
+
+	// 2. JSON mode
+	jsonOut, stderr, code := runSim(t, "stats", "--dense", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal stats --dense --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal stats --dense --json': %v. stdout: %s", err, jsonOut)
+	}
+	if _, ok := res["totalTokens"]; !ok {
+		t.Errorf("expected totalTokens in JSON, got %v", res)
+	}
+	if _, ok := res["taxonomy"]; !ok {
+		t.Errorf("expected taxonomy in JSON, got %v", res)
+	}
+	if _, ok := res["cache"]; !ok {
+		t.Errorf("expected cache in JSON, got %v", res)
+	}
+
+	// 3. Rejection of --dense on non-stats commands
+	_, stderr, code = runSim(t, "daily", "--dense")
+	if code == 0 {
+		t.Errorf("expected non-zero exit code for 'thermal daily --dense', got 0")
+	}
+	if !strings.Contains(stderr, "--dense only applies to the stats command") {
+		t.Errorf("unexpected error message for invalid --dense: %s", stderr)
+	}
+}
+
+

@@ -184,6 +184,8 @@ run_check "Mix by cost metric" 0 text "${BIN_PATH}" mix --metric cost --no-color
 run_check "Mix JSON export" 0 json "${BIN_PATH}" mix --json
 run_check "Stats distribution" 0 text "${BIN_PATH}" stats --no-color
 run_check "Stats cost metric" 0 text "${BIN_PATH}" stats --metric cost --no-color
+run_check "Stats dense 9-box FinOps grid" 0 text "${BIN_PATH}" stats --dense --no-color
+run_check "Stats dense FinOps JSON export" 0 json "${BIN_PATH}" stats --dense --json
 run_check "Stats JSON export" 0 json "${BIN_PATH}" stats --json
 run_check "Trend fit & projection" 0 text "${BIN_PATH}" trend --no-color
 run_check "Trend cost metric" 0 text "${BIN_PATH}" trend --metric cost --no-color
@@ -227,6 +229,7 @@ run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
+run_check "Rejects --dense on daily report" 1 error "${BIN_PATH}" daily --dense
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then
