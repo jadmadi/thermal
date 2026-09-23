@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 29
+- 🟢 **Implemented & Verified**: 30
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 14 (14 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 13
+- 🟡 **Ready to Execute (Pending)**: 16 (14 independent ⚡, 2 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 11
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
 
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Codified Community Reciprocity Covenant in DUAL-LICENSE.md and CONTRIBUTING.md, added fork guidelines, exposed covenant metadata in thermal license --json, verified with release gate. | 0s ago |
+| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Implemented 5-stage trust ladder, emeritus policies, emergency succession runbook in GOVERNANCE.md, and automated CHAOSS absence factor monitoring in scripts/check_governance_metrics.sh. | 0s ago |
 
 ---
 
@@ -64,14 +64,13 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
-| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#5)` | Deps met: governance-foundations, repo-alignment-and-security | Staged Trust Ladder, Succession Protocol & Absence Factor Monitoring — Implement staged trust ladder (contributor to key holder) separating merge right... | `/goal goals/trust-ladder-and-succession/goal.md` |
+| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#4)` | Deps met: community-covenant-neutrality | Retire Legacy MIT Releases and Reset Release Line to AGPL-3.0 — Audit, purge, and archive legacy pre-AGPL-3.0 releases, assets, and git tags fro... | `/goal goals/purge-legacy-mit-releases/goal.md` |
+| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#6)` | Deps met: governance-foundations, repo-alignment-and-security, community-covenant-neutrality | Contributor Onboarding Path, Preflight Gate & Retention Loop — Establish Thermal's contributor onboarding path to pass all 4 blocking checks (B... | `/goal goals/contributor-onboarding/goal.md` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
 | [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#8)` | Prereqs: version-migration-guide | CLI Staged Deprecation Warnings & Self-Updater Migration Notifications — Implement runtime deprecation warnings and upgrade alerting in Thermal CLI. 1. A... | `/goal goals/cli-staged-deprecation-and-upgrade/goal.md` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#11)` | Prereqs: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Classify each model id the catalog cannot price, then choose a mechanism with th... | `/goal goals/pricing-catalog-coverage/goal.md` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#13)` | Prereqs: jsonl-line-ceilings | A scan that stops early is reported, never silent — No loader checks scanner.Err(), so a line over the ceiling or a read error ends ... | `/goal goals/jsonl-scan-diagnostics/goal.md` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#3)` | Prereqs: charting-analytics | TUI shell and Overview view — Add the thermal dashboard command: a Bubble Tea v2 application shell with tab ro... | `/goal goals/tui-shell-overview/goal.md` |
-| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: community-covenant-neutrality | Retire Legacy MIT Releases and Reset Release Line to AGPL-3.0 — Audit, purge, and archive legacy pre-AGPL-3.0 releases, assets, and git tags fro... | `/goal goals/purge-legacy-mit-releases/goal.md` |
-| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: community-covenant-neutrality | Contributor Onboarding Path, Preflight Gate & Retention Loop — Establish Thermal's contributor onboarding path to pass all 4 blocking checks (B... | `/goal goals/contributor-onboarding/goal.md` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: tui-shell-overview | TUI Stats view — Histogram of daily tokens or cost with a log toggle, weekday profile, top days, ... | `/goal goals/tui-stats-view/goal.md` |
@@ -114,4 +113,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f720e57` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
+| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9a82384` |
 
