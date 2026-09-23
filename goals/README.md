@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 32
+- 🟢 **Implemented & Verified**: 33
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 15 (15 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 13 (13 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 11
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Audited legacy published releases, implemented scripts/retire_legacy_releases.sh with dry-run safety guards, documented historical archive and clean reset runbook in docs/RELEASE.md. | 0s ago |
+| [`version-migration-guide`](version-migration-guide/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | Authored canonical docs/MIGRATION.md conforming to the version-migration-guide standard with 6-part Entry Anatomy, codified Breaking Change & Migration Governance Gate in AGENTS.md, linked in README and web docs. | 0s ago |
 
 ---
 
@@ -50,7 +50,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`charting-dep-spike`](charting-dep-spike/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#1)` | - | Charting dependency spike: ntcharts v2 against the stock charm stack — Verify ntcharts v2.2.0 builds and renders against stock charm.land/bubbletea v2.... | `/goal goals/charting-dep-spike/goal.md` |
-| [`version-migration-guide`](version-migration-guide/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#7)` | - | Version Migration Guide Architecture & docs/MIGRATION.md — Establish Thermal's formal migration guide (docs/MIGRATION.md) conforming strict... | `/goal goals/version-migration-guide/goal.md` |
 | [`devin-model-attribution`](devin-model-attribution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#8)` | - | Devin model attribution and honest unestimated reporting — Emit Devin per-model daily tokens from sessions.model so the estimator can price... | `/goal goals/devin-model-attribution/goal.md` |
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#10)` | - | Shrink the unpriceable token line — Shrink the UnattributedTokens line. Investigation found two causes: one Codex da... | `/goal goals/unpriceable-token-sources/goal.md` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#12)` | - | JSONL line ceilings that fit real logs — A 256KB scanner ceiling is smaller than a real command-code transcript line (409... | `/goal goals/jsonl-line-ceilings/goal.md` |
@@ -72,7 +71,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#4)` | Prereqs: tui-shell-overview | TUI Projects view with drill-down — Ranked project table with token and cost bars, sortable columns, and filters for... | `/goal goals/tui-projects-view/goal.md` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#5)` | Prereqs: tui-shell-overview | TUI Mix and Models views — Stacked share over time by tool and by model, a switching panel with dominant to... | `/goal goals/tui-mix-models-views/goal.md` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#6)` | Prereqs: tui-shell-overview | TUI Stats view — Histogram of daily tokens or cost with a log toggle, weekday profile, top days, ... | `/goal goals/tui-stats-view/goal.md` |
-| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#9)` | Prereqs: purge-legacy-mit-releases, cli-staged-deprecation-and-upgrade | Release Communication, Editorial Changelog & Automation Alignment — Adapt the changelog-writing discipline to Thermal while preserving automated rel... | `/goal goals/release-communication-and-changelog/goal.md` |
+| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#9)` | Prereqs: cli-staged-deprecation-and-upgrade | Release Communication, Editorial Changelog & Automation Alignment — Adapt the changelog-writing discipline to Thermal while preserving automated rel... | `/goal goals/release-communication-and-changelog/goal.md` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#7)` | Prereqs: tui-projects-view, tui-mix-models-views, tui-stats-view | Chart flags, docs, and 0.7.0 release — Add --chart to projects, models and the period reports, print concrete bar rows ... | `/goal goals/charting-flags-docs-release/goal.md` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#10)` | Prereqs: release-communication-and-changelog | Coverage-First Distribution: Homebrew Tap, Standalone Installer, Agent Docs \u0026 Curated Showcases — Implement Thermal's Coverage-First distribution mix: 1. Configure automated Home... | `/goal goals/distribution-coverage-foundation/goal.md` |
 
@@ -113,5 +112,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 | [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9a82384` |
 | [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9fa6245` |
+| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `3bd8d0a` |
 
