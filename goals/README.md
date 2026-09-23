@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 49
+- 🟢 **Implemented & Verified**: 50
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 9 (9 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 8 (8 independent ⚡, 0 unblocked 🔗)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 232/264 completed (87%)
 
@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`devin-model-attribution`](devin-model-attribution/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | in progress | 0s ago |
+| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@Antigravity` | in progress | 0s ago |
 
 ---
 
@@ -50,7 +50,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | AGPL-3.0 Relicensing, Commercial Dual-Licensing & Contributor Gating — Relicense Thermal to GNU AGPLv3, establish commercial dual-licensing track, impl... | `/goal goals/agpl-dual-licensing/goal.md` |
 | [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cache Efficiency & Disjoint Token Breakdown — Expose disjoint canonical token metrics (uncached input, cache read, cache write... | `/goal goals/cache-efficiency-metrics/goal.md` |
-| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Claude Code Message-Level Deduplication — Implement message-level deduplication in the Claude Code loader (`internal/loade... | `/goal goals/claude-message-dedupe/goal.md` |
 | [`dsh-loader`](dsh-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Support DeepSeek harness (dsh) in Thermal — Add dsh loader engine, registry, tests, and documentation to thermal | `/goal goals/dsh-loader/goal.md` |
 | [`hermes-loader`](hermes-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Nous Hermes Agent Loader — Implement an ingestion loader for **Nous Hermes** (`hermes`), an open-source, lo... | `/goal goals/hermes-loader/goal.md` |
 | [`report-period-totals`](report-period-totals/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Period report totals and table format — Weekly and monthly totals must equal the displayed rows for the requested window... | `/goal goals/report-period-totals/goal.md` |
@@ -68,6 +67,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`governance-foundations`](governance-foundations/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `332ad26` |
 | [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `bee76ff` |
 | [`version-migration-guide`](version-migration-guide/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `12d9833` |
+| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ecc9a92` |
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `09eb367` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `86d6ebb` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
