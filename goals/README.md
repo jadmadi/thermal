@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 59
-- 🟢 **Implemented & Verified**: 30
+- 🟢 **Implemented & Verified**: 31
 - 🔵 **In Progress (Claimed)**: 1
-- 🟡 **Ready to Execute (Pending)**: 16 (14 independent ⚡, 2 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 14 (13 independent ⚡, 1 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 11
 - 🎯 **By Tier**: 1 immediate (Tier 1), 58 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 231/264 completed (87%)
@@ -41,7 +41,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Implemented 5-stage trust ladder, emeritus policies, emergency succession runbook in GOVERNANCE.md, and automated CHAOSS absence factor monitoring in scripts/check_governance_metrics.sh. | 0s ago |
+| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@Antigravity` | Established scripts/check.sh local preflight gate, seeded Good First Issues, updated CONTRIBUTING.md with scope boundaries and review response targets, and added docs/CONTRIBUTOR_PLAYBOOK.md. | 0s ago |
 
 ---
 
@@ -65,7 +65,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Telemetry Accuracy, Pricing Estimates, and UI Polish (5 Issues) — Fix 5 issues identified during operational audit of Thermal: 1. **Pricing Estima... | `/goal goals/telemetry-and-ui-audit/goal.md` |
 | [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#4)` | Deps met: community-covenant-neutrality | Retire Legacy MIT Releases and Reset Release Line to AGPL-3.0 — Audit, purge, and archive legacy pre-AGPL-3.0 releases, assets, and git tags fro... | `/goal goals/purge-legacy-mit-releases/goal.md` |
-| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#6)` | Deps met: governance-foundations, repo-alignment-and-security, community-covenant-neutrality | Contributor Onboarding Path, Preflight Gate & Retention Loop — Establish Thermal's contributor onboarding path to pass all 4 blocking checks (B... | `/goal goals/contributor-onboarding/goal.md` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#2)` | Prereqs: charting-dep-spike | Shared chart analytics and static chart verbs — Add the aggregation layer every chart reads from: tool and model mix with share,... | `/goal goals/charting-analytics/goal.md` |
 | [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#8)` | Prereqs: version-migration-guide | CLI Staged Deprecation Warnings & Self-Updater Migration Notifications — Implement runtime deprecation warnings and upgrade alerting in Thermal CLI. 1. A... | `/goal goals/cli-staged-deprecation-and-upgrade/goal.md` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#11)` | Prereqs: unpriceable-token-sources | Pricing catalog coverage for tool-native model names — Classify each model id the catalog cannot price, then choose a mechanism with th... | `/goal goals/pricing-catalog-coverage/goal.md` |
@@ -114,4 +113,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
 | [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9a82384` |
+| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9fa6245` |
 
