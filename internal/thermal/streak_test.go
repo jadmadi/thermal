@@ -21,6 +21,22 @@ func TestComputeStreaks_SingleDay(t *testing.T) {
 	}
 }
 
+func TestComputeStreaks_MalformedDate(t *testing.T) {
+	days := map[string]bool{
+		"not-a-date": true,
+		"invalid":    true,
+		"2026-03-01": true,
+		"2026-03-02": true,
+	}
+	cur, long := ComputeStreaks(days)
+	if long != 2 {
+		t.Fatalf("expected longest streak 2, got %d", long)
+	}
+	if cur != 2 {
+		t.Fatalf("expected current streak 2, got %d", cur)
+	}
+}
+
 func TestComputeStreaks_ConsecutiveAcrossDST(t *testing.T) {
 	// Test days spanning US/Europe spring forward and fall back transitions
 	days := map[string]bool{
