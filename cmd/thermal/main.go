@@ -1966,7 +1966,7 @@ func runLive(opts thermal.Options) {
 	}
 
 	if opts.JSON {
-		tracker := thermal.NewLiveTracker()
+		tracker := thermal.NewLiveTrackerWithPricer(pricer, opts.NoEstimate)
 		results, projects, err := pollFn()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)

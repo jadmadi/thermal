@@ -722,11 +722,24 @@ func TestSimulatedUser_LiveCommand(t *testing.T) {
 	if _, ok := res["sessionTokens"]; !ok {
 		t.Errorf("expected sessionTokens in JSON, got %v", res)
 	}
-	if _, ok := res["toolTotals"]; !ok {
-		t.Errorf("expected toolTotals in JSON, got %v", res)
+	if _, ok := res["todayTurns"]; !ok {
+		t.Errorf("expected todayTurns in JSON, got %v", res)
+	}
+	if _, ok := res["todayCacheHit"]; !ok {
+		t.Errorf("expected todayCacheHit in JSON, got %v", res)
 	}
 
-	// 3. Tool-filtered JSON snapshot
+	// 3. No-estimate option
+	noEstOut, stderr, code := runSim(t, "live", "--json", "--no-estimate")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal live --json --no-estimate', got %d. stderr: %s", code, stderr)
+	}
+	var noEstRes map[string]any
+	if err := json.Unmarshal([]byte(noEstOut), &noEstRes); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal live --json --no-estimate': %v", err)
+	}
+
+	// 4. Tool-filtered JSON snapshot
 	jsonOut, stderr, code = runSim(t, "live", "codewhale", "--json")
 	if code != 0 {
 		t.Fatalf("expected exit code 0 for 'thermal live codewhale --json', got %d. stderr: %s", code, stderr)
