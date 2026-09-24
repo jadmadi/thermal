@@ -1,0 +1,61 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/jadmadi/thermal/internal/loaders"
+	"github.com/jadmadi/thermal/internal/server"
+	"github.com/jadmadi/thermal/internal/thermal"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+func main() {
+	for _, o := range []string{"", "1 passed, 2 failed"} {
+		k, l, m := thermal.ParseCommandEvidence("go test ./...", -1, o)
+		fmt.Printf("evidence output=%q kind=%v label=%q matched=%v\n", o, k, l, m)
+	}
+	home, _ := os.MkdirTemp("", "thermal-eval-home-")
+	defer os.RemoveAll(home)
+	os.Setenv("HOME", home)
+	os.Setenv("GROK_HOME", filepath.Join(home, ".grok"))
+	os.Setenv("HERMES_HOME", filepath.Join(home, ".hermes"))
+	os.Setenv("DSH_HOME", filepath.Join(home, ".dsh"))
+	dir := filepath.Join(home, ".claude/projects/probe")
+	os.MkdirAll(dir, 0755)
+	os.WriteFile(filepath.Join(dir, "session.jsonl"), []byte(`{"type":"assistant","timestamp":"2026-09-24T12:00:00Z","message":{"id":"a","model":"test-model","usage":{"input_tokens":100,"output_tokens":50},"content":[{"type":"tool_use","id":"call1","name":"Bash","input":{"command":"go test ./..."}}]}}`+"\n"), 0600)
+	r := thermal.ScanSessionReceipts(home, "claude", nil)
+	fmt.Printf("unreturned Claude command: status=%s tokens=%d\n", r[0].Status, r[0].Tokens)
+	ad := filepath.Join(home, ".gemini/antigravity-cli/brain/s/.system_generated/logs")
+	os.MkdirAll(ad, 0755)
+	os.WriteFile(filepath.Join(ad, "transcript.jsonl"), []byte(`{"created_at":"2026-09-24T12:00:00Z","type":"assistant","content":"one activity"}`+"\n"), 0600)
+	ar := thermal.ScanSessionReceipts(home, "agy", nil)
+	fmt.Printf("Agy activity-only receipt: tokens=%d\n", ar[0].Tokens)
+	td, e := server.CollectTelemetry(true)
+	var days []thermal.DailyRow
+	for _, r := range td.Results {
+		days = append(days, r.Daily...)
+	}
+	stats := thermal.AggregateStats(days, thermal.StatsOptions{}, nil)
+	fmt.Printf("web total=%d stats total=%.0f err=%v\n", td.TotalTokens, stats.Total, e)
+	lt := thermal.NewLiveTracker()
+	snap, _ := lt.Poll([]thermal.ToolResult{{Name: "Agy", Summary: thermal.Summary{LifetimeTokens: 7}, Daily: []thermal.DailyRow{{Day: "2026-09-24", Tokens: 7, Turns: 7}}}}, nil, time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC))
+	fmt.Printf("activity-only live todayTokens=%d\n", snap.TodayTokens)
+	req := httptest.NewRequest("GET", "http://untrusted.example/api/telemetry", nil)
+	rec := httptest.NewRecorder()
+	server.New("127.0.0.1", 8080, true).Handler().ServeHTTP(rec, req)
+	fmt.Printf("unrecognized Host telemetry HTTP=%d\n", rec.Code)
+	for i, tok := range []int{100, 900} {
+		path := filepath.Join(home, fmt.Sprintf("devin-%d.db", i))
+		db, _ := sql.Open("sqlite", path)
+		_, err := db.Exec(fmt.Sprintf(`CREATE TABLE sessions(id TEXT, hidden INTEGER, created_at INTEGER, last_activity_at INTEGER); CREATE TABLE message_nodes(row_id INTEGER PRIMARY KEY, session_id TEXT, created_at INTEGER, chat_message TEXT); INSERT INTO sessions VALUES('s',0,1770000000,1770000010); INSERT INTO message_nodes VALUES(1,'s',1770000000,'{"role":"assistant","metadata":{"metrics":{"input_tokens":%d,"output_tokens":0}}}');`, tok))
+		if err != nil {
+			panic(err)
+		}
+		db.Close()
+		sum, _, _, err := loaders.LoadDevinData(path)
+		fmt.Printf("Devin database %d input=%d loaded=%d err=%v\n", i, tok, sum.LifetimeTokens, err)
+	}
+}
