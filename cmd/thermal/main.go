@@ -9,10 +9,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,106 +24,36 @@ import (
 	"golang.org/x/term"
 
 	"github.com/jadmadi/thermal/internal/audit"
+	"github.com/jadmadi/thermal/internal/changelog"
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/server"
 	"github.com/jadmadi/thermal/internal/share"
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/tui"
 	"github.com/jadmadi/thermal/internal/version"
 )
 
 func usage() string {
-	return `Usage: thermal [options] [tool] [report]
-
-Don't break the streak.
-Terminal usage profile for AI coding tools.
-
-Commands:
-  dashboard      Interactive dashboard (needs a terminal)
-  daily          Daily report (tokens and cost per day)
-  weekly         Weekly report
-  monthly        Monthly report
-  projects       Tokens and cost per project, ranked
-  models         Tokens and estimated cost per model, ranked
-  mix            Tool or model mix over time, with switching stats
-  stats          Daily distribution: percentiles, weekday, outliers
-  trend          Daily trend fit with a month-end projection
-  replay         Simulate workload against subscriptions & API pricing
-  yield          Token yield & code output delta telemetry
-  receipt        Verifiable work receipts & session verification outcomes
-  share          Generate a stateless, private share URL for your streak
-  audit          Audit local agent setup and context health
-  license        Show license, dual-licensing & commercial terms
-  upgrade        Self-upgrade to the latest release
-  version        Show version info
-
-Reports accept an optional tool: "thermal opencode weekly",
-"thermal weekly" (all tools). Tool defaults to all.
-
-Cost: recorded cost comes from the tool source; estimated cost
-(prefixed with ~) is calculated from models.dev pricing for tools
-that record model usage without costs. Reports name the split
-under the total. Run with --no-estimate to see recorded cost alone.
-Projects collapse to the nearest git root and merge across tools.
---sort picks the ranking: streak|tokens|cost for the leaderboard,
-tokens|cost|days|recent for projects, tokens|cost for models.
---metric tokens|cost applies to mix, stats, and trend.
---by tool|model and --grain day|week|month apply to mix.
---against <model> and --compare <plans> apply to replay.
-
-Supported tools:
-  all           Show all tools as leaderboard (default)
-  mimocode      MiMoCode
-  opencode      OpenCode
-  codex         Codex CLI
-  devin         Devin
-  agy           Agy (Antigravity)
-  command-code  command-code-ai
-  codewhale     codewhale
-  zcode         ZCode
-  grok          Grok
-  muse          Muse
-  claude        Claude Code
-  droid         Droid
-  dsh           DeepSeek (DSH)
-  hermes        Nous Hermes
-
-Options:
-  --tool <name>      Select single tool (default: all)
-  --db <path>        Override database/data path
-  --weeks <N>        Heatmap width in weeks (default: 52)
-  --since <date>     Report start date (YYYY-MM-DD)
-  --until <date>     Report end date (YYYY-MM-DD)
-  --last <N>         Report last N days, weeks, or months
-  --order <asc|desc> Sort order for report rows (default: desc)
-  --sort <field>     Ranking: streak|tokens|cost (leaderboard), tokens|cost|days|recent (projects), tokens|cost (models)
-  --top <N>          Limit output rows for projects and models (default: all)
-  --metric <field>   Analytics metric: tokens or cost (default: tokens)
-  --by <tool|model>  Mix breakdown dimension (default: tool)
-  --grain <grain>    Mix aggregation window: day, week, or month (default: week)
-  --against <model>  Target model for replay simulation
-  --compare <plans>  Plans to compare in replay: comma-separated or all
-  --breakdown        Show per-model rows under each period (daily, weekly, monthly)
-  --chart            Print bar rows under the table (daily, weekly, monthly, projects, models)
-  --dense            High-density 9-box FinOps grid view (stats)
-  --port <port>      Port for embedded web server (serve, default: 8080)
-  --host <host>      Host for embedded web server (serve, default: 127.0.0.1)
-  --open             Open browser automatically on serve
-  --start-of-week    Week start day, sunday-saturday (default: sunday)
-  --offline          Use cached pricing only, never fetch
-  --no-estimate      Recorded cost only, no pricing estimates (leaderboard and reports)
-  --license          Show license and commercial terms
-  --json             Output JSON instead of dashboard
-  --no-color         Disable ANSI colors
-  --verbose          Enable verbose diagnostic warnings on stderr
-  -h, --help         Show this help`
+	noColor := os.Getenv("NO_COLOR") != ""
+	for _, arg := range os.Args {
+		if arg == "--no-color" {
+			noColor = true
+			break
+		}
+	}
+	return render.RenderHelp(noColor)
 }
 
 func parseArgs() thermal.Options {
 	if len(os.Args) == 2 {
 		arg := os.Args[1]
+		if arg == "-h" || arg == "--help" || arg == "help" {
+			fmt.Print(usage())
+			os.Exit(0)
+		}
 		if arg == "-v" || arg == "--version" || arg == "version" {
 			fmt.Printf("thermal %s\n", version.String())
 			if version.Commit != "unknown" {
@@ -157,14 +90,22 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Compare, "compare", "", "Plans to compare in replay: comma-separated or all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
-	flag.BoolVar(&opts.Dense, "dense", false, "High-density 9-box FinOps grid view (stats)")
+	flag.BoolVar(&opts.Dense, "dense", false, "High-density 9-box FinOps grid view (default for stats)")
+	flag.BoolVar(&opts.Distribution, "distribution", false, "Show distribution histogram instead of dense grid (stats)")
+	flag.BoolVar(&opts.Distribution, "dist", false, "Show distribution histogram instead of dense grid (stats shorthand)")
+	flag.BoolVar(&opts.Distribution, "sparse", false, "Show distribution histogram instead of dense grid (stats shorthand)")
 	flag.IntVar(&opts.Port, "port", 8080, "Port for embedded web server (default: 8080)")
 	flag.StringVar(&opts.Host, "host", "127.0.0.1", "Host for embedded web server (default: 127.0.0.1)")
 	flag.BoolVar(&opts.Open, "open", false, "Open browser automatically on serve")
+	flag.BoolVar(&opts.NoOpen, "no-open", false, "Do not open browser automatically on serve")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
 	flag.BoolVar(&opts.NoUpdateCheck, "no-update-check", false, "Disable daily automatic update check")
+	flag.DurationVar(&opts.Interval, "interval", time.Second, "Polling interval for live monitor (default: 1s)")
+	flag.BoolVar(&opts.Stream, "stream", false, "Stream continuous NDJSON live events (live verb)")
+	flag.BoolVar(&opts.Stream, "follow", false, "Stream continuous NDJSON live events (live verb shorthand)")
+	flag.BoolVar(&opts.Stream, "f", false, "Stream continuous NDJSON live events (live verb shorthand)")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
@@ -179,6 +120,20 @@ func parseArgs() thermal.Options {
 	if showLicense {
 		opts.Tool = "license"
 	}
+
+	var denseExplicit bool
+	var denseVal bool
+	var metricExplicit bool
+
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "dense":
+			denseExplicit = true
+			denseVal = opts.Dense
+		case "metric":
+			metricExplicit = true
+		}
+	})
 
 	remaining := flag.Args()
 	var positionals []string
@@ -224,13 +179,37 @@ func parseArgs() thermal.Options {
 		case "--chart":
 			opts.Chart = true
 		case "--dense":
-			opts.Dense = true
+			denseExplicit = true
+			if hasInline {
+				opts.Dense = inline == "true" || inline == "1"
+			} else {
+				opts.Dense = true
+			}
+			denseVal = opts.Dense
+		case "--distribution", "--dist", "--sparse":
+			opts.Distribution = true
 		case "--offline":
 			opts.Offline = true
 		case "--no-estimate":
 			opts.NoEstimate = true
 		case "--verbose", "-v", "-d":
 			opts.Verbose = true
+		case "--port":
+			if v, ok := takeValue(); ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					opts.Port = n
+				}
+			}
+		case "--host":
+			if v, ok := takeValue(); ok {
+				opts.Host = v
+			}
+		case "--open":
+			opts.Open = true
+		case "--no-open":
+			opts.NoOpen = true
+		case "--no-update-check":
+			opts.NoUpdateCheck = true
 		case "--weeks":
 			if v, ok := takeValue(); ok {
 				if n, err := strconv.Atoi(v); err == nil {
@@ -274,6 +253,7 @@ func parseArgs() thermal.Options {
 				}
 			}
 		case "--metric":
+			metricExplicit = true
 			if v, ok := takeValue(); ok {
 				opts.Metric = v
 			}
@@ -297,6 +277,16 @@ func parseArgs() thermal.Options {
 			if v, ok := takeValue(); ok {
 				opts.Compare = v
 			}
+		case "--interval":
+			if v, ok := takeValue(); ok {
+				if d, err := time.ParseDuration(v); err == nil {
+					opts.Interval = d
+				} else if sec, err := strconv.ParseFloat(v, 64); err == nil {
+					opts.Interval = time.Duration(sec * float64(time.Second))
+				}
+			}
+		case "--stream", "--follow", "-f":
+			opts.Stream = true
 		}
 	}
 
@@ -311,6 +301,14 @@ func parseArgs() thermal.Options {
 			if len(positionals) > 1 && isReportWord(positionals[1]) {
 				opts.Report = strings.ToLower(positionals[1])
 			}
+		}
+	}
+
+	if opts.Report == "stats" {
+		if opts.Distribution || (denseExplicit && !denseVal) || (metricExplicit && !denseExplicit) {
+			opts.Dense = false
+		} else {
+			opts.Dense = true
 		}
 	}
 
@@ -329,7 +327,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt", "serve":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt", "web", "serve", "changelog", "live":
 		return true
 	}
 	return false
@@ -396,10 +394,13 @@ func validateReportFlags(opts thermal.Options) error {
 	if opts.Dense && opts.Report != "stats" {
 		return fmt.Errorf("--dense only applies to the stats command")
 	}
+	if opts.Distribution && opts.Report != "stats" {
+		return fmt.Errorf("--distribution only applies to the stats command")
+	}
 
 	if opts.Report == "" {
-		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "serve" {
-			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" || opts.Last != 0 || opts.Top != 0 {
+		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "web" || opts.Tool == "serve" || opts.Tool == "changelog" || opts.Tool == "live" {
+			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
 			if opts.Against != "" || opts.Compare != "" {
@@ -431,12 +432,38 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	switch opts.Report {
-	case "serve":
+	case "live":
 		if opts.Against != "" || opts.Compare != "" {
 			return fmt.Errorf("--against and --compare only apply to the replay command")
 		}
 		if opts.Breakdown || opts.Chart {
-			return fmt.Errorf("--breakdown and --chart do not apply to the serve command")
+			return fmt.Errorf("--breakdown and --chart do not apply to the live command")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top does not apply to the live command")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
+		if opts.Since != "" || opts.Until != "" || opts.Last != 0 {
+			return fmt.Errorf("report options do not apply to the live command")
+		}
+	case "changelog":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the changelog command")
+		}
+		if sortKey != "" {
+			return fmt.Errorf("--sort does not apply to the changelog command")
+		}
+	case "web", "serve":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the web command")
 		}
 		if opts.Top != 0 {
 			return fmt.Errorf("--top only applies to the projects and models commands")
@@ -445,7 +472,7 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
 		}
 		if sortKey != "" {
-			return fmt.Errorf("--sort does not apply to the serve command")
+			return fmt.Errorf("--sort does not apply to the web command")
 		}
 	case "replay":
 		if sortKey != "" {
@@ -593,10 +620,23 @@ func main() {
 	case "audit":
 		runAudit(opts)
 		return
+	case "changelog":
+		limit := opts.Top
+		if limit == 0 && opts.Last > 0 {
+			limit = opts.Last
+		}
+		if limit == 0 {
+			limit = 3
+		}
+		runChangelog(opts, limit)
+		return
+	case "live":
+		runLive(opts)
+		return
 	case "share":
 		runShare(opts)
 		return
-	case "serve":
+	case "web", "serve":
 		runServe(opts)
 		return
 	case "license", "--license":
@@ -615,6 +655,8 @@ func main() {
 
 	if opts.Report != "" {
 		switch opts.Report {
+		case "live":
+			runLive(opts)
 		case "projects":
 			runProjectReport(opts)
 		case "models":
@@ -633,9 +675,18 @@ func main() {
 			runReceiptReport(opts)
 		case "audit":
 			runAudit(opts)
+		case "changelog":
+			limit := opts.Top
+			if limit == 0 && opts.Last > 0 {
+				limit = opts.Last
+			}
+			if limit == 0 {
+				limit = 3
+			}
+			runChangelog(opts, limit)
 		case "share":
 			runShare(opts)
-		case "serve":
+		case "web", "serve":
 			runServe(opts)
 		default:
 			runReport(opts)
@@ -1055,8 +1106,20 @@ func runDashboard(opts thermal.Options) int {
 		return 1
 	}
 
+	initialTab := 0
+	switch strings.ToLower(opts.Report) {
+	case "projects", "2":
+		initialTab = 1
+	case "mix", "3":
+		initialTab = 2
+	case "models", "4":
+		initialTab = 3
+	case "stats", "finops", "5":
+		initialTab = 4
+	}
+
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
-	p := tea.NewProgram(tui.New(adapter, colorful))
+	p := tea.NewProgram(tui.NewWithTab(adapter, colorful, initialTab))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: dashboard failed: %v\n", err)
 		return 1
@@ -1200,12 +1263,6 @@ func runStatsReport(opts thermal.Options) {
 		}
 
 		colorful := !opts.NoColor && render.IsTerminal() && os.Getenv("NO_COLOR") == ""
-		if render.IsTerminal() && !opts.NoColor {
-			p := tea.NewProgram(tui.NewDense(grid, colorful))
-			if _, err := p.Run(); err == nil {
-				return
-			}
-		}
 		fmt.Print(tui.RenderDenseFinOps(grid, reportWidth(), colorful))
 		return
 	}
@@ -1411,6 +1468,16 @@ func runAudit(opts thermal.Options) {
 	fmt.Print(render.RenderAudit(rep, opts.NoColor))
 }
 
+// runChangelog outputs release history and new features.
+func runChangelog(opts thermal.Options, limit int) {
+	rep := changelog.GetReport(limit)
+	if opts.JSON {
+		fmt.Println(changelog.RenderChangelogJSON(rep))
+		return
+	}
+	fmt.Print(changelog.RenderChangelog(rep, opts.NoColor))
+}
+
 // runShare generates a stateless, zero-database share URL for user streaks and telemetry.
 func runShare(opts thermal.Options) {
 	targetTool := "all"
@@ -1455,28 +1522,56 @@ func runShare(opts thermal.Options) {
 		return
 	}
 
-	colors := !opts.NoColor && render.IsTerminal() && os.Getenv("NO_COLOR") == ""
-	highlight := func(s string) string { return render.ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return render.ColorCode(colors, "38;5;239", s) }
-	gold := func(s string) string { return render.ColorCode(colors, "1;33", s) }
-	cyan := func(s string) string { return render.ColorCode(colors, "1;36", s) }
+	st := render.NewStyle(opts.NoColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	gold := st.Gold
+	cyan := st.Accent
+	green := st.Success
 
-	fmt.Println()
-	fmt.Printf("  %s %s %s\n\n", highlight("Thermal"), dim("·"), highlight("share · stateless streak card"))
-	fmt.Printf("  %s\n", highlight("Share URL:"))
-	fmt.Printf("  %s\n\n", cyan(url))
-	fmt.Printf("  %s\n", highlight("Encoded Payload:"))
-	fmt.Printf("  • Current Streak: %s days (Longest: %s days)\n", gold(fmt.Sprintf("%d", snap.CurrentStreak)), fmt.Sprintf("%d", snap.LongestStreak))
-	fmt.Printf("  • Active Days:    %d days\n", snap.ActiveDays)
-	fmt.Printf("  • Total Volume:   %s tokens\n", thermal.CompactNumber(snap.TotalTokens))
-	if snap.TotalCost > 0 {
-		costStr := fmt.Sprintf("$%.2f", snap.TotalCost)
-		if snap.EstimatedCost {
-			costStr = "~" + costStr
-		}
-		fmt.Printf("  • Spend Profile:  %s\n", costStr)
+	var sb strings.Builder
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("  %s %s %s\n\n", highlight("Thermal"), dim("·"), highlight("share · stateless streak card")))
+
+	costStr := fmt.Sprintf("$%.2f", snap.TotalCost)
+	if snap.EstimatedCost {
+		costStr = "~" + costStr
 	}
-	fmt.Printf("  • Privacy Notice: 100%% zero-database, client-only URL fragment. No file paths or prompt data encoded.\n\n")
+	if snap.TotalCost == 0 {
+		costStr = "$0.00"
+	}
+
+	scopeLabel := strings.ToUpper(toolLabel[:1]) + toolLabel[1:]
+	cardLines := []string{
+		fmt.Sprintf(" %s %s", dim("Scope:        "), highlight(scopeLabel)),
+		fmt.Sprintf(" %s %s %s", dim("Streak:       "), gold(fmt.Sprintf("%d days 🔥", snap.CurrentStreak)), dim(fmt.Sprintf("(Longest: %d days)", snap.LongestStreak))),
+		fmt.Sprintf(" %s %s", dim("Active Days:  "), highlight(fmt.Sprintf("%d days", snap.ActiveDays))),
+		fmt.Sprintf(" %s %s", dim("Total Volume: "), green(thermal.CompactNumber(snap.TotalTokens)+" tokens")),
+		fmt.Sprintf(" %s %s", dim("Spend Profile:"), highlight(costStr)),
+	}
+
+	sb.WriteString(render.RenderCard(render.CardOptions{
+		Title:       "Stateless Streak Card",
+		RightHeader: "Client-Verified · Zero-Database",
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
+	sb.WriteString("\n\n")
+
+	sb.WriteString(fmt.Sprintf("  %s\n", highlight("Shareable Card URL:")))
+	sb.WriteString(fmt.Sprintf("  %s\n\n", cyan(url)))
+
+	footLimit := render.BoundedCardWidth(2)
+	for _, wl := range render.WrapBullet("  • ", "Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file paths, repository roots, or prompt telemetry encoded.", footLimit, dim) {
+		sb.WriteString(wl + "\n")
+	}
+	sb.WriteString("\n")
+
+	fmt.Print(sb.String())
 }
 
 // runYieldReport correlates token spend with code output delta telemetry.
@@ -1586,9 +1681,320 @@ func runServe(opts thermal.Options) {
 		_ = enc.Encode(data)
 		return
 	}
-	if err := server.StartServer(opts.Host, opts.Port, opts.Offline, opts.Open); err != nil {
+	open := opts.Open || (!opts.NoOpen && render.IsTerminal())
+	if err := server.StartServer(opts.Host, opts.Port, opts.Offline, open); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
 	}
 }
 
+type liveSourceSig struct {
+	fileCount int
+	totalSize int64
+	maxNano   int64
+	missing   bool
+}
+
+type liveToolCache struct {
+	sig       liveSourceSig
+	result    thermal.ToolResult
+	projects  []thermal.ProjectDay
+	lastCheck time.Time
+}
+
+type liveCollector struct {
+	opts      thermal.Options
+	pricer    thermal.Pricer
+	toolsInfo map[thermal.Tool]loaders.ToolInfo
+	cache     map[thermal.Tool]*liveToolCache
+	mu        sync.Mutex
+}
+
+func newLiveCollector(opts thermal.Options, pricer thermal.Pricer) *liveCollector {
+	return &liveCollector{
+		opts:      opts,
+		pricer:    pricer,
+		toolsInfo: loaders.AllTools(),
+		cache:     make(map[thermal.Tool]*liveToolCache),
+	}
+}
+
+func getLiveToolSourceSig(t thermal.Tool, info loaders.ToolInfo, dbPathOverride string) liveSourceSig {
+	switch t {
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
+		p := dbPathOverride
+		if p == "" {
+			p = info.DBPath
+		}
+		if p == "" {
+			return liveSourceSig{missing: true}
+		}
+		fi, err := os.Stat(p)
+		if err != nil {
+			return liveSourceSig{missing: true}
+		}
+		sig := liveSourceSig{
+			fileCount: 1,
+			totalSize: fi.Size(),
+			maxNano:   fi.ModTime().UnixNano(),
+		}
+		if wfi, err := os.Stat(p + "-wal"); err == nil {
+			sig.fileCount++
+			sig.totalSize += wfi.Size()
+			sig.maxNano ^= wfi.ModTime().UnixNano()
+		}
+		if sfi, err := os.Stat(p + "-shm"); err == nil {
+			sig.fileCount++
+			sig.totalSize += sfi.Size()
+			sig.maxNano ^= sfi.ModTime().UnixNano()
+		}
+		return sig
+
+	default:
+		dir := info.DataDir
+		if dbPathOverride != "" {
+			dir = dbPathOverride
+		}
+		if dir == "" {
+			return liveSourceSig{missing: true}
+		}
+		scanDir := dir
+		if info.DataSubdir != "" {
+			sub := filepath.Join(dir, info.DataSubdir)
+			if _, err := os.Stat(sub); err == nil {
+				scanDir = sub
+			}
+		}
+		if _, err := os.Stat(scanDir); err != nil {
+			if t == thermal.ToolAgy {
+				legacy := filepath.Join(thermal.HomeDir(), ".gemini", "antigravity", "brain")
+				if _, err2 := os.Stat(legacy); err2 == nil {
+					scanDir = legacy
+				} else {
+					return liveSourceSig{missing: true}
+				}
+			} else {
+				return liveSourceSig{missing: true}
+			}
+		}
+
+		var sig liveSourceSig
+		if t == thermal.ToolCodex {
+			stateDB := filepath.Join(dir, "state_5.sqlite")
+			if sfi, err := os.Stat(stateDB); err == nil {
+				sig.fileCount++
+				sig.totalSize += sfi.Size()
+				sig.maxNano = sfi.ModTime().UnixNano()
+			}
+		}
+
+		_ = filepath.WalkDir(scanDir, func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			if d.IsDir() {
+				return nil
+			}
+			info, err := d.Info()
+			if err != nil {
+				return nil
+			}
+			sig.fileCount++
+			sig.totalSize += info.Size()
+			if nano := info.ModTime().UnixNano(); nano > sig.maxNano {
+				sig.maxNano = nano
+			}
+			return nil
+		})
+		return sig
+	}
+}
+
+func (c *liveCollector) Collect() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+	var targetTools []thermal.Tool
+
+	if c.opts.Tool != "" && c.opts.Tool != "all" && c.opts.Tool != "auto" {
+		t, ok := loaders.ResolveTool(c.opts.Tool)
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown tool: %s", c.opts.Tool)
+		}
+		targetTools = []thermal.Tool{t}
+	} else {
+		targetTools = allToolOrder
+	}
+
+	var results []thermal.ToolResult
+	var projects []thermal.ProjectDay
+
+	for _, t := range targetTools {
+		info := c.toolsInfo[t]
+		cached := c.cache[t]
+
+		// For directory tools, budget scans: if checked recently (<200ms) and cached, reuse snapshot
+		isDB := info.DBPath != ""
+		if !isDB && cached != nil && now.Sub(cached.lastCheck) < 200*time.Millisecond {
+			results = append(results, cached.result)
+			projects = append(projects, cached.projects...)
+			continue
+		}
+
+		sig := getLiveToolSourceSig(t, info, c.opts.DBPath)
+		if sig.missing {
+			delete(c.cache, t)
+			continue
+		}
+
+		if cached != nil && cached.sig == sig {
+			cached.lastCheck = now
+			results = append(results, cached.result)
+			projects = append(projects, cached.projects...)
+			continue
+		}
+
+		data, err := loaders.LoadToolData(t, info, c.opts.DBPath)
+		if err != nil {
+			if cached != nil {
+				results = append(results, cached.result)
+				projects = append(projects, cached.projects...)
+			}
+			continue
+		}
+
+		var estCost float64
+		if data.Summary.Cost == 0 && c.pricer != nil && !c.opts.NoEstimate {
+			for _, d := range data.Daily {
+				if len(d.Models) > 0 {
+					cost, _ := c.pricer.PriceDay(d)
+					estCost += cost
+				}
+			}
+		}
+
+		res := thermal.ToolResult{
+			Tool:          t,
+			Name:          info.Name,
+			Summary:       data.Summary,
+			Daily:         data.Daily,
+			EstimatedCost: estCost,
+		}
+
+		for i := range data.Projects {
+			data.Projects[i].Tool = info.Name
+		}
+
+		c.cache[t] = &liveToolCache{
+			sig:       sig,
+			result:    res,
+			projects:  data.Projects,
+			lastCheck: now,
+		}
+
+		results = append(results, res)
+		projects = append(projects, data.Projects...)
+	}
+
+	if len(results) == 0 && len(c.cache) == 0 {
+		return nil, nil, fmt.Errorf("no supported tool data found")
+	}
+
+	return results, projects, nil
+}
+
+// runLive launches the interactive real-time token burn monitor or streams NDJSON events.
+func runLive(opts thermal.Options) {
+	pricer := newPricer(opts)
+	collector := newLiveCollector(opts, pricer)
+	pollFn := func() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
+		return collector.Collect()
+	}
+
+	rate := opts.Interval
+	if rate <= 0 {
+		rate = time.Second
+	}
+
+	filter := ""
+	if opts.Tool != "" && opts.Tool != "all" && opts.Tool != "auto" {
+		filter = opts.Tool
+	}
+
+	if opts.JSON {
+		tracker := thermal.NewLiveTracker()
+		results, projects, err := pollFn()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+			os.Exit(1)
+		}
+		snap, _ := tracker.Poll(results, projects, time.Now())
+
+		if !opts.Stream {
+			writeReportJSON(snap)
+			return
+		}
+
+		// NDJSON streaming mode:
+		type streamPayload struct {
+			Type      string                `json:"type"`
+			Timestamp time.Time             `json:"timestamp"`
+			Snapshot  *thermal.LiveSnapshot `json:"snapshot,omitempty"`
+			Event     *thermal.LiveEvent    `json:"event,omitempty"`
+		}
+
+		// Initial snapshot
+		initLine, _ := json.Marshal(streamPayload{
+			Type:      "snapshot",
+			Timestamp: snap.Timestamp,
+			Snapshot:  &snap,
+		})
+		fmt.Println(string(initLine))
+
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		ticker := time.NewTicker(rate)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-sigCh:
+				return
+			case t := <-ticker.C:
+				res, prj, err := pollFn()
+				if err != nil {
+					continue
+				}
+				_, newEvents := tracker.Poll(res, prj, t)
+				for _, ev := range newEvents {
+					evCopy := ev
+					line, _ := json.Marshal(streamPayload{
+						Type:      "event",
+						Timestamp: t,
+						Event:     &evCopy,
+					})
+					fmt.Println(string(line))
+				}
+			}
+		}
+	}
+
+	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		fmt.Println("thermal live is interactive and needs a terminal.")
+		fmt.Println("For scripts, pipelines, and status bars use:")
+		fmt.Println()
+		fmt.Println("  thermal live --json            instant JSON snapshot")
+		fmt.Println("  thermal live --json --stream   stream NDJSON live events")
+		fmt.Println("  thermal stats                  9-box FinOps grid or distribution")
+		return
+	}
+
+	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
+	model := tui.NewLiveModel(pollFn, rate, filter, colorful)
+	p := tea.NewProgram(model)
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)
+		os.Exit(1)
+	}
+}
