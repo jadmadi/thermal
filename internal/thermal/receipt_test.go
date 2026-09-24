@@ -524,5 +524,80 @@ func TestAgyReceipt_EvidenceIntegrity(t *testing.T) {
 		if r.TestsPassed != 1 {
 			t.Errorf("expected TestsPassed == 1, got %d", r.TestsPassed)
 		}
+		if r.Tokens != 0 {
+			t.Errorf("expected Agy tokens == 0 (activity-only), got %d", r.Tokens)
+		}
 	})
+}
+
+type mockReceiptPricer struct {
+	pricedDaily DailyRow
+}
+
+func (m *mockReceiptPricer) PriceDay(day DailyRow) (float64, []string) {
+	m.pricedDaily = day
+	var total float64
+	for model, mt := range day.Models {
+		if model == "claude-3-5-sonnet" {
+			total += float64(mt.Input)*0.000003 + float64(mt.Output)*0.000015
+		}
+		if model == "claude-3-opus" {
+			total += float64(mt.Input)*0.000015 + float64(mt.Output)*0.000075
+		}
+	}
+	return total, nil
+}
+
+func TestClaudeReceipt_AccountingAndDeduplication(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "thermal-claude-accounting-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Test duplicate message IDs: message m1 is emitted twice with 1000 input, 500 output tokens.
+	// Message m2 is emitted with 2000 input, 400 output tokens on claude-3-opus.
+	// Total tokens should be (1000+500) + (2000+400+100+50) = 4050 tokens (not 5550).
+	path := filepath.Join(tmpDir, "dedupe.jsonl")
+	content := `{"type":"assistant","timestamp":"2026-09-22T10:00:00Z","message":{"id":"m1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}` + "\n" +
+		`{"type":"assistant","timestamp":"2026-09-22T10:00:01Z","message":{"id":"m1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}` + "\n" +
+		`{"type":"assistant","timestamp":"2026-09-22T10:00:02Z","message":{"id":"m2","model":"claude-3-opus","usage":{"input_tokens":2000,"output_tokens":400,"cache_read_input_tokens":100,"cache_creation_input_tokens":50}}}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	mp := &mockReceiptPricer{}
+	r, ok := parseClaudeReceipt(path, mp)
+	if !ok {
+		t.Fatal("expected ok = true")
+	}
+
+	expectedTokens := int64(1000 + 500 + 2000 + 400 + 100 + 50)
+	if r.Tokens != expectedTokens {
+		t.Fatalf("expected tokens = %d (duplicate deduplicated), got %d", expectedTokens, r.Tokens)
+	}
+
+	// Verify disjoint token categories passed to Pricer
+	m1Tokens := mp.pricedDaily.Models["claude-3-5-sonnet"]
+	if m1Tokens.Input != 1000 || m1Tokens.Output != 500 {
+		t.Errorf("m1 disjoint tokens mismatch: %+v", m1Tokens)
+	}
+	m2Tokens := mp.pricedDaily.Models["claude-3-opus"]
+	if m2Tokens.Input != 2000 || m2Tokens.Output != 400 || m2Tokens.CacheRead != 100 || m2Tokens.CacheWrite != 50 {
+		t.Errorf("m2 disjoint tokens mismatch: %+v", m2Tokens)
+	}
+}
+
+func TestAggregateReceipts_UnpricedTokens(t *testing.T) {
+	receipts := []WorkReceipt{
+		{SessionID: "s-1", Tool: "Claude", Day: "2026-09-22", Tokens: 1000, Cost: 0.05, Status: "VERIFIED", Tier: Tier1Verified},
+		{SessionID: "s-2", Tool: "Devin", Day: "2026-09-22", Tokens: 5000, Cost: 0.0, Status: "UNVERIFIED", Tier: Tier3Unverified},
+	}
+	rep := AggregateReceipts(receipts, ReceiptOptions{})
+	if rep.Summary.TotalTokens != 6000 {
+		t.Errorf("TotalTokens = %d, want 6000", rep.Summary.TotalTokens)
+	}
+	if rep.Summary.UnpricedTokens != 5000 {
+		t.Errorf("UnpricedTokens = %d, want 5000", rep.Summary.UnpricedTokens)
+	}
 }

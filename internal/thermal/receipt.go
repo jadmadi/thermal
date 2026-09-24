@@ -92,6 +92,7 @@ type ReceiptSummary struct {
 	CostUnverified    float64 `json:"costUnverified"`
 	VerifiedTokenRate float64 `json:"verifiedTokenRate"` // percentage 0.0 - 100.0
 	SpendEfficiency   string  `json:"spendEfficiency"`   // EXCELLENT, HEALTHY, SPECULATIVE, EXPLORATORY
+	UnpricedTokens    int64   `json:"unpricedTokens,omitempty"`
 }
 
 // ReceiptReport is the top-level payload for the 'thermal receipt' command.
@@ -340,6 +341,7 @@ func AggregateReceipts(receipts []WorkReceipt, opts ReceiptOptions) ReceiptRepor
 		totalTokens      int64
 		tokensVerified   int64
 		tokensUnverified int64
+		unpricedTokens   int64
 		totalCost        float64
 		costVerified     float64
 		costUnverified   float64
@@ -361,6 +363,9 @@ func AggregateReceipts(receipts []WorkReceipt, opts ReceiptOptions) ReceiptRepor
 
 		totalTokens += r.Tokens
 		totalCost += r.Cost
+		if r.Tokens > 0 && r.Cost == 0 {
+			unpricedTokens += r.Tokens
+		}
 
 		switch r.Status {
 		case "VERIFIED":
@@ -455,6 +460,7 @@ func AggregateReceipts(receipts []WorkReceipt, opts ReceiptOptions) ReceiptRepor
 			TotalTokens:       totalTokens,
 			TokensVerified:    tokensVerified,
 			TokensUnverified:  tokensUnverified,
+			UnpricedTokens:    unpricedTokens,
 			TotalCost:         totalCost,
 			CostVerified:      costVerified,
 			CostUnverified:    costUnverified,
@@ -468,7 +474,17 @@ func AggregateReceipts(receipts []WorkReceipt, opts ReceiptOptions) ReceiptRepor
 // to extract factual work receipts from session transcripts and records.
 func ScanSessionReceipts(homeDir string, toolFilter string, pricer Pricer) []WorkReceipt {
 	var receipts []WorkReceipt
-	filter := strings.ToLower(toolFilter)
+	filter := strings.ToLower(strings.TrimSpace(toolFilter))
+	switch filter {
+	case "claude", "claude-code", "cc":
+		filter = "claude"
+	case "agy", "antigravity":
+		filter = "agy"
+	case "codewhale", "whale", "cw":
+		filter = "codewhale"
+	case "command-code", "commandcode", "ccode":
+		filter = "command-code"
+	}
 	includeAll := filter == "" || filter == "all" || filter == "auto"
 
 	// 1. Scan Claude transcripts (~/.claude/projects/*/*.jsonl)
@@ -575,6 +591,8 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 
 	pendingMap := make(map[string]string)
 	var pendingList []string
+	seenMsgIDs := make(map[string]bool)
+	modelsMap := make(map[string]ModelTokens)
 
 	handleToolResult := func(toolUseID string, rawContent json.RawMessage, isError bool, exitCodePtr *int) {
 		var cmd string
@@ -628,6 +646,7 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 			Timestamp string `json:"timestamp"`
 			Cwd       string `json:"cwd"`
 			Message   struct {
+				ID    string `json:"id"`
 				Model string `json:"model"`
 				Usage struct {
 					InputTokens              int64 `json:"input_tokens"`
@@ -676,8 +695,32 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 			}
 		}
 
+		// Token usage accounting with message deduplication and disjoint categories
 		u := rec.Message.Usage
-		tokens += u.InputTokens + u.OutputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
+		msgTok := u.InputTokens + u.OutputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
+		if msgTok > 0 {
+			msgID := rec.Message.ID
+			isDupe := false
+			if msgID != "" {
+				if seenMsgIDs[msgID] {
+					isDupe = true
+				} else {
+					seenMsgIDs[msgID] = true
+				}
+			}
+			if !isDupe {
+				tokens += msgTok
+				m := strings.ToLower(strings.TrimSpace(rec.Message.Model))
+				if m != "" {
+					mt := modelsMap[m]
+					mt.Input += u.InputTokens
+					mt.Output += u.OutputTokens
+					mt.CacheRead += u.CacheReadInputTokens
+					mt.CacheWrite += u.CacheCreationInputTokens
+					modelsMap[m] = mt
+				}
+			}
+		}
 
 		// 1. Process tool_use in message.content
 		for _, c := range rec.Message.Content {
@@ -738,15 +781,19 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 	sessID := strings.TrimSuffix(filepath.Base(path), ".jsonl")
 	outcome := EvaluateSessionOutcome(evList, agentClaimed)
 
+	// Fallback to modelName if modelsMap was empty but a model name was seen
+	if len(modelsMap) == 0 && modelName != "" && tokens > 0 {
+		m := strings.ToLower(strings.TrimSpace(modelName))
+		modelsMap[m] = ModelTokens{Unclassified: tokens}
+	}
+
 	var cost float64
 	var estCost bool
-	if pricer != nil && modelName != "" && tokens > 0 {
+	if pricer != nil && len(modelsMap) > 0 && tokens > 0 {
 		c, _ := pricer.PriceDay(DailyRow{
 			Day:    day,
 			Tokens: tokens,
-			Models: map[string]ModelTokens{
-				modelName: {Unclassified: tokens},
-			},
+			Models: modelsMap,
 		})
 		if c > 0 {
 			cost = c
@@ -884,9 +931,7 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 		duration = lastTs.Sub(firstTs).Milliseconds()
 	}
 
-	// Agy records steps rather than tokens; each step represents roughly 500 equivalent tokens
-	approxTokens := int64(steps) * 500
-
+	// Agy records step activity rather than token usage. Activity rows carry 0 tokens.
 	return WorkReceipt{
 		SessionID:       sessionID,
 		Tool:            "Agy",
@@ -894,7 +939,8 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 		Day:             day,
 		Tier:            outcome.Tier,
 		Status:          outcome.Status,
-		Tokens:          approxTokens,
+		Tokens:          0,
+		Cost:            0,
 		TestsPassed:     outcome.TestsPassed,
 		TestsFailed:     outcome.TestsFailed,
 		LintersPassed:   outcome.LintersPassed,
@@ -963,4 +1009,9 @@ func parseCodewhaleReceipt(path string) (WorkReceipt, bool) {
 		Cost:          md.Cost.SessionCostUSD,
 		EstimatedCost: false,
 	}, true
+}
+
+// IsActivityOnly reports whether a row is activity telemetry rather than token telemetry.
+func IsActivityOnly(day DailyRow) bool {
+	return isActivityOnly(day)
 }

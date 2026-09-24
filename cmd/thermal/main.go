@@ -1620,6 +1620,9 @@ func runReceiptReport(opts thermal.Options) {
 	if targetTool == "receipt" {
 		targetTool = "all"
 	}
+	if t, ok := loaders.ResolveTool(targetTool); ok {
+		targetTool = string(t)
+	}
 	opts.Tool = targetTool
 
 	home := thermal.HomeDir()
@@ -1628,25 +1631,44 @@ func runReceiptReport(opts thermal.Options) {
 	// Scan real session transcripts from local tool stores
 	receipts := thermal.ScanSessionReceipts(home, targetTool, pricer)
 
-	// If no transcript files found (e.g. blank environment or tools storing aggregates only),
-	// synthesize receipts from loaded tool sessions
-	if len(receipts) == 0 {
-		set := loadUsage(opts)
-		for _, res := range set.results {
-			for _, day := range res.Daily {
-				if day.Turns == 0 && day.Tokens == 0 {
-					continue
-				}
-				receipts = append(receipts, thermal.WorkReceipt{
-					SessionID: fmt.Sprintf("%s-%s", strings.ToLower(res.Name), day.Day),
-					Tool:      res.Name,
-					Day:       day.Day,
-					Tokens:    day.Tokens,
-					Cost:      day.Cost,
-					Tier:      thermal.Tier2Claimed,
-					Status:    "CLAIMED",
-				})
+	// Track which tools are covered by transcript scanning
+	coveredTools := make(map[string]bool)
+	for _, r := range receipts {
+		tKey := strings.ToLower(r.Tool)
+		if t, ok := loaders.ResolveTool(r.Tool); ok {
+			tKey = string(t)
+		}
+		coveredTools[tKey] = true
+	}
+
+	// Merge uncovered tools from daily usage as aggregate-only UNVERIFIED coverage
+	set := loadUsage(opts)
+	for _, res := range set.results {
+		tKey := strings.ToLower(res.Name)
+		if t, ok := loaders.ResolveTool(res.Name); ok {
+			tKey = string(t)
+		}
+		if coveredTools[tKey] {
+			continue // Already covered by transcript scanning
+		}
+		for _, day := range res.Daily {
+			if day.Turns == 0 && day.Tokens == 0 {
+				continue
 			}
+			tokens := day.Tokens
+			if thermal.IsActivityOnly(day) {
+				tokens = 0
+			}
+			receipts = append(receipts, thermal.WorkReceipt{
+				SessionID:       fmt.Sprintf("%s-%s", tKey, day.Day),
+				Tool:            res.Name,
+				Day:             day.Day,
+				Tokens:          tokens,
+				Cost:            day.Cost,
+				Tier:            thermal.Tier3Unverified,
+				Status:          "UNVERIFIED",
+				EvidenceSummary: []string{"aggregate-only"},
+			})
 		}
 	}
 
