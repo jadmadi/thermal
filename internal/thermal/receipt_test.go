@@ -13,12 +13,12 @@ import (
 
 func TestParseCommandEvidence(t *testing.T) {
 	tests := []struct {
-		cmd        string
-		exitCode   int
-		output     string
-		wantKind   EvidenceKind
-		wantLabel  string
-		wantMatch  bool
+		cmd       string
+		exitCode  int
+		output    string
+		wantKind  EvidenceKind
+		wantLabel string
+		wantMatch bool
 	}{
 		{
 			cmd:       "go test ./...",
@@ -105,6 +105,51 @@ func TestParseCommandEvidence(t *testing.T) {
 			wantKind:  EvidenceTestFail,
 			wantLabel: "go test (exit 1)",
 			wantMatch: true,
+		},
+		{
+			cmd:       "git tag v1.0.0",
+			exitCode:  0,
+			wantKind:  EvidenceUnknown,
+			wantLabel: "",
+			wantMatch: false,
+		},
+		{
+			cmd:       "go test ./...",
+			exitCode:  -1,
+			output:    "1 passed, 2 failed in 0.5s",
+			wantKind:  EvidenceTestFail,
+			wantLabel: "go test (exit 1)",
+			wantMatch: true,
+		},
+		{
+			cmd:       "go test ./...",
+			exitCode:  0,
+			output:    "--- FAIL: TestFoo (0.00s)\nFAIL",
+			wantKind:  EvidenceTestFail,
+			wantLabel: "go test (exit 1)",
+			wantMatch: true,
+		},
+		{
+			cmd:       "echo \"go test ./...\"",
+			exitCode:  0,
+			wantKind:  EvidenceUnknown,
+			wantLabel: "",
+			wantMatch: false,
+		},
+		{
+			cmd:       "\"go test ./...\"",
+			exitCode:  0,
+			wantKind:  EvidenceTestPass,
+			wantLabel: "go test (exit 0)",
+			wantMatch: true,
+		},
+		{
+			cmd:       "go test ./...",
+			exitCode:  -1,
+			output:    "",
+			wantKind:  EvidenceUnknown,
+			wantLabel: "",
+			wantMatch: false,
 		},
 	}
 
@@ -329,4 +374,155 @@ func TestScanSessionReceipts(t *testing.T) {
 	if !foundClaude || !foundCw {
 		t.Fatalf("missing expected scanned tools (claude: %v, codewhale: %v)", foundClaude, foundCw)
 	}
+}
+
+func TestClaudeReceipt_EvidenceIntegrity(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "thermal-claude-integrity-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Subtest 1: Two concurrent calls resolved in reverse order by tool_use_id
+	t.Run("concurrent_reversed_correlation", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "reversed.jsonl")
+		content := `{"type":"assistant","timestamp":"2026-09-22T10:00:00Z","message":{"model":"claude-3-5-sonnet","content":[{"type":"tool_use","id":"call_test","input":{"command":"go test ./..."}},{"type":"tool_use","id":"call_lint","input":{"command":"golangci-lint run"}}]}}` + "\n" +
+			`{"type":"user","timestamp":"2026-09-22T10:00:05Z","message":{"content":[{"type":"tool_result","tool_use_id":"call_lint","content":"0 issues found","exit_code":0}]}}` + "\n" +
+			`{"type":"user","timestamp":"2026-09-22T10:00:10Z","message":{"content":[{"type":"tool_result","tool_use_id":"call_test","content":"PASS\nok\tgithub.com/repo-x\t0.12s\n","exit_code":0}]}}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseClaudeReceipt(path, nil)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status != "VERIFIED" || r.Tier != Tier1Verified {
+			t.Errorf("status = %s, tier = %s; want VERIFIED / Tier1Verified", r.Status, r.Tier)
+		}
+		if r.TestsPassed != 1 || r.LintersPassed != 1 {
+			t.Errorf("counts mismatch: TestsPassed=%d, LintersPassed=%d", r.TestsPassed, r.LintersPassed)
+		}
+	})
+
+	// Subtest 2: Unfinished / interrupted tool call at EOF must not be VERIFIED
+	t.Run("unfinished_tool_call_eof", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "unfinished.jsonl")
+		content := `{"type":"assistant","timestamp":"2026-09-22T10:00:00Z","message":{"model":"claude-3-5-sonnet","content":[{"type":"tool_use","id":"call_test","input":{"command":"go test ./..."}}]}}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseClaudeReceipt(path, nil)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status == "VERIFIED" || r.Tier == Tier1Verified {
+			t.Fatalf("unfinished tool call at EOF produced %s / %s; must NOT be VERIFIED", r.Status, r.Tier)
+		}
+		if r.Status != "UNVERIFIED" || r.Tier != Tier3Unverified {
+			t.Errorf("got %s / %s; want UNVERIFIED / Tier3Unverified", r.Status, r.Tier)
+		}
+	})
+
+	// Subtest 3: Unfinished tool call at EOF with agent claim produces CLAIMED, never VERIFIED
+	t.Run("unfinished_tool_call_with_claim", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "claimed_only.jsonl")
+		content := `{"type":"assistant","timestamp":"2026-09-22T10:00:00Z","message":{"model":"claude-3-5-sonnet","content":[{"type":"tool_use","id":"call_test","input":{"command":"go test ./..."}}]}}` + "\n" +
+			`{"type":"assistant","timestamp":"2026-09-22T10:01:00Z","content":"Task completed successfully."}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseClaudeReceipt(path, nil)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status != "CLAIMED" || r.Tier != Tier2Claimed {
+			t.Errorf("status = %s, tier = %s; want CLAIMED / Tier2Claimed", r.Status, r.Tier)
+		}
+	})
+
+	// Subtest 4: Result-only record with unrelated / unknown ID
+	t.Run("result_only_unrelated_id", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "result_only.jsonl")
+		content := `{"type":"tool_result","tool_use_id":"unknown_call","content":"PASS\nok","exit_code":0}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseClaudeReceipt(path, nil)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status == "VERIFIED" || r.Tier == Tier1Verified {
+			t.Fatalf("unrelated result record produced %s / %s; must NOT be VERIFIED", r.Status, r.Tier)
+		}
+		if r.TestsPassed != 0 {
+			t.Errorf("expected TestsPassed == 0, got %d", r.TestsPassed)
+		}
+	})
+
+	// Subtest 5: Missing exit code field with failing test output
+	t.Run("missing_exit_field_failing_output", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "missing_exit_fail.jsonl")
+		content := `{"type":"assistant","timestamp":"2026-09-22T10:00:00Z","message":{"model":"claude-3-5-sonnet","content":[{"type":"tool_use","id":"call_pytest","input":{"command":"pytest tests/"}}]}}` + "\n" +
+			`{"type":"user","timestamp":"2026-09-22T10:00:05Z","message":{"content":[{"type":"tool_result","tool_use_id":"call_pytest","content":"=== FAILURES ===\n1 failed, 2 passed in 0.2s"}]}}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseClaudeReceipt(path, nil)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status != "FAILED" || r.Tier != Tier3Failed {
+			t.Errorf("status = %s, tier = %s; want FAILED / Tier3Failed", r.Status, r.Tier)
+		}
+		if r.TestsFailed != 1 {
+			t.Errorf("expected TestsFailed == 1, got %d", r.TestsFailed)
+		}
+	})
+}
+
+func TestAgyReceipt_EvidenceIntegrity(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "thermal-agy-integrity-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Subtest 1: Unfinished tool call at EOF must not synthesize exit 0
+	t.Run("unfinished_tool_call_eof", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "agy_unfinished.jsonl")
+		content := `{"created_at":"2026-09-22T10:00:00Z","tool_calls":[{"name":"run_command","args":{"CommandLine":"go test ./...","Cwd":"/repo-a"}}]}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseAgyReceipt("sess-agy-1", path)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status == "VERIFIED" || r.Tier == Tier1Verified {
+			t.Fatalf("Agy unfinished tool call at EOF produced %s / %s; must NOT be VERIFIED", r.Status, r.Tier)
+		}
+		if r.TestsPassed != 0 {
+			t.Errorf("expected TestsPassed == 0, got %d", r.TestsPassed)
+		}
+	})
+
+	// Subtest 2: Tool call on record with assistant commentary followed by output step
+	t.Run("commentary_then_output", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "agy_output.jsonl")
+		content := `{"created_at":"2026-09-22T10:00:00Z","content":"Running test suite now...","tool_calls":[{"name":"run_command","args":{"CommandLine":"go test ./...","Cwd":"/repo-a"}}]}` + "\n" +
+			`{"created_at":"2026-09-22T10:00:05Z","content":"PASS\nok\tgithub.com/repo-a\t0.05s"}` + "\n"
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		r, ok := parseAgyReceipt("sess-agy-2", path)
+		if !ok {
+			t.Fatal("expected ok = true")
+		}
+		if r.Status != "VERIFIED" || r.Tier != Tier1Verified {
+			t.Errorf("status = %s, tier = %s; want VERIFIED / Tier1Verified", r.Status, r.Tier)
+		}
+		if r.TestsPassed != 1 {
+			t.Errorf("expected TestsPassed == 1, got %d", r.TestsPassed)
+		}
+	})
 }

@@ -83,7 +83,7 @@ type ReceiptSummary struct {
 	ClaimedCount      int     `json:"claimedCount"`
 	FailedCount       int     `json:"failedCount"`
 	UnverifiedCount   int     `json:"unverifiedCount"`
-	VerificationRate  float64 `json:"verificationRate"`  // percentage 0.0 - 100.0
+	VerificationRate  float64 `json:"verificationRate"` // percentage 0.0 - 100.0
 	TotalTokens       int64   `json:"totalTokens"`
 	TokensVerified    int64   `json:"tokensVerified"`
 	TokensUnverified  int64   `json:"tokensUnverified"`
@@ -122,25 +122,52 @@ func ParseCommandEvidence(cmd string, exitCode int, output string) (EvidenceKind
 	cmdLower := strings.ToLower(cmdClean)
 	outLower := strings.ToLower(output)
 
-	// Resolve effective exit code if unspecified (-1)
+	// Filter out non-execution or inspect-only commands
+	for _, pfx := range []string{"echo ", "echo\t", "cat ", "grep ", "rg ", "git log", "git show", "git diff", "git status"} {
+		if strings.HasPrefix(cmdLower, pfx) {
+			return EvidenceUnknown, "", false
+		}
+	}
+
+	// Resolve effective exit code if unspecified (< 0)
 	effCode := exitCode
 	if effCode < 0 {
-		if strings.Contains(outLower, "the command exited with code 0") ||
-			strings.Contains(outLower, "exit code 0") ||
-			strings.Contains(outLower, "ok\t") ||
-			strings.Contains(outLower, "pass") ||
-			strings.Contains(outLower, "passed") ||
-			strings.Contains(outLower, "0 failed") {
-			effCode = 0
-		} else if strings.Contains(outLower, "the command exited with code") ||
-			strings.Contains(outLower, "exit code 1") ||
-			strings.Contains(outLower, "fail") ||
+		hasFail := strings.Contains(outLower, "fail") ||
 			strings.Contains(outLower, "failed") ||
-			strings.Contains(outLower, "error:") {
+			strings.Contains(outLower, "failure") ||
+			strings.Contains(outLower, "error:") ||
+			strings.Contains(outLower, "exit code 1") ||
+			strings.Contains(outLower, "the command exited with code") ||
+			strings.Contains(outLower, "exit status 1") ||
+			strings.Contains(outLower, "exit status 2") ||
+			strings.Contains(outLower, "panic:")
+
+		hasPass := strings.Contains(outLower, "the command exited with code 0") ||
+			strings.Contains(outLower, "exit code 0") ||
+			strings.Contains(outLower, "exit status 0") ||
+			strings.Contains(outLower, "ok\t") ||
+			strings.Contains(outLower, "pass\n") ||
+			strings.Contains(outLower, "\npass") ||
+			strings.Contains(outLower, "=== pass") ||
+			strings.Contains(outLower, "test result: ok.") ||
+			strings.Contains(outLower, "0 failed")
+
+		if hasFail {
 			effCode = 1
+		} else if hasPass {
+			effCode = 0
 		} else {
-			effCode = 0 // Default to zero if no error string is detected
+			effCode = -1 // Cannot determine exit code; outcome not observed
 		}
+	} else if effCode == 0 {
+		// Even if exitCode == 0 was reported, check if test output clearly indicates failure
+		if strings.Contains(outLower, "--- fail:") || strings.Contains(outLower, "\nfail\t") || strings.Contains(outLower, "failures:") {
+			effCode = 1
+		}
+	}
+
+	if effCode < 0 {
+		return EvidenceUnknown, "", false
 	}
 
 	// 1. Test runner patterns
@@ -200,8 +227,11 @@ func ParseCommandEvidence(cmd string, exitCode int, output string) (EvidenceKind
 		return EvidenceLinterFail, fmt.Sprintf("%s (exit %d)", linterName, effCode), true
 	}
 
-	// 3. Git commit & merge creation
-	if strings.Contains(cmdLower, "git commit") || strings.Contains(cmdLower, "git merge") || strings.Contains(cmdLower, "git tag") {
+	// 3. Git commit & merge creation (explicitly excluding git tag)
+	if !strings.Contains(cmdLower, "git tag") && (strings.HasPrefix(cmdLower, "git commit") ||
+		strings.Contains(cmdLower, " git commit") ||
+		strings.HasPrefix(cmdLower, "git merge") ||
+		strings.Contains(cmdLower, " git merge")) {
 		if effCode == 0 {
 			return EvidenceGitCommit, "git commit (exit 0)", true
 		}
@@ -490,6 +520,30 @@ func ScanSessionReceipts(homeDir string, toolFilter string, pricer Pricer) []Wor
 	return receipts
 }
 
+func extractContentText(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	var blocks []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal(raw, &blocks); err == nil {
+		var parts []string
+		for _, b := range blocks {
+			if b.Text != "" {
+				parts = append(parts, b.Text)
+			}
+		}
+		return strings.Join(parts, "\n")
+	}
+	return string(raw)
+}
+
 func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil || len(data) == 0 {
@@ -497,15 +551,70 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 	}
 
 	var (
-		tokens        int64
-		firstTs       time.Time
-		lastTs        time.Time
-		cwd           string
-		modelName     string
-		evList        []Evidence
-		agentClaimed  bool
-		activeCommand string
+		tokens       int64
+		firstTs      time.Time
+		lastTs       time.Time
+		cwd          string
+		modelName    string
+		evList       []Evidence
+		agentClaimed bool
 	)
+
+	type contentBlock struct {
+		Type      string          `json:"type"`
+		ID        string          `json:"id"`
+		Name      string          `json:"name"`
+		ToolUseID string          `json:"tool_use_id"`
+		Content   json.RawMessage `json:"content"`
+		IsError   bool            `json:"is_error"`
+		ExitCode  *int            `json:"exit_code"`
+		Input     struct {
+			Command string `json:"command"`
+		} `json:"input"`
+	}
+
+	pendingMap := make(map[string]string)
+	var pendingList []string
+
+	handleToolResult := func(toolUseID string, rawContent json.RawMessage, isError bool, exitCodePtr *int) {
+		var cmd string
+		if toolUseID != "" {
+			if c, ok := pendingMap[toolUseID]; ok {
+				cmd = c
+				delete(pendingMap, toolUseID)
+				for i, pid := range pendingList {
+					if pid == toolUseID {
+						pendingList = append(pendingList[:i], pendingList[i+1:]...)
+						break
+					}
+				}
+			} else {
+				// ID specified but not in pending commands map: unrelated or already resolved tool use
+				return
+			}
+		} else if len(pendingList) > 0 {
+			oldest := pendingList[0]
+			cmd = pendingMap[oldest]
+			delete(pendingMap, oldest)
+			pendingList = pendingList[1:]
+		}
+		if cmd == "" {
+			return
+		}
+
+		exitCode := -1
+		if exitCodePtr != nil {
+			exitCode = *exitCodePtr
+		}
+		if isError && exitCode <= 0 {
+			exitCode = 1
+		}
+
+		contentStr := extractContentText(rawContent)
+		if kind, label, ok := ParseCommandEvidence(cmd, exitCode, contentStr); ok {
+			evList = append(evList, Evidence{Kind: kind, Label: label})
+		}
+	}
 
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
@@ -526,26 +635,24 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 					CacheReadInputTokens     int64 `json:"cache_read_input_tokens"`
 					CacheCreationInputTokens int64 `json:"cache_creation_input_tokens"`
 				} `json:"usage"`
-				Content []struct {
-					Type  string `json:"type"`
-					Name  string `json:"name"`
-					Input struct {
-						Command string `json:"command"`
-					} `json:"input"`
-				} `json:"content"`
+				Content []contentBlock `json:"content"`
 			} `json:"message"`
 			ToolUse struct {
+				ID    string `json:"id"`
 				Name  string `json:"name"`
 				Input struct {
 					Command string `json:"command"`
 				} `json:"input"`
 			} `json:"tool_use"`
+			ToolUseID  string `json:"tool_use_id"`
 			ToolResult struct {
-				ExitCode int    `json:"exit_code"`
-				Content  string `json:"content"`
-				IsError  bool   `json:"is_error"`
+				ExitCode *int            `json:"exit_code"`
+				Content  json.RawMessage `json:"content"`
+				IsError  bool            `json:"is_error"`
 			} `json:"tool_result"`
-			Content string `json:"content"`
+			ExitCode *int            `json:"exit_code"`
+			IsError  bool            `json:"is_error"`
+			Content  json.RawMessage `json:"content"`
 		}
 
 		if json.Unmarshal([]byte(line), &rec) != nil {
@@ -572,41 +679,55 @@ func parseClaudeReceipt(path string, pricer Pricer) (WorkReceipt, bool) {
 		u := rec.Message.Usage
 		tokens += u.InputTokens + u.OutputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
 
-		// Check tool call command
+		// 1. Process tool_use in message.content
 		for _, c := range rec.Message.Content {
 			if c.Type == "tool_use" && c.Input.Command != "" {
-				activeCommand = c.Input.Command
+				id := c.ID
+				if id == "" {
+					id = fmt.Sprintf("anon_%d", len(pendingList))
+				}
+				pendingMap[id] = c.Input.Command
+				pendingList = append(pendingList, id)
 			}
 		}
+		// Also check top-level tool_use
 		if rec.ToolUse.Input.Command != "" {
-			activeCommand = rec.ToolUse.Input.Command
+			id := rec.ToolUse.ID
+			if id == "" {
+				id = fmt.Sprintf("anon_%d", len(pendingList))
+			}
+			pendingMap[id] = rec.ToolUse.Input.Command
+			pendingList = append(pendingList, id)
 		}
 
-		// Check tool result
-		if rec.Type == "tool_result" || rec.ToolResult.Content != "" || rec.ToolResult.ExitCode != 0 {
-			exitCode := rec.ToolResult.ExitCode
-			if rec.ToolResult.IsError && exitCode == 0 {
-				exitCode = 1
+		// 2. Process tool_result in message.content
+		for _, c := range rec.Message.Content {
+			if c.Type == "tool_result" {
+				handleToolResult(c.ToolUseID, c.Content, c.IsError, c.ExitCode)
 			}
-			if activeCommand != "" {
-				if kind, label, ok := ParseCommandEvidence(activeCommand, exitCode, rec.ToolResult.Content); ok {
-					evList = append(evList, Evidence{Kind: kind, Label: label})
-				}
-				activeCommand = ""
+		}
+
+		// 3. Process top-level tool_result
+		if rec.Type == "tool_result" || len(rec.ToolResult.Content) > 0 || rec.ToolResult.ExitCode != nil || rec.ExitCode != nil {
+			tID := rec.ToolUseID
+			contentRaw := rec.ToolResult.Content
+			if len(contentRaw) == 0 && rec.Type == "tool_result" {
+				contentRaw = rec.Content
 			}
+			exitCodePtr := rec.ToolResult.ExitCode
+			if exitCodePtr == nil {
+				exitCodePtr = rec.ExitCode
+			}
+			isError := rec.ToolResult.IsError || rec.IsError
+			handleToolResult(tID, contentRaw, isError, exitCodePtr)
 		}
 
 		// Check agent claim text
-		lower := strings.ToLower(rec.Content)
+		contentStr := extractContentText(rec.Content)
+		lower := strings.ToLower(contentStr)
 		if strings.Contains(lower, "task complete") || strings.Contains(lower, "all tests pass") ||
 			strings.Contains(lower, "verification complete") || strings.Contains(lower, "verified") {
 			agentClaimed = true
-		}
-	}
-
-	if activeCommand != "" {
-		if kind, label, ok := ParseCommandEvidence(activeCommand, 0, ""); ok {
-			evList = append(evList, Evidence{Kind: kind, Label: label})
 		}
 	}
 
@@ -671,6 +792,7 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 		agentClaimed  bool
 		activeCommand string
 		steps         int
+		project       string
 	)
 
 	lines := strings.Split(string(data), "\n")
@@ -687,6 +809,7 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 				Name string `json:"name"`
 				Args struct {
 					CommandLine string `json:"CommandLine"`
+					Cwd         string `json:"Cwd"`
 				} `json:"args"`
 			} `json:"tool_calls"`
 			Content string `json:"content"`
@@ -694,6 +817,25 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 
 		if json.Unmarshal([]byte(line), &rec) != nil {
 			continue
+		}
+
+		if project == "" {
+			for _, tc := range rec.ToolCalls {
+				cwd := strings.Trim(strings.TrimSpace(tc.Args.Cwd), "\"")
+				if cwd != "" && filepath.IsAbs(cwd) {
+					project = ProjectKey(cwd)
+					break
+				}
+			}
+			if project == "" && strings.Contains(rec.Content, " -> ") {
+				idx := strings.Index(rec.Content, " -> ")
+				start := strings.LastIndex(rec.Content[:idx], "\n")
+				cand := strings.TrimSpace(rec.Content[start+1 : idx])
+				cand = strings.TrimPrefix(cand, "file://")
+				if filepath.IsAbs(cand) {
+					project = ProjectKey(cand)
+				}
+			}
 		}
 
 		if rec.CreatedAt != "" {
@@ -709,13 +851,15 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 
 		steps++
 
+		hasToolCall := false
 		for _, tc := range rec.ToolCalls {
 			if tc.Args.CommandLine != "" {
 				activeCommand = tc.Args.CommandLine
+				hasToolCall = true
 			}
 		}
 
-		if activeCommand != "" && rec.Content != "" {
+		if !hasToolCall && activeCommand != "" && rec.Content != "" {
 			if kind, label, ok := ParseCommandEvidence(activeCommand, -1, rec.Content); ok {
 				evList = append(evList, Evidence{Kind: kind, Label: label})
 			}
@@ -726,12 +870,6 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 		if strings.Contains(lower, "task completed") || strings.Contains(lower, "goal achieved") ||
 			strings.Contains(lower, "all tests pass") || strings.Contains(lower, "verified") {
 			agentClaimed = true
-		}
-	}
-
-	if activeCommand != "" {
-		if kind, label, ok := ParseCommandEvidence(activeCommand, 0, ""); ok {
-			evList = append(evList, Evidence{Kind: kind, Label: label})
 		}
 	}
 
@@ -752,6 +890,7 @@ func parseAgyReceipt(sessionID, path string) (WorkReceipt, bool) {
 	return WorkReceipt{
 		SessionID:       sessionID,
 		Tool:            "Agy",
+		Project:         project,
 		Day:             day,
 		Tier:            outcome.Tier,
 		Status:          outcome.Status,
