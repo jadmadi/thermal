@@ -11,6 +11,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
+  - [Changed: Web Telemetry Parity and Filtering Options](#changed-web-telemetry-parity)
   - [Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure](#changed-receipt-accounting-coverage)
   - [Changed: Verifiable Work Receipt Evidence Classification](#changed-receipt-evidence-classification)
   - [Changed: Default Stats View to 9-Box FinOps Grid](#changed-default-stats-view)
@@ -85,6 +86,35 @@ thermal hermes weekly
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
 
 ## Upgrading to v0.14.x
+
+### Changed: Web Telemetry Parity and Filtering Options
+<a id="changed-web-telemetry-parity"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*\(serve\|web\)' .` or automated clients consuming `/api/telemetry` or `thermal serve --json`.
+- **Detection signal**: Activity-only steps (e.g. Agy) are excluded from `totalTokens` in web telemetry matching `thermal stats`; unsupported flags (e.g. `--stream`, unknown tools) or HTTP query parameters (e.g. `?tool=bad`, `?unsupported=1`) return HTTP 400 Bad Request or CLI exit code 1; `recordedCost`, `estimatedCost`, and `unpricedTokens` are distinguished in payloads.
+
+**What changed and why**:
+Thermal previously summed summary tokens and daily rows independently for the web dashboard, erroneously inflating `totalTokens` by including activity-only step counts. Additionally, collection options like `--no-estimate`, `--tool`, and date windows were ignored by the web server. Web telemetry collection has been unified through the canonical `thermal.AggregateTelemetry` adapter, ensuring exact parity with `thermal stats` and `thermal projects`, threading collection options cleanly, and rejecting unsupported options explicitly.
+
+**Before / After**:
+```bash
+# Before (Agy step count inflated totalTokens; --no-estimate was ignored)
+thermal serve --json
+# Output: totalTokens included activity steps; estimatedCost always calculated
+
+# After (totalTokens strictly matches thermal stats; options honored)
+thermal serve --json --no-estimate
+# Output: totalTokens reflects only token tools; estimatedCost: 0
+```
+
+**The fix**:
+Update HTTP consumers and scripts targeting `thermal serve` or `/api/telemetry` to expect exact metric parity with `thermal stats`. If filtering telemetry, pass supported query parameters (`?tool=...`, `?since=...`, `?until=...`, `?last=...`, `?no-estimate=true`) and remove any unsupported query parameters.
+
+**Escape hatch**:
+To inspect raw step counts for activity-only tools, use `thermal agy daily` or query `/api/leaderboard` which preserves per-tool lifetime activity.
+
+---
 
 ### Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure
 <a id="changed-receipt-accounting-coverage"></a>

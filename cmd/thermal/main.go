@@ -474,6 +474,14 @@ func validateReportFlags(opts thermal.Options) error {
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the web command")
 		}
+		if opts.Stream {
+			return fmt.Errorf("--stream only applies to the live command")
+		}
+		if opts.Tool != "" && opts.Tool != "all" && opts.Tool != "auto" {
+			if _, ok := loaders.ResolveTool(opts.Tool); !ok {
+				return fmt.Errorf("unknown tool: %s", opts.Tool)
+			}
+		}
 	case "replay":
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the replay command")
@@ -1692,8 +1700,21 @@ func runReceiptReport(opts thermal.Options) {
 
 // runServe starts the embedded local web dashboard and telemetry API server.
 func runServe(opts thermal.Options) {
+	srvOpts := server.Options{
+		Host:        opts.Host,
+		Port:        opts.Port,
+		Tool:        opts.Tool,
+		Since:       opts.Since,
+		Until:       opts.Until,
+		Last:        opts.Last,
+		NoEstimate:  opts.NoEstimate,
+		Offline:     opts.Offline,
+		StartOfWeek: opts.StartOfWeek,
+		DBPath:      opts.DBPath,
+		Verbose:     opts.Verbose,
+	}
 	if opts.JSON {
-		data, err := server.CollectTelemetry(opts.Offline)
+		data, err := server.CollectTelemetry(srvOpts)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 			os.Exit(1)
@@ -1704,7 +1725,7 @@ func runServe(opts thermal.Options) {
 		return
 	}
 	open := opts.Open || (!opts.NoOpen && render.IsTerminal())
-	if err := server.StartServer(opts.Host, opts.Port, opts.Offline, open); err != nil {
+	if err := server.StartServerWithOptions(srvOpts, open); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
 	}
