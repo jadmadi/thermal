@@ -16,9 +16,13 @@ import (
 	"os/signal"
 	"runtime"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/term"
 
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
@@ -30,21 +34,27 @@ import (
 var embeddedAssets embed.FS
 
 // TelemetryData encapsulates the complete local telemetry snapshot for the web UI.
-type TelemetryData struct {
-	GeneratedAt   string                          `json:"generatedAt"`
-	CurrentStreak int                             `json:"currentStreak"`
-	LongestStreak int                             `json:"longestStreak"`
-	ActiveDays    int                             `json:"activeDays"`
-	TotalTokens   int64                           `json:"totalTokens"`
-	InputTokens   int64                           `json:"inputTokens"`
-	OutputTokens  int64                           `json:"outputTokens"`
-	Reasoning     int64                           `json:"reasoningTokens"`
-	CacheTokens   int64                           `json:"cacheTokens"`
-	TotalCost     float64                         `json:"totalCost"`
-	DailyActivity map[string]thermal.DayActivity  `json:"dailyActivity"`
-	Results       []thermal.ToolResult            `json:"results"`
-	Projects      []thermal.ProjectRow            `json:"projects"`
-	Models        map[string]int64                `json:"models"`
+type TelemetryData = thermal.TelemetryData
+
+// Options configures telemetry collection and server execution.
+type Options struct {
+	Host        string    `json:"host,omitempty"`
+	Port        int       `json:"port,omitempty"`
+	Tool        string    `json:"tool,omitempty"`
+	Since       string    `json:"since,omitempty"`
+	Until       string    `json:"until,omitempty"`
+	Last        int       `json:"last,omitempty"`
+	NoEstimate  bool      `json:"noEstimate,omitempty"`
+	Offline     bool      `json:"offline,omitempty"`
+	StartOfWeek string    `json:"startOfWeek,omitempty"`
+	DBPath      string    `json:"dbPath,omitempty"`
+	Verbose     bool      `json:"verbose,omitempty"`
+	Now         time.Time `json:"-"`
+}
+
+type cacheEntry struct {
+	data     *TelemetryData
+	cachedAt time.Time
 }
 
 // Server provides the local HTTP dashboard and telemetry API server.
@@ -52,18 +62,32 @@ type Server struct {
 	host       string
 	port       int
 	offline    bool
+	options    Options
 	httpServer *http.Server
 	mux        *http.ServeMux
 	mu         sync.RWMutex
-	cache      *TelemetryData
-	cachedAt   time.Time
+	cache      map[string]*cacheEntry
+	collector  func(opts Options) (*TelemetryData, error)
+	pricer     thermal.Pricer
+	clock      func() time.Time
 }
 
-// New constructs a new Server instance.
+// New constructs a new Server instance using legacy host, port, offline arguments.
 func New(host string, port int, offline bool) *Server {
+	return NewWithOptions(Options{
+		Host:    host,
+		Port:    port,
+		Offline: offline,
+	})
+}
+
+// NewWithOptions constructs a Server instance with rich options.
+func NewWithOptions(opts Options) *Server {
+	host := opts.Host
 	if host == "" {
 		host = "127.0.0.1"
 	}
+	port := opts.Port
 	if port <= 0 {
 		port = 8080
 	}
@@ -71,12 +95,35 @@ func New(host string, port int, offline bool) *Server {
 	s := &Server{
 		host:    host,
 		port:    port,
-		offline: offline,
+		offline: opts.Offline,
+		options: opts,
 		mux:     http.NewServeMux(),
+		cache:   make(map[string]*cacheEntry),
 	}
 
 	s.routes()
 	return s
+}
+
+// SetCollector injects a custom telemetry collection function (useful in tests).
+func (s *Server) SetCollector(fn func(opts Options) (*TelemetryData, error)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collector = fn
+}
+
+// SetPricer injects a pricing engine.
+func (s *Server) SetPricer(p thermal.Pricer) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.pricer = p
+}
+
+// SetClock injects a deterministic time source.
+func (s *Server) SetClock(clk func() time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.clock = clk
 }
 
 func (s *Server) securityMiddleware(next http.Handler) http.Handler {
@@ -101,6 +148,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/api/stats", s.handleStats)
 	s.mux.HandleFunc("/api/projects", s.handleProjects)
 	s.mux.HandleFunc("/api/models", s.handleModels)
+	s.mux.HandleFunc("/api/stream", s.handleStream)
 }
 
 // Handler returns the HTTP handler with all security headers and routing attached.
@@ -134,55 +182,144 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (s *Server) getOrFetchTelemetry() (*TelemetryData, error) {
+func (s *Server) parseRequestOptions(r *http.Request) (Options, error) {
+	opts := s.options
+
+	q := r.URL.Query()
+	for param := range q {
+		switch param {
+		case "tool", "since", "until", "last", "no-estimate", "offline":
+		default:
+			return opts, fmt.Errorf("unsupported query parameter: %s", param)
+		}
+	}
+
+	if t := q.Get("tool"); t != "" {
+		resolved, ok := loaders.ResolveTool(t)
+		if !ok && t != "all" && t != "auto" {
+			return opts, fmt.Errorf("unknown tool: %s", t)
+		}
+		if ok {
+			opts.Tool = string(resolved)
+		} else {
+			opts.Tool = t
+		}
+	}
+	if sStr := q.Get("since"); sStr != "" {
+		if _, ok := thermal.ParseDay(sStr); !ok {
+			return opts, fmt.Errorf("invalid since date: %s (expected YYYY-MM-DD)", sStr)
+		}
+		opts.Since = sStr
+	}
+	if uStr := q.Get("until"); uStr != "" {
+		if _, ok := thermal.ParseDay(uStr); !ok {
+			return opts, fmt.Errorf("invalid until date: %s (expected YYYY-MM-DD)", uStr)
+		}
+		opts.Until = uStr
+	}
+	if lStr := q.Get("last"); lStr != "" {
+		n, err := strconv.Atoi(lStr)
+		if err != nil || n < 0 {
+			return opts, fmt.Errorf("invalid last parameter: %s", lStr)
+		}
+		opts.Last = n
+	}
+	if opts.Last > 0 && (opts.Since != "" || opts.Until != "") {
+		return opts, fmt.Errorf("--last cannot be combined with --since or --until")
+	}
+	if ne := q.Get("no-estimate"); ne == "true" || ne == "1" {
+		opts.NoEstimate = true
+	}
+	if off := q.Get("offline"); off == "true" || off == "1" {
+		opts.Offline = true
+	}
+
+	return opts, nil
+}
+
+func (s *Server) getOrFetchTelemetry(opts Options) (*TelemetryData, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.cache != nil && time.Since(s.cachedAt) < 15*time.Second {
-		return s.cache, nil
+	now := time.Now()
+	if s.clock != nil {
+		now = s.clock()
 	}
 
-	data, err := CollectTelemetry(s.offline)
+	key := fmt.Sprintf("%s|%s|%s|%d|%v|%v", opts.Tool, opts.Since, opts.Until, opts.Last, opts.NoEstimate, opts.Offline)
+	if entry, ok := s.cache[key]; ok && now.Sub(entry.cachedAt) < 15*time.Second {
+		return entry.data, nil
+	}
+
+	var data *TelemetryData
+	var err error
+	if s.collector != nil {
+		data, err = s.collector(opts)
+	} else {
+		data, err = CollectTelemetryWithDeps(opts, s.pricer, nil)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	s.cache = data
-	s.cachedAt = time.Now()
+	s.cache[key] = &cacheEntry{
+		data:     data,
+		cachedAt: now,
+	}
 	return data, nil
 }
 
 func (s *Server) handleTelemetry(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed collecting telemetry: %v", err), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data)
 }
 
 func (s *Server) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data.Results)
 }
 
 func (s *Server) handleDaily(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data.DailyActivity)
 }
 
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	stats := map[string]interface{}{
@@ -195,27 +332,87 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		"reasoningTokens": data.Reasoning,
 		"cacheTokens":     data.CacheTokens,
 		"totalCost":       data.TotalCost,
+		"recordedCost":    data.RecordedCost,
+		"estimatedCost":   data.EstimatedCost,
+		"unpricedTokens":  data.UnpricedTokens,
 		"toolsCount":      len(data.Results),
 	}
 	writeJSON(w, http.StatusOK, stats)
 }
 
 func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data.Projects)
 }
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
-	data, err := s.getOrFetchTelemetry()
+	opts, err := s.parseRequestOptions(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	data, err := s.getOrFetchTelemetry(opts)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data.Models)
+}
+
+func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
+	opts, err := s.parseRequestOptions(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	// Send initial snapshot
+	data, err := s.getOrFetchTelemetry(opts)
+	if err == nil {
+		b, _ := json.Marshal(data)
+		fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b)
+		flusher.Flush()
+	}
+
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-ticker.C:
+			s.mu.Lock()
+			s.cache = make(map[string]*cacheEntry)
+			s.mu.Unlock()
+			data, err := s.getOrFetchTelemetry(opts)
+			if err == nil {
+				b, _ := json.Marshal(data)
+				fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b)
+				flusher.Flush()
+			}
+		}
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -225,19 +422,50 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 }
 
 // CollectTelemetry reads local tool data, calculates streaks, and aggregates metrics.
-func CollectTelemetry(offline bool) (*TelemetryData, error) {
-	allTools := loaders.AllTools()
-	pricer := pricing.Load(pricing.DefaultCachePath(), offline)
+func CollectTelemetry(opts Options) (*TelemetryData, error) {
+	return CollectTelemetryWithDeps(opts, nil, nil)
+}
 
-	allDays := make(map[string]*thermal.DailyRow)
-	var allProjects []thermal.ProjectDay
-	allModels := make(map[string]int64)
-	dailyActivity := make(map[string]thermal.DayActivity)
-	activeDaysSet := make(map[string]bool)
+// CollectTelemetryWithDeps collects telemetry with optional custom pricer and loader injections.
+func CollectTelemetryWithDeps(opts Options, pricer thermal.Pricer, customLoader func(t thermal.Tool, info loaders.ToolInfo, path string) (loaders.ToolData, error)) (*TelemetryData, error) {
+	if customLoader == nil {
+		customLoader = loaders.LoadToolData
+	}
+
+	if opts.NoEstimate {
+		pricer = nil
+	} else if pricer == nil {
+		pricer = pricing.Load(pricing.DefaultCachePath(), opts.Offline)
+	}
+
+	allTools := loaders.AllTools()
+	targetTool := strings.ToLower(strings.TrimSpace(opts.Tool))
+
+	var toolsToLoad []thermal.Tool
+	if targetTool != "" && targetTool != "all" && targetTool != "auto" {
+		t, ok := loaders.ResolveTool(targetTool)
+		if !ok {
+			return nil, fmt.Errorf("unknown tool: %s", opts.Tool)
+		}
+		toolsToLoad = append(toolsToLoad, t)
+	} else {
+		for t := range allTools {
+			toolsToLoad = append(toolsToLoad, t)
+		}
+		sort.Slice(toolsToLoad, func(i, j int) bool {
+			return string(toolsToLoad[i]) < string(toolsToLoad[j])
+		})
+	}
 
 	var results []thermal.ToolResult
+	var allProjects []thermal.ProjectDay
 
-	for t, info := range allTools {
+	for _, t := range toolsToLoad {
+		info, exists := allTools[t]
+		if !exists {
+			continue
+		}
+
 		var hasData bool
 		switch t {
 		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
@@ -254,137 +482,91 @@ func CollectTelemetry(offline bool) (*TelemetryData, error) {
 			}
 		}
 
+		if opts.DBPath != "" && len(toolsToLoad) == 1 {
+			hasData = true
+		}
+
 		if !hasData {
 			continue
 		}
 
-		data, err := loaders.LoadToolData(t, info, "")
+		dataPath := ""
+		if len(toolsToLoad) == 1 {
+			dataPath = opts.DBPath
+		}
+
+		data, err := customLoader(t, info, dataPath)
 		if err != nil {
+			if len(toolsToLoad) == 1 {
+				return nil, err
+			}
 			continue
 		}
 
-		var estCost float64
-		if pricer != nil && data.Summary.Cost == 0 {
-			for _, d := range data.Daily {
-				if len(d.Models) > 0 {
-					c, _ := pricer.PriceDay(d)
-					estCost += c
-				}
-			}
-		}
-
-		toolActiveDays := make(map[string]bool)
-		for _, d := range data.Daily {
-			if d.Turns > 0 {
-				toolActiveDays[d.Day] = true
-				activeDaysSet[d.Day] = true
-
-				curAct := dailyActivity[d.Day]
-				curAct.Tokens += d.Tokens
-				curAct.Turns += d.Turns
-				dailyActivity[d.Day] = curAct
-			}
-
-			// Aggregate into allDays
-			existing := allDays[d.Day]
-			if existing == nil {
-				clone := d
-				clone.Models = make(map[string]thermal.ModelTokens)
-				for k, v := range d.Models {
-					clone.Models[k] = v
-				}
-				allDays[d.Day] = &clone
-			} else {
-				existing.Tokens += d.Tokens
-				existing.Turns += d.Turns
-				existing.Input += d.Input
-				existing.Output += d.Output
-				existing.Reasoning += d.Reasoning
-				existing.Cache += d.Cache
-				existing.Cost += d.Cost
-				for k, v := range d.Models {
-					existing.Models[k] = existing.Models[k].Add(v)
-				}
-			}
-
-			for m, mt := range d.Models {
-				allModels[m] += mt.Total()
-			}
-		}
-
-		current, longest := thermal.ComputeStreaks(toolActiveDays)
-		cost := data.Summary.Cost
-		if cost == 0 {
-			cost = estCost
-		}
-
 		results = append(results, thermal.ToolResult{
-			Tool:          t,
-			Name:          info.Name,
-			Summary:       data.Summary,
-			Daily:         data.Daily,
-			CurrentStreak: current,
-			LongestStreak: longest,
-			ActiveDays:    len(toolActiveDays),
-			TotalActivity: data.Summary.LifetimeTokens,
-			DataPath:      data.Path,
-			EstimatedCost: estCost,
+			Tool:     t,
+			Name:     info.Name,
+			Summary:  data.Summary,
+			Daily:    data.Daily,
+			DataPath: data.Path,
 		})
 
+		for i := range data.Projects {
+			data.Projects[i].Tool = info.Name
+		}
 		allProjects = append(allProjects, data.Projects...)
 	}
 
-	// Sort results by tokens desc
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].TotalActivity > results[j].TotalActivity
-	})
-
-	// Aggregate projects
-	projReport := thermal.AggregateProjects(allProjects, thermal.ProjectOptions{}, pricer)
-
-	curStreak, longStreak := thermal.ComputeStreaks(activeDaysSet)
-
-	var totTokens, inTokens, outTokens, reasTokens, cacheTokens int64
-	var totCost float64
-	for _, r := range results {
-		totTokens += r.Summary.LifetimeTokens
-		inTokens += r.Summary.InputTokens
-		outTokens += r.Summary.OutputTokens
-		reasTokens += r.Summary.ReasoningTokens
-		cacheTokens += r.Summary.CacheTokens
-		if r.Summary.Cost > 0 {
-			totCost += r.Summary.Cost
-		} else {
-			totCost += r.EstimatedCost
-		}
+	teleOpts := thermal.TelemetryOptions{
+		Tool:        opts.Tool,
+		Since:       opts.Since,
+		Until:       opts.Until,
+		Last:        opts.Last,
+		Now:         opts.Now,
+		NoEstimate:  opts.NoEstimate,
+		Offline:     opts.Offline,
+		StartOfWeek: opts.StartOfWeek,
 	}
 
-	return &TelemetryData{
-		GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
-		CurrentStreak: curStreak,
-		LongestStreak: longStreak,
-		ActiveDays:    len(activeDaysSet),
-		TotalTokens:   totTokens,
-		InputTokens:   inTokens,
-		OutputTokens:  outTokens,
-		Reasoning:     reasTokens,
-		CacheTokens:   cacheTokens,
-		TotalCost:     totCost,
-		DailyActivity: dailyActivity,
-		Results:       results,
-		Projects:      projReport.Rows,
-		Models:        allModels,
-	}, nil
+	return thermal.AggregateTelemetry(results, allProjects, teleOpts, pricer), nil
 }
 
 // StartServer starts the HTTP server listening on the configured host/port.
 func StartServer(host string, port int, offline bool, openBrowser bool) error {
-	s := New(host, port, offline)
-	addr := fmt.Sprintf("%s:%d", s.host, s.port)
+	return StartServerWithOptions(Options{
+		Host:    host,
+		Port:    port,
+		Offline: offline,
+	}, openBrowser)
+}
 
-	listener, err := net.Listen("tcp", addr)
+// StartServerWithOptions starts the HTTP server with rich options.
+func StartServerWithOptions(opts Options, openBrowser bool) error {
+	s := NewWithOptions(opts)
+
+	var listener net.Listener
+	var err error
+	actualPort := s.port
+
+	maxAttempts := 1
+	if s.port == 8080 {
+		maxAttempts = 10
+	}
+
+	for i := 0; i < maxAttempts; i++ {
+		tryPort := s.port + i
+		tryAddr := fmt.Sprintf("%s:%d", s.host, tryPort)
+		listener, err = net.Listen("tcp", tryAddr)
+		if err == nil {
+			actualPort = tryPort
+			s.port = tryPort
+			break
+		}
+	}
+
 	if err != nil {
-		return fmt.Errorf("failed to bind %s: %w", addr, err)
+		addr := fmt.Sprintf("%s:%d", s.host, s.port)
+		return fmt.Errorf("failed to bind %s: %w (try specifying an alternate port with --port <N>)", addr, err)
 	}
 
 	s.httpServer = &http.Server{
@@ -393,12 +575,16 @@ func StartServer(host string, port int, offline bool, openBrowser bool) error {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 	url := fmt.Sprintf("http://%s", addr)
 	fmt.Printf("\n\033[1;36m═════════════════════════════════════════════════════════════════════\033[0m\n")
 	fmt.Printf("\033[1m  THERMAL · Local Web Dashboard\033[0m\n")
+	if actualPort != opts.Port && opts.Port > 0 {
+		fmt.Printf("  \033[33mNote: Port %d was in use; switched to %d\033[0m\n", opts.Port, actualPort)
+	}
 	fmt.Printf("  Serving on \033[1;32m%s\033[0m\n", url)
 	fmt.Printf("  Localhost security boundary · Zero cloud telemetry\n")
-	fmt.Printf("  Press \033[1mCtrl+C\033[0m to terminate\n")
+	fmt.Printf("  Press \033[1mq\033[0m or \033[1mCtrl+C\033[0m to terminate\n")
 	fmt.Printf("\033[1;36m═════════════════════════════════════════════════════════════════════\033[0m\n\n")
 
 	if openBrowser {
@@ -409,6 +595,33 @@ func StartServer(host string, port int, offline bool, openBrowser bool) error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
+	quitKey := make(chan struct{})
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		if oldState, err := term.MakeRaw(int(os.Stdin.Fd())); err == nil {
+			defer func() {
+				_ = term.Restore(int(os.Stdin.Fd()), oldState)
+			}()
+			go func() {
+				var buf [1]byte
+				for {
+					n, err := os.Stdin.Read(buf[:])
+					if err != nil || n == 0 {
+						return
+					}
+					// 'q', 'Q', Ctrl+C (0x03), or ESC (0x1b)
+					if buf[0] == 'q' || buf[0] == 'Q' || buf[0] == 3 || buf[0] == 27 {
+						select {
+						case <-quitKey:
+						default:
+							close(quitKey)
+						}
+						return
+					}
+				}
+			}()
+		}
+	}
+
 	serverErr := make(chan error, 1)
 	go func() {
 		if err := s.httpServer.Serve(listener); err != nil && err != http.ErrServerClosed {
@@ -418,8 +631,13 @@ func StartServer(host string, port int, offline bool, openBrowser bool) error {
 
 	select {
 	case <-stop:
-		fmt.Println("\nShutting down Thermal dashboard...")
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		fmt.Println("\r\nShutting down Thermal dashboard...")
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		return s.httpServer.Shutdown(ctx)
+	case <-quitKey:
+		fmt.Println("\r\nQuitting Thermal dashboard...")
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		return s.httpServer.Shutdown(ctx)
 	case err := <-serverErr:
