@@ -11,6 +11,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
+  - [Changed: Live Monitor Metric Parity and Burn Accounting](#changed-live-metric-parity)
   - [Changed: Web Telemetry Parity and Filtering Options](#changed-web-telemetry-parity)
   - [Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure](#changed-receipt-accounting-coverage)
   - [Changed: Verifiable Work Receipt Evidence Classification](#changed-receipt-evidence-classification)
@@ -86,6 +87,35 @@ thermal hermes weekly
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
 
 ## Upgrading to v0.14.x
+
+### Changed: Live Monitor Metric Parity and Burn Accounting
+<a id="changed-live-metric-parity"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*live' .` or automated consumers of `thermal live --json` or `thermal live --json --stream`.
+- **Detection signal**: `todayTokens` and `sessionTokens` exclude activity-only counts (e.g. Agy steps) and match canonical daily totals; `todayCacheHit` correctly computes `CacheRead / (Input + CacheRead + CacheWrite)` rather than inflating on cache-write-only events; turns delta increments across turns within existing sessions instead of tracking session count; baseline initialization, counter resets, and new sources no longer emit spurious historical token bursts.
+
+**What changed and why**:
+Thermal's real-time live monitor previously summed all daily rows directly, which inadvertently converted activity-only step counts (such as Agy actions) into token burn and inflated volume. Cache hit rate combined cache write into the numerator, reporting non-zero hit rate on cache-write-only prompts. Completed turns tracked session counts (`Summary.Sessions`), failing to observe turns added inside existing sessions, and newly appearing sources or truncated counters emitted historical spikes. Live tracking now enforces canonical token-only filtering, computes cache hit rate from `CacheRead / (Input + CacheRead + CacheWrite)`, tracks observed turns across daily rows, handles resets/first appearance safely, and honors `--no-estimate`.
+
+**Before / After**:
+```bash
+# Before (Agy steps counted as tokens in todayTokens and burst deltas)
+thermal live --json
+# Output: {"todayTokens": 7, "todayTurns": 7, "todayCacheHit": 50.0}
+
+# After (Activity-only tools generate 0 token burn; turns track observed turns; cache hit rate reflects reads)
+thermal live --json
+# Output: {"todayTokens": 0, "todayTurns": 7, "todayCacheHit": 0.0}
+```
+
+**The fix**:
+Update monitoring integrations and automated parsers of `thermal live --json` and `thermal live --json --stream` to expect exact agreement between `todayTokens` and canonical `thermal daily` or `thermal stats` token totals. Rely on `todayTurns` for tracking agent prompt turn volume across both token and activity-only tools.
+
+**Escape hatch**:
+To inspect raw step counts for activity-only tools, use `thermal agy daily` or inspect `toolTotals` in the live JSON snapshot which preserves per-tool lifetime activity counts.
+
+---
 
 ### Changed: Web Telemetry Parity and Filtering Options
 <a id="changed-web-telemetry-parity"></a>
