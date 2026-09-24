@@ -17,7 +17,7 @@
 - [ ] **Attribution commit**: Stage only this goal's implementation and evidence; inspect `git diff --cached --name-only`; create an impact-first Conventional Commit ending in `(goals/live-metric-parity/goal.md)`, then run `sila goals`. Do not push without explicit authorization. Planning commits must not close this goal.
 
 ## Dependencies and Handoff
-Start after `web-telemetry-parity`. Read prerequisite contracts before editing shared code.
+Start after `web-telemetry-parity` and `live-polling-cpu-budget`. Preserve the bounded refresh/cancellation contract and CPU budget. Read prerequisite contracts before editing shared code.
 
 ## Verification
 `go test -race ./internal/thermal ./cmd/thermal -run 'Live|Sim'`

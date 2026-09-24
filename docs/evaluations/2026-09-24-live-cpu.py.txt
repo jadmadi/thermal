@@ -1,0 +1,98 @@
+"""Synthetic live CPU probe. Linux only; never reads personal tool stores."""
+import argparse
+import fcntl
+import json
+import os
+import pty
+import select
+import signal
+import struct
+import subprocess
+import tempfile
+import termios
+import threading
+import time
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument('binary', type=lambda p: str(Path(p).resolve()))
+parser.add_argument('--tty', action='store_true')
+parser.add_argument('--seconds', type=float, default=6)
+args = parser.parse_args()
+if args.seconds <= 0:
+    parser.error('--seconds must be positive')
+
+
+def cpu(pid):
+    fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+    return (int(fields[11]) + int(fields[12])) / os.sysconf('SC_CLK_TCK')
+
+
+def attach_terminal():
+    os.setsid()
+    fcntl.ioctl(0, termios.TIOCSCTTY, 0)
+
+
+def drain(fd, process):
+    while process.poll() is None:
+        try:
+            ready, _, _ = select.select([fd], [], [], 0.1)
+            if ready:
+                os.read(fd, 65536)
+        except OSError:
+            return
+
+
+with tempfile.TemporaryDirectory(prefix='thermal-live-cpu-fixture-') as td:
+    root = Path(td)
+    logs = root / '.claude/projects/probe'
+    logs.mkdir(parents=True)
+    for i in range(1000):
+        records = [dict(type='assistant', timestamp='2026-09-24T12:00:00Z',
+                        message=dict(id=f'm-{i}-{j}', model='fixture-model',
+                                     usage=dict(input_tokens=100, output_tokens=50)))
+                   for j in range(30)]
+        (logs / f's-{i}.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in records))
+    env = os.environ.copy()
+    env['HOME'] = td
+    for key, sub in [('DSH_HOME', '.dsh'), ('GROK_HOME', '.grok'), ('HERMES_HOME', '.hermes')]:
+        env[key] = str(root / sub)
+    env['TERM'] = 'xterm-256color'
+    print('1000 unchanged Claude files; 30000 records; 100% CPU = one core.', flush=True)
+    for interval in ['1s', '100ms']:
+        cmd = [args.binary, 'live', '--interval', interval, '--offline', '--no-estimate']
+        master = None
+        if args.tty:
+            master, slave = pty.openpty()
+            fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 40, 120, 0, 0))
+            process = subprocess.Popen(cmd, env=env, stdin=slave, stdout=slave,
+                                       stderr=slave, preexec_fn=attach_terminal)
+            os.close(slave)
+            threading.Thread(target=drain, args=(master, process), daemon=True).start()
+        else:
+            process = subprocess.Popen(cmd + ['--json', '--stream'], env=env,
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            time.sleep(2)
+            if process.poll() is not None:
+                raise RuntimeError(f'process exited early: {process.returncode}')
+            start_cpu, start = cpu(process.pid), time.monotonic()
+            time.sleep(args.seconds)
+            elapsed = time.monotonic() - start
+            used = cpu(process.pid) - start_cpu
+            print(json.dumps(dict(mode='PTY 120x40' if args.tty else 'NDJSON', interval=interval,
+                                  measurement_seconds=round(elapsed, 3), cpu_seconds=round(used, 3),
+                                  one_core_percent=round(100 * used / elapsed, 1))), flush=True)
+        finally:
+            if process.poll() is None:
+                if master is None:
+                    process.send_signal(signal.SIGTERM)
+                else:
+                    os.write(master, b'q')
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            if master is not None:
+                os.close(master)
