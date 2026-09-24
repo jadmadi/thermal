@@ -10,6 +10,9 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 - [Staged Deprecations (v0.14.0)](#staged-deprecations-v0140)
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
+- [Upgrading to v0.14.x](#upgrading-to-v014x)
+  - [Changed: Verifiable Work Receipt Evidence Classification](#changed-receipt-evidence-classification)
+  - [Changed: Default Stats View to 9-Box FinOps Grid](#changed-default-stats-view)
 - [Upgrading to v0.12.x](#upgrading-to-v012x)
   - [Changed: Workload Replay JSON Payload Schema](#changed-workload-replay-json-payload-schema)
 - [Upgrading to v0.11.x](#upgrading-to-v011x)
@@ -79,6 +82,182 @@ thermal hermes weekly
 
 **Escape hatch**:
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
+
+## Upgrading to v0.14.x
+
+### Changed: Verifiable Work Receipt Evidence Classification
+<a id="changed-receipt-evidence-classification"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal receipt' .` or automated CI pipelines verifying factual session outcomes with `thermal receipt --json`.
+- **Detection signal**: Sessions with interrupted or trailing commands at EOF or mixed test outputs (e.g. `1 passed, 2 failed`) no longer qualify as `Tier 1 (VERIFIED)` and instead produce `Tier 2 (CLAIMED)` or `Tier 3 (FAILED / UNVERIFIED)`.
+
+**What changed and why**:
+Thermal previously defaulted unresolved or trailing commands to exit status 0 and checked positive substring indicators ahead of failure markers. To maintain strict factual evidence integrity, command execution outcomes must be definitively observed and correlated against specific tool invocation IDs. Mixed test results prioritize failures (`exit 1`), non-execution commands (`cat`, `echo`, `git tag`) are excluded from evidence, and aborted commands without tool results at EOF are rejected from Tier 1 verification.
+
+**Before / After**:
+```bash
+# Before (Interrupted command at EOF was optimistically marked VERIFIED)
+thermal receipt --json
+# Output: { "session_id": "...", "status": "VERIFIED", "tier": "Tier 1 Verified", "tests_passed": 1 }
+
+# After (Observed result required; uncompleted command produces UNVERIFIED or CLAIMED)
+thermal receipt --json
+# Output: { "session_id": "...", "status": "UNVERIFIED", "tier": "Tier 3 Unverified", "tests_passed": 0 }
+```
+
+**The fix**:
+Ensure AI agent sessions run test suites and linters to completion with explicit exit code telemetry or clean passing logs. If reviewing interrupted sessions or agent prose claims without executed tests, inspect `Tier 2 (CLAIMED)` and `Tier 3 (UNVERIFIED)` rows via `thermal receipt`.
+
+**Escape hatch**:
+Sessions with verified git commits or zero-exit test runs continue to qualify as `Tier 1 (VERIFIED)`. Unverified or speculative sessions can still be inspected across all tiers using `thermal receipt` without filtering.
+
+---
+
+### Changed: Default Stats View to 9-Box FinOps Grid
+<a id="changed-default-stats-view"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal stats' .` or automated parsers scraping `thermal stats` output without flags.
+- **Detection signal**: Terminal or JSON output begins with the 9-box FinOps grid (`Today`, `Taxonomy`, `Yield`, `MCP`, etc.) instead of the distribution histogram.
+
+**What changed and why**:
+Thermal previously rendered a 12-line token/cost distribution histogram as the default output for `thermal stats`, requiring the explicit `--dense` flag to view the high-density FinOps telemetry grid. Based on user feedback and FinOps analytics priorities, `thermal stats` now defaults to the interactive 9-box FinOps grid with reactive multi-period navigation (Today, 7D, 30D, Month, 6M, Lifetime) and project filtering. Scripts expecting the classical distribution histogram can pass `--distribution` (or `--dist`) to preserve the historical output.
+
+**Before / After**:
+```bash
+# Before (v0.13.x and earlier)
+thermal stats         # rendered 12-line distribution histogram
+thermal stats --dense # rendered 9-box FinOps grid
+
+# After (v0.14.0+)
+thermal stats                # renders 9-box FinOps grid by default
+thermal stats --distribution # renders classical distribution histogram (also --dist)
+```
+
+**The fix**:
+If scripts or dashboards rely on the legacy token/cost distribution histogram, append `--distribution` (or shorthand `--dist`) to the invocation:
+```bash
+thermal stats --distribution
+thermal stats --dist --no-color
+```
+
+**Escape hatch**:
+Use `--distribution`, `--dist`, or `--sparse` with `thermal stats` (e.g. `thermal stats --dist` or `thermal stats --distribution --json`) to restore the legacy distribution histogram format and JSON schema.
+
+---
+
+### Renamed: `thermal serve` to `thermal web`
+<a id="renamed-thermal-serve-to-web"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*serve' .`
+- **Detection signal**: Warning or documentation referencing `thermal serve`.
+
+**What changed and why**:
+`thermal serve` has been renamed to `thermal web` to better communicate its role as an embedded localhost dashboard and live SSE token telemetry interface. In addition, `thermal web` now provides `/api/stream` for real-time telemetry updates and can be exited gracefully via `q` as well as `Ctrl+C`. `thermal serve` remains supported as an exact alias for full backwards compatibility.
+
+**Before / After**:
+```bash
+# Before (v0.13.x and earlier)
+thermal serve --port 8080
+
+# After (v0.14.0+)
+thermal web --port 8080
+```
+
+**The fix**:
+Update CLI invocations and documentation from `thermal serve` to `thermal web`:
+```bash
+thermal web
+```
+
+**Escape hatch**:
+`thermal serve` continues to be supported as an alias with identical flag parsing, exit codes, and behavior.
+
+---
+
+### Replaced: `cursor-pro` with Modern AI Subscriptions in Replay
+<a id="replay-modern-subscriptions"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'cursor-pro' .` or invocations using `--compare ...cursor-pro...`.
+- **Detection signal**: `thermal: error: unknown plan "cursor-pro"`.
+
+**What changed and why**:
+The obsolete `cursor-pro` subscription tier has been removed from `thermal replay`. It has been replaced with modern subscription models: `agy-pro` (Antigravity Pro, $20/mo, 50M limit), `opencode-pro` (OpenCode Pro, $20/mo, 40M limit), `zcode-pro` (ZCode Pro, $20/mo, 35M limit), and `kimi-k2` (Moonshot Kimi K2, $15/mo, 60M limit). Default comparison runs across `claude-pro`, `agy-pro`, `opencode-pro`, `kimi-k2`, and `deepseek-api`.
+
+**Before / After**:
+```bash
+# Before
+thermal replay --compare claude-pro,cursor-pro
+
+# After
+thermal replay --compare claude-pro,agy-pro,opencode-pro,kimi-k2
+```
+
+**The fix**:
+Replace `cursor-pro` in `--compare` or `--against` flags with any of the active subscriptions: `agy-pro`, `opencode-pro`, `zcode-pro`, or `kimi-k2`.
+
+**Escape hatch**:
+Custom subscription limits can be simulated using `--against` with specific model price cards.
+
+---
+
+### Unified: `thermal receipt` Outcome Column Replacing Redundant Status and Tier
+<a id="receipt-outcome-column"></a>
+
+**Affected if**:
+- **Search pattern**: Automated scrapers matching exact column names `Status` and `Tier` from `thermal receipt`.
+- **Detection signal**: Output table displays `Outcome` header with semantic badges (`[PASS] Verified`, `[CLAIM] Untested`, `[FAIL] Broken`).
+
+**What changed and why**:
+`thermal receipt` previously rendered two separate, duplicative columns: `Status` (e.g. `[VERIFIED]`) and `Tier` (e.g. `Tier 1`). This forced users to cross-reference multiple columns to understand verification state. These have been consolidated into a single semantic `Outcome` column: `[PASS] Verified` (Tier 1: tests/linters passed with exit 0), `[CLAIM] Untested` (Tier 2: session claimed work, no tests found), and `[FAIL] Broken` (Tier 3: tests/linters failed). In addition, project paths in the table are now automatically resolved to clean directory slugs via `thermal.ProjectDisplayNames`.
+
+**Before / After**:
+```bash
+# Before: Table columns "Status" and "Tier"
+...  Evidence / Tests       Status        Tier
+...  go test (exit 0)       [VERIFIED]    Tier 1
+
+# After: Consolidated semantic "Outcome" column
+...  Evidence / Tests       Outcome
+...  go test (exit 0)       [PASS] Verified
+```
+
+**The fix**:
+Update terminal output scrapers to expect the `Outcome` column or use `thermal receipt --json` for structured verification metrics.
+
+**Escape hatch**:
+`thermal receipt --json` preserves full structured `status` and `tier` fields in JSON objects.
+
+---
+
+### Decoupled: `thermal stats` and `thermal dashboard`
+<a id="decoupled-stats-dashboard"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal stats' .`
+- **Detection signal**: `thermal stats` completes immediately without launching an interactive Bubble Tea terminal buffer.
+
+**What changed and why**:
+Previously, running `thermal stats` launched an interactive Bubble Tea fullscreen session, competing with `thermal dashboard`. In accordance with Unix pipeline philosophy, `thermal dashboard` is now the single interactive TUI entry point (with support for sub-views like `thermal dashboard stats`), while `thermal stats` outputs a non-interactive, zero-allocation FinOps grid directly to `stdout` in `<10ms`.
+
+**Before / After**:
+```bash
+# Before: launched interactive TUI
+thermal stats
+
+# After:
+thermal stats           # outputs static FinOps grid to stdout in <10ms
+thermal dashboard stats # launches interactive TUI focused on stats tab
+```
+
+**The fix**:
+Use `thermal dashboard` (or `thermal dashboard stats`) when an interactive terminal interface is desired.
+
+**Escape hatch**:
+None required; `thermal stats` continues to provide full FinOps telemetry without terminal hijacking.
 
 ---
 
