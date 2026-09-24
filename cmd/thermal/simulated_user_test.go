@@ -442,7 +442,7 @@ func TestSimulatedUser_ShareCommand(t *testing.T) {
 	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "share · stateless streak card") {
 		t.Errorf("'thermal share' missing header: %s", stdout)
 	}
-	if !strings.Contains(stdout, "https://thermal.jadmadi.net/share#v1.") {
+	if !strings.Contains(stdout, "https://jadmadi.net/projects/thermal/share#v1.") {
 		t.Errorf("'thermal share' missing valid share URL: %s", stdout)
 	}
 
@@ -463,6 +463,43 @@ func TestSimulatedUser_ShareCommand(t *testing.T) {
 	}
 	if _, ok := res["snapshot"]; !ok {
 		t.Errorf("expected snapshot key in JSON, got %v", res)
+	}
+}
+
+func TestSimulatedUser_ChangelogCommand(t *testing.T) {
+	// 1. Terminal text mode
+	stdout, stderr, code := runSim(t, "changelog", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal changelog', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "changelog · release history & new features") {
+		t.Errorf("'thermal changelog' missing header: %s", stdout)
+	}
+	if !strings.Contains(stdout, "Features:") {
+		t.Errorf("'thermal changelog' missing Features: section: %s", stdout)
+	}
+
+	// 2. Limit with --top
+	stdout, stderr, code = runSim(t, "changelog", "--top", "1", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal changelog --top 1', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Showing 1 of") {
+		t.Errorf("'thermal changelog --top 1' missing Showing 1 of: %s", stdout)
+	}
+
+	// 3. JSON mode
+	stdout, stderr, code = runSim(t, "changelog", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal changelog --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(stdout), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal changelog --json': %v. stdout: %s", err, stdout)
+	}
+	releases, ok := res["releases"].([]any)
+	if !ok || len(releases) == 0 {
+		t.Fatalf("expected releases list in JSON, got %v", res)
 	}
 }
 
@@ -586,6 +623,32 @@ func TestSimulatedUser_ReceiptCommand(t *testing.T) {
 	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "receipt") {
 		t.Errorf("'thermal codewhale receipt' missing header: %s", stdout)
 	}
+
+	// 7. Tool alias resolution for receipt (e.g. ccode resolves to command-code)
+	stdout, stderr, code = runSim(t, "ccode", "receipt", "--no-color")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal ccode receipt', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "receipt") {
+		t.Errorf("'thermal ccode receipt' missing header: %s", stdout)
+	}
+
+	// 8. Partial source coverage and unverified disclosures
+	jsonReceipt, stderr, code := runSim(t, "receipt", "--json")
+	if code != 0 {
+		t.Fatalf("receipt --json failed with %d: %s", code, stderr)
+	}
+	var repDoc map[string]any
+	if err := json.Unmarshal([]byte(jsonReceipt), &repDoc); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	summary, ok := repDoc["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing summary in receipt output")
+	}
+	if _, ok := summary["totalReceipts"]; !ok {
+		t.Errorf("missing totalReceipts in summary")
+	}
 }
 
 func TestSimulatedUser_DenseFinOpsCommand(t *testing.T) {
@@ -631,4 +694,52 @@ func TestSimulatedUser_DenseFinOpsCommand(t *testing.T) {
 	}
 }
 
+func TestSimulatedUser_LiveCommand(t *testing.T) {
+	// 1. Non-TTY pipe execution
+	stdout, stderr, code := runSim(t, "live")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for non-TTY 'thermal live', got %d. stderr: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "thermal live is interactive and needs a terminal") {
+		t.Errorf("'thermal live' non-TTY output missing hint: %s", stdout)
+	}
 
+	// 2. JSON snapshot
+	jsonOut, stderr, code := runSim(t, "live", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal live --json', got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal live --json': %v. stdout: %s", err, jsonOut)
+	}
+	if _, ok := res["todayTokens"]; !ok {
+		t.Errorf("expected todayTokens in JSON, got %v", res)
+	}
+	if _, ok := res["flameIntensity"]; !ok {
+		t.Errorf("expected flameIntensity in JSON, got %v", res)
+	}
+	if _, ok := res["sessionTokens"]; !ok {
+		t.Errorf("expected sessionTokens in JSON, got %v", res)
+	}
+	if _, ok := res["toolTotals"]; !ok {
+		t.Errorf("expected toolTotals in JSON, got %v", res)
+	}
+
+	// 3. Tool-filtered JSON snapshot
+	jsonOut, stderr, code = runSim(t, "live", "codewhale", "--json")
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for 'thermal live codewhale --json', got %d. stderr: %s", code, stderr)
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &res); err != nil {
+		t.Fatalf("failed to parse JSON from 'thermal live codewhale --json': %v. stdout: %s", err, jsonOut)
+	}
+
+	// 4. Inapplicable flags rejected
+	for _, badFlag := range []string{"--against=claude-3-5-sonnet", "--chart", "--since=2026-09-01"} {
+		_, _, code := runSim(t, "live", badFlag)
+		if code == 0 {
+			t.Errorf("expected non-zero exit code for 'thermal live %s', got 0", badFlag)
+		}
+	}
+}

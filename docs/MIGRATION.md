@@ -11,6 +11,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
+  - [Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure](#changed-receipt-accounting-coverage)
   - [Changed: Verifiable Work Receipt Evidence Classification](#changed-receipt-evidence-classification)
   - [Changed: Default Stats View to 9-Box FinOps Grid](#changed-default-stats-view)
 - [Upgrading to v0.12.x](#upgrading-to-v012x)
@@ -84,6 +85,35 @@ thermal hermes weekly
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
 
 ## Upgrading to v0.14.x
+
+### Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure
+<a id="changed-receipt-accounting-coverage"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*receipt' .` or automated parsers consuming `thermal receipt --json`.
+- **Detection signal**: Activity-only sessions (such as Agy) report 0 tokens instead of synthesized 500-tokens-per-step estimates; tools without session transcripts (OpenCode, Devin, etc.) are included as `Tier 3 (UNVERIFIED)` aggregate-only rows; `summary.unpricedTokens` is populated when models lack pricing catalog entries.
+
+**What changed and why**:
+Thermal previously synthesized 500 equivalent tokens per step for activity-only tools and suppressed all aggregate-only sources whenever any transcript file was detected on disk. To maintain strict usage accounting and audit fidelity, activity steps are preserved as zero tokens, uncovered tools are explicitly merged as `Tier 3 (UNVERIFIED)` rows, and Claude message tokens are deduplicated by message ID. In addition, `summary.unpricedTokens` is exposed in JSON payloads to prevent unpriced models from falsely implying free compute.
+
+**Before / After**:
+```bash
+# Before (Agy synthesized 500 tokens/step; OpenCode was suppressed if Claude existed)
+thermal receipt --json
+# Output: { "tool": "Agy", "tokens": 500 }, OpenCode missing from report
+
+# After (Accurate recorded tokens; all active tools merged into receipts)
+thermal receipt --json
+# Output: { "tool": "Agy", "tokens": 0 }, { "tool": "OpenCode", "status": "UNVERIFIED", "tier": "Tier 3 (Unverified)" }
+```
+
+**The fix**:
+Update consumers of `thermal receipt` to expect zero token volume for step-only tools and inspect `unpricedTokens` when evaluating model pricing completeness. Use canonical tool aliases (`thermal ccode receipt`, `thermal claude receipt`) with confidence that aliases resolve consistently across all reports.
+
+**Escape hatch**:
+To inspect only verified sessions, pass `--sort verified` or filter for `"status": "VERIFIED"` in JSON output. To view step counts for activity tools, use `thermal agy daily` or `thermal leaderboard`.
+
+---
 
 ### Changed: Verifiable Work Receipt Evidence Classification
 <a id="changed-receipt-evidence-classification"></a>
