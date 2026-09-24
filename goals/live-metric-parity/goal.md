@@ -6,8 +6,8 @@ Exclude activity-only counts from token burn and use actual turn and cache-read 
 Priority: **P1**. Created from the [2026-09-24 evaluation](../../docs/evaluations/2026-09-24-thermal.md). Planning only; implementation is pending.
 
 ## Dependencies & Execution Order
-- **Mode**: Dependent (sequenced)
-- **Depends On**: web-telemetry-parity
+- **Mode**: Dependent (requires prerequisite goals)
+- **Depends On**: web-telemetry-parity, live-polling-cpu-budget
 - **Sequence**: 64
 - **Shape**: ship
 - **Tier**: roadmap

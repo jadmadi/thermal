@@ -5,7 +5,7 @@
 
   Acceptance and verification: Record fixture sizes, row/file counts, seed, toolchain, hardware and exact command; validate output totals before timing.
 
-- [ ] **Task 2 — Measure the complete execution path**: Capture cold/warm/changed-input CLI timings, p50/p95, allocations, bytes read and stage costs where useful. Separate pricing network latency, rendering and ingestion; include --offline warm invocation.
+- [ ] **Task 2 — Measure the complete execution path**: Capture cold/warm/changed-input CLI timings, p50/p95, allocations, bytes read and stage costs where useful. Separate pricing network latency, rendering and ingestion; include --offline warm invocation and sustained live TTY/NDJSON runs at 100ms and 1s with unchanged and changing stores, CPU seconds/wall seconds, I/O, allocations and responsiveness. Reuse the CPU goal fixture and keep startup separate from steady state.
 
   Acceptance and verification: Repeated unchanged runs establish a baseline; benchmarks cannot claim sub-10ms solely from an in-process helper.
 

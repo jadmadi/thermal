@@ -6,8 +6,8 @@ Use isolated fixtures and explicit color environments, and assert metric semanti
 Priority: **P2**. Created from the [2026-09-24 evaluation](../../docs/evaluations/2026-09-24-thermal.md). Planning only; implementation is pending.
 
 ## Dependencies & Execution Order
-- **Mode**: Dependent (sequenced)
-- **Depends On**: receipt-accounting-coverage, live-metric-parity, devin-cache-source-isolation, localhost-request-boundary
+- **Mode**: Dependent (requires prerequisite goals)
+- **Depends On**: receipt-accounting-coverage, live-metric-parity, devin-cache-source-isolation, localhost-request-boundary, live-polling-cpu-budget
 - **Sequence**: 67
 - **Shape**: ship
 - **Tier**: roadmap
