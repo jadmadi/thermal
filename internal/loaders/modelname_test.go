@@ -56,7 +56,12 @@ func TestModelName_TableDriven(t *testing.T) {
 		{"DeepSeek Reasoner alias", "deepseek-reasoner", "deepseek-r1"},
 		{"Gemini 3 Pro High tier", "gemini-3-pro-high", "gemini-3-pro-preview"},
 		{"Gemini 2 Flash 001", "gemini-2.0-flash-001", "gemini-2.0-flash"},
-		{"Qwen 2.5 Coder 32B tag", "qwen2.5-coder:32b", "qwen-2.5-coder-32b-instruct"},
+		{"Gemini 3.8 Flash High", "Gemini 3.8 Flash (High)", "gemini-3.8-flash"},
+		{"Gemini 3.8 Flash Medium", "Gemini 3.8 Flash (Medium)", "gemini-3.8-flash"},
+		{"Gemini 3.8 Flash Low", "Gemini 3.8 Flash (Low)", "gemini-3.8-flash"},
+		{"Gemini 3.7 Flash High", "Gemini 3.7 Flash (High)", "gemini-3.7-flash"},
+		{"Gemini 3.6 Flash High", "Gemini 3.6 Flash (High)", "gemini-3.6-flash"},
+		{"Gemini 3.1 Pro High", "Gemini 3.1 Pro (High)", "gemini-3.1-pro"},
 		{"Meta LLaMA 3.3 70B", "meta-llama/llama-3.3-70b-instruct", "llama-3.3-70b-instruct"},
 
 		// Backward-compatible fallback for uncataloged custom models

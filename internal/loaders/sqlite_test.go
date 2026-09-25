@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jadmadi/thermal/internal/thermal"
 
@@ -181,6 +182,9 @@ func TestLoadOpenCodeData_ProjectAttribution(t *testing.T) {
 	}
 	if p.Turns != 2 {
 		t.Errorf("project turns = %d, want 2", p.Turns)
+	}
+	if sum.ModelBreakdown["m1"] != 1 || sum.ModelBreakdown["m2"] != 1 {
+		t.Errorf("expected ModelBreakdown m1=1 m2=1, got %v", sum.ModelBreakdown)
 	}
 	// Daily rows stay project-free.
 	if len(daily) != 1 || daily[0].Tokens != 410 {
@@ -805,6 +809,7 @@ func TestLoadDevinData_FileReplacement(t *testing.T) {
 	if err := os.Remove(dbPath); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(5 * time.Millisecond)
 	db2, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatal(err)

@@ -228,8 +228,11 @@ func auditMCPServers(homeDir string, rep *AuditReport) {
 		scanMCPConfigFile(cp, "Cursor", rep, seenServers)
 	}
 
-	// 3. Antigravity CLI MCP (~/.gemini/antigravity-cli/mcp/)
-	agyMcpDir := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp")
+	// 3. Antigravity MCP (~/.gemini/antigravity/mcp/ or ~/.gemini/antigravity-cli/mcp/)
+	agyMcpDir := filepath.Join(homeDir, ".gemini", "antigravity", "mcp")
+	if _, err := os.Stat(agyMcpDir); err != nil {
+		agyMcpDir = filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp")
+	}
 	if entries, err := os.ReadDir(agyMcpDir); err == nil {
 		for _, e := range entries {
 			if e.IsDir() {

@@ -51,14 +51,44 @@ var standardPlans = []thermal.SubscriptionPlan{
 		Notes:           "High limit 4o + o1 reasoning access",
 	},
 	{
-		ID:              "cursor-pro",
-		Name:            "Cursor Pro ($20)",
+		ID:              "agy-pro",
+		Name:            "Antigravity Pro ($20)",
 		Type:            thermal.PlanTypeSubscription,
 		MonthlyFee:      20.0,
-		DailyTokenLimit: 25_000_000, // 500 fast req/mo (~16/day)
+		DailyTokenLimit: 50_000_000,
+		DefaultModel:    "gemini-2.5-pro",
+		Provider:        "Google",
+		Notes:           "50M daily token ceiling with Gemini 2.5 Pro & Flash",
+	},
+	{
+		ID:              "opencode-pro",
+		Name:            "OpenCode Pro ($20)",
+		Type:            thermal.PlanTypeSubscription,
+		MonthlyFee:      20.0,
+		DailyTokenLimit: 40_000_000,
 		DefaultModel:    "claude-3-5-sonnet",
-		Provider:        "Cursor",
-		Notes:           "500 fast requests/mo then slow pool",
+		Provider:        "OpenCode",
+		Notes:           "40M daily token ceiling with multi-model routing",
+	},
+	{
+		ID:              "zcode-pro",
+		Name:            "ZCode Pro ($20)",
+		Type:            thermal.PlanTypeSubscription,
+		MonthlyFee:      20.0,
+		DailyTokenLimit: 35_000_000,
+		DefaultModel:    "glm-4-plus",
+		Provider:        "ZCode",
+		Notes:           "35M daily token ceiling with GLM & Sonnet",
+	},
+	{
+		ID:              "kimi-k2",
+		Name:            "Kimi K2 Pro ($15)",
+		Type:            thermal.PlanTypeSubscription,
+		MonthlyFee:      15.0,
+		DailyTokenLimit: 60_000_000,
+		DefaultModel:    "kimi-k2",
+		Provider:        "Moonshot",
+		Notes:           "60M daily token ceiling with 2M context window",
 	},
 	{
 		ID:              "deepseek-api",
@@ -99,7 +129,7 @@ func StandardPlans() []thermal.SubscriptionPlan {
 
 // DefaultComparisonPlans returns the default plan IDs compared in replay mode.
 func DefaultComparisonPlans() []string {
-	return []string{"claude-pro", "claude-max", "cursor-pro", "deepseek-api", "claude-api"}
+	return []string{"claude-pro", "agy-pro", "opencode-pro", "kimi-k2", "deepseek-api"}
 }
 
 // LookupPlan resolves a plan by ID or prefix case-insensitively.

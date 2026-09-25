@@ -38,7 +38,10 @@ func TestLookupPlan_PrefixAndCase(t *testing.T) {
 		{"claude-max", "claude-max", true},
 		{"deepseek", "deepseek-api", true},
 		{"deepseek-api", "deepseek-api", true},
-		{"cursor", "cursor-pro", true},
+		{"agy", "agy-pro", true},
+		{"opencode", "opencode-pro", true},
+		{"kimi", "kimi-k2", true},
+		{"zcode", "zcode-pro", true},
 		{"non-existent-plan", "", false},
 	}
 
