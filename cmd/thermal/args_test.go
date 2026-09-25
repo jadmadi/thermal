@@ -67,6 +67,9 @@ func TestValidateReportFlags(t *testing.T) {
 		{"replay bad chart", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Chart = true }), true},
 		{"against on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Against = "claude-sonnet" }), true},
 		{"compare on leaderboard", with(base, func(o *thermal.Options) { o.Compare = "claude-pro" }), true},
+		{"fresh on live ok", with(base, func(o *thermal.Options) { o.Report = "live"; o.Fresh = true }), false},
+		{"fresh on leaderboard bad", with(base, func(o *thermal.Options) { o.Fresh = true }), true},
+		{"fresh on weekly bad", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Fresh = true }), true},
 	}
 
 	for _, tc := range cases {

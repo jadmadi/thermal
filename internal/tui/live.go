@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"sync"
 	"time"
 
 	"charm.land/bubbletea/v2"
@@ -42,7 +41,6 @@ func tickLive(d time.Duration) tea.Cmd {
 
 // LiveModel is the Bubble Tea v2 model for the real-time token burn monitor.
 type LiveModel struct {
-	mu           sync.Mutex
 	pollFn       LivePollFunc
 	tracker      *thermal.LiveTracker
 	snapshot     thermal.LiveSnapshot
@@ -63,8 +61,13 @@ type LiveModel struct {
 }
 
 // NewLiveModel constructs an initialized LiveModel.
-func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool) LiveModel {
+func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool, seedToday ...bool) LiveModel {
 	tracker := thermal.NewLiveTracker()
+	seed := true
+	if len(seedToday) > 0 {
+		seed = seedToday[0]
+	}
+	tracker.SetSeedToday(seed)
 	now := time.Now()
 
 	var initialSnap thermal.LiveSnapshot
@@ -282,23 +285,34 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 		colW = 22
 	}
 
+	isActivity := (m.snapshot.TodayTokens == 0 && m.snapshot.TodayTurns > 0) || (m.snapshot.SessionTokens == 0 && m.snapshot.SessionTurns > 0)
+
+	burnRate := m.snapshot.BurnTokensPerMin
+	burnSpeed := m.snapshot.BurnTokensPerSec
+	intensity := m.snapshot.FlameIntensity
+	if isActivity {
+		burnRate = m.snapshot.BurnTurnsPerMin
+		burnSpeed = m.snapshot.BurnTurnsPerSec
+		intensity = m.snapshot.ActivityIntensity
+	}
+
 	// Column 1: Burn Velocity
 	c1Title := theme.Primary.SprintBold(colors, "BURN VELOCITY")
-	c1L1 := fmt.Sprintf("Rate:     %s", formatRate(m.snapshot.BurnTokensPerMin, colors))
-	c1L2 := fmt.Sprintf("Speed:    %s", formatSpeed(m.snapshot.BurnTokensPerSec, colors))
+	c1L1 := fmt.Sprintf("Rate:     %s", formatRate(burnRate, isActivity, colors))
+	c1L2 := fmt.Sprintf("Speed:    %s", formatSpeed(burnSpeed, isActivity, colors))
 	c1L3 := fmt.Sprintf("Burn/Hr:  %s", formatCostHr(m.snapshot.BurnCostPerHr, colors))
 
 	// Column 2: Today's Usage
 	c2Title := theme.Secondary.SprintBold(colors, "TODAY'S USAGE")
-	c2L1 := fmt.Sprintf("Volume:   %s", formatVolume(m.snapshot.TodayTokens, colors))
+	c2L1 := fmt.Sprintf("Volume:   %s", formatVolume(m.snapshot.TodayTokens, m.snapshot.TodayTurns, colors))
 	c2L2 := fmt.Sprintf("Cost:     %s", formatCost(m.snapshot.TodayCost, colors))
 	c2L3 := fmt.Sprintf("Turns:    %s", formatTurnsAndHit(m.snapshot.TodayTurns, m.snapshot.TodayCacheHit, colors))
 
 	// Column 3: Live Session
 	c3Title := theme.Accent.SprintBold(colors, "LIVE SESSION")
-	c3L1 := fmt.Sprintf("Burned:   %s", formatDelta(m.snapshot.SessionTokens, colors))
+	c3L1 := fmt.Sprintf("Burned:   %s", formatDelta(m.snapshot.SessionTokens, m.snapshot.SessionTurns, colors))
 	c3L2 := fmt.Sprintf("Spend:    %s", formatCost(m.snapshot.SessionCost, colors))
-	c3L3 := fmt.Sprintf("State:    %s", formatIntensityBadge(m.snapshot.FlameIntensity, colors))
+	c3L3 := fmt.Sprintf("State:    %s", formatIntensityBadge(intensity, colors))
 
 	gridRows := []string{
 		join3(c1Title, c2Title, c3Title, colW),
@@ -308,10 +322,21 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	}
 
 	// 3. Flame Intensity Gauge
-	flameLine := formatFlameLine(m.snapshot.FlameIntensity, m.snapshot.ActiveModel, innerWidth, colors)
+	flameLine := formatFlameLine(intensity, m.snapshot.ActiveModel, innerWidth, colors)
 
 	// 4. Rolling 60s Sparkline
-	sparkLine := formatSparkLine(m.snapshot.RollingTokens, m.snapshot.PeakRollingTok, innerWidth, colors)
+	var sparkBuckets [60]int64
+	var peakVal int64
+	if isActivity {
+		for i, v := range m.snapshot.RollingTurns {
+			sparkBuckets[i] = int64(v)
+		}
+		peakVal = int64(m.snapshot.PeakRollingTurn)
+	} else {
+		sparkBuckets = m.snapshot.RollingTokens
+		peakVal = m.snapshot.PeakRollingTok
+	}
+	sparkLine := formatSparkLine(sparkBuckets, peakVal, innerWidth, isActivity, colors)
 
 	// 5. Divider helper - mathematically matches innerWidth + 5 exactly
 	divider := func(label string) string {
@@ -418,6 +443,7 @@ func (m LiveModel) renderHelp() string {
 		"    Event Ticker   Completed turn deltas with model, project, and cost",
 		"",
 		theme.Secondary.SprintBold(colors, "  Headless & Status Bar Automation:"),
+		"    thermal live --fresh           Start live session counters from 0 instead of today",
 		"    thermal live --json            Instant JSON snapshot of live metrics",
 		"    thermal live --json --stream   Stream continuous NDJSON live events",
 		"",
@@ -489,19 +515,32 @@ func join3(c1, c2, c3 string, colW int) string {
 	return padCell(c1, colW, false) + "  " + padCell(c2, colW, false) + "  " + padCell(c3, colW, false)
 }
 
-func formatRate(tokMin float64, colors bool) string {
-	if tokMin <= 0 {
+func formatRate(rate float64, isActivity bool, colors bool) string {
+	if isActivity {
+		if rate <= 0 {
+			return theme.TextMuted.Sprint(colors, "0 step/min")
+		}
+		str := fmt.Sprintf("%s step/min", thermal.CompactNumber(int64(rate)))
+		return theme.Primary.SprintBold(colors, str)
+	}
+	if rate <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/min")
 	}
-	str := fmt.Sprintf("%s/min", thermal.CompactNumber(int64(tokMin)))
+	str := fmt.Sprintf("%s/min", thermal.CompactNumber(int64(rate)))
 	return theme.Primary.SprintBold(colors, str)
 }
 
-func formatSpeed(tokSec float64, colors bool) string {
-	if tokSec <= 0 {
+func formatSpeed(speed float64, isActivity bool, colors bool) string {
+	if isActivity {
+		if speed <= 0 {
+			return theme.TextMuted.Sprint(colors, "0 step/s")
+		}
+		return fmt.Sprintf("%s step/s", thermal.CompactNumber(int64(speed)))
+	}
+	if speed <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/s")
 	}
-	return fmt.Sprintf("%s tok/s", thermal.CompactNumber(int64(tokSec)))
+	return fmt.Sprintf("%s tok/s", thermal.CompactNumber(int64(speed)))
 }
 
 func formatCostHr(costHr float64, colors bool) string {
@@ -514,7 +553,11 @@ func formatCostHr(costHr float64, colors bool) string {
 	return fmt.Sprintf("~$%.2f/hr", costHr)
 }
 
-func formatVolume(tokens int64, colors bool) string {
+func formatVolume(tokens int64, turns int, colors bool) string {
+	if tokens <= 0 && turns > 0 {
+		str := fmt.Sprintf("%s step", thermal.CompactNumber(int64(turns)))
+		return theme.Secondary.SprintBold(colors, str)
+	}
 	if tokens <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok")
 	}
@@ -522,7 +565,11 @@ func formatVolume(tokens int64, colors bool) string {
 	return theme.Secondary.SprintBold(colors, str)
 }
 
-func formatDelta(tokens int64, colors bool) string {
+func formatDelta(tokens int64, turns int, colors bool) string {
+	if tokens <= 0 && turns > 0 {
+		str := fmt.Sprintf("+%s step", thermal.CompactNumber(int64(turns)))
+		return theme.Accent.SprintBold(colors, str)
+	}
 	if tokens <= 0 {
 		return theme.TextMuted.Sprint(colors, "+0 tok")
 	}
@@ -619,13 +666,22 @@ func formatFlameLine(intensity float64, model string, innerWidth int, colors boo
 	return prefix
 }
 
-func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, colors bool) string {
+func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity bool, colors bool) string {
 	prefix := "  Spark: ["
 	suffix := "]"
 
+	unitSec := " tok/s"
+	unitSum := " tok"
+	label60 := "60s Burn: "
+	if isActivity {
+		unitSec = " step/s"
+		unitSum = " step"
+		label60 = "60s Steps: "
+	}
+
 	peakStr := ""
 	if peak > 0 {
-		formatted := thermal.CompactNumber(peak) + " tok/s"
+		formatted := thermal.CompactNumber(peak) + unitSec
 		if colors {
 			peakStr = "  Peak: " + theme.DarkStep12.Sprint(true, formatted)
 		} else {
@@ -656,10 +712,10 @@ func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, colors bool)
 			sum60 += b
 		}
 		if sum60 > 0 {
-			volStr := fmt.Sprintf("  ·  60s Burn: %s tok", thermal.CompactNumber(sum60))
+			volStr := fmt.Sprintf("  ·  %s%s%s", label60, thermal.CompactNumber(sum60), unitSum)
 			if ansi.StringWidth(line)+ansi.StringWidth(volStr) < innerWidth-2 {
 				if colors {
-					volStr = "  ·  " + theme.TextMuted.Sprint(true, "60s Burn: ") + theme.Primary.SprintBold(true, thermal.CompactNumber(sum60)+" tok")
+					volStr = "  ·  " + theme.TextMuted.Sprint(true, label60) + theme.Primary.SprintBold(true, thermal.CompactNumber(sum60)+unitSum)
 				}
 				line += volStr
 			}
@@ -714,6 +770,9 @@ func formatEventRow(ev thermal.LiveEvent, innerWidth int, colors bool) string {
 	timeStr := ev.Timestamp.Format("15:04:05")
 	toolStr := ev.Tool
 	tokStr := fmt.Sprintf("+%s tok", thermal.CompactNumber(ev.Tokens))
+	if ev.Tokens == 0 && ev.Turns > 0 {
+		tokStr = fmt.Sprintf("+%s step", thermal.CompactNumber(int64(ev.Turns)))
+	}
 	modStr := loaders.CanonicalModelName(cleanModelName(ev.Model))
 	if modStr == "" {
 		modStr = "—"

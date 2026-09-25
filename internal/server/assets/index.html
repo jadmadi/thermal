@@ -6,21 +6,33 @@
   <title>Thermal — AI Developer Telemetry Dashboard</title>
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #111827;
-      --card-border: #1f2937;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --accent-green: #10b981;
-      --accent-orange: #f97316;
-      --accent-amber: #f59e0b;
-      --accent-blue: #3b82f6;
-      --accent-purple: #8b5cf6;
-      --level-0: #161f30;
-      --level-1: #064e3b;
-      --level-2: #047857;
-      --level-3: #10b981;
-      --level-4: #34d399;
+      /* Mimocode 12-Step Perceptual Luminance Scale */
+      --bg: #0a0a0a;
+      --card-bg: #141414;
+      --card-elevated: #1e1e1e;
+      --card-border: #323232;
+      --card-border-active: #484848;
+      --text-main: #eeeeee;
+      --text-muted: #808080;
+
+      /* Semantic Tokens */
+      --accent-primary: #FF6A00;
+      --accent-secondary: #FF8A3C;
+      --accent-orange: #FF6A00;
+      --accent-amber: #FF8A3C;
+      --accent-green: #4fd6be;
+      --accent-blue: #818CF8;
+      --accent-purple: #c084fc;
+      --accent-sky: #38bdf8;
+      --accent-gold: #FBBF24;
+      --accent-rose: #FB7185;
+
+      /* 5-Level Amber Heatmap Ramp */
+      --level-0: #242424;
+      --level-1: #5c2400;
+      --level-2: #993c00;
+      --level-3: #d95800;
+      --level-4: #FF6A00;
     }
     * {
       box-sizing: border-box;
@@ -63,7 +75,7 @@
       font-size: 24px;
       font-weight: 800;
       letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #f97316, #f59e0b);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -93,12 +105,17 @@
       color: var(--accent-green);
       background-color: rgba(16, 185, 129, 0.1);
     }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
     .dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background-color: var(--accent-green);
       box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse-dot 2s infinite ease-in-out;
     }
     .btn-refresh {
       background-color: var(--card-bg);
@@ -279,8 +296,8 @@
     #tooltip {
       position: fixed;
       display: none;
-      background-color: #1f2937;
-      color: #fff;
+      background-color: var(--card-elevated);
+      color: var(--text-main);
       padding: 8px 12px;
       border-radius: 6px;
       font-size: 12px;
@@ -312,7 +329,7 @@
     </div>
     <div class="header-badges">
       <span class="badge">🔒 127.0.0.1 LOCALHOST</span>
-      <span class="badge badge-live"><span class="dot"></span> ZERO TELEMETRY</span>
+      <span class="badge badge-live" id="stream-badge"><span class="dot"></span> LIVE STREAM</span>
       <button class="btn-refresh" onclick="loadDashboard()">Refresh</button>
     </div>
   </header>
@@ -432,6 +449,16 @@
 
     const tooltip = document.getElementById("tooltip");
 
+    function applyTelemetry(data) {
+      if (!data) return;
+      renderKPIs(data);
+      renderHeatmap(data.dailyActivity || {});
+      renderLeaderboard(data.results || []);
+      renderToolBars(data.results || []);
+      renderProjects(data.projects || []);
+      renderModels(data.models || {});
+    }
+
     async function loadDashboard() {
       try {
         const [healthRes, teleRes] = await Promise.all([
@@ -440,13 +467,7 @@
         ]);
         const health = await healthRes.json();
         const data = await teleRes.json();
-
-        renderKPIs(data);
-        renderHeatmap(data.dailyActivity || {});
-        renderLeaderboard(data.results || []);
-        renderToolBars(data.results || []);
-        renderProjects(data.projects || []);
-        renderModels(data.models || {});
+        applyTelemetry(data);
       } catch (err) {
         console.error("Failed loading telemetry:", err);
       }
@@ -602,14 +623,43 @@
               <span>${formatNumber(tokens)} tok (${pct}%)</span>
             </div>
             <div class="bar-track">
-              <div class="bar-fill" style="width: ${pct}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
+              <div class="bar-fill" style="width: ${pct}%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));"></div>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    window.addEventListener("DOMContentLoaded", loadDashboard);
+    function initStream() {
+      if (window.EventSource) {
+        try {
+          const es = new EventSource("/api/stream");
+          es.addEventListener("telemetry", (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              applyTelemetry(data);
+              const badge = document.getElementById("stream-badge");
+              if (badge) {
+                badge.style.display = "inline-flex";
+              }
+            } catch (err) {
+              console.error("Failed parsing stream message:", err);
+            }
+          });
+          es.onerror = () => {
+            // Keep polling active if stream temporarily drops
+          };
+        } catch (err) {
+          console.warn("EventSource init failed, fallback to polling:", err);
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadDashboard();
+      initStream();
+      setInterval(loadDashboard, 15000);
+    });
   </script>
 </body>
 </html>

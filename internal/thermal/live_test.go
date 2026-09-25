@@ -726,3 +726,281 @@ func TestLiveTracker_PricingAndNoEstimate(t *testing.T) {
 		t.Errorf("expected todayCost 0.0 under no-estimate, got %f", snapNoEst.TodayCost)
 	}
 }
+
+func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
+	lt := NewLiveTracker()
+	lt.SetSeedToday(true)
+	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+
+	res := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 10_000_000,
+				Sessions:       500,
+				Cost:           12.50,
+				ModelBreakdown: map[string]int64{
+					"gemini-2.5-pro": 10_000_000,
+				},
+			},
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 1_000_000, Turns: 50, Cost: 1.25, Input: 100_000, Cache: 900_000},
+			},
+		},
+	}
+
+	// 1. First poll with seedToday should initialize session counters to today's totals
+	snap, events := lt.Poll(res, nil, now)
+	if len(events) != 0 {
+		t.Fatalf("expected 0 new delta events on first poll, got %d", len(events))
+	}
+	if snap.TodayTokens != 1_000_000 {
+		t.Errorf("expected todayTokens 1M, got %d", snap.TodayTokens)
+	}
+	if snap.SessionTokens != 1_000_000 {
+		t.Errorf("expected sessionTokens seeded with 1M, got %d", snap.SessionTokens)
+	}
+	if snap.SessionTurns != 50 {
+		t.Errorf("expected sessionTurns seeded with 50, got %d", snap.SessionTurns)
+	}
+	if snap.SessionCost != 1.25 {
+		t.Errorf("expected sessionCost seeded with 1.25, got %f", snap.SessionCost)
+	}
+	if snap.FlameIntensity <= 0 {
+		t.Errorf("expected warm flameIntensity > 0 on seedToday, got %f", snap.FlameIntensity)
+	}
+	if len(snap.RecentEvents) != 1 {
+		t.Fatalf("expected 1 baseline event in RecentEvents, got %d", len(snap.RecentEvents))
+	}
+	if snap.RecentEvents[0].Tokens != 1_000_000 {
+		t.Errorf("expected baseline event tokens 1M, got %d", snap.RecentEvents[0].Tokens)
+	}
+
+	// 2. Second poll: +25,000 tokens and +1 turn
+	t2 := now.Add(2 * time.Second)
+	res2 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 10_025_000,
+				Sessions:       501,
+				Cost:           12.55,
+				ModelBreakdown: map[string]int64{
+					"gemini-2.5-pro": 10_025_000,
+				},
+			},
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 1_025_000, Turns: 51, Cost: 1.30},
+			},
+		},
+	}
+	snap2, events2 := lt.Poll(res2, nil, t2)
+	if len(events2) != 1 {
+		t.Fatalf("expected 1 delta event, got %d", len(events2))
+	}
+	if snap2.SessionTokens != 1_025_000 {
+		t.Errorf("expected sessionTokens incremented to 1_025_000, got %d", snap2.SessionTokens)
+	}
+	if snap2.SessionTurns != 51 {
+		t.Errorf("expected sessionTurns incremented to 51, got %d", snap2.SessionTurns)
+	}
+	if math.Abs(snap2.SessionCost-1.30) > 0.001 {
+		t.Errorf("expected sessionCost 1.30, got %f", snap2.SessionCost)
+	}
+
+	// 3. ResetSession should clear session counters back to 0
+	lt.ResetSession()
+	snapReset, _ := lt.Poll(res2, nil, t2.Add(time.Second))
+	if snapReset.SessionTokens != 0 {
+		t.Errorf("expected sessionTokens 0 after reset, got %d", snapReset.SessionTokens)
+	}
+	if snapReset.SessionTurns != 0 {
+		t.Errorf("expected sessionTurns 0 after reset, got %d", snapReset.SessionTurns)
+	}
+	if snapReset.SessionCost != 0 {
+		t.Errorf("expected sessionCost 0 after reset, got %f", snapReset.SessionCost)
+	}
+
+	// 4. Activity-only tool tracking (e.g. Agy)
+	ltAct := NewLiveTracker()
+	ltAct.SetSeedToday(true)
+	actRes1 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 0, Turns: 300},
+			},
+		},
+	}
+	actSnap1, _ := ltAct.Poll(actRes1, nil, now)
+	if actSnap1.SessionTokens != 0 {
+		t.Errorf("expected sessionTokens 0 for activity tool, got %d", actSnap1.SessionTokens)
+	}
+	if actSnap1.SessionTurns != 300 {
+		t.Errorf("expected sessionTurns 300 for activity tool, got %d", actSnap1.SessionTurns)
+	}
+	if actSnap1.ActivityIntensity <= 0 {
+		t.Errorf("expected warm activityIntensity > 0 for activity tool on seedToday")
+	}
+	if actSnap1.FlameIntensity != 0 {
+		t.Errorf("expected flameIntensity 0 for activity tool, got %f", actSnap1.FlameIntensity)
+	}
+
+	// Delta turns for activity tool
+	actRes2 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       11,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 0, Turns: 310},
+			},
+		},
+	}
+	actSnap2, actEvents2 := ltAct.Poll(actRes2, nil, now.Add(2*time.Second))
+	if len(actEvents2) != 1 {
+		t.Fatalf("expected 1 activity delta event, got %d", len(actEvents2))
+	}
+	if actEvents2[0].Turns != 10 || actEvents2[0].Tokens != 0 {
+		t.Errorf("expected delta event 10 turns and 0 tokens, got turns=%d tok=%d", actEvents2[0].Turns, actEvents2[0].Tokens)
+	}
+	if actSnap2.SessionTurns != 310 {
+		t.Errorf("expected sessionTurns 310, got %d", actSnap2.SessionTurns)
+	}
+	if actSnap2.BurnTurnsPerMin <= 0 {
+		t.Errorf("expected BurnTurnsPerMin > 0 for activity turns, got %f", actSnap2.BurnTurnsPerMin)
+	}
+	if actSnap2.BurnTokensPerMin != 0 {
+		t.Errorf("expected BurnTokensPerMin 0 for activity turns, got %f", actSnap2.BurnTokensPerMin)
+	}
+	if actSnap2.ActivityIntensity <= 0 {
+		t.Errorf("expected activityIntensity > 0 after activity turn delta, got %f", actSnap2.ActivityIntensity)
+	}
+	if actSnap2.FlameIntensity != 0 {
+		t.Errorf("expected flameIntensity 0 after activity turn delta, got %f", actSnap2.FlameIntensity)
+	}
+}
+
+func TestLiveTracker_ResumedSessionProjectAndModel(t *testing.T) {
+	lt := NewLiveTracker()
+	// Mock time is 2026-09-25 (today)
+	t1 := time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC)
+
+	// Session was created on 2026-09-18 (a week ago)
+	res1 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 251_000_000,
+				Sessions:       10,
+				Cost:           15.00,
+				ModelBreakdown: map[string]int64{
+					"deepseek-flash": 10,
+				},
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-09-18",
+					Tokens: 251_000_000,
+					Turns:  500,
+					Models: map[string]ModelTokens{
+						"deepseek-flash": {Input: 10_000_000, Output: 241_000_000},
+					},
+				},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/jad/.config/opencode",
+			Day:     "2026-09-18",
+			Tokens:  251_000_000,
+			Turns:   500,
+		},
+	}
+
+	// Poll 1: Initial baseline
+	snap1, events1 := lt.Poll(res1, proj1, t1)
+	if len(events1) != 0 {
+		t.Fatalf("expected 0 baseline events, got %d", len(events1))
+	}
+	// ActiveProject and ActiveModel should fall back to the resumed session's project/model
+	if snap1.ActiveProject != "opencode" {
+		t.Errorf("expected activeProject 'opencode' on baseline, got %q", snap1.ActiveProject)
+	}
+	if snap1.ActiveModel != "deepseek-flash" {
+		t.Errorf("expected activeModel 'deepseek-flash' on baseline, got %q", snap1.ActiveModel)
+	}
+
+	// Poll 2: The resumed session burns 379,500 tokens in the same project!
+	t2 := t1.Add(time.Second)
+	res2 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 251_379_500,
+				Sessions:       10,
+				Cost:           15.02,
+				ModelBreakdown: map[string]int64{
+					"deepseek-flash": 10,
+				},
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-09-18",
+					Tokens: 251_379_500,
+					Turns:  501,
+					Models: map[string]ModelTokens{
+						"deepseek-flash": {Input: 10_000_000, Output: 241_379_500},
+					},
+				},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/jad/.config/opencode",
+			Day:     "2026-09-18",
+			Tokens:  251_379_500,
+			Turns:   501,
+		},
+	}
+
+	snap2, events2 := lt.Poll(res2, proj2, t2)
+	if len(events2) != 1 {
+		t.Fatalf("expected 1 delta event for resumed session, got %d", len(events2))
+	}
+	ev := events2[0]
+	if ev.Tool != "OpenCode" {
+		t.Errorf("expected Tool OpenCode, got %q", ev.Tool)
+	}
+	if ev.Tokens != 379_500 {
+		t.Errorf("expected Tokens 379,500, got %d", ev.Tokens)
+	}
+	if ev.Project != "opencode" {
+		t.Errorf("expected Project 'opencode', got %q (must not be empty!)", ev.Project)
+	}
+	if ev.Model != "deepseek-flash" {
+		t.Errorf("expected Model 'deepseek-flash', got %q (must not be empty!)", ev.Model)
+	}
+	if snap2.ActiveProject != "opencode" {
+		t.Errorf("expected snap2.ActiveProject 'opencode', got %q", snap2.ActiveProject)
+	}
+	if snap2.ActiveModel != "deepseek-flash" {
+		t.Errorf("expected snap2.ActiveModel 'deepseek-flash', got %q", snap2.ActiveModel)
+	}
+}
