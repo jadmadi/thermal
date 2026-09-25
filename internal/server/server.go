@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -126,12 +127,178 @@ func (s *Server) SetClock(clk func() time.Time) {
 	s.clock = clk
 }
 
+// parseAuthority splits authority (host or host:port) into a clean hostname/IP and optional port.
+// It structurally handles IPv4, IPv6 (both bracketed "[::1]:8080" and bare "::1"), and named hosts.
+func parseAuthority(authority string) (string, int, error) {
+	if authority == "" {
+		return "", 0, fmt.Errorf("empty host authority")
+	}
+
+	// Handle bracketed IPv6 addresses: e.g. [::1]:8080 or [::1]
+	if strings.HasPrefix(authority, "[") {
+		closeBracket := strings.Index(authority, "]")
+		if closeBracket == -1 {
+			return "", 0, fmt.Errorf("malformed IPv6 authority: missing closing bracket")
+		}
+		host := authority[1:closeBracket]
+		rem := authority[closeBracket+1:]
+		if rem == "" {
+			return host, 0, nil
+		}
+		if !strings.HasPrefix(rem, ":") {
+			return "", 0, fmt.Errorf("malformed authority trailing bracket: %s", rem)
+		}
+		portStr := rem[1:]
+		port, err := strconv.Atoi(portStr)
+		if err != nil || port <= 0 || port > 65535 {
+			return "", 0, fmt.Errorf("invalid port in authority: %s", portStr)
+		}
+		return host, port, nil
+	}
+
+	// Handle addresses with colons
+	if strings.Contains(authority, ":") {
+		// Bare IPv6 address with multiple colons (e.g. "::1")
+		if strings.Count(authority, ":") > 1 {
+			if ip := net.ParseIP(authority); ip != nil {
+				return authority, 0, nil
+			}
+			return "", 0, fmt.Errorf("malformed IPv6 authority: unbracketed with multiple colons")
+		}
+
+		h, pStr, err := net.SplitHostPort(authority)
+		if err != nil {
+			return "", 0, fmt.Errorf("invalid host authority: %w", err)
+		}
+		port, err := strconv.Atoi(pStr)
+		if err != nil || port <= 0 || port > 65535 {
+			return "", 0, fmt.Errorf("invalid port in authority: %s", pStr)
+		}
+		return h, port, nil
+	}
+
+	// Single host or IP with no port
+	return authority, 0, nil
+}
+
+// isAllowedHost checks if the given host/IP matches an intentional local alias,
+// loopback interface, or explicitly configured host. Wildcard binds (0.0.0.0 / ::)
+// do NOT trust arbitrary DNS names to prevent DNS rebinding.
+func (s *Server) isAllowedHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if host == "" {
+		return false
+	}
+
+	// 1. Localhost names
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+
+	s.mu.RLock()
+	cfgHost := strings.ToLower(strings.TrimSpace(s.host))
+	s.mu.RUnlock()
+
+	// 2. IP address checks
+	if ip := net.ParseIP(host); ip != nil {
+		if ip.IsLoopback() {
+			return true
+		}
+		if ip.IsUnspecified() {
+			return true
+		}
+		if cfgHost != "" {
+			if cfgIP := net.ParseIP(cfgHost); cfgIP != nil && cfgIP.Equal(ip) {
+				return true
+			}
+		}
+		// If bound to wildcard, allow any valid IP on the host (e.g. LAN access by IP)
+		if cfgHost == "0.0.0.0" || cfgHost == "::" || cfgHost == "" {
+			return true
+		}
+		return false
+	}
+
+	// 3. DNS names: wildcard bind must NEVER trust arbitrary DNS names
+	if cfgHost == "0.0.0.0" || cfgHost == "::" || cfgHost == "" {
+		return false
+	}
+
+	// Explicitly configured host (preserves explicit --host <name> behavior)
+	cleanCfgHost := strings.TrimPrefix(strings.TrimSuffix(cfgHost, "]"), "[")
+	return host == cleanCfgHost
+}
+
+// validateRequestAuthority enforces that incoming requests come from trusted local authorities.
+// It protects against DNS rebinding and cross-origin telemetry exfiltration while allowing
+// local browser dashboards, CLI tools, and explicitly configured hosts.
+func (s *Server) validateRequestAuthority(r *http.Request) error {
+	if r.Host == "" {
+		return fmt.Errorf("missing host header")
+	}
+
+	reqHost, reqPort, err := parseAuthority(r.Host)
+	if err != nil {
+		return fmt.Errorf("malformed host authority: %w", err)
+	}
+
+	s.mu.RLock()
+	configuredPort := s.port
+	s.mu.RUnlock()
+
+	// If a port is specified in the Host header, it must match the listening port
+	if reqPort > 0 && reqPort != configuredPort {
+		return fmt.Errorf("invalid port in authority: got %d, expected %d", reqPort, configuredPort)
+	}
+
+	if !s.isAllowedHost(reqHost) {
+		return fmt.Errorf("untrusted host authority: %s", reqHost)
+	}
+
+	// Validate browser Origin header if present (same-origin policy enforcement)
+	if origin := r.Header.Get("Origin"); origin != "" {
+		if origin == "null" {
+			return fmt.Errorf("forbidden origin: null")
+		}
+		u, err := url.Parse(origin)
+		if err != nil {
+			return fmt.Errorf("malformed origin: %w", err)
+		}
+		origHost, origPort, err := parseAuthority(u.Host)
+		if err != nil {
+			return fmt.Errorf("malformed origin host: %w", err)
+		}
+		if origPort > 0 && origPort != configuredPort {
+			return fmt.Errorf("forbidden origin port: %d, expected %d", origPort, configuredPort)
+		}
+		if !s.isAllowedHost(origHost) {
+			return fmt.Errorf("forbidden cross-origin host: %s", origHost)
+		}
+	}
+
+	// Reject cross-site requests signaled by modern browsers
+	if sfs := r.Header.Get("Sec-Fetch-Site"); sfs == "cross-site" {
+		return fmt.Errorf("forbidden cross-site request: %s", sfs)
+	}
+
+	return nil
+}
+
 func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
+
+		if err := s.validateRequestAuthority(r); err != nil {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"forbidden: untrusted request authority"}`))
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
