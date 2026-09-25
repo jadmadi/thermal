@@ -5,9 +5,13 @@ package loaders
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+
+	"github.com/jadmadi/thermal/internal/thermal"
 
 	_ "modernc.org/sqlite"
 )
@@ -649,5 +653,538 @@ func TestLoadDevinData_ProjectModelAttribution(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("no project row carried a model")
+	}
+}
+
+func TestLoadDevinData_SourceIsolation(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dirA := t.TempDir()
+	dbPathA := filepath.Join(dirA, "devin.db")
+	dbA, err := sql.Open("sqlite", dbPathA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbA.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER, working_directory TEXT, model TEXT);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := dbA.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := dbA.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0, '/work/a', 'modelA');`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dbA.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	dirB := t.TempDir()
+	dbPathB := filepath.Join(dirB, "devin.db")
+	dbB, err := sql.Open("sqlite", dbPathB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbB.Close()
+	if _, err := dbB.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg900 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":600,"output_tokens":300,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := dbB.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0, '/work/b', 'modelB');`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dbB.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg900 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	sumA, _, _, err := LoadDevinData(dbPathA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sumA.LifetimeTokens != 100 {
+		t.Fatalf("expected sumA tokens 100, got %d", sumA.LifetimeTokens)
+	}
+
+	// Sequential load of database B: probe is identical (1 session, max row_id=1),
+	// but because source databases are isolated, sumB must be 900, not cached 100.
+	sumB, _, _, err := LoadDevinData(dbPathB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sumB.LifetimeTokens != 900 {
+		t.Fatalf("expected sumB tokens 900, got %d (cross-database cache collision!)", sumB.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_SymlinkConsistency(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg + `);`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	sum1, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum1.LifetimeTokens != 100 {
+		t.Fatalf("expected 100, got %d", sum1.LifetimeTokens)
+	}
+
+	linkPath := filepath.Join(dir, "devin_symlink.db")
+	if err := os.Symlink(dbPath, linkPath); err != nil {
+		t.Fatal(err)
+	}
+
+	sum2, _, _, err := LoadDevinData(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum2.LifetimeTokens != 100 {
+		t.Fatalf("expected 100 from symlink, got %d", sum2.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_FileReplacement(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	sum1, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum1.LifetimeTokens != 100 {
+		t.Fatalf("expected 100, got %d", sum1.LifetimeTokens)
+	}
+
+	if err := os.Remove(dbPath); err != nil {
+		t.Fatal(err)
+	}
+	db2, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db2.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg900 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":600,"output_tokens":300,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db2.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db2.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg900 + `);`); err != nil {
+		t.Fatal(err)
+	}
+	db2.Close()
+
+	sum2, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum2.LifetimeTokens != 900 {
+		t.Fatalf("expected replaced database to return 900, got %d", sum2.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_ExistingRowUpdate(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum1, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum1.LifetimeTokens != 100 {
+		t.Fatalf("expected 100, got %d", sum1.LifetimeTokens)
+	}
+
+	msg500 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":350,"output_tokens":150,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`UPDATE message_nodes SET chat_message = ` + msg500 + ` WHERE row_id = 1;`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum2, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum2.LifetimeTokens != 500 {
+		t.Fatalf("expected 500 after updating existing row, got %d", sum2.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_HiddenSessionSwap(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	msg200 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":140,"output_tokens":60,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`
+		INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);
+		INSERT INTO sessions VALUES ('s2', 1710504000, 1710504060, 1);
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);
+		INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's2', ` + msg200 + `);
+	`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum1, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum1.Sessions != 1 {
+		t.Fatalf("expected 1 session, got %d", sum1.Sessions)
+	}
+
+	if _, err := db.Exec(`UPDATE sessions SET hidden = CASE WHEN id = 's1' THEN 1 ELSE 0 END;`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum2, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum2.Sessions != 1 {
+		t.Fatalf("expected 1 session, got %d", sum2.Sessions)
+	}
+}
+
+func TestLoadDevinData_ModelChange(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER, working_directory TEXT, model TEXT);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0, '/work', 'gpt-4o');`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	_, daily1, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := daily1[0].Models["gpt-4o"]; !ok {
+		t.Fatalf("expected gpt-4o, got %v", daily1[0].Models)
+	}
+
+	if _, err := db.Exec(`UPDATE sessions SET model = 'claude-3-5-sonnet' WHERE id = 's1';`); err != nil {
+		t.Fatal(err)
+	}
+
+	_, daily2, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := daily2[0].Models["claude-3.5-sonnet"]; !ok {
+		t.Fatalf("expected claude-3.5-sonnet after update, got %v", daily2[0].Models)
+	}
+}
+
+func TestLoadDevinData_PromptHistoryActivity(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+		CREATE TABLE prompt_history (id INTEGER PRIMARY KEY, created_at INTEGER, updated_at INTEGER, prompt TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg + `);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO prompt_history VALUES (1, 1710590400, 1710590400, 'test prompt');`); err != nil {
+		t.Fatal(err)
+	}
+
+	_, daily1, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(daily1) != 2 {
+		t.Fatalf("expected 2 days (message day + prompt-only day), got %d: %+v", len(daily1), daily1)
+	}
+
+	if _, err := db.Exec(`UPDATE prompt_history SET updated_at = 1710676800 WHERE id = 1;`); err != nil {
+		t.Fatal(err)
+	}
+
+	_, daily2, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(daily2) != 2 {
+		t.Fatalf("expected 2 days after prompt update, got %d: %+v", len(daily2), daily2)
+	}
+	wantDay := thermal.UnixDay(1710676800)
+	if daily2[1].Day != wantDay {
+		t.Fatalf("expected day %s, got %s", wantDay, daily2[1].Day)
+	}
+}
+
+func TestLoadDevinData_AppendOnlyViolationFallback(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum1, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum1.LifetimeTokens != 100 {
+		t.Fatalf("expected 100, got %d", sum1.LifetimeTokens)
+	}
+
+	msg500 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":350,"output_tokens":150,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	msg200 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":140,"output_tokens":60,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`UPDATE message_nodes SET chat_message = ` + msg500 + ` WHERE row_id = 1;`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg200 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	sum2, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum2.LifetimeTokens != 700 {
+		t.Fatalf("expected 700 (500 + 200) after base row modification during append, got %d", sum2.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_CorruptCacheFallback(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, _, err = LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	canonicalPath := CanonicalDatabasePath(dbPath)
+	cacheP, err := devinCachePath(canonicalPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cacheP, []byte("NOT_VALID_JSON{{{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	sum2, _, _, err := LoadDevinData(dbPath)
+	if err != nil {
+		t.Fatalf("expected graceful recovery from corrupt cache, got error: %v", err)
+	}
+	if sum2.LifetimeTokens != 100 {
+		t.Fatalf("expected 100, got %d", sum2.LifetimeTokens)
+	}
+}
+
+func TestLoadDevinData_ConcurrentWriters(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "devin.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	createSchema := `
+		CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at INTEGER, last_activity_at INTEGER, hidden INTEGER);
+		CREATE TABLE message_nodes (row_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, session_id TEXT, chat_message TEXT);
+	`
+	if _, err := db.Exec(createSchema); err != nil {
+		t.Fatal(err)
+	}
+	msg100 := `'{"role":"assistant","metadata":{"metrics":{"input_tokens":70,"output_tokens":30,"cache_read_tokens":0,"cache_creation_tokens":0}}}'`
+	if _, err := db.Exec(`INSERT INTO sessions VALUES ('s1', 1710504000, 1710504060, 0);`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO message_nodes (created_at, session_id, chat_message) VALUES (1710504000, 's1', ` + msg100 + `);`); err != nil {
+		t.Fatal(err)
+	}
+
+	const workers = 8
+	var wg sync.WaitGroup
+	errCh := make(chan error, workers)
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sum, _, _, err := LoadDevinData(dbPath)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if sum.LifetimeTokens != 100 {
+				errCh <- fmt.Errorf("expected 100, got %d", sum.LifetimeTokens)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		t.Fatal(err)
 	}
 }

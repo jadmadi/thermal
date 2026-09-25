@@ -4,7 +4,10 @@
 package loaders
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"fmt"
 	"sort"
 
 	"github.com/jadmadi/thermal/internal/render"
@@ -244,6 +247,15 @@ func opencodeV2Source(db *sql.DB) string {
 func hasColumn(db *sql.DB, table, column string) bool {
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column).Scan(&n); err != nil {
+		return false
+	}
+	return n > 0
+}
+
+// hasTable reports whether a table exists in the SQLite database.
+func hasTable(db *sql.DB, table string) bool {
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&n); err != nil {
 		return false
 	}
 	return n > 0
@@ -520,41 +532,16 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 }
 
 func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
+	canonicalPath := CanonicalDatabasePath(dbPath)
+	sourceID, _ := devinSourceIdentity(canonicalPath)
+
+	db, err := sql.Open("sqlite", canonicalPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
 
-	// Cheap invalidation probes (<2ms via PK/stat indexes). message_nodes is
-	// append-only in practice, so MAX(row_id) covers new data; the visible
-	// session count covers hidden/unhidden toggles. If both match the on-disk
-	// cache, skip the ~11s full scan and return the cached snapshot.
-	var maxRowID int64
-	var sessionCount int
-	if err := db.QueryRow(`SELECT MAX(row_id) FROM message_nodes`).Scan(&maxRowID); err != nil {
-		return thermal.Summary{}, nil, nil, err
-	}
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE hidden = 0`).Scan(&sessionCount); err != nil {
-		return thermal.Summary{}, nil, nil, err
-	}
-	if c, ok := loadDevinCache(); ok && c.MaxRowID == maxRowID && c.SessionCount == sessionCount {
-		return c.Summary, c.Daily, c.Projects, nil
-	}
-
-	// Longest session duration (created_at/last_activity_at are in seconds;
-	// LongestSessionMs is expected in milliseconds, so *1000).
-	var longestSec int64
-	if err := db.QueryRow(`SELECT COALESCE(MAX(last_activity_at - created_at), 0) FROM sessions WHERE hidden = 0`).Scan(&longestSec); err != nil {
-		return thermal.Summary{}, nil, nil, err
-	}
-
-	// Project attribution needs the session working directory, which older
-	// Devin schemas may not carry. The session also names the model, and that
-	// name is the only thing that lets the estimator price Devin's tokens:
-	// without it every day is priced at zero and the cost disappears from
-	// reports. Both columns come from the same join.
 	projectSelect, projectJoin := "''", ""
 	modelSelect := "''"
 	if hasColumn(db, "sessions", "working_directory") {
@@ -565,141 +552,242 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		}
 	}
 
-	// If session count is unchanged and new messages were simply appended (maxRowID > c.MaxRowID),
-	// perform a lightning-fast delta scan on only the new message_nodes rows via PK index.
-	if c, ok := loadDevinCache(); ok && c.SessionCount == sessionCount && maxRowID > c.MaxRowID && c.MaxRowID > 0 {
-		c.Summary.Sessions = sessionCount
-		c.Summary.LongestSessionMs = longestSec * 1000
+	sessModelCol := "''"
+	if hasColumn(db, "sessions", "model") {
+		sessModelCol = "COALESCE(model, '')"
+	}
+	sessWDCol := "''"
+	if hasColumn(db, "sessions", "working_directory") {
+		sessWDCol = "COALESCE(working_directory, '')"
+	}
+	sessCreatedCol := "0"
+	if hasColumn(db, "sessions", "created_at") {
+		sessCreatedCol = "COALESCE(created_at, 0)"
+	}
+	sessLastActCol := "0"
+	if hasColumn(db, "sessions", "last_activity_at") {
+		sessLastActCol = "COALESCE(last_activity_at, 0)"
+	}
 
-		deltaRows, err := db.Query(`
-			SELECT m.created_at,
-			       `+projectSelect+`,
-			       `+modelSelect+`,
-			       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
-			       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
-			       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
-			       json_extract(m.chat_message, '$.metadata.metrics.cache_creation_tokens')
-			FROM message_nodes m`+projectJoin+`
-			WHERE m.row_id > ? AND m.chat_message LIKE '%"assistant"%' AND json_extract(m.chat_message, '$.role') = 'assistant'
-		`, c.MaxRowID)
-		if err == nil {
-			defer deltaRows.Close()
-			type dayAgg struct {
-				tokens   int64
-				inTok    int64
-				outTok   int64
-				cacheTok int64
-				turns    int
-			}
-			byDay := make(map[string]*dayAgg)
-			modelsByDay := make(map[string]map[string]thermal.ModelTokens)
-			deltaProjectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
-			for _, r := range c.Daily {
-				byDay[r.Day] = &dayAgg{
-					tokens:   r.Tokens,
-					inTok:    r.Input,
-					outTok:   r.Output,
-					cacheTok: r.Cache,
-					turns:    r.Turns,
-				}
-				if len(r.Models) > 0 {
-					modelsByDay[r.Day] = r.Models
-				}
-			}
-			byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
-			for _, p := range c.Projects {
-				byProjectDay[projectDayKey{p.Day, p.Project}] = &p
-			}
+	sessRows, err := db.Query(`
+		SELECT id, ` + sessModelCol + `, ` + sessWDCol + `, ` + sessCreatedCol + `, ` + sessLastActCol + `
+		FROM sessions
+		WHERE hidden = 0
+		ORDER BY id
+	`)
+	if err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
+	defer sessRows.Close()
 
-			for deltaRows.Next() {
-				var createdAt int64
-				var workingDir, sessionModel string
-				var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
-				if err := deltaRows.Scan(&createdAt, &workingDir, &sessionModel, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
-					break
-				}
-				day := thermal.UnixDay(createdAt)
-				agg := byDay[day]
-				if agg == nil {
-					agg = &dayAgg{}
-					byDay[day] = agg
-				}
-				deltaTok := inTok.Int64 + outTok.Int64 + cacheRead.Int64 + cacheCreate.Int64
-				agg.tokens += deltaTok
-				agg.inTok += inTok.Int64
-				agg.outTok += outTok.Int64
-				agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
-				agg.turns++
+	var sessionCount int
+	var longestSec int64
+	sessH := sha256.New()
+	for sessRows.Next() {
+		var sID, sModel, sWD string
+		var sCreated, sLastAct int64
+		if err := sessRows.Scan(&sID, &sModel, &sWD, &sCreated, &sLastAct); err != nil {
+			return thermal.Summary{}, nil, nil, err
+		}
+		sessionCount++
+		diff := sLastAct - sCreated
+		if diff > longestSec {
+			longestSec = diff
+		}
+		fmt.Fprintf(sessH, "%s|%s|%s|%d|%d\n", sID, sModel, sWD, sCreated, sLastAct)
+	}
+	if err := sessRows.Err(); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
+	sessionsSig := hex.EncodeToString(sessH.Sum(nil))
 
-				// New messages carry the same session-level model attribution as
-				// a full scan, so a delta run cannot quietly drop it.
-				if model := modelName(sessionModel); model != "" {
-					counts := thermal.ModelTokens{
-						Input:      inTok.Int64,
-						Output:     outTok.Int64,
-						CacheRead:  cacheRead.Int64,
-						CacheWrite: cacheCreate.Int64,
+	hasPrompt := hasTable(db, "prompt_history")
+	var promptSig string
+	var promptTimeCol string
+	if hasPrompt {
+		if hasColumn(db, "prompt_history", "updated_at") && hasColumn(db, "prompt_history", "created_at") {
+			promptTimeCol = "COALESCE(updated_at, created_at)"
+		} else if hasColumn(db, "prompt_history", "updated_at") {
+			promptTimeCol = "updated_at"
+		} else if hasColumn(db, "prompt_history", "created_at") {
+			promptTimeCol = "created_at"
+		}
+
+		var promptCount int64
+		var promptMaxRowID int64
+		var promptTotalTime float64
+		timeQuery := "0"
+		if promptTimeCol != "" {
+			timeQuery = "COALESCE(TOTAL(" + promptTimeCol + "), 0)"
+		}
+		if err := db.QueryRow(`SELECT COUNT(*), COALESCE(MAX(rowid), 0), `+timeQuery+` FROM prompt_history`).Scan(&promptCount, &promptMaxRowID, &promptTotalTime); err == nil {
+			promptSig = fmt.Sprintf("%d:%d:%d", promptCount, promptMaxRowID, int64(promptTotalTime))
+		}
+	}
+
+	var maxRowID int64
+	if err := db.QueryRow(`SELECT COALESCE(MAX(row_id), 0) FROM message_nodes`).Scan(&maxRowID); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
+
+	c, ok := loadDevinCache(canonicalPath, sourceID)
+	if ok &&
+		c.MaxRowID == maxRowID &&
+		c.SessionsSignature == sessionsSig &&
+		c.PromptSignature == promptSig {
+		return c.Summary, c.Daily, c.Projects, nil
+	}
+
+	if ok &&
+		c.SessionsSignature == sessionsSig &&
+		c.PromptSignature == promptSig &&
+		maxRowID > c.MaxRowID && c.MaxRowID > 0 {
+
+		var baseCount int64
+		var baseLength float64
+		if err := db.QueryRow(`SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, c.MaxRowID).Scan(&baseCount, &baseLength); err == nil &&
+			baseCount == c.BaseRowCount && int64(baseLength) == c.BaseRowLength {
+
+			var totalRowCount int64
+			var totalRowLength float64
+			_ = db.QueryRow(`SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes`).Scan(&totalRowCount, &totalRowLength)
+
+			c.Summary.Sessions = sessionCount
+			c.Summary.LongestSessionMs = longestSec * 1000
+
+			deltaRows, err := db.Query(`
+				SELECT m.created_at,
+				       `+projectSelect+`,
+				       `+modelSelect+`,
+				       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
+				       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
+				       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
+				       json_extract(m.chat_message, '$.metadata.metrics.cache_creation_tokens')
+				FROM message_nodes m`+projectJoin+`
+				WHERE m.row_id > ? AND m.chat_message LIKE '%"assistant"%' AND json_extract(m.chat_message, '$.role') = 'assistant'
+			`, c.MaxRowID)
+			if err == nil {
+				defer deltaRows.Close()
+				type dayAgg struct {
+					tokens   int64
+					inTok    int64
+					outTok   int64
+					cacheTok int64
+					turns    int
+				}
+				byDay := make(map[string]*dayAgg)
+				modelsByDay := make(map[string]map[string]thermal.ModelTokens)
+				deltaProjectModels := make(map[projectDayKey]map[string]thermal.ModelTokens)
+				for _, r := range c.Daily {
+					byDay[r.Day] = &dayAgg{
+						tokens:   r.Tokens,
+						inTok:    r.Input,
+						outTok:   r.Output,
+						cacheTok: r.Cache,
+						turns:    r.Turns,
 					}
-					if modelsByDay[day] == nil {
-						modelsByDay[day] = make(map[string]thermal.ModelTokens)
+					if len(r.Models) > 0 {
+						modelsByDay[r.Day] = r.Models
 					}
-					modelsByDay[day][model] = modelsByDay[day][model].Add(counts)
-					if projectKey := thermal.ProjectKey(workingDir); projectKey != "" {
-						key := projectDayKey{day, projectKey}
-						if deltaProjectModels[key] == nil {
-							deltaProjectModels[key] = make(map[string]thermal.ModelTokens)
+				}
+				byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
+				for _, p := range c.Projects {
+					pCopy := p
+					byProjectDay[projectDayKey{p.Day, p.Project}] = &pCopy
+				}
+
+				for deltaRows.Next() {
+					var createdAt int64
+					var workingDir, sessionModel string
+					var inTok, outTok, cacheRead, cacheCreate sql.NullInt64
+					if err := deltaRows.Scan(&createdAt, &workingDir, &sessionModel, &inTok, &outTok, &cacheRead, &cacheCreate); err != nil {
+						break
+					}
+					day := thermal.UnixDay(createdAt)
+					agg := byDay[day]
+					if agg == nil {
+						agg = &dayAgg{}
+						byDay[day] = agg
+					}
+					deltaTok := inTok.Int64 + outTok.Int64 + cacheRead.Int64 + cacheCreate.Int64
+					agg.tokens += deltaTok
+					agg.inTok += inTok.Int64
+					agg.outTok += outTok.Int64
+					agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
+					agg.turns++
+
+					if model := modelName(sessionModel); model != "" {
+						counts := thermal.ModelTokens{
+							Input:      inTok.Int64,
+							Output:     outTok.Int64,
+							CacheRead:  cacheRead.Int64,
+							CacheWrite: cacheCreate.Int64,
 						}
-						deltaProjectModels[key][model] = deltaProjectModels[key][model].Add(counts)
+						if modelsByDay[day] == nil {
+							modelsByDay[day] = make(map[string]thermal.ModelTokens)
+						}
+						modelsByDay[day][model] = modelsByDay[day][model].Add(counts)
+						if projectKey := thermal.ProjectKey(workingDir); projectKey != "" {
+							key := projectDayKey{day, projectKey}
+							if deltaProjectModels[key] == nil {
+								deltaProjectModels[key] = make(map[string]thermal.ModelTokens)
+							}
+							deltaProjectModels[key][model] = deltaProjectModels[key][model].Add(counts)
+						}
 					}
+
+					if project := thermal.ProjectKey(workingDir); project != "" {
+						key := projectDayKey{day, project}
+						pd := byProjectDay[key]
+						if pd == nil {
+							pd = &thermal.ProjectDay{Project: project, Day: day}
+							byProjectDay[key] = pd
+						}
+						pd.Tokens += deltaTok
+						pd.Input += inTok.Int64
+						pd.Output += outTok.Int64
+						pd.CacheRead += cacheRead.Int64
+						pd.CacheWrite += cacheCreate.Int64
+						pd.Turns++
+					}
+
+					c.Summary.InputTokens += inTok.Int64
+					c.Summary.OutputTokens += outTok.Int64
+					c.Summary.CacheTokens += cacheRead.Int64 + cacheCreate.Int64
+					c.Summary.LifetimeTokens += deltaTok
 				}
 
-				if project := thermal.ProjectKey(workingDir); project != "" {
-					key := projectDayKey{day, project}
-					pd := byProjectDay[key]
-					if pd == nil {
-						pd = &thermal.ProjectDay{Project: project, Day: day}
-						byProjectDay[key] = pd
+				if err := deltaRows.Err(); err == nil {
+					for key, pd := range byProjectDay {
+						if m := deltaProjectModels[key]; len(m) > 0 {
+							pd.Models = m
+						}
 					}
-					pd.Tokens += deltaTok
-					pd.Input += inTok.Int64
-					pd.Output += outTok.Int64
-					pd.CacheRead += cacheRead.Int64
-					pd.CacheWrite += cacheCreate.Int64
-					pd.Turns++
-				}
-
-				c.Summary.InputTokens += inTok.Int64
-				c.Summary.OutputTokens += outTok.Int64
-				c.Summary.CacheTokens += cacheRead.Int64 + cacheCreate.Int64
-				c.Summary.LifetimeTokens += deltaTok
-			}
-
-			if err := deltaRows.Err(); err == nil {
-				// Attach the delta attribution before the snapshot is saved, so
-				// an incremental run prices exactly what a full scan would.
-				for key, pd := range byProjectDay {
-					if m := deltaProjectModels[key]; len(m) > 0 {
-						pd.Models = m
+					var daily []thermal.DailyRow
+					for day, agg := range byDay {
+						daily = append(daily, thermal.DailyRow{
+							Day:    day,
+							Tokens: agg.tokens,
+							Input:  agg.inTok,
+							Output: agg.outTok,
+							Cache:  agg.cacheTok,
+							Turns:  agg.turns,
+							Models: modelsByDay[day],
+						})
 					}
+					sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
+					freshnessKey := fmt.Sprintf("%d:%d:%d:%s:%s", maxRowID, totalRowCount, int64(totalRowLength), sessionsSig, promptSig)
+					c.Daily = daily
+					c.Projects = sortedProjects(byProjectDay)
+					c.MaxRowID = maxRowID
+					c.BaseRowCount = totalRowCount
+					c.BaseRowLength = int64(totalRowLength)
+					c.FreshnessKey = freshnessKey
+					c.SourceID = sourceID
+					c.CanonicalPath = canonicalPath
+					saveDevinCache(canonicalPath, c)
+					return c.Summary, c.Daily, c.Projects, nil
 				}
-				var daily []thermal.DailyRow
-				for day, agg := range byDay {
-					daily = append(daily, thermal.DailyRow{
-						Day:    day,
-						Tokens: agg.tokens,
-						Input:  agg.inTok,
-						Output: agg.outTok,
-						Cache:  agg.cacheTok,
-						Turns:  agg.turns,
-						Models: modelsByDay[day],
-					})
-				}
-				sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
-				c.Daily = daily
-				c.Projects = sortedProjects(byProjectDay)
-				c.MaxRowID = maxRowID
-				saveDevinCache(c)
-				return c.Summary, c.Daily, c.Projects, nil
 			}
 		}
 	}
@@ -707,17 +795,6 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	var summary thermal.Summary
 	summary.Sessions = sessionCount
 	summary.LongestSessionMs = longestSec * 1000
-
-	// Single pass over message_nodes: stream rows into Go and aggregate
-	// there, so we can drive a live progress bar from the row counter. The
-	// total row count (instant via internal stats) is the denominator. Using
-	// per-message created_at means a long agentic session spanning midnight
-	// contributes to each day it generated tokens, not just the day it
-	// started.
-	var totalCount int64
-	if err := db.QueryRow(`SELECT COUNT(*) FROM message_nodes`).Scan(&totalCount); err != nil {
-		return thermal.Summary{}, nil, nil, err
-	}
 
 	rows, err := db.Query(`
 		SELECT m.created_at,
@@ -735,7 +812,10 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 	defer rows.Close()
 
-	progress := render.NewProgress("Devin", totalCount)
+	var totalRowCount int64
+	_ = db.QueryRow(`SELECT COUNT(*) FROM message_nodes`).Scan(&totalRowCount)
+
+	progress := render.NewProgress("Devin", totalRowCount)
 	progress.Start()
 
 	type dayAgg struct {
@@ -766,11 +846,6 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		agg.cacheTok += cacheRead.Int64 + cacheCreate.Int64
 		agg.turns++
 
-		// Attribute the message to its session's model. Devin records the
-		// model per session, not per message, so this is session-level
-		// attribution carried down to the day the tokens were spent. A session
-		// with no model leaves the day's tokens unattributed rather than
-		// inventing a name, and the report footer states that remainder.
 		if model := modelName(sessionModel); model != "" {
 			counts := thermal.ModelTokens{
 				Input:      inTok.Int64,
@@ -782,8 +857,6 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 				modelsByDay[day] = make(map[string]thermal.ModelTokens)
 			}
 			modelsByDay[day][model] = modelsByDay[day][model].Add(counts)
-			// The project row needs the same attribution, because the projects
-			// report prices from project rows and cannot see the daily ones.
 			if projectKey := thermal.ProjectKey(workingDir); projectKey != "" {
 				key := projectDayKey{day, projectKey}
 				if projectModels[key] == nil {
@@ -820,9 +893,26 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		return thermal.Summary{}, nil, nil, err
 	}
 
-	// Project rows carry the same attribution as the daily rows. The projects
-	// report prices from project rows, so without this a tool's spend lands in
-	// the unpriceable line even when its daily rows name a model.
+	if hasPrompt && promptTimeCol != "" {
+		pRows, pErr := db.Query(`SELECT ` + promptTimeCol + ` FROM prompt_history WHERE ` + promptTimeCol + ` > 0`)
+		if pErr == nil {
+			defer pRows.Close()
+			for pRows.Next() {
+				var pTime int64
+				if err := pRows.Scan(&pTime); err == nil && pTime > 0 {
+					if pTime > 1000000000000 {
+						pTime /= 1000
+					}
+					pDay := thermal.UnixDay(pTime)
+					if byDay[pDay] == nil {
+						byDay[pDay] = &dayAgg{turns: 1}
+					}
+				}
+			}
+			_ = pRows.Err()
+		}
+	}
+
 	for key, pd := range byProjectDay {
 		if m := projectModels[key]; len(m) > 0 {
 			pd.Models = m
@@ -845,12 +935,9 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
-	// Devin folds reasoning into output_tokens; no separate reasoning field.
 	summary.ReasoningTokens = 0
 	summary.LifetimeTokens = summary.InputTokens + summary.OutputTokens + summary.CacheTokens
 
-	// Fallback: if message_nodes has no assistant metrics (e.g. very old DB
-	// schema), fall back to per-session-day counts so the heatmap still works.
 	if len(daily) == 0 {
 		fbRows, fbErr := db.Query(`
 			SELECT date(created_at, 'unixepoch', 'localtime') AS day, COUNT(*) AS turns
@@ -871,16 +958,29 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			r.Tokens = int64(r.Turns)
 			daily = append(daily, r)
 		}
+		if err := fbRows.Err(); err != nil {
+			return summary, nil, nil, nil
+		}
 		summary.LifetimeTokens = int64(summary.Sessions)
 	}
 
 	projects := sortedProjects(byProjectDay)
-	saveDevinCache(DevinCache{
-		MaxRowID:     maxRowID,
-		SessionCount: sessionCount,
-		Summary:      summary,
-		Daily:        daily,
-		Projects:     projects,
+	var baseRowLength float64
+	_ = db.QueryRow(`SELECT COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, maxRowID).Scan(&baseRowLength)
+	freshnessKey := fmt.Sprintf("%d:%d:%d:%s:%s", maxRowID, totalRowCount, int64(baseRowLength), sessionsSig, promptSig)
+	saveDevinCache(canonicalPath, DevinCache{
+		CanonicalPath:     canonicalPath,
+		SourceID:          sourceID,
+		FreshnessKey:      freshnessKey,
+		MaxRowID:          maxRowID,
+		BaseRowCount:      totalRowCount,
+		BaseRowLength:     int64(baseRowLength),
+		SessionCount:      sessionCount,
+		SessionsSignature: sessionsSig,
+		PromptSignature:   promptSig,
+		Summary:           summary,
+		Daily:             daily,
+		Projects:          projects,
 	})
 
 	return summary, daily, projects, nil
