@@ -6,10 +6,14 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -75,13 +79,19 @@ func newTestServer() *Server {
 	return srv
 }
 
+func newLocalRequest(method, path string) *http.Request {
+	req := httptest.NewRequest(method, path, nil)
+	req.Host = "127.0.0.1:8080"
+	return req
+}
+
 func TestServer_SecurityHeaders(t *testing.T) {
 	srv := newTestServer()
 	handler := srv.Handler()
 
 	paths := []string{"/", "/api/health", "/api/stats"}
 	for _, p := range paths {
-		req := httptest.NewRequest(http.MethodGet, p, nil)
+		req := newLocalRequest(http.MethodGet, p)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 
@@ -105,7 +115,7 @@ func TestServer_EmbeddedIndex(t *testing.T) {
 	srv := newTestServer()
 	handler := srv.Handler()
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := newLocalRequest(http.MethodGet, "/")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -129,7 +139,7 @@ func TestServer_HealthEndpoint(t *testing.T) {
 	srv := newTestServer()
 	handler := srv.Handler()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	req := newLocalRequest(http.MethodGet, "/api/health")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -164,7 +174,7 @@ func TestServer_APIRoutes(t *testing.T) {
 
 	for _, route := range routes {
 		t.Run(route, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, route, nil)
+			req := newLocalRequest(http.MethodGet, route)
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
 
@@ -192,7 +202,7 @@ func TestServer_ConcurrentRequests(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < requestsPerWorker; i++ {
-				req := httptest.NewRequest(http.MethodGet, "/api/stats", nil)
+				req := newLocalRequest(http.MethodGet, "/api/stats")
 				rec := httptest.NewRecorder()
 				handler.ServeHTTP(rec, req)
 				if rec.Code != http.StatusOK {
@@ -209,7 +219,7 @@ func TestServer_Stream(t *testing.T) {
 	handler := srv.Handler()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest(http.MethodGet, "/api/stream", nil).WithContext(ctx)
+	req := newLocalRequest(http.MethodGet, "/api/stream").WithContext(ctx)
 	rec := httptest.NewRecorder()
 
 	go func() {
@@ -234,7 +244,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 	handler := srv.Handler()
 
 	// 1. REST GET /api/telemetry
-	reqREST := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	reqREST := newLocalRequest(http.MethodGet, "/api/telemetry")
 	recREST := httptest.NewRecorder()
 	handler.ServeHTTP(recREST, reqREST)
 	if recREST.Code != http.StatusOK {
@@ -247,7 +257,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 
 	// 2. SSE GET /api/stream
 	ctx, cancel := context.WithCancel(context.Background())
-	reqSSE := httptest.NewRequest(http.MethodGet, "/api/stream", nil).WithContext(ctx)
+	reqSSE := newLocalRequest(http.MethodGet, "/api/stream").WithContext(ctx)
 	recSSE := httptest.NewRecorder()
 	go func() {
 		time.Sleep(50 * time.Millisecond)
@@ -278,7 +288,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 	}
 
 	// 3. Supported query param filtering: tool
-	reqTool := httptest.NewRequest(http.MethodGet, "/api/telemetry?tool=claude", nil)
+	reqTool := newLocalRequest(http.MethodGet, "/api/telemetry?tool=claude")
 	recTool := httptest.NewRecorder()
 	handler.ServeHTTP(recTool, reqTool)
 	if recTool.Code != http.StatusOK {
@@ -291,7 +301,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 	}
 
 	// 4. Supported query param: no-estimate
-	reqNoEst := httptest.NewRequest(http.MethodGet, "/api/telemetry?no-estimate=true", nil)
+	reqNoEst := newLocalRequest(http.MethodGet, "/api/telemetry?no-estimate=true")
 	recNoEst := httptest.NewRecorder()
 	handler.ServeHTTP(recNoEst, reqNoEst)
 	if recNoEst.Code != http.StatusOK {
@@ -304,7 +314,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 	}
 
 	// 5. Unsupported query param rejection: 400 Bad Request
-	reqBad := httptest.NewRequest(http.MethodGet, "/api/telemetry?chart=true", nil)
+	reqBad := newLocalRequest(http.MethodGet, "/api/telemetry?chart=true")
 	recBad := httptest.NewRecorder()
 	handler.ServeHTTP(recBad, reqBad)
 	if recBad.Code != http.StatusBadRequest {
@@ -315,7 +325,7 @@ func TestServer_RESTandSSEParity(t *testing.T) {
 	}
 
 	// 6. Unknown tool rejection: 400 Bad Request
-	reqUnknown := httptest.NewRequest(http.MethodGet, "/api/telemetry?tool=nonexistent_ai", nil)
+	reqUnknown := newLocalRequest(http.MethodGet, "/api/telemetry?tool=nonexistent_ai")
 	recUnknown := httptest.NewRecorder()
 	handler.ServeHTTP(recUnknown, reqUnknown)
 	if recUnknown.Code != http.StatusBadRequest {
@@ -432,5 +442,316 @@ func TestCollectTelemetryWithDeps_Synthetic(t *testing.T) {
 	}
 	if len(data.Projects) == 0 || data.Projects[0].Project != "synthetic-repo" {
 		t.Errorf("Projects = %+v, want synthetic-repo", data.Projects)
+	}
+}
+
+func TestServer_HostValidation(t *testing.T) {
+	var collectorCalls atomic.Int32
+	srv := NewWithOptions(Options{Offline: true})
+	srv.SetCollector(func(opts Options) (*TelemetryData, error) {
+		collectorCalls.Add(1)
+		return &TelemetryData{TotalTokens: 100}, nil
+	})
+	handler := srv.Handler()
+
+	validAuthorities := []string{
+		"127.0.0.1:8080",
+		"127.0.0.1",
+		"localhost:8080",
+		"localhost",
+		"sub.localhost:8080",
+		"[::1]:8080",
+		"[::1]",
+		"::1",
+	}
+
+	for _, auth := range validAuthorities {
+		t.Run("valid_"+auth, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+			req.Host = auth
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("authority %q failed with status %d: %s", auth, rec.Code, rec.Body.String())
+			}
+		})
+	}
+
+	untrustedAuthorities := []string{
+		"untrusted.example:8080",
+		"untrusted.example",
+		"attacker.com:8080",
+		"127.0.0.1:9999",
+		"localhost:8081",
+		"[::1:8080",
+		"127.0.0.1:invalid",
+		"127.0.0.1:0",
+		"127.0.0.1:70000",
+		"",
+	}
+
+	for _, auth := range untrustedAuthorities {
+		t.Run("untrusted_"+auth, func(t *testing.T) {
+			callsBefore := collectorCalls.Load()
+			req := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+			req.Host = auth
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusForbidden {
+				t.Fatalf("expected status 403 for authority %q, got %d", auth, rec.Code)
+			}
+			if !strings.Contains(rec.Body.String(), "forbidden: untrusted request authority") {
+				t.Errorf("expected rejection message for authority %q, got %s", auth, rec.Body.String())
+			}
+			if callsAfter := collectorCalls.Load(); callsAfter != callsBefore {
+				t.Errorf("untrusted authority %q triggered data loading (calls: %d -> %d)", auth, callsBefore, callsAfter)
+			}
+		})
+	}
+
+	// Test rejection on SSE route /api/stream as well
+	t.Run("untrusted_sse_stream", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/stream", nil)
+		req.Host = "untrusted.example:8080"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("expected status 403 for SSE with untrusted authority, got %d", rec.Code)
+		}
+		if !strings.Contains(rec.Body.String(), "forbidden: untrusted request authority") {
+			t.Errorf("expected rejection message for SSE, got %s", rec.Body.String())
+		}
+	})
+}
+
+func TestServer_OriginAndCrossSiteValidation(t *testing.T) {
+	srv := newTestServer()
+	handler := srv.Handler()
+
+	tests := []struct {
+		name         string
+		origin       string
+		secFetchSite string
+		wantStatus   int
+	}{
+		{
+			name:       "valid_same_origin_localhost",
+			origin:     "http://localhost:8080",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "valid_same_origin_127",
+			origin:     "http://127.0.0.1:8080",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "foreign_origin_rejected",
+			origin:     "http://evil.com",
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:       "null_origin_rejected",
+			origin:     "null",
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:       "mismatched_origin_port_rejected",
+			origin:     "http://localhost:9999",
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:         "sec_fetch_site_cross_site_rejected",
+			origin:       "http://localhost:8080",
+			secFetchSite: "cross-site",
+			wantStatus:   http.StatusForbidden,
+		},
+		{
+			name:         "sec_fetch_site_same_origin_allowed",
+			origin:       "http://localhost:8080",
+			secFetchSite: "same-origin",
+			wantStatus:   http.StatusOK,
+		},
+		{
+			name:       "no_origin_allowed_for_direct_cli",
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+			req.Host = "127.0.0.1:8080"
+			if tc.origin != "" {
+				req.Header.Set("Origin", tc.origin)
+			}
+			if tc.secFetchSite != "" {
+				req.Header.Set("Sec-Fetch-Site", tc.secFetchSite)
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("expected status %d, got %d: %s", tc.wantStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestServer_ExplicitHostAndWildcard(t *testing.T) {
+	// 1. Explicit custom host: --host custom.lan --port 9000
+	srvCustom := NewWithOptions(Options{Host: "custom.lan", Port: 9000, Offline: true})
+	srvCustom.SetCollector(func(opts Options) (*TelemetryData, error) {
+		return &TelemetryData{TotalTokens: 50}, nil
+	})
+	handlerCustom := srvCustom.Handler()
+
+	reqCustom := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	reqCustom.Host = "custom.lan:9000"
+	recCustom := httptest.NewRecorder()
+	handlerCustom.ServeHTTP(recCustom, reqCustom)
+	if recCustom.Code != http.StatusOK {
+		t.Fatalf("custom host expected 200, got %d: %s", recCustom.Code, recCustom.Body.String())
+	}
+
+	reqCustomLoopback := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	reqCustomLoopback.Host = "localhost:9000"
+	recCustomLoopback := httptest.NewRecorder()
+	handlerCustom.ServeHTTP(recCustomLoopback, reqCustomLoopback)
+	if recCustomLoopback.Code != http.StatusOK {
+		t.Fatalf("custom host loopback alias expected 200, got %d: %s", recCustomLoopback.Code, recCustomLoopback.Body.String())
+	}
+
+	reqCustomOther := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	reqCustomOther.Host = "other.lan:9000"
+	recCustomOther := httptest.NewRecorder()
+	handlerCustom.ServeHTTP(recCustomOther, reqCustomOther)
+	if recCustomOther.Code != http.StatusForbidden {
+		t.Fatalf("foreign host on custom server expected 403, got %d", recCustomOther.Code)
+	}
+
+	// 2. Wildcard bind: --host 0.0.0.0 --port 8080
+	srvWildcard := NewWithOptions(Options{Host: "0.0.0.0", Port: 8080, Offline: true})
+	srvWildcard.SetCollector(func(opts Options) (*TelemetryData, error) {
+		return &TelemetryData{TotalTokens: 50}, nil
+	})
+	handlerWildcard := srvWildcard.Handler()
+
+	wildcardAllowed := []string{
+		"127.0.0.1:8080",
+		"localhost:8080",
+		"0.0.0.0:8080",
+		"192.168.1.55:8080",
+	}
+	for _, auth := range wildcardAllowed {
+		req := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+		req.Host = auth
+		rec := httptest.NewRecorder()
+		handlerWildcard.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("wildcard expected 200 for %q, got %d: %s", auth, rec.Code, rec.Body.String())
+		}
+	}
+
+	// Wildcard MUST reject arbitrary DNS names to prevent DNS rebinding
+	reqWildcardDNS := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	reqWildcardDNS.Host = "attacker.com:8080"
+	recWildcardDNS := httptest.NewRecorder()
+	handlerWildcard.ServeHTTP(recWildcardDNS, reqWildcardDNS)
+	if recWildcardDNS.Code != http.StatusForbidden {
+		t.Fatalf("wildcard bind must reject arbitrary DNS names, got %d", recWildcardDNS.Code)
+	}
+}
+
+func TestServer_ForwardedHeadersIgnored(t *testing.T) {
+	srv := newTestServer()
+	handler := srv.Handler()
+
+	req1 := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	req1.Host = "evil.com:8080"
+	req1.Header.Set("X-Forwarded-Host", "localhost:8080")
+	rec1 := httptest.NewRecorder()
+	handler.ServeHTTP(rec1, req1)
+	if rec1.Code != http.StatusForbidden {
+		t.Fatalf("server must not trust X-Forwarded-Host, got %d", rec1.Code)
+	}
+
+	req2 := httptest.NewRequest(http.MethodGet, "/api/telemetry", nil)
+	req2.Host = "evil.com:8080"
+	req2.Header.Set("Forwarded", "host=localhost:8080")
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusForbidden {
+		t.Fatalf("server must not trust Forwarded header, got %d", rec2.Code)
+	}
+}
+
+func TestServer_LoopbackIntegration(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to bind loopback listener: %v", err)
+	}
+	defer listener.Close()
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	srv := NewWithOptions(Options{Host: "127.0.0.1", Port: port, Offline: true})
+	srv.SetCollector(func(opts Options) (*TelemetryData, error) {
+		return &TelemetryData{
+			TotalTokens:   12345,
+			CurrentStreak: 3,
+		}, nil
+	})
+
+	httpServer := &http.Server{
+		Handler: srv.Handler(),
+	}
+	defer httpServer.Close()
+
+	go func() {
+		_ = httpServer.Serve(listener)
+	}()
+
+	client := &http.Client{Timeout: 3 * time.Second}
+
+	// 1. Valid loopback request
+	validURL := fmt.Sprintf("http://127.0.0.1:%d/api/telemetry", port)
+	respValid, err := client.Get(validURL)
+	if err != nil {
+		t.Fatalf("loopback request failed: %v", err)
+	}
+	defer respValid.Body.Close()
+
+	if respValid.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200 for loopback request, got %d", respValid.StatusCode)
+	}
+	bodyBytes, _ := io.ReadAll(respValid.Body)
+	var data TelemetryData
+	if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		t.Fatalf("failed decoding telemetry json: %v", err)
+	}
+	if data.TotalTokens != 12345 {
+		t.Errorf("expected 12345 tokens, got %d", data.TotalTokens)
+	}
+
+	// 2. Untrusted authority request over real network
+	reqUntrusted, err := http.NewRequest(http.MethodGet, validURL, nil)
+	if err != nil {
+		t.Fatalf("failed creating request: %v", err)
+	}
+	reqUntrusted.Host = "untrusted.example"
+	respUntrusted, err := client.Do(reqUntrusted)
+	if err != nil {
+		t.Fatalf("untrusted request failed: %v", err)
+	}
+	defer respUntrusted.Body.Close()
+
+	if respUntrusted.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected status 403 for untrusted host authority, got %d", respUntrusted.StatusCode)
+	}
+	untrustedBody, _ := io.ReadAll(respUntrusted.Body)
+	if !strings.Contains(string(untrustedBody), "forbidden: untrusted request authority") {
+		t.Errorf("expected rejection message, got %s", string(untrustedBody))
 	}
 }

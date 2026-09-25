@@ -11,6 +11,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
+  - [Changed: Local Web Dashboard Request Authority Boundary](#changed-localhost-request-boundary)
   - [Changed: Live Monitor Metric Parity and Burn Accounting](#changed-live-metric-parity)
   - [Changed: Web Telemetry Parity and Filtering Options](#changed-web-telemetry-parity)
   - [Changed: Work Receipt Usage Accounting and Partial Coverage Disclosure](#changed-receipt-accounting-coverage)
@@ -87,6 +88,38 @@ thermal hermes weekly
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
 
 ## Upgrading to v0.14.x
+
+### Changed: Local Web Dashboard Request Authority Boundary
+<a id="changed-localhost-request-boundary"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*serve' .` or reverse proxy configurations forwarding to Thermal's local web dashboard or telemetry API.
+- **Detection signal**: HTTP 403 Forbidden with payload `{"error":"forbidden: untrusted request authority"}` when accessing `http://<host>:<port>/` or `/api/*` with a foreign or unconfigured Host header, cross-site origin, or invalid authority port.
+
+**What changed and why**:
+Thermal's embedded web dashboard (`thermal serve`) previously accepted incoming HTTP requests regardless of the `Host` or `Origin` header values, leaving local telemetry endpoints susceptible to DNS rebinding and cross-site browser exfiltration. The server now strictly validates request authority against loopback interfaces (`127.0.0.1`, `localhost`, `[::1]`) and explicitly configured listening hosts (`--host`), structurally parses authorities, and rejects foreign names, invalid ports, and cross-site browser requests with HTTP 403 Forbidden before loading telemetry data. Reverse proxies and custom host setups that forward foreign Host headers must now preserve loopback authority or explicitly specify their target hostname using `--host`.
+
+**Before / After**:
+```bash
+# Before (Wildcard or custom hostname without --host allowed arbitrary foreign Host headers)
+curl -H "Host: untrusted.example" http://127.0.0.1:8080/api/telemetry
+# HTTP/1.1 200 OK (returned private local telemetry)
+
+# After (Untrusted host authorities and foreign origins rejected before data collection)
+curl -H "Host: untrusted.example" http://127.0.0.1:8080/api/telemetry
+# HTTP/1.1 403 Forbidden
+# {"error":"forbidden: untrusted request authority"}
+```
+
+**The fix**:
+For standard local browsing, connect directly to `http://localhost:8080` or `http://127.0.0.1:8080`. When running behind a reverse proxy or accessing across an intranet via a custom domain name, pass the exact domain via `--host`:
+```bash
+thermal serve --host dashboard.internal.net --port 8080
+```
+Alternatively, configure your reverse proxy (e.g. Nginx or Caddy) to preserve or rewrite the Host header to `localhost` or `127.0.0.1:8080` when forwarding upstream.
+
+**Escape hatch**:
+Explicitly specify your custom domain or network interface using `--host <hostname-or-ip>`. Wildcard binding (`--host 0.0.0.0`) allows direct IP access from LAN devices while strictly continuing to block arbitrary DNS rebinding names.
 
 ### Changed: Live Monitor Metric Parity and Burn Accounting
 <a id="changed-live-metric-parity"></a>
