@@ -21,6 +21,7 @@ func renderStatsFixture(t *testing.T, width, height int, r Range, m Metric, forc
 	m2.rng = r
 	m2.metric = m
 	m2.statsLog = forceLog
+	m2.statsDense = false
 	updated, _ := m2.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	return ansi.Strip(updated.(Model).View().Content)
 }

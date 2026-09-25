@@ -5,9 +5,9 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -21,11 +21,11 @@ const (
 // estimate, because recorded cost attaches to a session or a day, never to a
 // single model. That is called out below the table.
 func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	gold := st.Gold
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -50,24 +50,27 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 	alignRight := []bool{false, false, false, true, true, true, false}
 	widths := []int{rankWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
 
-	sb.WriteString("  ")
+	rule := 2 * (len(widths) - 1)
+	for _, w := range widths {
+		rule += w
+	}
+
+	var cardLines []string
+
+	var hsb strings.Builder
+	hsb.WriteString(" ")
 	for i, h := range headers {
 		cell := thermal.PadRight(h, widths[i])
 		if alignRight[i] {
 			cell = thermal.PadLeft(h, widths[i])
 		}
-		sb.WriteString(dim(cell))
+		hsb.WriteString(dim(cell))
 		if i < len(headers)-1 {
-			sb.WriteString("  ")
+			hsb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
-
-	rule := 2 * (len(widths) - 1)
-	for _, w := range widths {
-		rule += w
-	}
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 
 	shown := len(rep.Rows)
 	if top > 0 && top < shown {
@@ -84,20 +87,21 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 			thermal.PadLeft(fmt.Sprintf("%d", row.Days), widths[5]),
 			thermal.PadRight(row.LastDay, widths[6]),
 		}
-		sb.WriteString("  ")
+		var rowSb strings.Builder
+		rowSb.WriteString(" ")
 		for j, c := range cells {
-			sb.WriteString(c)
+			rowSb.WriteString(c)
 			if j < len(cells)-1 {
-				sb.WriteString("  ")
+				rowSb.WriteString("  ")
 			}
 		}
-		sb.WriteString("\n")
+		cardLines = append(cardLines, rowSb.String())
 	}
 	if rest := len(rep.Rows) - shown; rest > 0 {
-		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest))))
+		cardLines = append(cardLines, " "+dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest)))
 	}
 
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 	totals := rep.Totals
 	totalCells := []string{
 		thermal.PadRight("", rankWidth),
@@ -108,24 +112,40 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 		thermal.PadLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
 		thermal.PadRight(totals.LastDay, lastWidth),
 	}
-	sb.WriteString("  ")
+	var totalSb strings.Builder
+	totalSb.WriteString(" ")
 	for i, c := range totalCells {
-		sb.WriteString(gold(c))
+		totalSb.WriteString(gold(c))
 		if i < len(totalCells)-1 {
-			sb.WriteString("  ")
+			totalSb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
+	cardLines = append(cardLines, totalSb.String())
 
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Models",
+		RightHeader: "tokens & spend",
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
+
+	footLimit := BoundedCardWidth(2)
 	if totals.Cost > 0 {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Cost is estimated from models.dev list prices; recorded session cost is not attributable to one model.")))
+		for _, wl := range WrapText("Cost is estimated from models.dev list prices; recorded session cost is not attributable to one model.", footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
 	}
 	if len(totals.MissingPricing) > 0 {
 		models := totals.MissingPricing
 		if len(models) > 4 {
 			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
 		}
-		sb.WriteString(fmt.Sprintf("  %s\n", dim("No pricing for: "+strings.Join(models, ", "))))
+		for _, wl := range WrapText("No pricing for: "+strings.Join(models, ", "), footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
 	}
 
 	sb.WriteString("\n")

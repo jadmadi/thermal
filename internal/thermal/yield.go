@@ -56,6 +56,7 @@ func CountLines(content string) int64 {
 // a single tool, model, project, or aggregate total.
 type YieldRow struct {
 	Name           string  `json:"name"`
+	Path           string  `json:"path,omitempty"`
 	Type           string  `json:"type,omitempty"` // "tool", "model", "project", "total"
 	Tokens         int64   `json:"tokens"`
 	LinesAdded     int64   `json:"linesAdded"`
@@ -284,11 +285,22 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 		pa.deleted += p.LinesDeleted
 		pa.files += p.FilesTouched
 	}
+	var projectPaths []string
+	for p := range projMap {
+		projectPaths = append(projectPaths, p)
+	}
+	projDisplayNames := ProjectDisplayNames(projectPaths)
+
 	var projectRows []YieldRow
 	for _, pa := range projMap {
 		net, gross, perNet, perGross, eff, status := CalculateYield(pa.tokens, pa.added, pa.deleted, pa.files)
+		slug := projDisplayNames[pa.name]
+		if slug == "" {
+			slug = ProjectSlug(pa.name)
+		}
 		projectRows = append(projectRows, YieldRow{
-			Name:           pa.name,
+			Name:           slug,
+			Path:           pa.name,
 			Type:           "project",
 			Tokens:         pa.tokens,
 			LinesAdded:     pa.added,

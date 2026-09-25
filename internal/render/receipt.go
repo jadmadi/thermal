@@ -5,58 +5,45 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 const (
-	receiptRankWidth    = 4
-	receiptDayWidth     = 10
-	receiptToolWidth    = 10
-	receiptEntityWidth  = 22
-	receiptTokensWidth  = 11
-	receiptCostWidth    = 9
-	receiptEvWidth      = 24
-	receiptStatusWidth  = 13
-	receiptTierWidth    = 10
+	receiptRankWidth   = 4
+	receiptDayWidth    = 10
+	receiptToolWidth   = 10
+	receiptEntityWidth = 22
+	receiptTokensWidth = 11
+	receiptCostWidth   = 9
+	receiptEvWidth     = 24
+	receiptStatusWidth = 13
+	receiptTierWidth   = 10
 )
 
 // RenderReceipt renders the verifiable work receipts table and KPI metrics.
 func RenderReceipt(rep thermal.ReceiptReport, top int, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	green := st.Success
+	gold := st.Gold
+	red := st.Error
+	cyan := st.Accent
 
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	green := func(s string) string { return ColorCode(colors, "1;32", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
-	red := func(s string) string { return ColorCode(colors, "1;31", s) }
-	cyan := func(s string) string { return ColorCode(colors, "36", s) }
-
-	statusBadge := func(status string) string {
-		switch status {
-		case "VERIFIED":
-			return green("[VERIFIED]")
-		case "CLAIMED":
-			return gold("[CLAIMED]")
-		case "FAILED":
-			return red("[FAILED]")
+	outcomeBadge := func(status string, tier thermal.VerificationTier) string {
+		switch {
+		case status == "VERIFIED" || tier == thermal.Tier1Verified:
+			return green("[PASS] Verified")
+		case status == "CLAIMED" || tier == thermal.Tier2Claimed:
+			return gold("[CLAIM] Untested")
+		case status == "FAILED" || tier == thermal.Tier3Failed:
+			return red("[FAIL] Broken")
 		default:
-			return dim("[UNVERIFIED]")
-		}
-	}
-
-	tierBadge := func(tier thermal.VerificationTier) string {
-		switch tier {
-		case thermal.Tier1Verified:
-			return green("Tier 1")
-		case thermal.Tier2Claimed:
-			return gold("Tier 2")
-		case thermal.Tier3Failed:
-			return red("Tier 3")
-		default:
-			return dim("Tier 3")
+			return dim("[INFO] Unknown")
 		}
 	}
 
@@ -117,28 +104,39 @@ func RenderReceipt(rep thermal.ReceiptReport, top int, noColor bool) string {
 		effBadge(sum.SpendEfficiency),
 	))
 
-	headers := []string{"#", "Day", "Tool", "Session / Project", "Tokens", "Cost", "Evidence / Tests", "Status", "Tier"}
-	alignRight := []bool{false, false, false, false, true, true, false, false, false}
-	widths := []int{receiptRankWidth, receiptDayWidth, receiptToolWidth, receiptEntityWidth, receiptTokensWidth, receiptCostWidth, receiptEvWidth, receiptStatusWidth, receiptTierWidth}
+	// Resolve project slugs from paths
+	var projPaths []string
+	for _, r := range rep.Receipts {
+		if r.Project != "" {
+			projPaths = append(projPaths, r.Project)
+		}
+	}
+	projDisplayNames := thermal.ProjectDisplayNames(projPaths)
+
+	headers := []string{"#", "Day", "Tool", "Session / Project", "Tokens", "Cost", "Evidence / Tests", "Outcome"}
+	alignRight := []bool{false, false, false, false, true, true, false, false}
+	widths := []int{receiptRankWidth, receiptDayWidth, receiptToolWidth, receiptEntityWidth, receiptTokensWidth, receiptCostWidth, receiptEvWidth, 16}
 
 	rule := 2 * (len(widths) - 1)
 	for _, w := range widths {
 		rule += w
 	}
 
-	sb.WriteString("  ")
+	var cardLines []string
+	var hsb strings.Builder
+	hsb.WriteString(" ")
 	for i, h := range headers {
 		cell := thermal.PadRight(h, widths[i])
 		if alignRight[i] {
 			cell = thermal.PadLeft(h, widths[i])
 		}
-		sb.WriteString(dim(cell))
+		hsb.WriteString(dim(cell))
 		if i < len(headers)-1 {
-			sb.WriteString("  ")
+			hsb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, strings.Repeat("─", rule))
 
 	shown := len(rep.Receipts)
 	if top > 0 && top < shown {
@@ -150,7 +148,11 @@ func RenderReceipt(rep thermal.ReceiptReport, top int, noColor bool) string {
 
 		entityName := r.SessionID
 		if r.Project != "" {
-			entityName = r.Project
+			if slug, ok := projDisplayNames[r.Project]; ok && slug != "" {
+				entityName = slug
+			} else {
+				entityName = thermal.ProjectSlug(r.Project)
+			}
 		}
 
 		cStr := fmt.Sprintf("$%.2f", r.Cost)
@@ -168,41 +170,54 @@ func RenderReceipt(rep thermal.ReceiptReport, top int, noColor bool) string {
 			evText = dim("agent-claimed")
 		}
 
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(r.Day, widths[1]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(truncate(r.Tool, widths[2]), widths[2]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(truncate(entityName, widths[3]), widths[3]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadLeft(thermal.CompactNumber(r.Tokens), widths[4]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadLeft(cStr, widths[5]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(evText, widths[6]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(statusBadge(r.Status), widths[7]))
-		sb.WriteString("  ")
-		sb.WriteString(thermal.PadRight(tierBadge(r.Tier), widths[8]))
-		sb.WriteString("\n")
+		var rowB strings.Builder
+		rowB.WriteString(" ")
+		rowB.WriteString(thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadRight(r.Day, widths[1]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadRight(truncate(r.Tool, widths[2]), widths[2]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadRight(truncate(entityName, widths[3]), widths[3]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadLeft(thermal.CompactNumber(r.Tokens), widths[4]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadLeft(cStr, widths[5]))
+		rowB.WriteString("  ")
+		rowB.WriteString(thermal.PadRight(evText, widths[6]))
+		rowB.WriteString("  ")
+		rowB.WriteString(outcomeBadge(r.Status, r.Tier))
+		cardLines = append(cardLines, rowB.String())
 	}
 
 	if shown < len(rep.Receipts) {
 		remainder := len(rep.Receipts) - shown
-		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("... and %d more session receipts (use --top to expand)", remainder))))
+		cardLines = append(cardLines, " "+dim(fmt.Sprintf("... and %d more session receipts (use --top to expand)", remainder)))
 	}
 
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Work Receipts",
+		RightHeader: fmt.Sprintf("%.1f%% verified · %d sessions", sum.VerificationRate, sum.TotalReceipts),
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("  %s %s\n",
-		dim("•"),
-		dim("Evidence Hierarchy: Tier 1 = Observed zero-exit test/linter runs or git commits; Tier 2 = Claimed; Tier 3 = Unverified."),
-	))
-	sb.WriteString(fmt.Sprintf("  %s %s\n\n",
-		dim("•"),
-		dim("Privacy Preservation: Local evaluation only. Zero prompt or error trace details recorded."),
-	))
+
+	footLimit := BoundedCardWidth(2)
+	sb.WriteString("\n")
+	for _, wl := range WrapBullet("  • ", "Legend: [PASS] Verified (Tier 1: tests/linters passed with exit 0) · [CLAIM] Untested (Tier 2: session completed without tests) · [FAIL] Broken (Tier 3: tests/linters failed).", footLimit, dim) {
+		sb.WriteString(wl + "\n")
+	}
+	for _, wl := range WrapBullet("  • ", "Evidence Hierarchy: Tier 1 = Observed zero-exit test/linter runs or git commits; Tier 2 = Claimed; Tier 3 = Unverified/Failed.", footLimit, dim) {
+		sb.WriteString(wl + "\n")
+	}
+	for _, wl := range WrapBullet("  • ", "Privacy Preservation: Local evaluation only. Zero prompt or error trace details recorded.", footLimit, dim) {
+		sb.WriteString(wl + "\n")
+	}
+	sb.WriteString("\n")
 
 	return sb.String()
 }

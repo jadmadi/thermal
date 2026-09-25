@@ -5,10 +5,11 @@ package render
 
 import (
 	"fmt"
-	"os"
+	"math"
 	"sort"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -19,11 +20,11 @@ const (
 
 // RenderMix prints a period-by-series share table plus switching statistics.
 func RenderMix(rep thermal.MixReport, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	gold := st.Gold
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -62,22 +63,6 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 	}
 	headers = append(headers, "Total")
 
-	sb.WriteString("  ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, seriesWidth)
-		if i == 0 {
-			cell = thermal.PadRight(h, analyticsNumber+2)
-		}
-		if i == len(headers)-1 {
-			cell = thermal.PadLeft(h, analyticsNumber)
-		}
-		sb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			sb.WriteString("  ")
-		}
-	}
-	sb.WriteString("\n")
-
 	rule := 2 * (len(headers) - 1)
 	for i := range headers {
 		if i == 0 {
@@ -88,25 +73,45 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 			rule += seriesWidth
 		}
 	}
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
 
-	printRow := func(label string, shares []float64, total float64, style func(string) string) {
+	var cardLines []string
+
+	var hsb strings.Builder
+	hsb.WriteString(" ")
+	for i, h := range headers {
+		cell := thermal.PadRight(h, seriesWidth)
+		if i == 0 {
+			cell = thermal.PadRight(h, analyticsNumber+2)
+		}
+		if i == len(headers)-1 {
+			cell = thermal.PadLeft(h, analyticsNumber)
+		}
+		hsb.WriteString(dim(cell))
+		if i < len(headers)-1 {
+			hsb.WriteString("  ")
+		}
+	}
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, strings.Repeat("─", rule))
+
+	formatRow := func(label string, shares []float64, total float64, style func(string) string) string {
 		cells := []string{thermal.PadRight(label, analyticsNumber+2)}
 		for _, share := range shares {
 			cells = append(cells, thermal.PadRight(fmt.Sprintf("%.0f%%", share*100), seriesWidth))
 		}
 		cells = append(cells, thermal.PadLeft(formatMixValue(total, rep.Metric), analyticsNumber))
-		sb.WriteString("  ")
+		var rsb strings.Builder
+		rsb.WriteString(" ")
 		for i, c := range cells {
 			if style != nil {
 				c = style(c)
 			}
-			sb.WriteString(c)
+			rsb.WriteString(c)
 			if i < len(cells)-1 {
-				sb.WriteString("  ")
+				rsb.WriteString("  ")
 			}
 		}
-		sb.WriteString("\n")
+		return rsb.String()
 	}
 
 	for _, bucket := range rep.Buckets {
@@ -127,10 +132,10 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		if otherLabel != "" {
 			shares = append(shares, otherTotals[bucket.Period]/total)
 		}
-		printRow(bucket.Period, shares, total, nil)
+		cardLines = append(cardLines, formatRow(bucket.Period, shares, total, nil))
 	}
 
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, strings.Repeat("─", rule))
 	totalShares := make([]float64, 0, len(shown)+1)
 	for _, s := range shown {
 		totalShares = append(totalShares, s.Share)
@@ -142,7 +147,22 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		}
 		totalShares = append(totalShares, rest)
 	}
-	printRow("Total", totalShares, rep.Total, gold)
+	cardLines = append(cardLines, formatRow("Total", totalShares, rep.Total, gold))
+
+	title := "Tool Mix"
+	if rep.By == "model" {
+		title = "Model Mix"
+	}
+
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       title,
+		RightHeader: rep.Metric + " share",
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
 
 	if rep.By == "tool" {
 		sb.WriteString("\n")
@@ -160,10 +180,10 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 
 // RenderStats prints the daily distribution summary with a text histogram.
 func RenderStats(rep thermal.StatsReport, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -345,10 +365,13 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 
 // RenderTrend prints the fitted slope and the month-end projection.
 func RenderTrend(rep thermal.TrendReport, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	green := st.Success
+	yellow := st.Warning
+	faint := st.Faint
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -361,23 +384,161 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 	}
 
 	metric := func(v float64) string { return formatMixValue(v, rep.Metric) }
+
+	dir := trendDirection(rep)
+	relPct := 0.0
+	if rep.Mean > 0 {
+		relPct = (rep.Slope / rep.Mean) * 100.0
+	}
+
+	var badge string
+	var badgeColor func(string) string
+	switch dir {
+	case "rising":
+		badge = fmt.Sprintf("RISING ↗ %s (%.1f%%/day)", signedValue(rep.Slope, rep.Metric), math.Abs(relPct))
+		badgeColor = green
+	case "falling":
+		badge = fmt.Sprintf("FALLING ↘ %s (%.1f%%/day)", signedValue(rep.Slope, rep.Metric), math.Abs(relPct))
+		badgeColor = yellow
+	default:
+		badge = "FLAT → steady state"
+		badgeColor = faint
+	}
+
+	sb.WriteString(fmt.Sprintf("  Trajectory: [%s]  Window: [%d Days · %s to %s]  Daily Mean: ~%s\n\n",
+		badgeColor(badge),
+		len(rep.Points),
+		rep.FirstDay,
+		rep.LastDay,
+		highlight(metric(rep.Mean)),
+	))
+
+	cardWidth := BoundedCardWidth(2)
+	innerWidth := cardWidth - 4
+
 	rows := [][2]string{
 		{"Range", fmt.Sprintf("%s to %s", rep.FirstDay, rep.LastDay)},
 		{"Days", fmt.Sprintf("%d", len(rep.Points))},
 		{"Mean", metric(rep.Mean)},
 		{"Slope", fmt.Sprintf("%s per day", signedValue(rep.Slope, rep.Metric))},
-		{"Direction", trendDirection(rep)},
+		{"Direction", dir},
 	}
+
+	var cardLines []string
 	for _, row := range rows {
-		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(row[0], 12)), row[1]))
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight(row[0], 12)), row[1]))
+	}
+
+	// Sparkline if we have points
+	if len(rep.Points) > 1 {
+		var maxVal float64
+		for _, pt := range rep.Points {
+			if pt.Value > maxVal {
+				maxVal = pt.Value
+			}
+		}
+		peakLabel := fmt.Sprintf("(peak: %s)", metric(maxVal))
+		availCells := innerWidth - 14 - len(peakLabel) - 2
+		if availCells > 40 {
+			availCells = 40
+		}
+		if availCells < 8 {
+			availCells = 8
+		}
+
+		var vals []float64
+		if len(rep.Points) <= availCells {
+			vals = make([]float64, len(rep.Points))
+			for i, pt := range rep.Points {
+				vals[i] = pt.Value
+			}
+		} else {
+			vals = make([]float64, availCells)
+			binSize := float64(len(rep.Points)) / float64(availCells)
+			for i := 0; i < availCells; i++ {
+				start := int(float64(i) * binSize)
+				end := int(float64(i+1) * binSize)
+				if end > len(rep.Points) {
+					end = len(rep.Points)
+				}
+				if start >= end {
+					start = end - 1
+				}
+				sum := 0.0
+				cnt := 0
+				for j := start; j < end; j++ {
+					sum += rep.Points[j].Value
+					cnt++
+				}
+				if cnt > 0 {
+					vals[i] = sum / float64(cnt)
+				}
+			}
+		}
+
+		sparkChars := []rune{' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'}
+		var sparkBuilder strings.Builder
+		for _, v := range vals {
+			if maxVal <= 0 || v <= 0 {
+				sparkBuilder.WriteRune(' ')
+				continue
+			}
+			idx := int((v / maxVal) * 7.0)
+			if idx > 7 {
+				idx = 7
+			}
+			if idx < 0 {
+				idx = 0
+			}
+			sparkBuilder.WriteRune(sparkChars[idx])
+		}
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s  %s",
+			dim(thermal.PadRight("Activity", 12)),
+			highlight(sparkBuilder.String()),
+			dim(peakLabel),
+		))
 	}
 
 	if rep.Projection != nil {
 		p := rep.Projection
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf("Projection to %s (%d days)", p.To, p.Days))))
-		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight("Expected", 12)), metric(p.Expected)))
-		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight("Band", 12)),
+		cardLines = append(cardLines, strings.Repeat("─", innerWidth))
+		cardLines = append(cardLines, " "+dim(fmt.Sprintf("Projection to %s (%d days)", p.To, p.Days)))
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Expected", 12)), metric(p.Expected)))
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Band", 12)),
 			fmt.Sprintf("%s to %s", metric(p.Low), metric(p.High))))
+	}
+
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Activity Trend",
+		RightHeader: rep.Metric,
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+		MaxWidth:    cardWidth,
+	}))
+
+	// Actionable Insights section (like audit)
+	sb.WriteString("\n  Actionable Insights:\n")
+	if dir == "rising" {
+		bullet := fmt.Sprintf("Workload velocity is accelerating by %s daily (%.1f%% growth).", signedValue(rep.Slope, rep.Metric), math.Abs(relPct))
+		if rep.Projection != nil {
+			bullet += fmt.Sprintf(" Projected volume through %s is ~%s.", rep.Projection.To, metric(rep.Projection.Expected))
+		}
+		for _, line := range WrapBullet("  • ", bullet, cardWidth) {
+			sb.WriteString(line + "\n")
+		}
+	} else if dir == "falling" {
+		bullet := fmt.Sprintf("Workload velocity is contracting by %s daily (%.1f%% decline). Activity is stabilizing.", signedValue(rep.Slope, rep.Metric), math.Abs(relPct))
+		for _, line := range WrapBullet("  • ", bullet, cardWidth) {
+			sb.WriteString(line + "\n")
+		}
+	} else {
+		bullet := fmt.Sprintf("Workload is holding steady at ~%s daily with consistent utilization.", metric(rep.Mean))
+		for _, line := range WrapBullet("  • ", bullet, cardWidth) {
+			sb.WriteString(line + "\n")
+		}
 	}
 
 	if rep.Estimated {

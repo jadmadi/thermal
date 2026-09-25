@@ -5,10 +5,10 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -19,11 +19,11 @@ func medals(rank int, colors bool) string {
 	}
 	switch rank {
 	case 1:
-		return "\033[1;33m" + prefix + reset
+		return theme.Secondary.SprintBold(colors, prefix)
 	case 2:
-		return "\033[37m" + prefix + reset
+		return theme.Text.Sprint(colors, prefix)
 	case 3:
-		return "\033[33m" + prefix + reset
+		return theme.Warning.Sprint(colors, prefix)
 	default:
 		return prefix
 	}
@@ -46,7 +46,7 @@ func streakBar(streak int, maxStreak int, colors bool) string {
 	for i := 0; i < width; i++ {
 		if i < filled {
 			if colors {
-				bar += "\033[38;5;40m" + "█" + reset
+				bar += theme.Primary.Sprint(colors, "█")
 			} else {
 				bar += "█"
 			}
@@ -77,12 +77,12 @@ func fireEmoji(streak int) string {
 // adds a line stating the recorded cost total, because the Cost column only
 // ever shows what a tool recorded and a reader should not have to add it up.
 func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
-	green := func(s string) string { return ColorCode(colors, "38;5;40", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	gold := st.Gold
+	green := st.Primary // Streaks glow in Mimocode Blaze Amber
+	dim := st.Dim
 
 	tokenResults := make([]thermal.ToolResult, 0, len(results))
 	activityResults := make([]thermal.ToolResult, 0, len(results))
@@ -146,11 +146,12 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	sb.WriteString(fmt.Sprintf("  %s  %s\n\n", highlight("THERMAL"), dim("— Don't break the streak.")))
 
 	if len(tokenResults) > 0 {
-		sb.WriteString(fmt.Sprintf("  %s\n", highlight("Token Warriors")))
-		sb.WriteString(fmt.Sprintf("   %s  %s %s  %s  %s   %s  %s\n",
-			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6), thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), thermal.PadRight("Tokens", 10), "Cost",
+		var tokenLines []string
+		tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s %s  %s  %s   %s  %s",
+			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6),
+			thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), thermal.PadRight("Tokens", 10), "Cost",
 		))
-		sb.WriteString(fmt.Sprintf("   %s\n", dim(strings.Repeat("─", 65))))
+		tokenLines = append(tokenLines, strings.Repeat("─", 65))
 
 		for i, r := range tokenResults {
 			rank := i + 1
@@ -186,19 +187,30 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 				}
 			}
 
-			sb.WriteString(fmt.Sprintf("  %s %s %s  %s  %s   %s  %s\n",
+			tokenLines = append(tokenLines, fmt.Sprintf("%s %s %s  %s  %s   %s  %s",
 				medal, nameStr, streakStr, bestStr, activeStr, activityStr, costStr,
 			))
 		}
+
+		sb.WriteString(RenderCard(CardOptions{
+			Title:       "Token Warriors",
+			RightHeader: "tokens & spend",
+			Lines:       tokenLines,
+			Indent:      2,
+			Colors:      colors,
+			TitleColor:  theme.Primary,
+			BorderColor: theme.Border,
+		}))
 		sb.WriteString("\n")
 	}
 
 	if len(activityResults) > 0 {
-		sb.WriteString(fmt.Sprintf("  %s\n", highlight("Activity Hunters")))
-		sb.WriteString(fmt.Sprintf("   %s  %s %s  %s  %s   %s\n",
-			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6), thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), "Activity",
+		var actLines []string
+		actLines = append(actLines, fmt.Sprintf(" %s  %s %s  %s  %s   %s",
+			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6),
+			thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), "Activity",
 		))
-		sb.WriteString(fmt.Sprintf("   %s\n", dim(strings.Repeat("─", 55))))
+		actLines = append(actLines, strings.Repeat("─", 55))
 
 		for i, r := range activityResults {
 			rank := i + 1
@@ -233,10 +245,20 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			}
 			activityStr := fmt.Sprintf("%s %s", thermal.CompactNumber(r.TotalActivity), actLabel)
 
-			sb.WriteString(fmt.Sprintf("  %s %s %s  %s  %s   %s\n",
+			actLines = append(actLines, fmt.Sprintf("%s %s %s  %s  %s   %s",
 				medal, nameStr, streakStr, bestStr, activeStr, activityStr,
 			))
 		}
+
+		sb.WriteString(RenderCard(CardOptions{
+			Title:       "Activity Hunters",
+			RightHeader: "messages & steps",
+			Lines:       actLines,
+			Indent:      2,
+			Colors:      colors,
+			TitleColor:  theme.Secondary,
+			BorderColor: theme.Border,
+		}))
 		sb.WriteString("\n")
 	}
 
