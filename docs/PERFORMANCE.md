@@ -13,6 +13,7 @@ Thermal operates under a strict **Zero-Allocation, Sub-10ms Cached Invocation** 
 | **Warm Cached CLI Latency (p50)** | **8ms - 9ms** | `<10ms` | **PASS (Sub-10ms met)** |
 | **Cold CLI Ingestion (p50)** | **72ms - 73ms** | `<100ms` | **PASS** |
 | **Devin Warm Cache Hit** | **755 µs/op** | `<2ms` | **PASS (Sub-1ms)** |
+| **Codex Warm Cache Hit** | **568 µs/op** | `<1ms` | **PASS (Sub-millisecond)** |
 | **Live Monitor CPU (100ms poll)** | **0.9% CPU** | `<5% CPU` | **PASS** |
 | **Live Monitor CPU (1s poll)** | **0.7% CPU** | `<2% CPU` | **PASS** |
 | **Model Name Canonicalization** | **21 ns/op (0 B/op)** | `0 allocs` | **PASS (Zero-Alloc)** |
@@ -77,6 +78,7 @@ Run via `go test ./internal/loaders -run '^$' -bench 'Benchmark' -benchmem -benc
 | `BenchmarkDevin_Warm` | **759** | **755,694 ns/op** | **25,663 B/op** | **766** | **Sub-millisecond cache hit (<0.76ms)** |
 | `BenchmarkDevin_AppendDelta` | 8 | 62,778,731 ns/op | 88,161 B/op | 3,718 | Incremental append scan |
 | `BenchmarkCodex_Cold` | 644 | 1,066,804 ns/op | 1,435,490 B/op | 1,764 | SQLite + rollout JSONL parsing |
+| `BenchmarkCodex_Warm` | **1,970** | **568,462 ns/op** | **53,938 B/op** | **932** | **Sub-millisecond rollout cache hit (96.4% alloc reduction)** |
 | `BenchmarkOpenCode_Scan` | 441 | 1,336,883 ns/op | 22,189 B/op | 347 | SQLite `session_v2` scan |
 | `BenchmarkClaude_Scan` | 747 | 804,743 ns/op | 3,375,794 B/op | 810 | Multi-file directory scan |
 | `BenchmarkModelName_Canonical` | 27,239,860 | **21.11 ns/op** | **0 B/op** | **0** | **Zero-allocation hot-path** |
@@ -102,9 +104,9 @@ Both interval modes consume under 1% of a single core, well within the target bu
 
 Based on the measured execution profile, subsequent caching efforts are prioritized by empirical cost:
 
-1. **Codex Rollout Transcript Caching (`Goal #69: codex-incremental-rollout-cache`)**:
-   - *Hotspot*: Codex currently inspects rollout JSONL files on each run. In developer workspaces with hundreds of sessions, JSONL re-reading consumes ~1.4 MB/op.
-   - *Target*: Cache parsed rollout tokens keyed by file size and modification timestamp to achieve sub-millisecond warm scans.
+1. **Codex Rollout Transcript Caching (`Goal #69: codex-incremental-rollout-cache`) [COMPLETED]**:
+   - *Delivered*: Incremental rollout transcript caching via `internal/loaders/codexcache.go`.
+   - *Result*: Cut allocations by 96.4% (from 1.44 MB/op down to 53.9 KB/op) and reduced warm latency to **568 µs/op** (46% faster).
 2. **OpenCode / MiMoCode Incremental State Tracking**:
    - *Hotspot*: SQLite queries scan the entire `session_v2` table on every invocation.
    - *Target*: Persist the maximum seen `time_updated` timestamp and delta-merge subsequent sessions.
