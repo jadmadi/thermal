@@ -595,6 +595,7 @@ func CollectTelemetry(opts Options) (*TelemetryData, error) {
 
 // CollectTelemetryWithDeps collects telemetry with optional custom pricer and loader injections.
 func CollectTelemetryWithDeps(opts Options, pricer thermal.Pricer, customLoader func(t thermal.Tool, info loaders.ToolInfo, path string) (loaders.ToolData, error)) (*TelemetryData, error) {
+	isCustomLoader := customLoader != nil
 	if customLoader == nil {
 		customLoader = loaders.LoadToolData
 	}
@@ -634,23 +635,27 @@ func CollectTelemetryWithDeps(opts Options, pricer thermal.Pricer, customLoader 
 		}
 
 		var hasData bool
-		switch t {
-		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
-			if info.DBPath != "" {
-				if _, err := os.Stat(info.DBPath); err == nil {
-					hasData = true
-				}
-			}
-		default:
-			if info.DataDir != "" {
-				if _, err := os.Stat(info.DataDir); err == nil {
-					hasData = true
-				}
-			}
-		}
-
-		if opts.DBPath != "" && len(toolsToLoad) == 1 {
+		if isCustomLoader {
 			hasData = true
+		} else {
+			switch t {
+			case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
+				if info.DBPath != "" {
+					if _, err := os.Stat(info.DBPath); err == nil {
+						hasData = true
+					}
+				}
+			default:
+				if info.DataDir != "" {
+					if _, err := os.Stat(info.DataDir); err == nil {
+						hasData = true
+					}
+				}
+			}
+
+			if opts.DBPath != "" && len(toolsToLoad) == 1 {
+				hasData = true
+			}
 		}
 
 		if !hasData {
@@ -667,6 +672,10 @@ func CollectTelemetryWithDeps(opts Options, pricer thermal.Pricer, customLoader 
 			if len(toolsToLoad) == 1 {
 				return nil, err
 			}
+			continue
+		}
+
+		if isCustomLoader && data.Summary.LifetimeTokens == 0 && data.Summary.Cost == 0 && len(data.Daily) == 0 && len(data.Projects) == 0 {
 			continue
 		}
 
