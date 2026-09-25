@@ -62,7 +62,7 @@ func TestValidateReportFlags(t *testing.T) {
 		{"metric on leaderboard", with(base, func(o *thermal.Options) { o.Metric = "cost" }), true},
 		{"grain on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Grain = "month" }), true},
 		{"replay ok", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Against = "claude-sonnet" }), false},
-		{"replay compare ok", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Compare = "claude-pro,cursor-pro" }), false},
+		{"replay compare ok", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Compare = "claude-pro,agy-pro" }), false},
 		{"replay bad sort", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Sort = "tokens" }), true},
 		{"replay bad chart", with(base, func(o *thermal.Options) { o.Report = "replay"; o.Chart = true }), true},
 		{"against on weekly", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Against = "claude-sonnet" }), true},
@@ -155,12 +155,24 @@ func TestEmitDeprecationWarning(t *testing.T) {
 		t.Errorf("expected plain warning %q, got %q", expectedPlain, plainBuf.String())
 	}
 
-	// 2. With noColor = false and non-file writer: ANSI yellow escape sequences present
+	// 2. With noColor = false, CLICOLOR_FORCE=1, NO_COLOR="": ANSI yellow escape sequences present
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR_FORCE", "1")
 	var colorBuf bytes.Buffer
 	emitDeprecationWarningTo(&colorBuf, "nous", "hermes", "0.14.0", "deprecated-tool-nous", false)
 	expectedColor := "\033[33mthermal: warning:\033[0m nous is deprecated and will be removed in v0.14.0; use hermes (see docs/MIGRATION.md#deprecated-tool-nous)\n"
 	if colorBuf.String() != expectedColor {
 		t.Errorf("expected color warning %q, got %q", expectedColor, colorBuf.String())
+	}
+
+	// 3. With NO_COLOR set in environment, color is disabled even when noColor is false
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("CLICOLOR_FORCE", "")
+	var noColorEnvBuf bytes.Buffer
+	emitDeprecationWarningTo(&noColorEnvBuf, "nous", "hermes", "0.14.0", "deprecated-tool-nous", false)
+	expectedNoColorEnv := "thermal: warning: nous is deprecated and will be removed in v0.14.0; use hermes (see docs/MIGRATION.md#deprecated-tool-nous)\n"
+	if noColorEnvBuf.String() != expectedNoColorEnv {
+		t.Errorf("expected plain warning under NO_COLOR=1 %q, got %q", expectedNoColorEnv, noColorEnvBuf.String())
 	}
 }
 

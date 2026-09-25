@@ -79,14 +79,29 @@ func runSim(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
 	cmd := exec.Command(testThermalBin, args...)
 
-	// Always filter and explicitly set HOME so subprocesses see testFixtureHome
+	// Always filter and explicitly isolate environment so subprocesses see testFixtureHome
 	var env []string
 	for _, e := range os.Environ() {
-		if !strings.HasPrefix(e, "HOME=") {
+		if !strings.HasPrefix(e, "HOME=") &&
+			!strings.HasPrefix(e, "GROK_HOME=") &&
+			!strings.HasPrefix(e, "DSH_HOME=") &&
+			!strings.HasPrefix(e, "HERMES_HOME=") &&
+			!strings.HasPrefix(e, "CODEX_HOME=") &&
+			!strings.HasPrefix(e, "OPENCODE_HOME=") &&
+			!strings.HasPrefix(e, "NO_COLOR=") &&
+			!strings.HasPrefix(e, "CLICOLOR_FORCE=") {
 			env = append(env, e)
 		}
 	}
-	cmd.Env = append(env, "HOME="+testFixtureHome)
+	env = append(env,
+		"HOME="+testFixtureHome,
+		"GROK_HOME="+filepath.Join(testFixtureHome, ".grok"),
+		"DSH_HOME="+filepath.Join(testFixtureHome, ".dsh"),
+		"HERMES_HOME="+filepath.Join(testFixtureHome, ".hermes"),
+		"NO_COLOR=",
+		"CLICOLOR_FORCE=0",
+	)
+	cmd.Env = env
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
