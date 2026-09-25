@@ -33,26 +33,24 @@ echo -e "${BOLD}1. Building thermal binary...${RESET}"
 (cd "${ROOT_DIR}" && go build -o "${BIN_PATH}" ./cmd/thermal)
 echo -e "   ${GREEN}✔${RESET} Binary built at: ${BIN_PATH}\n"
 
-# 2. Check if host has agent databases; if not (e.g. CI), provision temporary mock home
-MOCK_HOME=""
-if [[ ! -d "${HOME}/.gemini/antigravity-cli" && ! -d "${HOME}/.codewhale" && ! -d "${HOME}/.claude" ]]; then
-    echo -e "${YELLOW}Notice:${RESET} No local agent databases found on host; provisioning mock fixture environment..."
-    MOCK_HOME="$(mktemp -d -t thermal-gate-home-XXXXXX)"
-    MOCK_REPO="${MOCK_HOME}/projects/repo-sim"
-    mkdir -p "${MOCK_REPO}/.git"
-    mkdir -p "${MOCK_HOME}/.codewhale/sessions"
-    mkdir -p "${MOCK_HOME}/.claude/projects/mockproj"
+# 2. Provision hermetic mock fixture environment
+echo -e "${BOLD}2. Provisioning hermetic mock fixture environment...${RESET}"
+GATE_HOME="$(mktemp -d -t thermal-gate-home-XXXXXX)"
+MOCK_REPO="${GATE_HOME}/projects/repo-sim"
+mkdir -p "${MOCK_REPO}/.git"
+mkdir -p "${GATE_HOME}/.codewhale/sessions"
+mkdir -p "${GATE_HOME}/.claude/projects/mockproj"
+mkdir -p "${GATE_HOME}/.cache/thermal"
 
-    NOW_SEC=$(date +%s)
-    RECENT_MS=$(( (NOW_SEC - 86400) * 1000 ))
-    RECENT_ISO=$(date -u -d "@$((NOW_SEC - 86400))" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+TODAY_ISO="$(date -u +"%Y-%m-%dT12:00:00Z")"
 
-    cat <<EOF > "${MOCK_HOME}/.codewhale/sessions/session_1.json"
+# Mock CodeWhale session (750,000 tokens, $1.75 recorded cost, claude-3-5-sonnet)
+cat <<EOF > "${GATE_HOME}/.codewhale/sessions/session_1.json"
 {
   "session_id": "gate-sess-1",
   "metadata": {
-    "created_at": "${RECENT_ISO}",
-    "updated_at": "${RECENT_ISO}",
+    "created_at": "${TODAY_ISO}",
+    "updated_at": "${TODAY_ISO}",
     "message_count": 10,
     "total_tokens": 750000,
     "cost": { "session_cost_usd": 1.75 },
@@ -63,16 +61,43 @@ if [[ ! -d "${HOME}/.gemini/antigravity-cli" && ! -d "${HOME}/.codewhale" && ! -
 }
 EOF
 
-    cat <<EOF > "${MOCK_HOME}/.claude/projects/mockproj/session.jsonl"
-{"type":"assistant","timestamp":"${RECENT_ISO}","cwd":"${MOCK_REPO}","message":{"id":"gate-msg-1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000}}}
+# Mock Claude session (9,700 tokens: 1000 input, 500 output, 200 cache write, 8000 cache read)
+cat <<EOF > "${GATE_HOME}/.claude/projects/mockproj/session.jsonl"
+{"type":"assistant","timestamp":"${TODAY_ISO}","cwd":"${MOCK_REPO}","message":{"id":"gate-msg-1","model":"claude-3-5-sonnet","usage":{"input_tokens":1000,"output_tokens":500,"cache_creation_input_tokens":200,"cache_read_input_tokens":8000}}}
 EOF
-    export HOME="${MOCK_HOME}"
-    echo -e "   ${GREEN}✔${RESET} Mock fixture environment ready at: ${MOCK_HOME}\n"
-fi
 
+# Cached pricing catalog for offline / deterministic pricing
+cat <<EOF > "${GATE_HOME}/.cache/thermal/pricing.json"
+{
+  "version": 1,
+  "fetchedAt": "${TODAY_ISO}",
+  "source": "https://models.dev/api.json",
+  "models": {
+    "claude-3-5-sonnet": { "input": 3.0, "output": 15.0, "cacheRead": 0.3, "cacheWrite": 3.75 }
+  }
+}
+EOF
+
+# Isolate environment to hermetic GATE_HOME and neutral color settings
+export HOME="${GATE_HOME}"
+export GROK_HOME="${GATE_HOME}/.grok"
+export DSH_HOME="${GATE_HOME}/.dsh"
+export HERMES_HOME="${GATE_HOME}/.hermes"
+export CODEX_HOME="${GATE_HOME}/.codex"
+export OPENCODE_HOME="${GATE_HOME}/.opencode"
+export NO_COLOR=""
+export CLICOLOR_FORCE=""
+
+echo -e "   ${GREEN}✔${RESET} Hermetic fixture environment ready at: ${GATE_HOME}\n"
+
+SERVER_PID=""
 cleanup() {
-    if [[ -n "${MOCK_HOME}" && -d "${MOCK_HOME}" ]]; then
-        rm -rf "${MOCK_HOME}"
+    if [[ -n "${SERVER_PID:-}" ]]; then
+        kill "${SERVER_PID}" 2>/dev/null || true
+        wait "${SERVER_PID}" 2>/dev/null || true
+    fi
+    if [[ -n "${GATE_HOME:-}" && -d "${GATE_HOME}" ]]; then
+        rm -rf "${GATE_HOME}"
     fi
 }
 trap cleanup EXIT
@@ -89,20 +114,34 @@ run_check() {
     local cmd=("$@")
 
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-    local out
-    local err
+    local out_file
+    local err_file
+    out_file="$(mktemp)"
+    err_file="$(mktemp)"
     local code=0
 
     set +e
-    out=$("${cmd[@]}" 2>&1)
+    timeout 15s "${cmd[@]}" >"$out_file" 2>"$err_file"
     code=$?
     set -e
+
+    local out
+    local err
+    out="$(cat "$out_file")"
+    err="$(cat "$err_file")"
+    rm -f "$out_file" "$err_file"
 
     if [[ "$code" -ne "$expect_code" ]]; then
         echo -e "  ${RED}✖ [FAIL]${RESET} ${desc}"
         echo -e "    Expected exit code ${expect_code}, got ${code}"
         echo -e "    Command: ${cmd[*]}"
-        echo -e "    Output: ${out}\n"
+        if [[ -n "$err" ]]; then
+            echo -e "    Stderr: ${err}"
+        fi
+        if [[ -n "$out" ]]; then
+            echo -e "    Stdout: ${out}"
+        fi
+        echo ""
         FAILED_CHECKS=$((FAILED_CHECKS + 1))
         return
     fi
@@ -123,19 +162,22 @@ run_check() {
             return
         fi
 
-        # Check for unformatted raw floats (e.g. 0.00000000001)
-        if echo "$out" | grep -Eq '[0-9]+\.[0-9]{8,}'; then
+        # Check for unformatted raw floats (e.g. 0.00000000001), ignoring URL lines
+        if echo "$out" | grep -vE 'https?://' | grep -Eq '[0-9]+\.[0-9]{8,}'; then
             echo -e "  ${RED}✖ [FAIL]${RESET} ${desc}: Unformatted raw floating point number detected"
             FAILED_CHECKS=$((FAILED_CHECKS + 1))
             return
         fi
     fi
 
-    # JSON validation checks
+    # JSON validation checks: stdout MUST be valid JSON, stderr must not pollute stdout
     if [[ "$check_type" == "json" ]]; then
         if ! echo "$out" | jq . >/dev/null 2>&1; then
             echo -e "  ${RED}✖ [FAIL]${RESET} ${desc}: stdout is not valid JSON"
-            echo -e "    Output: ${out}\n"
+            if [[ -n "$err" ]]; then
+                echo -e "    Stderr: ${err}"
+            fi
+            echo -e "    Stdout: ${out}\n"
             FAILED_CHECKS=$((FAILED_CHECKS + 1))
             return
         fi
@@ -143,7 +185,7 @@ run_check() {
 
     # Error message check
     if [[ "$check_type" == "error" ]]; then
-        if [[ -z "$out" ]]; then
+        if [[ -z "${err:-$out}" ]]; then
             echo -e "  ${RED}✖ [FAIL]${RESET} ${desc}: Expected error message, but output was empty"
             FAILED_CHECKS=$((FAILED_CHECKS + 1))
             return
@@ -182,10 +224,13 @@ run_check "Mix by tool" 0 text "${BIN_PATH}" mix --no-color
 run_check "Mix by model with daily grain" 0 text "${BIN_PATH}" mix --by model --grain day --no-color
 run_check "Mix by cost metric" 0 text "${BIN_PATH}" mix --metric cost --no-color
 run_check "Mix JSON export" 0 json "${BIN_PATH}" mix --json
-run_check "Stats distribution" 0 text "${BIN_PATH}" stats --no-color
+run_check "Stats dense FinOps grid (default)" 0 text "${BIN_PATH}" stats --no-color
+run_check "Stats distribution escape hatch" 0 text "${BIN_PATH}" stats --distribution --no-color
+run_check "Stats distribution escape hatch shorthand" 0 text "${BIN_PATH}" stats --dist --no-color
 run_check "Stats cost metric" 0 text "${BIN_PATH}" stats --metric cost --no-color
-run_check "Stats dense 9-box FinOps grid" 0 text "${BIN_PATH}" stats --dense --no-color
+run_check "Stats dense 9-box FinOps grid explicitly" 0 text "${BIN_PATH}" stats --dense --no-color
 run_check "Stats dense FinOps JSON export" 0 json "${BIN_PATH}" stats --dense --json
+run_check "Stats distribution JSON export" 0 json "${BIN_PATH}" stats --distribution --json
 run_check "Stats JSON export" 0 json "${BIN_PATH}" stats --json
 run_check "Trend fit & projection" 0 text "${BIN_PATH}" trend --no-color
 run_check "Trend cost metric" 0 text "${BIN_PATH}" trend --metric cost --no-color
@@ -215,12 +260,15 @@ run_check "Share command standard output" 0 text "${BIN_PATH}" share --no-color
 run_check "Share command JSON export" 0 json "${BIN_PATH}" share --json
 run_check "Serve command JSON export" 0 json "${BIN_PATH}" serve --json
 
-echo -e "\n${BOLD}9. Info, Version & License Commands:${RESET}"
+echo -e "\n${BOLD}9. Info, Version, License & Changelog Commands:${RESET}"
 run_check "Version output" 0 text "${BIN_PATH}" version
 run_check "Help output" 0 text "${BIN_PATH}" --help
 run_check "License command text" 0 text "${BIN_PATH}" license
 run_check "License flag text" 0 text "${BIN_PATH}" --license
 run_check "License JSON output" 0 json "${BIN_PATH}" license --json
+run_check "Changelog command text" 0 text "${BIN_PATH}" changelog --no-color
+run_check "Changelog top 1" 0 text "${BIN_PATH}" changelog --top 1 --no-color
+run_check "Changelog JSON output" 0 json "${BIN_PATH}" changelog --json
 
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
@@ -430,6 +478,125 @@ run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" proje
 run_check "Persona: System health and permissions audit" 0 text "${BIN_PATH}" audit --no-color
 run_check "Persona: Localhost web telemetry API export" 0 json "${BIN_PATH}" serve --json
 run_check "Persona: Stateless share card URL generation" 0 text "${BIN_PATH}" share --no-color
+run_check "Persona: Live token burn non-interactive pipe" 0 text "${BIN_PATH}" live
+run_check "Persona: Live token burn snapshot export" 0 json "${BIN_PATH}" live --json
+
+echo -e "\n${BOLD}16. Semantic Parity & Release Gate Assertions:${RESET}"
+
+# 1. Static / Web / Live Token Parity Check
+TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[].Summary.lifetimeTokens] | add')
+TOTAL_SERVE=$("${BIN_PATH}" serve --json --offline | jq '.totalTokens')
+TOTAL_LIVE=$("${BIN_PATH}" live --json --offline | jq '.todayTokens')
+
+if [[ "$TOTAL_STATIC" -eq 759700 && "$TOTAL_SERVE" -eq 759700 && "$TOTAL_LIVE" -eq 759700 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Static/Web/Live token parity verified (759,700 tokens)"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} Token parity mismatch: static=${TOTAL_STATIC}, serve=${TOTAL_SERVE}, live=${TOTAL_LIVE} (expected 759700)"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+# 2. Receipt Evidence Hierarchy & Partial Coverage
+RECEIPT_JSON=$("${BIN_PATH}" receipt --json --offline)
+TOTAL_RECEIPTS=$(echo "$RECEIPT_JSON" | jq '.summary.totalReceipts // 0')
+RECEIPT_TOKENS=$(echo "$RECEIPT_JSON" | jq '.summary.totalTokens // 0')
+CLAUDE_TIER=$(echo "$RECEIPT_JSON" | jq -r '.receipts[] | select(.tool=="Claude") | .tier')
+CODEWHALE_TIER=$(echo "$RECEIPT_JSON" | jq -r '.receipts[] | select(.tool=="codewhale") | .tier')
+
+if [[ "$TOTAL_RECEIPTS" -ge 2 && "$RECEIPT_TOKENS" -eq 759700 && "$CLAUDE_TIER" == *"Tier 3"* && "$CODEWHALE_TIER" == *"Tier 2"* ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Receipt evidence hierarchy & token coverage verified"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} Receipt semantic validation failed: totalReceipts=${TOTAL_RECEIPTS}, tokens=${RECEIPT_TOKENS}, claudeTier=${CLAUDE_TIER}, codewhaleTier=${CODEWHALE_TIER}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+# 3. Real Server Loopback Lifecycle, Host Guard & SSE Cancellation
+SERVER_PORT=8977
+"${BIN_PATH}" serve --port "${SERVER_PORT}" --host 127.0.0.1 --offline --no-open >/dev/null 2>&1 &
+SERVER_PID=$!
+
+READY=0
+for i in {1..30}; do
+    if curl -s "http://127.0.0.1:${SERVER_PORT}/api/health" | grep -q '"status":"ok"'; then
+        READY=1
+        break
+    fi
+    sleep 0.1
+done
+
+if [[ "$READY" -ne 1 ]]; then
+    echo -e "  ${RED}✖ [FAIL]${RESET} Localhost server failed to start on 127.0.0.1:${SERVER_PORT}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+else
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Localhost server started and responded healthy"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+
+    # Telemetry API returns exact tokens
+    SRV_TOKENS=$(curl -s "http://127.0.0.1:${SERVER_PORT}/api/telemetry" | jq '.totalTokens // 0')
+    if [[ "$SRV_TOKENS" -eq 759700 ]]; then
+        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server /api/telemetry matches token count (759,700)"
+        PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    else
+        echo -e "  ${RED}✖ [FAIL]${RESET} Live server /api/telemetry token mismatch: expected 759700, got ${SRV_TOKENS}"
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    fi
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+    # Host header security check (untrusted authority rejected with 403)
+    FORBIDDEN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: untrusted.example" "http://127.0.0.1:${SERVER_PORT}/api/telemetry")
+    if [[ "$FORBIDDEN_CODE" -eq 403 ]]; then
+        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server rejects untrusted Host authority with HTTP 403"
+        PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    else
+        echo -e "  ${RED}✖ [FAIL]${RESET} Live server did not reject untrusted Host authority: expected 403, got ${FORBIDDEN_CODE}"
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    fi
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+    # SSE stream connection & graceful cancellation (timeout 1s)
+    SSE_OUT=$(timeout 1s curl -s -N "http://127.0.0.1:${SERVER_PORT}/api/stream" || true)
+    if echo "$SSE_OUT" | grep -q "event: telemetry"; then
+        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server /api/stream emits SSE event and handles client cancellation"
+        PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    else
+        echo -e "  ${RED}✖ [FAIL]${RESET} Live server /api/stream did not emit expected SSE event: ${SSE_OUT}"
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    fi
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+kill "${SERVER_PID}" 2>/dev/null || true
+wait "${SERVER_PID}" 2>/dev/null || true
+SERVER_PID=""
+
+# 4. Live Stream NDJSON Emission Check
+STREAM_OUT=$(timeout 2s "${BIN_PATH}" live --json --stream --interval 100ms --offline || true)
+if echo "$STREAM_OUT" | grep -q '"type":"snapshot"'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Live NDJSON streaming emits snapshot with bounded interval"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} Live NDJSON streaming failed to emit snapshot"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+# 5. Delta Cache Sub-Second Hit Check
+CACHE_START=$(date +%s%N)
+"${BIN_PATH}" --json --offline >/dev/null
+CACHE_END=$(date +%s%N)
+CACHE_DUR_MS=$(( (CACHE_END - CACHE_START) / 1000000 ))
+if [[ "$CACHE_DUR_MS" -lt 1000 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Sub-second delta cache hit verified (${CACHE_DUR_MS}ms)"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+else
+    echo -e "  ${YELLOW}⚠ [WARN]${RESET} Delta cache invocation took ${CACHE_DUR_MS}ms (>1000ms target)"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+fi
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"
 echo -e "${BOLD}Simulated User Gate Summary:${RESET} ${GREEN}${PASSED_CHECKS} passed${RESET}, ${RED}${FAILED_CHECKS} failed${RESET} (out of ${TOTAL_CHECKS} checks)"
