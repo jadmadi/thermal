@@ -1,0 +1,311 @@
+{
+  "$schema": "https://jadmadi.net/schemas/project-manifest.v1.json",
+  "name": "Thermal",
+  "slug": "thermal",
+  "tagline": "Contribution Heatmap for AI Coding Tools",
+  "description": "Terminal heatmap, streaks, tokens, and cost across 14 AI coding environments. Thermal reads the session data your agents already wrote. One static binary, zero config.",
+  "version": "0.14.0",
+  "license": {
+    "type": "Dual-licensed",
+    "community": "AGPL-3.0",
+    "commercial": "Commercial Enterprise License"
+  },
+  "links": {
+    "repository": "https://github.com/jadmadi/thermal",
+    "releases": "https://github.com/jadmadi/thermal/releases",
+    "docs": "https://jadmadi.net/projects/thermal/"
+  },
+  "install": {
+    "curl": "curl -fsSL https://jadmadi.net/thermal/install.sh | sh",
+    "brew": "brew install jadmadi/tap/thermal",
+    "go": "go install github.com/jadmadi/thermal/cmd/thermal@latest"
+  },
+  "stats": {
+    "supportedToolsCount": 14,
+    "binarySize": "20MB",
+    "configRequired": "Zero config"
+  },
+  "tools": [
+    {
+      "name": "Devin",
+      "slug": "devin",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Cache Read/Write"
+      ],
+      "attribution": "Working directory",
+      "icon": "devin.webp"
+    },
+    {
+      "name": "OpenCode",
+      "slug": "opencode",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read/Write",
+        "Cost"
+      ],
+      "attribution": "Session directory / git worktree",
+      "icon": "opencode.webp"
+    },
+    {
+      "name": "MiMoCode",
+      "slug": "mimocode",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read/Write",
+        "Cost"
+      ],
+      "attribution": "Session directory",
+      "icon": "mimocode.webp"
+    },
+    {
+      "name": "Codex",
+      "slug": "codex",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read"
+      ],
+      "attribution": "Workspace cwd",
+      "icon": "codex.webp"
+    },
+    {
+      "name": "codewhale",
+      "slug": "codewhale",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Total tokens",
+        "Cost"
+      ],
+      "attribution": "Workspace cwd",
+      "icon": "codewhale.webp"
+    },
+    {
+      "name": "ZCode",
+      "slug": "zcode",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read"
+      ],
+      "attribution": "Session directory",
+      "icon": "zcode.webp"
+    },
+    {
+      "name": "Grok",
+      "slug": "grok",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read",
+        "Cost"
+      ],
+      "attribution": "Git root / session directory",
+      "icon": "grok.webp"
+    },
+    {
+      "name": "Claude",
+      "slug": "claude",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Cache Read/Write"
+      ],
+      "attribution": "Per-line cwd / project root",
+      "icon": "claude.webp"
+    },
+    {
+      "name": "DeepSeek (DSH)",
+      "slug": "dsh",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Cache Read/Write"
+      ],
+      "attribution": "Session cwd",
+      "icon": "dsh.webp"
+    },
+    {
+      "name": "Nous Hermes",
+      "slug": "hermes",
+      "category": "Token Warrior",
+      "telemetry": [
+        "Input",
+        "Output",
+        "Reasoning",
+        "Cache Read/Write",
+        "Cost"
+      ],
+      "attribution": "Session cwd",
+      "icon": "hermes.webp"
+    },
+    {
+      "name": "command-code",
+      "slug": "command-code",
+      "category": "Activity Hunter",
+      "telemetry": [
+        "Actions",
+        "Messages"
+      ],
+      "attribution": "Project workspace",
+      "icon": "command-code.webp"
+    },
+    {
+      "name": "Agy",
+      "slug": "agy",
+      "category": "Activity Hunter",
+      "telemetry": [
+        "Steps",
+        "Turns"
+      ],
+      "attribution": "Workspace URIs / conversation summaries",
+      "icon": "agy.webp"
+    },
+    {
+      "name": "Muse",
+      "slug": "muse",
+      "category": "Activity Hunter",
+      "telemetry": [
+        "Sessions",
+        "Prompts"
+      ],
+      "attribution": "Workspace directory",
+      "icon": "muse.webp"
+    },
+    {
+      "name": "Droid",
+      "slug": "droid",
+      "category": "Activity Hunter",
+      "telemetry": [
+        "Messages",
+        "Actions"
+      ],
+      "attribution": "Workspace directory",
+      "icon": "droid.webp"
+    }
+  ],
+  "commands": [
+    {
+      "command": "thermal",
+      "description": "Render contribution leaderboard across all discovered AI coding tools",
+      "category": "core",
+      "shot": "shot-leaderboard.webp"
+    },
+    {
+      "command": "thermal dashboard",
+      "description": "Multi-view interactive Terminal User Interface (TUI)",
+      "category": "tui",
+      "shot": "shot-dashboard.webp"
+    },
+    {
+      "command": "thermal projects",
+      "description": "Breakdown usage by project and repository",
+      "category": "analytics",
+      "shot": "shot-projects.webp"
+    },
+    {
+      "command": "thermal weekly",
+      "description": "Weekly token and cost aggregations",
+      "category": "reports",
+      "shot": "shot-weekly.webp"
+    },
+    {
+      "command": "thermal daily",
+      "description": "Daily token volume, model breakdown, and spend history",
+      "category": "reports"
+    },
+    {
+      "command": "thermal monthly",
+      "description": "Monthly token trends and cost totals",
+      "category": "reports"
+    },
+    {
+      "command": "thermal models",
+      "description": "Rank models by token volume and estimated cost across all tools",
+      "category": "analytics"
+    },
+    {
+      "command": "thermal stats",
+      "description": "Interactive 9-box FinOps grid, cache efficiency, and volume distributions",
+      "category": "analytics"
+    },
+    {
+      "command": "thermal mix",
+      "description": "Tool and model market-share evolution, switching frequency, and Shannon entropy",
+      "category": "analytics"
+    },
+    {
+      "command": "thermal trend",
+      "description": "Ordinary least squares linear regression and forward consumption projection",
+      "category": "analytics"
+    },
+    {
+      "command": "thermal replay --against \"Claude Pro\"",
+      "description": "Replay historical workload against subscription caps",
+      "category": "cost"
+    },
+    {
+      "command": "thermal yield",
+      "description": "Token efficiency rating per net line of code produced from git diffs",
+      "category": "analytics"
+    },
+    {
+      "command": "thermal receipt",
+      "description": "Verifiable work outcome receipts from test runner and linter runs",
+      "category": "verification"
+    },
+    {
+      "command": "thermal live",
+      "description": "Real-time token burn velocity gauge and rolling activity monitor",
+      "category": "live"
+    },
+    {
+      "command": "thermal share",
+      "description": "Stateless zero-database streak share card",
+      "category": "sharing"
+    },
+    {
+      "command": "thermal audit",
+      "description": "Diagnostic check of SQLite permissions, memory mapping, and cache health",
+      "category": "diagnostics"
+    }
+  ],
+  "faq": [
+    {
+      "question": "How does Thermal collect data without a daemon or API keys?",
+      "answer": "Thermal reads existing session JSON and SQLite databases that agents write locally (e.g. ~/.claude/, ~/.codex/, ~/.opencode/). It never makes outbound network calls during analysis."
+    },
+    {
+      "question": "Does Thermal send telemetry or data to the cloud?",
+      "answer": "No. Thermal operates on a strict zero-telemetry invariant. All analysis runs entirely offline on your local machine, and no database or background daemon is ever installed."
+    },
+    {
+      "question": "How are token costs calculated?",
+      "answer": "When tools record actual costs (like OpenCode, MiMoCode, and Grok), Thermal uses the exact recorded dollars. For tools that only record tokens and models, Thermal estimates cost using current rate cards from models.dev, clearly marking estimated values with a tilde (~)."
+    },
+    {
+      "question": "How does project detection work?",
+      "answer": "Thermal traverses recorded session directories up to the nearest git root, resolving symlinks to fold worktrees and subdirectories into unified project entities."
+    },
+    {
+      "question": "What platforms and architectures are supported?",
+      "answer": "Thermal provides cross-compiled, single-binary executables for Linux (amd64, arm64), macOS (Apple Silicon arm64, Intel amd64), and Windows (amd64)."
+    }
+  ]
+}

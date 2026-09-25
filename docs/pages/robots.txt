@@ -53,4 +53,4 @@ Allow: /
 User-agent: Bravebot
 Allow: /
 
-Sitemap: https://thermal.jadmadi.net/sitemap.xml
+Sitemap: https://jadmadi.net/projects/thermal/sitemap.xml

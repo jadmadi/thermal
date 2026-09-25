@@ -85,6 +85,8 @@ export DSH_HOME="${GATE_HOME}/.dsh"
 export HERMES_HOME="${GATE_HOME}/.hermes"
 export CODEX_HOME="${GATE_HOME}/.codex"
 export OPENCODE_HOME="${GATE_HOME}/.opencode"
+export AGY_HOME="${GATE_HOME}/.gemini/antigravity"
+unset ANTIGRAVITY_APP_DATA_DIR
 export NO_COLOR=""
 export CLICOLOR_FORCE=""
 

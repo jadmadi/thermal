@@ -209,7 +209,7 @@ func printUpgradeSuccess(w io.Writer, current, latestTag string) {
 	fmt.Fprintf(w, "  restart thermal to use the new version.\n")
 	latestVersion := strings.TrimPrefix(latestTag, "v")
 	if isBreakingUpgrade(current, latestVersion) {
-		fmt.Fprintf(w, "  migration guide: https://thermal.jadmadi.net/migration or docs/MIGRATION.md\n")
+		fmt.Fprintf(w, "  migration guide: https://jadmadi.net/projects/thermal/migration or docs/MIGRATION.md\n")
 	}
 }
 

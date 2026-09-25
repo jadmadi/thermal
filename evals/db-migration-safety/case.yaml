@@ -1,0 +1,4 @@
+context:
+  # scaffold_script: "bash setup.sh"
+  # history_file: "conversation.jsonl"
+  # rules: ["agents/AGENTS.md"]

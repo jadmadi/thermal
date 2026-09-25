@@ -121,6 +121,12 @@ echo -e "${BOLD}${CYAN}═══════════════════
 # -----------------------------------------------------------------------------
 cd "${ROOT_DIR}"
 
+# Ensure internal/changelog/CHANGELOG.md is synced with root CHANGELOG.md
+if [[ -f "${ROOT_DIR}/CHANGELOG.md" ]]; then
+    mkdir -p "${ROOT_DIR}/internal/changelog"
+    cmp -s "${ROOT_DIR}/CHANGELOG.md" "${ROOT_DIR}/internal/changelog/CHANGELOG.md" 2>/dev/null || cp "${ROOT_DIR}/CHANGELOG.md" "${ROOT_DIR}/internal/changelog/CHANGELOG.md"
+fi
+
 # Find modified Go source files in working tree / staging
 MODIFIED_GO_FILES=$( (git diff --cached --name-only --diff-filter=d 2>/dev/null || true; \
                       git diff --name-only --diff-filter=d 2>/dev/null || true; \

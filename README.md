@@ -60,7 +60,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 
 Prefer a hosted page? The documentation site in
 [`docs/pages`](docs/pages) covers the same ground with rendered terminal
-output: https://thermal.jadmadi.net/
+output: https://jadmadi.net/projects/thermal/
 
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
 
@@ -321,12 +321,13 @@ Cost in this view is always an estimate from models.dev list prices, because rec
 Beyond tabular period reports, Thermal provides three analytical lenses into agent usage:
 
 ### `thermal stats`
-Daily volume distribution, statistical percentiles (p50/median, p90, mean, max), weekday profile, token composition & cache efficiency, and outlier detection:
+High-density 9-box FinOps grid and activity taxonomy by default. Interactive TUI with live period switching (`[`/`]`, `1`..`6`, `Today`, `7D`, `30D`, `Month`, `6M`, `Lifetime`) and project filtering (`p`). For the classical volume distribution histogram and percentiles, pass `--distribution` (or `--dist`):
 
 ```bash
-thermal stats
-thermal stats --metric cost       # daily spend distribution
-thermal opencode stats            # single tool stats
+thermal stats                          # interactive 9-box FinOps grid (default)
+thermal stats --distribution           # daily volume distribution histogram
+thermal stats --dist --metric cost     # daily spend distribution
+thermal opencode stats                 # single tool stats
 ```
 
 ```
@@ -467,18 +468,18 @@ thermal replay --json
   • Switching to DeepSeek V3 (API) would cost ~$983.31/mo with 0% throttling, saving $4914.37/mo.
 ```
 
-### `thermal stats --dense`
-High-density 9-box FinOps grid view and activity taxonomy decomposition. Categorizes workload into Coding, Debugging, Testing, and Exploration, while tracking prompt cache efficiency, financial savings, and MCP tool overhead:
+### FinOps 9-Box Grid & Activity Taxonomy (`thermal stats`)
+High-density 9-box FinOps grid view and activity taxonomy decomposition. Categorizes workload into Coding, Debugging, Testing, and Exploration, while tracking prompt cache efficiency, financial savings, and MCP tool overhead. Features live reactive period switching (`Today`, `7 Days`, `30 Days`, `This Month`, `6 Months`, `Lifetime`) and project filtering (`[p]`):
 
 ```bash
-# Interactive responsive 9-box Bubble Tea TUI
-thermal stats --dense
+# Interactive responsive 9-box Bubble Tea TUI with live period switching
+thermal stats
 
 # Non-TTY or monochrome output
-thermal stats --dense --no-color
+thermal stats --no-color
 
 # Machine-readable JSON export
-thermal stats --dense --json
+thermal stats --json
 ```
 
 ```
@@ -557,6 +558,26 @@ Stateless, zero-database share card engine. Generates a compact share URL encodi
 ```bash
 thermal share
 thermal share --json
+```
+
+### `thermal live`
+Real-time token burn monitor and burst velocity gauge. Watches local databases and session transcripts with sub-second responsiveness, displaying instantaneous burn rate (`tok/min`, `tok/sec`, `spend/hr`), dynamic flame intensity meter, 60-second rolling activity sparkline, and completed turn event ticker:
+
+```bash
+# Launch interactive real-time monitor
+thermal live
+
+# Filter live monitoring to a single tool
+thermal live opencode
+
+# Adjust polling frequency (default: 1s)
+thermal live --interval 500ms
+
+# Instantaneous JSON snapshot for status bars (Waybar, Polybar, Tmux)
+thermal live --json
+
+# Continuous NDJSON streaming mode for scripts and pipelines
+thermal live --json --stream
 ```
 
 ### `thermal serve`
