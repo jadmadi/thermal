@@ -418,3 +418,65 @@ func TestLiveModel_PauseStopsCollection(t *testing.T) {
 		}
 	}
 }
+
+func TestLiveModel_SeedTodayAndActivityUnits(t *testing.T) {
+	// 1. Default NewLiveModel seeds today's usage into session counters
+	mSeeded := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false)
+	if mSeeded.snapshot.SessionTokens != 40_000 {
+		t.Errorf("expected sessionTokens seeded with 40_000, got %d", mSeeded.snapshot.SessionTokens)
+	}
+
+	// 2. NewLiveModel with seedToday=false (fresh mode) starts from 0
+	mFresh := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false, false)
+	if mFresh.snapshot.SessionTokens != 0 {
+		t.Errorf("expected fresh sessionTokens 0, got %d", mFresh.snapshot.SessionTokens)
+	}
+
+	// 3. Activity tool (e.g. Agy) displays step units across all KPI widgets
+	actPoll := func() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
+		return []thermal.ToolResult{
+			{
+				Tool: thermal.ToolAgy,
+				Name: "Agy",
+				Summary: thermal.Summary{
+					LifetimeTokens: 0,
+					Sessions:       12,
+				},
+				Daily: []thermal.DailyRow{
+					{
+						Day:   thermal.LocalDay(time.Now()),
+						Turns: 150,
+					},
+				},
+			},
+		}, nil, nil
+	}
+
+	mAct := NewLiveModel(actPoll, time.Second, "Agy", false)
+	mAct.width = 100
+	mAct.height = 30
+
+	if mAct.snapshot.TodayTokens != 0 {
+		t.Errorf("expected todayTokens 0 for activity tool, got %d", mAct.snapshot.TodayTokens)
+	}
+	if mAct.snapshot.TodayTurns != 150 {
+		t.Errorf("expected todayTurns 150, got %d", mAct.snapshot.TodayTurns)
+	}
+	if mAct.snapshot.SessionTurns != 150 {
+		t.Errorf("expected sessionTurns 150, got %d", mAct.snapshot.SessionTurns)
+	}
+
+	view := mAct.View().Content
+	if !strings.Contains(view, "150 step") {
+		t.Errorf("expected view to contain '150 step' for Volume, got:\n%s", view)
+	}
+	if !strings.Contains(view, "+150 step") {
+		t.Errorf("expected view to contain '+150 step' for Burned, got:\n%s", view)
+	}
+	if !strings.Contains(view, "step/min") {
+		t.Errorf("expected view to contain 'step/min' for Rate, got:\n%s", view)
+	}
+	if !strings.Contains(view, "step/s") {
+		t.Errorf("expected view to contain 'step/s' for Speed, got:\n%s", view)
+	}
+}

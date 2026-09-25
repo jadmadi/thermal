@@ -6,11 +6,34 @@ package thermal
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 )
 
-var projectKeyCache sync.Map // recorded path -> normalized project key
+var (
+	projectKeyCache sync.Map // recorded path -> normalized project key
+	nonSlug         = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+)
+
+// ProjectSlug derives a stable, human-friendly slug from a directory path
+// using the same methodology as Sila: the slugified final directory name.
+func ProjectSlug(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	clean := filepath.Clean(path)
+	if clean == "." || clean == "/" {
+		return "project"
+	}
+	dir := filepath.Base(clean)
+	slug := strings.Trim(nonSlug.ReplaceAllString(dir, "-"), "-")
+	if slug == "" {
+		slug = "project"
+	}
+	return slug
+}
 
 // ProjectDisplayNames turns project keys into the labels a person reads. The
 // last path segment is the default; when two keys share that segment, the
@@ -22,7 +45,7 @@ var projectKeyCache sync.Map // recorded path -> normalized project key
 func ProjectDisplayNames(paths []string) map[string]string {
 	tails := make([][]string, len(paths))
 	for i, p := range paths {
-		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(p), "/"), "/")
+		tails[i] = strings.Split(strings.Trim(filepath.ToSlash(filepath.Clean(p)), "/"), "/")
 	}
 
 	out := make(map[string]string, len(paths))
@@ -30,7 +53,11 @@ func ProjectDisplayNames(paths []string) map[string]string {
 		if len(parts) == 0 {
 			continue
 		}
-		base := parts[len(parts)-1]
+		rawBase := parts[len(parts)-1]
+		base := strings.Trim(nonSlug.ReplaceAllString(rawBase, "-"), "-")
+		if base == "" {
+			base = "project"
+		}
 		name := base
 		for n := 1; n <= len(parts); n++ {
 			candidate := strings.Join(parts[len(parts)-n:], "/")
@@ -46,7 +73,11 @@ func ProjectDisplayNames(paths []string) map[string]string {
 			}
 			if !shared {
 				if n > 1 {
-					name = base + " (" + parts[len(parts)-n] + ")"
+					parent := strings.Trim(nonSlug.ReplaceAllString(parts[len(parts)-n], "-"), "-")
+					if parent == "" {
+						parent = parts[len(parts)-n]
+					}
+					name = base + " (" + parent + ")"
 				}
 				break
 			}

@@ -320,3 +320,27 @@ func TestAggregateProjectsLastAndPricing(t *testing.T) {
 		t.Errorf("missing pricing = %v", rep.Totals.MissingPricing)
 	}
 }
+
+func TestProjectSlug(t *testing.T) {
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{"/mnt/Jad/github/lab/thermal-streak", "thermal-streak"},
+		{"/mnt/Jad/github/lab/thermal-streak/", "thermal-streak"},
+		{"/home/user/projects/waqftech/tree.waqf.app", "tree.waqf.app"},
+		{"/home/user/My Project (v1)", "My-Project-v1"},
+		{"   ", ""},
+		{"/", "project"},
+		{".", "project"},
+		{"project-name", "project-name"},
+		{"/var/log/--special--/", "special"},
+	}
+
+	for _, tc := range cases {
+		got := ProjectSlug(tc.input)
+		if got != tc.want {
+			t.Errorf("ProjectSlug(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}

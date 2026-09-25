@@ -106,6 +106,7 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Stream, "stream", false, "Stream continuous NDJSON live events (live verb)")
 	flag.BoolVar(&opts.Stream, "follow", false, "Stream continuous NDJSON live events (live verb shorthand)")
 	flag.BoolVar(&opts.Stream, "f", false, "Stream continuous NDJSON live events (live verb shorthand)")
+	flag.BoolVar(&opts.Fresh, "fresh", false, "Start live session counters from 0 instead of today's total")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
@@ -287,6 +288,8 @@ func parseArgs() thermal.Options {
 			}
 		case "--stream", "--follow", "-f":
 			opts.Stream = true
+		case "--fresh", "-fresh", "--zero":
+			opts.Fresh = true
 		}
 	}
 
@@ -396,6 +399,9 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 	if opts.Distribution && opts.Report != "stats" {
 		return fmt.Errorf("--distribution only applies to the stats command")
+	}
+	if opts.Fresh && opts.Report != "live" && opts.Tool != "live" {
+		return fmt.Errorf("--fresh only applies to the live command")
 	}
 
 	if opts.Report == "" {
@@ -1801,6 +1807,58 @@ func getLiveToolSourceSig(t thermal.Tool, info loaders.ToolInfo, dbPathOverride 
 		if dir == "" {
 			return liveSourceSig{missing: true}
 		}
+		if t == thermal.ToolAgy {
+			scanDir := loaders.ResolveAgyBrainDir(dir)
+			if st, err := os.Stat(scanDir); err != nil || !st.IsDir() {
+				return liveSourceSig{missing: true}
+			}
+			var sig liveSourceSig
+			if bst, err := os.Stat(scanDir); err == nil {
+				sig.fileCount++
+				sig.totalSize += bst.Size()
+				sig.maxNano = bst.ModTime().UnixNano()
+			}
+			parentDir := filepath.Dir(scanDir)
+			csDB := filepath.Join(parentDir, "conversation_summaries.db")
+			if cst, err := os.Stat(csDB); err == nil {
+				sig.fileCount++
+				sig.totalSize += cst.Size()
+				if nano := cst.ModTime().UnixNano(); nano > sig.maxNano {
+					sig.maxNano = nano
+				}
+			}
+			if walt, err := os.Stat(csDB + "-wal"); err == nil {
+				sig.fileCount++
+				sig.totalSize += walt.Size()
+				if nano := walt.ModTime().UnixNano(); nano > sig.maxNano {
+					sig.maxNano = nano
+				}
+			}
+			entries, err := os.ReadDir(scanDir)
+			if err == nil {
+				for _, entry := range entries {
+					if !entry.IsDir() {
+						continue
+					}
+					logsDir := filepath.Join(scanDir, entry.Name(), ".system_generated", "logs")
+					transPath := filepath.Join(logsDir, "transcript.jsonl")
+					fi, err := os.Stat(transPath)
+					if err != nil {
+						transPath = filepath.Join(logsDir, "overview.txt")
+						fi, err = os.Stat(transPath)
+					}
+					if err == nil && !fi.IsDir() {
+						sig.fileCount++
+						sig.totalSize += fi.Size()
+						if nano := fi.ModTime().UnixNano(); nano > sig.maxNano {
+							sig.maxNano = nano
+						}
+					}
+				}
+			}
+			return sig
+		}
+
 		scanDir := dir
 		if info.DataSubdir != "" {
 			sub := filepath.Join(dir, info.DataSubdir)
@@ -1809,16 +1867,7 @@ func getLiveToolSourceSig(t thermal.Tool, info loaders.ToolInfo, dbPathOverride 
 			}
 		}
 		if _, err := os.Stat(scanDir); err != nil {
-			if t == thermal.ToolAgy {
-				legacy := filepath.Join(thermal.HomeDir(), ".gemini", "antigravity", "brain")
-				if _, err2 := os.Stat(legacy); err2 == nil {
-					scanDir = legacy
-				} else {
-					return liveSourceSig{missing: true}
-				}
-			} else {
-				return liveSourceSig{missing: true}
-			}
+			return liveSourceSig{missing: true}
 		}
 
 		var sig liveSourceSig
@@ -1967,6 +2016,7 @@ func runLive(opts thermal.Options) {
 
 	if opts.JSON {
 		tracker := thermal.NewLiveTrackerWithPricer(pricer, opts.NoEstimate)
+		tracker.SetSeedToday(!opts.Fresh)
 		results, projects, err := pollFn()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
@@ -2034,7 +2084,7 @@ func runLive(opts thermal.Options) {
 	}
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
-	model := tui.NewLiveModel(pollFn, rate, filter, colorful)
+	model := tui.NewLiveModel(pollFn, rate, filter, colorful, !opts.Fresh)
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)

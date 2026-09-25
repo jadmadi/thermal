@@ -22,7 +22,7 @@ import (
 const (
 	TokenPrefix      = "v1"
 	MaxDecompSize    = 1024 * 1024 // 1MB decompression safety ceiling
-	DefaultShareBase = "https://thermal.jadmadi.net/share#"
+	DefaultShareBase = "https://jadmadi.net/projects/thermal/share#"
 )
 
 var (
