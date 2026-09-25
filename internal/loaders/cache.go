@@ -65,13 +65,9 @@ func devinSourceIdentity(canonicalPath string) (string, error) {
 		h.Write(hdr[:n])
 	}
 
-	// WAL file presence, size, and timestamp
-	if wfi, err := os.Stat(canonicalPath + "-wal"); err == nil {
+	// WAL file presence and size (only when non-empty, as 0-byte WAL and SHM are touched by read locks)
+	if wfi, err := os.Stat(canonicalPath + "-wal"); err == nil && wfi.Size() > 0 {
 		fmt.Fprintf(h, "wal:size:%d;mod:%d;", wfi.Size(), wfi.ModTime().UnixNano())
-	}
-	// SHM file presence, size, and timestamp
-	if sfi, err := os.Stat(canonicalPath + "-shm"); err == nil {
-		fmt.Fprintf(h, "shm:size:%d;mod:%d;", sfi.Size(), sfi.ModTime().UnixNano())
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
