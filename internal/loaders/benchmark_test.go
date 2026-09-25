@@ -235,12 +235,38 @@ func createCodexBenchFixture(b *testing.B, dir string, threadCount, rolloutsPerT
 func BenchmarkCodex_Cold(b *testing.B) {
 	tmpDir := b.TempDir()
 	dataDir := createCodexBenchFixture(b, tmpDir, 20, 5)
+	stateDB := filepath.Join(dataDir, "state_5.sqlite")
+	cPath, _ := codexRolloutCachePath(stateDB)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		if cPath != "" {
+			_ = os.Remove(cPath)
+		}
+		b.StartTimer()
+		_, _, _, err := LoadCodexData(dataDir)
+		if err != nil {
+			b.Fatalf("LoadCodexData cold: %v", err)
+		}
+	}
+}
+
+func BenchmarkCodex_Warm(b *testing.B) {
+	tmpDir := b.TempDir()
+	dataDir := createCodexBenchFixture(b, tmpDir, 20, 5)
+
+	// Pre-warm cache
+	_, _, _, err := LoadCodexData(dataDir)
+	if err != nil {
+		b.Fatalf("LoadCodexData warmup: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _, _, err := LoadCodexData(dataDir)
 		if err != nil {
-			b.Fatalf("LoadCodexData cold: %v", err)
+			b.Fatalf("LoadCodexData warm: %v", err)
 		}
 	}
 }

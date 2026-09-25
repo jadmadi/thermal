@@ -5,12 +5,10 @@ package loaders
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +32,7 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
 	}
 	defer db.Close()
+	_, _ = db.Exec("PRAGMA mmap_size=268435456")
 
 	// Older Codex schemas lack the cwd column.
 	cwdExpr := "''"
@@ -153,14 +152,28 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		summary.AgentBreakdown = sourceCounts
 	}
 
-	// Bounded worker pool for parallel rollout scanning
-	type rolloutResult struct {
-		breakdown    *tokenBreakdown
-		linesAdded   int64
-		linesDeleted int64
-		filesTouched int64
-		warning      string
+	// Load incremental rollout cache
+	rolloutCache := loadCodexRolloutCache(dbPath)
+	var cacheMu sync.Mutex
+	cacheDirty := false
+
+	// Prune dead entries
+	activeRollouts := make(map[string]bool)
+	for _, t := range threads {
+		if t.rolloutPath != "" {
+			activeRollouts[t.rolloutPath] = true
+		}
 	}
+	rolloutCache.mu.Lock()
+	for p := range rolloutCache.Entries {
+		if !activeRollouts[p] {
+			delete(rolloutCache.Entries, p)
+			cacheDirty = true
+		}
+	}
+	rolloutCache.mu.Unlock()
+
+	// Bounded worker pool for parallel rollout scanning
 	results := make([]rolloutResult, len(threads))
 	var wg sync.WaitGroup
 	workerLimit := make(chan struct{}, 8) // max 8 concurrent workers
@@ -174,17 +187,32 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		go func(idx int, path string) {
 			defer wg.Done()
 			defer func() { <-workerLimit }()
-			b, la, ld, ft, w := readLastTokenBreakdown(path)
-			results[idx] = rolloutResult{
-				breakdown:    b,
-				linesAdded:   la,
-				linesDeleted: ld,
-				filesTouched: ft,
-				warning:      w,
+
+			rolloutCache.mu.RLock()
+			var cachedPtr *CodexRolloutEntry
+			if entry, ok := rolloutCache.Entries[path]; ok {
+				cachedPtr = &entry
+			}
+			rolloutCache.mu.RUnlock()
+
+			res, newEntry, dirty := scanOrReuseRollout(path, cachedPtr)
+			results[idx] = res
+
+			if dirty {
+				cacheMu.Lock()
+				rolloutCache.mu.Lock()
+				rolloutCache.Entries[path] = newEntry
+				rolloutCache.mu.Unlock()
+				cacheDirty = true
+				cacheMu.Unlock()
 			}
 		}(i, t.rolloutPath)
 	}
 	wg.Wait()
+
+	if cacheDirty {
+		_ = saveCodexRolloutCache(dbPath, rolloutCache)
+	}
 
 	for i, res := range results {
 		if res.warning != "" {
@@ -347,115 +375,8 @@ type tokenBreakdown struct {
 }
 
 func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, int64, int64, int64, string) {
-	if _, err := os.Stat(rolloutPath); err != nil {
-		return nil, 0, 0, 0, ""
-	}
-
-	f, err := os.Open(rolloutPath)
-	if err != nil {
-		return nil, 0, 0, 0, formatScanWarning(rolloutPath, err)
-	}
-	defer f.Close()
-
-	// A rollout line can be large: this format carries whole file contents as
-	// input_text parts, and a 1.3MB line is normal. The buffer must be big
-	// enough to reach the token_count frame that usually sits near the end, or
-	// the scan stops early and the thread looks like it has no breakdown at
-	// all, which silently removed its model from the estimate.
-	scanner := newJSONLScanner(f)
-
-	var last *tokenBreakdown
-	var linesAdded, linesDeleted, filesTouched int64
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		if strings.Contains(line, `"FileChange"`) {
-			var rec struct {
-				Type    string          `json:"type"`
-				Payload json.RawMessage `json:"payload"`
-			}
-			if json.Unmarshal([]byte(line), &rec) == nil && rec.Type == "event_msg" {
-				var ev struct {
-					Item *struct {
-						Type    string `json:"type"`
-						Changes map[string]struct {
-							Type        string `json:"type"`
-							UnifiedDiff string `json:"unified_diff"`
-							Content     string `json:"content"`
-						} `json:"changes"`
-					} `json:"item"`
-				}
-				if json.Unmarshal(rec.Payload, &ev) == nil && ev.Item != nil && ev.Item.Type == "FileChange" && ev.Item.Changes != nil {
-					filesTouched += int64(len(ev.Item.Changes))
-					for _, ch := range ev.Item.Changes {
-						if ch.UnifiedDiff != "" {
-							add, del := thermal.ParseDiffStats(ch.UnifiedDiff)
-							linesAdded += add
-							linesDeleted += del
-						} else if ch.Content != "" && ch.Type == "add" {
-							linesAdded += thermal.CountLines(ch.Content)
-						}
-					}
-				}
-			}
-			continue
-		}
-
-		if !strings.Contains(line, `"token_count"`) {
-			continue
-		}
-
-		var rec struct {
-			Type    string          `json:"type"`
-			Payload json.RawMessage `json:"payload"`
-		}
-		if json.Unmarshal([]byte(line), &rec) != nil {
-			continue
-		}
-		if rec.Type != "event_msg" {
-			continue
-		}
-
-		var ev struct {
-			Type string `json:"type"`
-			Info *struct {
-				TotalTokenUsage *struct {
-					InputTokens           int64 `json:"input_tokens"`
-					CachedInputTokens     int64 `json:"cached_input_tokens"`
-					OutputTokens          int64 `json:"output_tokens"`
-					ReasoningOutputTokens int64 `json:"reasoning_output_tokens"`
-				} `json:"total_token_usage"`
-			} `json:"info"`
-		}
-		if json.Unmarshal(rec.Payload, &ev) != nil {
-			continue
-		}
-		if ev.Type != "token_count" || ev.Info == nil || ev.Info.TotalTokenUsage == nil {
-			continue
-		}
-
-		tu := ev.Info.TotalTokenUsage
-		// OpenAI-style usage nests cached reads inside input_tokens and
-		// reasoning inside output_tokens, and total_tokens equals
-		// input plus output. Subtract the nested parts so the four token
-		// types are disjoint and add up to the recorded total.
-		last = &tokenBreakdown{
-			input:     nonNegative(tu.InputTokens - tu.CachedInputTokens),
-			output:    nonNegative(tu.OutputTokens - tu.ReasoningOutputTokens),
-			reasoning: tu.ReasoningOutputTokens,
-			cache:     tu.CachedInputTokens,
-		}
-	}
-
-	var warning string
-	if err := scanner.Err(); err != nil {
-		warning = formatScanWarning(rolloutPath, err)
-	}
-	return last, linesAdded, linesDeleted, filesTouched, warning
+	b, la, ld, ft, w, _ := scanRolloutFull(rolloutPath)
+	return b, la, ld, ft, w
 }
 
 func nonNegative(v int64) int64 {
