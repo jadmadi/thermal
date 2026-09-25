@@ -40,6 +40,10 @@ var canonicalModels = map[string]bool{
 	"deepseek-coder": true,
 
 	// Google
+	"gemini-3.8-flash":          true,
+	"gemini-3.7-flash":          true,
+	"gemini-3.6-flash":          true,
+	"gemini-3.1-pro":            true,
 	"gemini-2.5-pro":            true,
 	"gemini-2.5-flash":          true,
 	"gemini-2.0-flash":          true,
@@ -127,14 +131,33 @@ var declaredAliases = map[string]string{
 	"o3-mini-low":            "o3-mini",
 
 	// Google
-	"gemini-3-pro-high":    "gemini-3-pro-preview",
-	"gemini-3-pro-low":     "gemini-3-pro-preview",
-	"gemini-2.0-flash-001": "gemini-2.0-flash",
-	"gemini-2.0-flash-exp": "gemini-2.0-flash",
-	"gemini-1.5-pro-001":   "gemini-1.5-pro",
-	"gemini-1.5-pro-002":   "gemini-1.5-pro",
-	"gemini-1.5-flash-001": "gemini-1.5-flash",
-	"gemini-1.5-flash-002": "gemini-1.5-flash",
+	"gemini-3.8-flash-high":     "gemini-3.8-flash",
+	"gemini-3.8-flash-medium":   "gemini-3.8-flash",
+	"gemini-3.8-flash-low":      "gemini-3.8-flash",
+	"gemini 3.8 flash":          "gemini-3.8-flash",
+	"gemini 3.8 flash (high)":   "gemini-3.8-flash",
+	"gemini 3.8 flash (medium)": "gemini-3.8-flash",
+	"gemini 3.8 flash (low)":    "gemini-3.8-flash",
+	"gemini-3.7-flash-high":     "gemini-3.7-flash",
+	"gemini-3.7-flash-medium":   "gemini-3.7-flash",
+	"gemini-3.7-flash-low":      "gemini-3.7-flash",
+	"gemini 3.7 flash":          "gemini-3.7-flash",
+	"gemini 3.7 flash (high)":   "gemini-3.7-flash",
+	"gemini 3.7 flash (medium)": "gemini-3.7-flash",
+	"gemini 3.7 flash (low)":    "gemini-3.7-flash",
+	"gemini 3.6 flash":          "gemini-3.6-flash",
+	"gemini 3.6 flash (high)":   "gemini-3.6-flash",
+	"gemini 3.6 flash (low)":    "gemini-3.6-flash",
+	"gemini 3.1 pro":            "gemini-3.1-pro",
+	"gemini 3.1 pro (high)":     "gemini-3.1-pro",
+	"gemini-3-pro-high":         "gemini-3-pro-preview",
+	"gemini-3-pro-low":          "gemini-3-pro-preview",
+	"gemini-2.0-flash-001":      "gemini-2.0-flash",
+	"gemini-2.0-flash-exp":      "gemini-2.0-flash",
+	"gemini-1.5-pro-001":        "gemini-1.5-pro",
+	"gemini-1.5-pro-002":        "gemini-1.5-pro",
+	"gemini-1.5-flash-001":      "gemini-1.5-flash",
+	"gemini-1.5-flash-002":      "gemini-1.5-flash",
 
 	// Qwen
 	"qwen-2.5-coder-32b":         "qwen-2.5-coder-32b-instruct",
@@ -266,6 +289,20 @@ func modelName(s string) string {
 		return leaf
 	}
 	if alias, ok := declaredAliases[leaf]; ok {
+		return alias
+	}
+
+	// 3b. Tier/reasoning parenthetical stripping & space-to-hyphen normalization
+	// e.g. "gemini 3.8 flash (high)" -> "gemini-3.8-flash"
+	cleanLeaf := leaf
+	if pIdx := strings.IndexByte(cleanLeaf, '('); pIdx >= 0 {
+		cleanLeaf = strings.TrimSpace(cleanLeaf[:pIdx])
+	}
+	hyphenated := strings.ReplaceAll(cleanLeaf, " ", "-")
+	if canonicalModels[hyphenated] {
+		return hyphenated
+	}
+	if alias, ok := declaredAliases[hyphenated]; ok {
 		return alias
 	}
 

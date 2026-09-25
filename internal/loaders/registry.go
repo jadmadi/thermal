@@ -57,7 +57,7 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Loader:  LoadDevinData,
 		},
 		thermal.ToolAgy: {
-			DataDir:    filepath.Join(home, ".gemini", "antigravity-cli"),
+			DataDir:    agyHomeDir(home),
 			Name:       "Agy",
 			DataSubdir: "brain",
 			Loader:     LoadAgyData,
@@ -138,6 +138,24 @@ func grokHomeDir(home string) string {
 		return env
 	}
 	return filepath.Join(home, ".grok")
+}
+
+func agyHomeDir(home string) string {
+	if env := os.Getenv("ANTIGRAVITY_APP_DATA_DIR"); env != "" {
+		return env
+	}
+	if env := os.Getenv("AGY_HOME"); env != "" {
+		return env
+	}
+	agyDir := filepath.Join(home, ".gemini", "antigravity")
+	if _, err := os.Stat(filepath.Join(agyDir, "brain")); err == nil {
+		return agyDir
+	}
+	cliDir := filepath.Join(home, ".gemini", "antigravity-cli")
+	if _, err := os.Stat(filepath.Join(cliDir, "brain")); err == nil {
+		return cliDir
+	}
+	return agyDir
 }
 
 var toolAliases = map[string]thermal.Tool{

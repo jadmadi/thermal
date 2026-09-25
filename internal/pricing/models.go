@@ -39,6 +39,8 @@ var CanonicalIdentities = []ModelIdentity{
 	{CanonicalID: "deepseek-coder", DisplayName: "DeepSeek Coder", Provider: "deepseek", Family: "deepseek"},
 
 	// Google
+	{CanonicalID: "gemini-3.8-flash", DisplayName: "Gemini 3.8 Flash", Provider: "google", Family: "gemini"},
+	{CanonicalID: "gemini-3.7-flash", DisplayName: "Gemini 3.7 Flash", Provider: "google", Family: "gemini"},
 	{CanonicalID: "gemini-2.5-pro", DisplayName: "Gemini 2.5 Pro", Provider: "google", Family: "gemini"},
 	{CanonicalID: "gemini-2.5-flash", DisplayName: "Gemini 2.5 Flash", Provider: "google", Family: "gemini"},
 	{CanonicalID: "gemini-2.0-flash", DisplayName: "Gemini 2.0 Flash", Provider: "google", Family: "gemini"},

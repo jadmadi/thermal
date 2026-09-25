@@ -78,6 +78,23 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 			agentRows.Close()
 		}
 
+		// Model breakdown from session model column.
+		modelRows, err := db.Query(`SELECT model, COUNT(*) FROM ` + src + ` WHERE model != '' GROUP BY model`)
+		if err == nil {
+			summary.ModelBreakdown = make(map[string]int64)
+			for modelRows.Next() {
+				var model string
+				var n int64
+				if err := modelRows.Scan(&model, &n); err == nil {
+					if m := modelName(model); m != "" {
+						summary.ModelBreakdown[m] += n
+					}
+				}
+			}
+			_ = modelRows.Err()
+			modelRows.Close()
+		}
+
 		// Daily aggregation from pre-agg columns, one row per session,
 		// project, and model, far fewer rows than message-level.
 		rows, err := db.Query(`
@@ -166,6 +183,21 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 		legacyModel := "''"
 		if hasColumn(db, "session", "model") {
 			legacyModel = modelIDExpr("model")
+			modelRows, err := db.Query(`SELECT ` + legacyModel + `, COUNT(*) FROM session WHERE ` + legacyModel + ` != '' GROUP BY 1`)
+			if err == nil {
+				summary.ModelBreakdown = make(map[string]int64)
+				for modelRows.Next() {
+					var model string
+					var n int64
+					if err := modelRows.Scan(&model, &n); err == nil {
+						if m := modelName(model); m != "" {
+							summary.ModelBreakdown[m] += n
+						}
+					}
+				}
+				_ = modelRows.Err()
+				modelRows.Close()
+			}
 		}
 		rows, err := db.Query(`
 			SELECT
@@ -480,6 +512,31 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 
 	db.QueryRow(`SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`).
 		Scan(&summary.LongestSessionMs)
+
+	modelRows, err := db.Query(`
+		SELECT COALESCE(
+			NULLIF(NULLIF(json_extract(data, '$.modelID'), ''), '<synthetic>'),
+			NULLIF(json_extract(data, '$.model'), ''),
+			''
+		) AS model, COUNT(*)
+		FROM message
+		WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant'
+		GROUP BY 1
+	`)
+	if err == nil {
+		summary.ModelBreakdown = make(map[string]int64)
+		for modelRows.Next() {
+			var model string
+			var n int64
+			if err := modelRows.Scan(&model, &n); err == nil && model != "" {
+				if m := modelName(model); m != "" {
+					summary.ModelBreakdown[m] += n
+				}
+			}
+		}
+		_ = modelRows.Err()
+		modelRows.Close()
+	}
 
 	// Project attribution comes from the session row when the schema carries a
 	// directory for it. Columns are qualified because session also has
