@@ -1,7 +1,7 @@
 # Thermal — Complete Technical Specification & Agent Reference
 
 > High-performance terminal contribution heatmap, streak tracker, and leaderboard tool for AI coding assistants.
-> Canonical documentation: https://thermal.jadmadi.net
+> Canonical documentation: https://jadmadi.net/projects/thermal/
 > Repository: https://github.com/jadmadi/thermal
 > Governance: https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md
 

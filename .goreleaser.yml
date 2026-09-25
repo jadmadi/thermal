@@ -56,7 +56,7 @@ brews:
       name: jadmadi
       email: contact@jadmadi.net
     commit_msg_template: "chore(brew): bump formula to {{ .Tag }}"
-    homepage: "https://thermal.jadmadi.net"
+    homepage: "https://jadmadi.net/projects/thermal/"
     description: "Terminal contribution heatmap and leaderboard for AI coding assistants"
     license: "AGPL-3.0-only"
     test: |

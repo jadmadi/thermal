@@ -71,7 +71,7 @@ func TestPrintUpgradeSuccess(t *testing.T) {
 	if !strings.Contains(out, "✓ upgraded to v0.14.0") {
 		t.Errorf("expected upgrade confirmation, got %q", out)
 	}
-	if !strings.Contains(out, "migration guide: https://thermal.jadmadi.net/migration or docs/MIGRATION.md") {
+	if !strings.Contains(out, "migration guide: https://jadmadi.net/projects/thermal/migration or docs/MIGRATION.md") {
 		t.Errorf("expected migration guide notice in breaking upgrade, got %q", out)
 	}
 

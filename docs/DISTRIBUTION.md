@@ -13,14 +13,14 @@ Thermal employs a **Coverage-First** distribution model focused on zero-friction
    - Automated formula generation on release via `.goreleaser.yml`.
    - Install: `brew install jadmadi/tap/thermal`
 2. **Standalone POSIX Shell Installer**:
-   - Zero-dependency script hosted on GitHub Pages: `https://thermal.jadmadi.net/install.sh`.
-   - Install: `curl -fsSL https://thermal.jadmadi.net/install.sh | sh`
+   - Zero-dependency script hosted at: `https://jadmadi.net/thermal/install.sh`.
+   - Install: `curl -fsSL https://jadmadi.net/thermal/install.sh | sh`
    - Features: Architecture auto-detection, SHA-256 verification against `checksums.txt`, atomic installation to `/usr/local/bin` or `~/.local/bin`.
 3. **Go Toolchain**:
    - Direct module compilation: `go install github.com/jadmadi/thermal/cmd/thermal@latest`.
 4. **Machine & Agent Discoverability**:
-   - Web standard `llms.txt`: `https://thermal.jadmadi.net/llms.txt`
-   - Exhaustive specification: `https://thermal.jadmadi.net/llms-full.txt`
+   - Web standard `llms.txt`: `https://jadmadi.net/projects/thermal/llms.txt`
+   - Exhaustive specification: `https://jadmadi.net/projects/thermal/llms-full.txt`
 5. **Cryptographic Release Provenance (SLSA Level 3)**:
    - Built and attested via OpenSSF generic SLSA3 generator inside ephemeral GitHub Actions runners.
    - Non-falsifiable in-toto provenance (`checksums.txt.intoto.jsonl`) generated using Sigstore keyless OIDC (Fulcio + Rekor transparency log).
@@ -130,9 +130,9 @@ To measure channel performance without invading user privacy or transmitting run
 | Channel | URL Parameter | Destination Surface |
 | :--- | :--- | :--- |
 | Awesome Go | `?ref=awesome-go` | `https://github.com/jadmadi/thermal` |
-| Awesome AI Tools | `?ref=awesome-ai` | `https://thermal.jadmadi.net` |
-| Homebrew Tap | `?utm_source=homebrew` | `https://thermal.jadmadi.net` |
-| Standalone Script | `?utm_source=install-sh` | `https://thermal.jadmadi.net` |
+| Awesome AI Tools | `?ref=awesome-ai` | `https://jadmadi.net/projects/thermal` |
+| Homebrew Tap | `?utm_source=homebrew` | `https://jadmadi.net/projects/thermal` |
+| Standalone Script | `?utm_source=install-sh` | `https://jadmadi.net/projects/thermal` |
 
 ---
 
@@ -141,7 +141,7 @@ To measure channel performance without invading user privacy or transmitting run
 To maintain high directory standing and prevent broken documentation links, execute the following sweep every 90 days:
 
 1. **Link & Release Check**:
-   - Verify `https://thermal.jadmadi.net/install.sh` downloads the latest release asset.
+   - Verify `https://jadmadi.net/thermal/install.sh` downloads the latest release asset.
    - Verify `jadmadi/homebrew-tap` formula builds and passes `brew test thermal`.
    - Verify `llms.txt` and `llms-full.txt` match all currently supported tools and CLI flags.
 2. **Curated Directory Health**:

@@ -3,6 +3,7 @@
 /thermal-debug
 /thermal-test
 /dist/
+/markdown
 *.exe
 __debug_bin*
 

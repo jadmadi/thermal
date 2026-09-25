@@ -1,9 +1,9 @@
 #!/bin/sh
 # install.sh — Zero-dependency standalone installer for Thermal
-# Usage: curl -fsSL https://thermal.jadmadi.net/install.sh | sh
+# Usage: curl -fsSL https://jadmadi.net/thermal/install.sh | sh
 # Or with options:
 #   sh install.sh --dry-run
-#   sh install.sh --version 0.12.0
+#   sh install.sh --version 0.14.0
 #   sh install.sh --prefix /opt/bin
 set -eu
 
@@ -91,8 +91,8 @@ if [ -z "${VERSION}" ]; then
   fi
 
   if [ -z "${VERSION}" ]; then
-    echo "Warning: Could not determine latest version from GitHub API; defaulting to v0.12.0" >&2
-    VERSION="0.12.0"
+    echo "Warning: Could not determine latest version from GitHub API; defaulting to v0.14.0" >&2
+    VERSION="0.14.0"
   fi
 fi
 
@@ -115,7 +115,7 @@ if [ -z "${INSTALL_DIR}" ]; then
   fi
 fi
 
-echo "Thermal Installer:"
+echo "Thermal Installer (https://jadmadi.net/thermal/install.sh):"
 echo "  Version:      v${VERSION}"
 echo "  OS/Arch:      ${OS}/${ARCH}"
 echo "  Target:       ${INSTALL_DIR}/thermal"

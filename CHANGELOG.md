@@ -10,11 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **cli:** add daily cached background update check and upgrade notification ([2c387fb](https://github.com/jadmadi/thermal/commit/2c387fb58f9452000d0f6d4cbfdcb1c1947105cc))
-* **discovery:** declare Content-Signal directives in robots.txt ([fd5ca83](https://github.com/jadmadi/thermal/commit/fd5ca8395d31dbcfe8f46fd7120883562ae1315d))
-* **discovery:** support Markdown for Agents with content negotiation ([3de20b6](https://github.com/jadmadi/thermal/commit/3de20b6d4b5864b9aa34bfe5de744427dcee9b46))
-* **docs:** add analytics suite and charting showcase to documentation ([de17df6](https://github.com/jadmadi/thermal/commit/de17df6387b70e7cbc2ad9d03b3d395c1609fb44))
-* **docs:** update documentation licensing and governance parity ([a95a4ca](https://github.com/jadmadi/thermal/commit/a95a4cafff5d83d6735e50cfa7e26364daae1de4))
+* **cli:** add daily cached background update check and self-update command (`thermal upgrade`) ([2c387fb](https://github.com/jadmadi/thermal/commit/2c387fb58f9452000d0f6d4cbfdcb1c1947105cc))
+* **analytics:** add visual analytics and terminal charting showcase (`--chart`) ([de17df6](https://github.com/jadmadi/thermal/commit/de17df6387b70e7cbc2ad9d03b3d395c1609fb44))
+* **discovery:** declare Content-Signal directives and Markdown for Agents ([fd5ca83](https://github.com/jadmadi/thermal/commit/fd5ca8395d31dbcfe8f46fd7120883562ae1315d))
 
 
 ### Bug Fixes
@@ -35,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **replay:** implement thermal replay simulation against subscriptions and APIs (goals/workload-replay/goal.md) ([4f7ff02](https://github.com/jadmadi/thermal/commit/4f7ff02f5e7710deabc5454265330bcbee35057a))
+* **replay:** implement thermal replay simulation against subscriptions and APIs (`thermal replay`) (goals/workload-replay/goal.md) ([4f7ff02](https://github.com/jadmadi/thermal/commit/4f7ff02f5e7710deabc5454265330bcbee35057a))
 * **testing:** add automated simulated user release gate and update gitignore ([b5651df](https://github.com/jadmadi/thermal/commit/b5651df195f1702078d233ba9fb3d4c5ea98c29c))
 
 
@@ -47,8 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **replay:** simulate historical developer workloads against subscription tiers and API models (`thermal replay`)
-* **testing:** add automated simulated user testing release gate verifying all CLI commands, formatting, semantics, and language
+* **changelog:** add release history and features viewer command (`thermal changelog --top <N>`)
+* **audit:** add local context health and rule tax audit command (`thermal audit`)
+* **replay:** simulate historical developer workloads against subscription tiers and API models (`thermal replay --against <plan>`)
+* **yield:** measure code delta velocity and token yield efficiency (`thermal yield --sort lines|yield`)
+* **receipt:** evaluate verifiable test and linter outcomes (`thermal receipt --sort verified`)
+* **share:** generate zero-database stateless compressed URL cards (`thermal share`)
+* **formatting:** enforce MD013 terminal line-length bounds and hanging indent word wrapping across all views
 
 ## [0.11.0](https://github.com/jadmadi/thermal/compare/v0.10.0...v0.11.0) (2026-09-21)
 

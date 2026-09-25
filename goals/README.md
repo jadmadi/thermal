@@ -28,28 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 70
-- 🟢 **Implemented & Verified**: 60
-- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 5
+- 🟢 **Implemented & Verified**: 70
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 69 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 258/307 completed (84%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`live-polling-cpu-budget`](live-polling-cpu-budget/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#60)` | - | Keep the live monitor responsive without saturating CPU at 100ms — Bound expensive collection work independently of fast display ticks, reuse uncha... | `/goal goals/live-polling-cpu-budget/goal.md` |
-| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#61)` | - | Require observed command results for verified receipts — Prevent missing, mixed or mismatched command outcomes from becoming verified wor... | `/goal goals/receipt-evidence-integrity/goal.md` |
-| [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#63)` | - | Make web totals match canonical reports — Reuse canonical token and cost aggregation in web telemetry and honor supported ... | `/goal goals/web-telemetry-parity/goal.md` |
-| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#65)` | - | Keep cached Devin totals isolated by source database — Key Devin snapshots by canonical source identity and invalidate on relevant sour... | `/goal goals/devin-cache-source-isolation/goal.md` |
-| [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#68)` | - | Measure cold and warm CLI performance on representative fixtures — Establish reproducible end-to-end latency and allocation evidence for the docume... | `/goal goals/ingestion-performance-baseline/goal.md` |
-| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#62)` | Prereqs: receipt-evidence-integrity | Preserve recorded usage and disclose receipt coverage — Remove invented activity tokens and prevent partial transcript coverage from sil... | `/goal goals/receipt-accounting-coverage/goal.md` |
-| [`live-metric-parity`](live-metric-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#64)` | Prereqs: web-telemetry-parity, live-polling-cpu-budget | Make live burn metrics reflect recorded tokens and turns — Exclude activity-only counts from token burn and use actual turn and cache-read ... | `/goal goals/live-metric-parity/goal.md` |
-| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#66)` | Prereqs: web-telemetry-parity | Reject untrusted hosts at the local telemetry API — Validate request authority before loading private local telemetry while preservi... | `/goal goals/localhost-request-boundary/goal.md` |
-| [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#69)` | Prereqs: ingestion-performance-baseline | Avoid rescanning unchanged Codex rollout transcripts — Add bounded source-aware rollout caching with exact parity against full scans an... | `/goal goals/codex-incremental-rollout-cache/goal.md` |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#67)` | Prereqs: receipt-accounting-coverage, live-metric-parity, devin-cache-source-isolation, localhost-request-boundary, live-polling-cpu-budget | Make verification independent of host data and color settings — Use isolated fixtures and explicit color environments, and assert metric semanti... | `/goal goals/hermetic-verification-gates/goal.md` |
+- 📋 **Execution Tasks Progress**: 308/308 completed (100%)
 
 ---
 
@@ -65,6 +47,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ecc9a92` |
 | [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `09eb367` |
 | [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `86d6ebb` |
+| [`live-polling-cpu-budget`](live-polling-cpu-budget/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `b71d464` |
+| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `7a8ce91` |
+| [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `d2cd4a2` |
+| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `d182cf9` |
+| [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e2a569f` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
@@ -108,9 +95,14 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `2842f1a` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `79bbd75` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `17b6b59` |
+| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `dd3ab4f` |
+| [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `305f589` |
+| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `d162bf1` |
+| [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `752569e` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `3bd8d0a` |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `cfdba29` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `43c146e` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `be1e45f` |

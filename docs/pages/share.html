@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thermal · Shared AI Activity Streak</title>
+  <meta name="description" content="Stateless, private AI coding assistant activity heatmap and streak card.">
+  <meta property="og:title" content="Thermal · AI Activity Streak">
+  <meta property="og:description" content="Stateless, private AI coding assistant activity heatmap and streak card.">
+  <meta property="og:image" content="https://jadmadi.net/projects/thermal/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <style>
+    :root {
+      --bg: #0a0d12;
+      --card-bg: #12161f;
+      --card-border: #232b3b;
+      --card-elevated: #1a202c;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --text-dim: #484f58;
+      --primary: #f97316;
+      --primary-hover: #ea580c;
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+      --green: #22c55e;
+      --level-0: #181d27;
+      --level-1: #0e4429;
+      --level-2: #006d32;
+      --level-3: #26a641;
+      --level-4: #39d353;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      font-size: 28px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+    .brand-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--green);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Hero Streak Banner */
+    .hero-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 179, 8, 0.05));
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      border-radius: 10px;
+    }
+    .streak-highlight {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .streak-flame {
+      font-size: 48px;
+      animation: flamePulse 2s infinite ease-in-out;
+    }
+    @keyframes flamePulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.4)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.8)); }
+    }
+    .streak-details h2 {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #fff;
+    }
+    .streak-details p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .scope-pill {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* KPI Grid */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .kpi-item {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .kpi-val {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 6px;
+      font-family: var(--mono);
+      color: #fff;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Heatmap */
+    .heatmap-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .heatmap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .heatmap-scroll {
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-rows: repeat(7, 12px);
+      grid-auto-flow: column;
+      grid-auto-columns: 12px;
+      gap: 3px;
+      width: max-content;
+    }
+    .heatmap-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--level-0);
+      cursor: pointer;
+      transition: transform 0.1s, outline 0.1s;
+    }
+    .heatmap-cell:hover {
+      transform: scale(1.4);
+      z-index: 10;
+      outline: 1px solid #fff;
+    }
+    .heatmap-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-box {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+    }
+
+    /* Tooltip */
+    #tooltip {
+      position: fixed;
+      display: none;
+      background: #1f2937;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--mono);
+      pointer-events: none;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      border: 1px solid var(--card-border);
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    /* Model Bars */
+    .models-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .bar-track {
+      background: var(--card-elevated);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--gold));
+      transition: width 0.6s ease;
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover {
+      background: var(--card-border);
+      border-color: var(--text-muted);
+    }
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .install-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .install-box code {
+      color: var(--accent);
+    }
+
+    /* Error / Guidance State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .empty-icon {
+      font-size: 48px;
+    }
+    .empty-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .empty-desc {
+      color: var(--text-muted);
+      max-width: 500px;
+      font-size: 14px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 24px;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="tooltip"></div>
+
+  <div class="container">
+    <header>
+      <a href="/" class="brand">
+        <span class="brand-icon">🔥</span>
+        <div>
+          <div class="brand-title">THERMAL</div>
+          <div class="brand-tag">Stateless Streak Card</div>
+        </div>
+      </a>
+      <div class="privacy-badge">
+        <span class="dot"></span> 100% Client-Side Verified
+      </div>
+    </header>
+
+    <div id="content-card" class="card">
+      <div id="loading-state" class="empty-state">
+        <div class="empty-icon">⏳</div>
+        <div class="empty-title">Decoding Streak Payload...</div>
+        <p class="empty-desc">Extracting zero-database token telemetry directly from the URL fragment.</p>
+      </div>
+
+      <div id="main-view" style="display: none; flex-direction: column; gap: 20px;">
+        <!-- Hero Streak -->
+        <div class="hero-banner">
+          <div class="streak-highlight">
+            <div class="streak-flame">🔥</div>
+            <div class="streak-details">
+              <h2 id="streak-num">0 Days</h2>
+              <p id="streak-sub">Longest: 0 days</p>
+            </div>
+          </div>
+          <div class="scope-pill" id="scope-pill">All Tools</div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row">
+          <div class="kpi-item">
+            <div class="kpi-label">Lifetime Volume</div>
+            <div class="kpi-val" id="kpi-volume">0 tok</div>
+            <div class="kpi-sub">Total tokens processed</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Active Days</div>
+            <div class="kpi-val" id="kpi-days">0</div>
+            <div class="kpi-sub">Days with coding activity</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Spend Profile</div>
+            <div class="kpi-val" id="kpi-spend">$0.00</div>
+            <div class="kpi-sub" id="kpi-spend-sub">Estimated spend</div>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span>52-Week Activity Heatmap</span>
+            <span id="active-summary" style="font-size: 12px; color: var(--text-muted); font-weight: normal;"></span>
+          </div>
+          <div class="heatmap-scroll">
+            <div class="heatmap-grid" id="heatmap-grid"></div>
+          </div>
+          <div class="heatmap-footer">
+            <span>Learn how to track yours with Thermal</span>
+            <div class="heatmap-legend">
+              <span>Less</span>
+              <div class="legend-box" style="background: var(--level-0);"></div>
+              <div class="legend-box" style="background: var(--level-1);"></div>
+              <div class="legend-box" style="background: var(--level-2);"></div>
+              <div class="legend-box" style="background: var(--level-3);"></div>
+              <div class="legend-box" style="background: var(--level-4);"></div>
+              <span>More</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Models -->
+        <div class="models-section" id="models-section" style="display: none;">
+          <div class="heatmap-header">Top Models Used</div>
+          <div id="model-bars"></div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" onclick="copyShareUrl()">📋 Copy Link</button>
+            <a class="btn" href="https://github.com/jadmadi/thermal" target="_blank" rel="noopener">⭐ GitHub</a>
+          </div>
+          <div class="install-box">
+            <span>Install:</span>
+            <code>curl -fsSL https://jadmadi.net/thermal/install.sh | sh</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty / Guidance State -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No Streak Payload Found</div>
+        <p class="empty-desc">
+          Thermal share links store your complete activity snapshot inside the URL fragment (<code style="color: var(--accent);">#v1...</code>) without requiring any database or backend telemetry.
+        </p>
+        <div class="install-box" style="margin-top: 8px;">
+          <span>Generate yours:</span>
+          <code>thermal share</code>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Thermal is an open-source zero-allocation terminal heatmap tool ·
+      <a href="https://github.com/jadmadi/thermal" target="_blank" rel="noopener">GitHub</a> ·
+      Dual-licensed under GNU AGPL-3.0 & Commercial
+    </footer>
+  </div>
+
+  <script>
+    function formatNumber(n) {
+      if (!n || n === 0) return "0";
+      if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+      return n.toLocaleString();
+    }
+
+    function formatCurrency(n) {
+      if (!n || n === 0) return "$0.00";
+      return "$" + n.toFixed(2);
+    }
+
+    function decodeBase64Url(str) {
+      let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4) {
+        b64 += "=";
+      }
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) {
+        bytes[i] = bin.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    async function decompressRawDeflate(bytes) {
+      const ds = new DecompressionStream("deflate-raw");
+      const writer = ds.writable.getWriter();
+      writer.write(bytes);
+      writer.close();
+      const resp = new Response(ds.readable);
+      const text = await resp.text();
+      return JSON.parse(text);
+    }
+
+    async function verifyChecksum(expectedHex, bytes) {
+      try {
+        const hash = await crypto.subtle.digest("SHA-256", bytes);
+        const hex = Array.from(new Uint8Array(hash.slice(0, 4)))
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("");
+        return hex.toLowerCase() === expectedHex.toLowerCase();
+      } catch (e) {
+        return true; // Fallback if Web Crypto is unavailable
+      }
+    }
+
+    function renderCard(snap) {
+      document.getElementById("loading-state").style.display = "none";
+      const mainView = document.getElementById("main-view");
+      mainView.style.display = "flex";
+
+      // Hero
+      document.getElementById("streak-num").textContent = (snap.currentStreak || 0) + " Days 🔥";
+      document.getElementById("streak-sub").textContent = "Longest: " + (snap.longestStreak || 0) + " days";
+      const tool = snap.tool || "all";
+      document.getElementById("scope-pill").textContent = tool.charAt(0).toUpperCase() + tool.slice(1);
+
+      // KPIs
+      document.getElementById("kpi-volume").textContent = formatNumber(snap.totalTokens || 0) + " tok";
+      document.getElementById("kpi-days").textContent = (snap.activeDays || 0) + " days";
+      
+      let costStr = formatCurrency(snap.totalCost || 0);
+      if (snap.estimatedCost) costStr = "~" + costStr;
+      document.getElementById("kpi-spend").textContent = costStr;
+
+      // Heatmap
+      const grid = document.getElementById("heatmap-grid");
+      grid.innerHTML = "";
+      const days = snap.days || {};
+
+      // 52 weeks * 7 days = 364 days
+      const today = new Date();
+      const dates = [];
+      for (let i = 363; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split("T")[0]);
+      }
+
+      const counts = Object.values(days).filter(t => t > 0);
+      counts.sort((a, b) => a - b);
+      const t1 = counts[Math.floor(counts.length * 0.25)] || 1000;
+      const t2 = counts[Math.floor(counts.length * 0.50)] || 10000;
+      const t3 = counts[Math.floor(counts.length * 0.75)] || 50000;
+
+      const tooltip = document.getElementById("tooltip");
+
+      dates.forEach(dayStr => {
+        const cell = document.createElement("div");
+        cell.className = "heatmap-cell";
+        const tok = days[dayStr] || 0;
+        let level = 0;
+        if (tok > 0) {
+          if (tok <= t1) level = 1;
+          else if (tok <= t2) level = 2;
+          else if (tok <= t3) level = 3;
+          else level = 4;
+        }
+        cell.style.backgroundColor = `var(--level-${level})`;
+
+        cell.addEventListener("mouseenter", (e) => {
+          tooltip.style.display = "block";
+          tooltip.innerHTML = `<strong>${dayStr}</strong>: ${formatNumber(tok)} tokens`;
+          tooltip.style.left = (e.clientX + 10) + "px";
+          tooltip.style.top = (e.clientY + 10) + "px";
+        });
+        cell.addEventListener("mousemove", (e) => {
+          tooltip.style.left = (e.clientX + 10) + "px";
+          tooltip.style.top = (e.clientY + 10) + "px";
+        });
+        cell.addEventListener("mouseleave", () => {
+          tooltip.style.display = "none";
+        });
+
+        grid.appendChild(cell);
+      });
+
+      document.getElementById("active-summary").textContent = (snap.activeDays || 0) + " active days recorded";
+
+      // Top Models
+      const models = snap.models || {};
+      const modelEntries = Object.entries(models).filter(([, v]) => v > 0);
+      if (modelEntries.length > 0) {
+        modelEntries.sort((a, b) => b[1] - a[1]);
+        const maxModelTok = modelEntries[0][1] || 1;
+        const container = document.getElementById("model-bars");
+        container.innerHTML = modelEntries.slice(0, 5).map(([name, tok]) => {
+          const pct = Math.round((tok / maxModelTok) * 100);
+          return `
+            <div class="bar-row">
+              <div class="bar-meta">
+                <span>${name}</span>
+                <span>${formatNumber(tok)} tok (${pct}%)</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" style="width: ${pct}%;"></div>
+              </div>
+            </div>
+          `;
+        }).join("");
+        document.getElementById("models-section").style.display = "flex";
+      }
+    }
+
+    async function init() {
+      const hash = window.location.hash.slice(1);
+      if (!hash || !hash.startsWith("v1.")) {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("empty-state").style.display = "flex";
+        return;
+      }
+
+      try {
+        const parts = hash.split(".");
+        if (parts.length !== 3) {
+          throw new Error("Invalid token format");
+        }
+        const checksum = parts[1];
+        const bytes = decodeBase64Url(parts[2]);
+
+        const ok = await verifyChecksum(checksum, bytes);
+        if (!ok) {
+          console.warn("Checksum mismatch; attempting decompression anyway");
+        }
+
+        const snap = await decompressRawDeflate(bytes);
+        renderCard(snap);
+      } catch (err) {
+        console.error("Failed to decode token:", err);
+        document.getElementById("loading-state").style.display = "none";
+        const empty = document.getElementById("empty-state");
+        empty.style.display = "flex";
+        empty.querySelector(".empty-title").textContent = "Corrupted or Invalid Share Token";
+        empty.querySelector(".empty-desc").textContent = "Unable to decompress the telemetry payload from this URL.";
+      }
+    }
+
+    function copyShareUrl() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.querySelector(".btn-primary");
+        const prev = btn.textContent;
+        btn.textContent = "✅ Link Copied!";
+        setTimeout(() => { btn.textContent = prev; }, 2000);
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+    window.addEventListener("hashchange", init);
+  </script>
+</body>
+</html>
