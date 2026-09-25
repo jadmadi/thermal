@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/jadmadi/thermal/internal/theme"
 )
 
 // Palette reuses the render package's 256-colour choices so a dashboard and a
@@ -35,10 +36,10 @@ func newPalette(colorful bool) Palette {
 	if !colorful {
 		return p
 	}
-	p.Accent = lipgloss.NewStyle().Foreground(lipgloss.Color("40"))
-	p.Muted = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	p.Emphasis = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("255"))
-	p.Dim = lipgloss.NewStyle().Foreground(lipgloss.Color("239"))
+	p.Accent = theme.Primary.Style()
+	p.Muted = theme.TextMuted.Style()
+	p.Emphasis = theme.Text.BoldStyle()
+	p.Dim = theme.Border.Style()
 	return p
 }
 

@@ -501,9 +501,16 @@ func ScanSessionReceipts(homeDir string, toolFilter string, pricer Pricer) []Wor
 
 	// 2. Scan Agy transcripts (~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl)
 	if includeAll || filter == "agy" {
-		brainDir := filepath.Join(homeDir, ".gemini", "antigravity-cli", "brain")
-		if _, err := os.Stat(brainDir); os.IsNotExist(err) {
-			brainDir = filepath.Join(homeDir, ".gemini", "antigravity", "brain")
+		brainDir := filepath.Join(homeDir, ".gemini", "antigravity", "brain")
+		cliBrain := filepath.Join(homeDir, ".gemini", "antigravity-cli", "brain")
+		stAgy, errAgy := os.Stat(brainDir)
+		stCli, errCli := os.Stat(cliBrain)
+		if errAgy == nil && errCli == nil {
+			if stCli.ModTime().After(stAgy.ModTime()) {
+				brainDir = cliBrain
+			}
+		} else if errCli == nil {
+			brainDir = cliBrain
 		}
 		if entries, err := os.ReadDir(brainDir); err == nil {
 			for _, entry := range entries {

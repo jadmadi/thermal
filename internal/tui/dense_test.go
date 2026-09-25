@@ -45,35 +45,43 @@ func sampleFinOpsPayload() thermal.FinOpsGridPayload {
 			{Category: thermal.ActivityBrainstorming, Tokens: 160000, Cost: 0.229, Turns: 15, Percent: 0.3, OneShot: "-"},
 			{Category: thermal.ActivityDebugging, Tokens: 168000, Cost: 0.223, Turns: 17, Percent: 0.3, OneShot: "-"},
 		},
+		ToolMix: []thermal.FinOpsToolRow{
+			{Name: "OpenCode", Tokens: 20400000, Cost: 28.47, Share: 45.1, Streak: 12, Sessions: 4},
+			{Name: "Devin", Tokens: 14500000, Cost: 18.20, Share: 32.1, Streak: 8, Sessions: 3},
+			{Name: "Claude", Tokens: 7000000, Cost: 12.50, Share: 15.5, Streak: 3, Sessions: 2},
+			{Name: "Grok", Tokens: 3300000, Cost: 4.80, Share: 7.3, Streak: 1, Sessions: 1},
+		},
 		ModelBreakdown: []thermal.FinOpsModelRow{
 			{Name: "Fable", Cost: 41.18, CachePct: 97.6, Calls: 80, OneShot: "-", TokPerS: "-"},
 			{Name: "Opus 5", Cost: 16.50, CachePct: 96.9, Calls: 176, OneShot: "-", TokPerS: "-"},
 			{Name: "Sonnet", Cost: 3.96, CachePct: 97.6, Calls: 128, OneShot: "-", TokPerS: "-"},
 		},
-		CoreTools: []thermal.CoreToolCall{
-			{Name: "cursor:read", Calls: 393},
-			{Name: "Bash", Calls: 303},
-			{Name: "cursor:grep", Calls: 178},
+		Receipt: thermal.FinOpsReceiptSummary{
+			VerifiedCount:   18,
+			ClaimedCount:    4,
+			FailedCount:     0,
+			TokensVerified:  38000000,
+			VerifiedRate:    81.8,
+			SpendEfficiency: "EXCELLENT",
+			TestTools:       "go test, golangci-lint",
 		},
-		SubTools: []thermal.SubToolCall{
-			{Name: "grep", Calls: 237, Share: 28.0},
-			{Name: "echo", Calls: 178, Share: 21.0},
-			{Name: "head", Calls: 145, Share: 17.0},
+		Replay: thermal.FinOpsReplaySummary{
+			CapacityVerdict: "PASS",
+			Plans: []thermal.FinOpsReplayPlan{
+				{Name: "Claude Pro ($20)", MonthlyCost: 20.0, CostDelta: -104.50, CapacityVerdict: "PASS", ThrottleRate: 0.0},
+				{Name: "Claude Max ($200)", MonthlyCost: 200.0, CostDelta: 75.50, CapacityVerdict: "PASS", ThrottleRate: 0.0},
+				{Name: "ChatGPT Plus ($20)", MonthlyCost: 20.0, CostDelta: -104.50, CapacityVerdict: "PASS", ThrottleRate: 0.0},
+				{Name: "Cursor Pro ($20)", MonthlyCost: 20.0, CostDelta: -104.50, CapacityVerdict: "PASS", ThrottleRate: 0.0},
+				{Name: "DeepSeek V3 (API)", MonthlyCost: 18.40, CostDelta: -106.10, CapacityVerdict: "PASS", ThrottleRate: 0.0},
+			},
 		},
-		SkillsAgents: []thermal.SkillAgentCall{
-			{Name: "claude-code-guide", Uses: 1, Cost: 0.187},
-			{Name: "Explore", Uses: 1, Cost: 0.135},
-		},
-		Workflow: thermal.WorkflowMetrics{
-			Corrections: "0% (1)",
-			FirstEdit:   "-",
-			Rework:      "-",
-			Coverage:    "100%",
-		},
-		MCP: thermal.MCPMetrics{
-			ServersActive:  0,
-			ServerCalls:    0,
-			OverheadTokens: 0,
+		Composition: thermal.FinOpsCompositionSummary{
+			InputTokens:      25000000,
+			OutputTokens:     6300000,
+			ReasoningTokens:  1500000,
+			CacheReadTokens:  12400000,
+			CacheWriteTokens: 1500000,
+			ReasoningRatio:   19.2,
 		},
 		TotalTokens:     45200000,
 		TotalCost:       124.50,
@@ -130,17 +138,17 @@ func TestRenderDenseFinOps_Dimensions(t *testing.T) {
 		t.Run(sz.name, func(t *testing.T) {
 			out := RenderDenseFinOps(payload, sz.width, false)
 
-			// Required 9 boxes matching codeburn reference
+			// Required 9 authentic boxes
 			requiredBoxes := []string{
 				"Daily Activity",
 				"By Project",
-				"By Activity",
+				"Assistant Mix",
 				"By Model",
-				"MCP Servers",
-				"Core Tools",
-				"Shell Commands",
-				"Skills & Agents",
-				"Workflow",
+				"Prompt Cache & Savings",
+				"Code Yield & Velocity",
+				"Work Receipts & Tests",
+				"Subscription Replay",
+				"Token Composition",
 			}
 
 			for _, b := range requiredBoxes {
@@ -202,5 +210,269 @@ func TestDenseModel_KeyFlow(t *testing.T) {
 	}
 	if cmd == nil {
 		t.Fatalf("expected non-nil quit command after pressing q")
+	}
+}
+
+func TestDenseModel_PeriodNavigation(t *testing.T) {
+	payload := sampleFinOpsPayload()
+	m := NewDense(payload, false)
+
+	// Direct numbers 1-6
+	for i, key := range []string{"1", "2", "3", "4", "5", "6"} {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: rune(key[0]), Text: key})
+		m = updated.(DenseModel)
+		if m.periodIdx != i {
+			t.Fatalf("pressing %s: periodIdx = %d, want %d", key, m.periodIdx, i)
+		}
+	}
+
+	// Mnemonic keys: 't' (Today) and 'w' (7 Days)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 't', Text: "t"})
+	m = updated.(DenseModel)
+	if m.periodIdx != 0 {
+		t.Fatalf("pressing t: periodIdx = %d, want 0", m.periodIdx)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'w', Text: "w"})
+	m = updated.(DenseModel)
+	if m.periodIdx != 1 {
+		t.Fatalf("pressing w: periodIdx = %d, want 1", m.periodIdx)
+	}
+
+	// Forward cycling: tab, right, l, ]
+	for _, key := range []tea.KeyPressMsg{
+		{Code: tea.KeyTab},
+		{Code: tea.KeyRight},
+		{Code: 'l', Text: "l"},
+		{Code: ']', Text: "]"},
+	} {
+		prev := m.periodIdx
+		updated, _ := m.Update(key)
+		m = updated.(DenseModel)
+		want := (prev + 1) % len(m.periods)
+		if m.periodIdx != want {
+			t.Fatalf("after %v: periodIdx = %d, want %d", key, m.periodIdx, want)
+		}
+	}
+
+	// Backward cycling: shift+tab, left, h, [
+	for _, key := range []tea.KeyPressMsg{
+		{Code: tea.KeyTab, Mod: tea.ModShift},
+		{Code: tea.KeyLeft},
+		{Code: 'h', Text: "h"},
+		{Code: '[', Text: "["},
+	} {
+		prev := m.periodIdx
+		updated, _ := m.Update(key)
+		m = updated.(DenseModel)
+		want := (prev - 1 + len(m.periods)) % len(m.periods)
+		if m.periodIdx != want {
+			t.Fatalf("after %v: periodIdx = %d, want %d", key, m.periodIdx, want)
+		}
+	}
+}
+
+func TestDenseModel_ProjectNavigation(t *testing.T) {
+	payload := sampleFinOpsPayload()
+	projects := []thermal.ProjectDay{
+		{Project: "alpha"},
+		{Project: "beta"},
+		{Project: "gamma"},
+	}
+	m := NewDenseWithData(payload, nil, nil, projects, thermal.YieldReport{}, nil, false)
+
+	if m.activeProject != "" {
+		t.Fatalf("initial active project want empty, got %q", m.activeProject)
+	}
+
+	// Cycle forward with 'p'
+	expected := []string{"alpha", "beta", "gamma", ""}
+	for _, exp := range expected {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
+		m = updated.(DenseModel)
+		if m.activeProject != exp {
+			t.Fatalf("pressing p: activeProject = %q, want %q", m.activeProject, exp)
+		}
+	}
+
+	// Cycle backward with 'P'
+	expectedRev := []string{"gamma", "beta", "alpha", ""}
+	for _, exp := range expectedRev {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: 'P', Text: "P"})
+		m = updated.(DenseModel)
+		if m.activeProject != exp {
+			t.Fatalf("pressing P: activeProject = %q, want %q", m.activeProject, exp)
+		}
+	}
+
+	// Reset with 'x'
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
+	m = updated.(DenseModel)
+	if m.activeProject != "alpha" {
+		t.Fatalf("pre-reset activeProject = %q, want 'alpha'", m.activeProject)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = updated.(DenseModel)
+	if m.activeProject != "" {
+		t.Fatalf("after x: activeProject = %q, want empty", m.activeProject)
+	}
+
+	// Reset with '0'
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
+	m = updated.(DenseModel)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '0', Text: "0"})
+	m = updated.(DenseModel)
+	if m.activeProject != "" {
+		t.Fatalf("after 0: activeProject = %q, want empty", m.activeProject)
+	}
+
+	// Clear with 'esc'
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
+	m = updated.(DenseModel)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(DenseModel)
+	if m.activeProject != "" {
+		t.Fatalf("after esc: activeProject = %q, want empty", m.activeProject)
+	}
+	if m.quitting {
+		t.Fatalf("esc with active project should clear filter, not quit")
+	}
+}
+
+func TestDenseModel_Scrolling(t *testing.T) {
+	payload := sampleFinOpsPayload()
+	m := NewDense(payload, false)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = updated.(DenseModel)
+
+	// Down arrow and 'j'
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 2 {
+		t.Fatalf("after down arrow: scrollOffset = %d, want 2", m.scrollOffset)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 4 {
+		t.Fatalf("after j: scrollOffset = %d, want 4", m.scrollOffset)
+	}
+
+	// Up arrow and 'k'
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 2 {
+		t.Fatalf("after up arrow: scrollOffset = %d, want 2", m.scrollOffset)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 0 {
+		t.Fatalf("after k: scrollOffset = %d, want 0", m.scrollOffset)
+	}
+
+	// Section jump 'J' and 'K'
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'J', Text: "J"})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 12 {
+		t.Fatalf("after J: scrollOffset = %d, want 12", m.scrollOffset)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'K', Text: "K"})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 0 {
+		t.Fatalf("after K: scrollOffset = %d, want 0", m.scrollOffset)
+	}
+
+	// Page down and Page up
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 15 { // height / 2 = 15
+		t.Fatalf("after PgDown: scrollOffset = %d, want 15", m.scrollOffset)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 0 {
+		t.Fatalf("after PgUp: scrollOffset = %d, want 0", m.scrollOffset)
+	}
+
+	// Home / End
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+	m = updated.(DenseModel)
+	if m.scrollOffset < 50 {
+		t.Fatalf("after End: scrollOffset = %d, want >= 50", m.scrollOffset)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyHome})
+	m = updated.(DenseModel)
+	if m.scrollOffset != 0 {
+		t.Fatalf("after Home: scrollOffset = %d, want 0", m.scrollOffset)
+	}
+}
+
+func TestDenseModel_Help(t *testing.T) {
+	payload := sampleFinOpsPayload()
+	m := NewDense(payload, false)
+
+	// Press '?' to open help
+	updated, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	m = updated.(DenseModel)
+	if !m.showHelp {
+		t.Fatalf("expected showHelp=true after pressing ?")
+	}
+
+	view := m.View().Content
+	if !strings.Contains(view, "Thermal FinOps 9-Box Grid — Navigation Keys") {
+		t.Fatalf("expected help title in view output:\n%s", view)
+	}
+	if !strings.Contains(view, "Period Selection") {
+		t.Fatalf("expected 'Period Selection' section in help output:\n%s", view)
+	}
+
+	// Press '?' again to close help
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	m = updated.(DenseModel)
+	if m.showHelp {
+		t.Fatalf("expected showHelp=false after closing with ?")
+	}
+
+	// Press '?' then 'esc' to close
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	m = updated.(DenseModel)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(DenseModel)
+	if m.showHelp {
+		t.Fatalf("expected showHelp=false after closing with esc")
+	}
+	if m.quitting {
+		t.Fatalf("esc inside help should close help, not quit")
+	}
+}
+
+func TestDenseModel_Reset(t *testing.T) {
+	payload := sampleFinOpsPayload()
+	projects := []thermal.ProjectDay{
+		{Project: "alpha"},
+	}
+	m := NewDenseWithData(payload, nil, nil, projects, thermal.YieldReport{}, nil, false)
+
+	// Mutate state: period 3, project alpha, scrollOffset 10
+	m.periodIdx = 3
+	m.activeProject = "alpha"
+	m.scrollOffset = 10
+
+	// Press 'R' to reset
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'R', Text: "R"})
+	m = updated.(DenseModel)
+
+	if m.periodIdx != 0 {
+		t.Fatalf("after R: periodIdx = %d, want 0", m.periodIdx)
+	}
+	if m.activeProject != "" {
+		t.Fatalf("after R: activeProject = %q, want empty", m.activeProject)
+	}
+	if m.scrollOffset != 0 {
+		t.Fatalf("after R: scrollOffset = %d, want 0", m.scrollOffset)
 	}
 }

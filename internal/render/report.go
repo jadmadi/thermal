@@ -5,10 +5,10 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -32,12 +32,12 @@ func RenderReportBreakdown(rep thermal.Report, noColor bool) string {
 }
 
 func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	faint := func(s string) string { return ColorCode(colors, "38;5;245", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	faint := st.Faint
+	gold := st.Gold
 
 	hasReasoning := false
 	for _, row := range rep.Rows {
@@ -66,6 +66,37 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		return sb.String()
 	}
 
+	unit := rep.Type
+	switch rep.Type {
+	case "daily":
+		unit = "day"
+	case "weekly":
+		unit = "week"
+	case "monthly":
+		unit = "month"
+	}
+	periodLabel := fmt.Sprintf("%d %ss", len(rep.Rows), unit)
+	if len(rep.Rows) == 1 {
+		periodLabel = fmt.Sprintf("1 %s", unit)
+	}
+	hitRateStr := "—"
+	if rep.Totals.Cache+rep.Totals.Input > 0 {
+		hitRateStr = fmt.Sprintf("%.1f%%", float64(rep.Totals.Cache)/float64(rep.Totals.Cache+rep.Totals.Input)*100)
+	}
+
+	costDisplay := formatCost(rep.Totals.Cost)
+	if rep.Totals.EstimatedCost > 0 {
+		costDisplay = "~" + costDisplay
+	}
+
+	sb.WriteString(fmt.Sprintf("  Window: [%s · %s]  Total: [%s · %s]  Cache: [%s hit]\n\n",
+		highlight(periodLabel),
+		dim(toolLabel),
+		highlight(thermal.CompactNumber(rep.Totals.Tokens)+" tok"),
+		highlight(costDisplay),
+		st.Success(hitRateStr),
+	))
+
 	headers := []string{"Period", "Models", "Input", "Output"}
 	alignRight := []bool{false, false, true, true}
 	if hasReasoning {
@@ -80,26 +111,29 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		widths = append(widths, numberWidth)
 	}
 
-	sb.WriteString("  ")
+	rule := 2 * (len(widths) - 1)
+	for _, w := range widths {
+		rule += w
+	}
+
+	var cardLines []string
+
+	var hsb strings.Builder
+	hsb.WriteString(" ")
 	for i, h := range headers {
 		cell := thermal.PadRight(h, widths[i])
 		if alignRight[i] {
 			cell = thermal.PadLeft(h, widths[i])
 		}
-		sb.WriteString(dim(cell))
+		hsb.WriteString(dim(cell))
 		if i < len(headers)-1 {
-			sb.WriteString("  ")
+			hsb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, strings.Repeat("─", rule))
 
-	rule := 2 * (len(widths) - 1)
-	for _, w := range widths {
-		rule += w
-	}
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
-
-	printRow := func(period, models string, row thermal.PeriodRow, style func(string) string) {
+	formatRow := func(period, models string, row thermal.PeriodRow, style func(string) string) string {
 		cells := []string{thermal.PadRight(truncate(period, periodWidth), periodWidth),
 			thermal.PadRight(truncate(models, modelsWidth), modelsWidth)}
 		nums := []int64{row.Input, row.Output}
@@ -115,55 +149,77 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		} else {
 			cells = append(cells, thermal.PadLeft("—", numberWidth))
 		}
-		sb.WriteString("  ")
+		var rsb strings.Builder
+		rsb.WriteString(" ")
 		for i, c := range cells {
 			if style != nil {
 				c = style(c)
 			}
-			sb.WriteString(c)
+			rsb.WriteString(c)
 			if i < len(cells)-1 {
-				sb.WriteString("  ")
+				rsb.WriteString("  ")
 			}
 		}
-		sb.WriteString("\n")
+		return rsb.String()
 	}
 
 	for _, row := range rep.Rows {
-		printRow(row.Period, modelCell(row.Models, modelsWidth), row, nil)
+		cardLines = append(cardLines, formatRow(row.Period, modelCell(row.Models, modelsWidth), row, nil))
 		if !breakdown {
 			continue
 		}
 		for _, name := range thermal.TopModels(row.Models) {
 			m := row.Models[name]
-			printRow("", "  └─ "+name, thermal.PeriodRow{
+			cardLines = append(cardLines, formatRow("", "  └─ "+name, thermal.PeriodRow{
 				Input:     m.Input,
 				Output:    m.Output,
 				Reasoning: m.Reasoning,
 				Cache:     m.Cache(),
 				Tokens:    m.Total(),
-			}, faint)
+			}, faint))
 		}
 	}
 
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
-	printRow("Total", "", rep.Totals, gold)
+	cardLines = append(cardLines, strings.Repeat("─", rule))
+	cardLines = append(cardLines, formatRow("Total", "", rep.Totals, gold))
+
+	cardWidth := BoundedCardWidth(2)
+
+	title := strings.ToUpper(rep.Type[:1]) + rep.Type[1:] + " Usage"
+
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       title,
+		RightHeader: toolLabel,
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+		MaxWidth:    cardWidth,
+	}))
 
 	if rep.Totals.EstimatedCost > 0 {
-		// Name the split right under the total, so the number never reads as
-		// fully recorded money.
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf(
-			"Total = %s recorded + ~%s estimated from pricing data.",
-			formatCost(rep.Totals.StoredCost), formatCost(rep.Totals.EstimatedCost)))))
+		note := fmt.Sprintf("Total = %s recorded + ~%s estimated from pricing data.",
+			formatCost(rep.Totals.StoredCost), formatCost(rep.Totals.EstimatedCost))
+		for _, line := range WrapText(note, cardWidth) {
+			sb.WriteString(fmt.Sprintf("\n  %s", dim(line)))
+		}
+		sb.WriteString("\n")
 	}
 	if note := unpriceableNote(rep.Totals.UnattributedTokens); note != "" {
-		sb.WriteString("  " + dim(note) + "\n")
+		for _, line := range WrapText(note, cardWidth) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
 	}
 	if len(rep.Totals.MissingPricing) > 0 {
 		models := rep.Totals.MissingPricing
 		if len(models) > 4 {
 			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
 		}
-		sb.WriteString(fmt.Sprintf("  %s\n", dim("No pricing for: "+strings.Join(models, ", "))))
+		note := "No pricing for: " + strings.Join(models, ", ")
+		for _, line := range WrapText(note, cardWidth) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+		}
 	}
 
 	sb.WriteString("\n")

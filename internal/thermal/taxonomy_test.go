@@ -80,8 +80,11 @@ func TestComputeFinOpsGrid(t *testing.T) {
 		t.Errorf("expected 20.0%% cache hit rate, got %.1f", grid.Cache.HitRate)
 	}
 
-	// Verify Taxonomy shares (9 categories matching codeburn)
-	if len(grid.Taxonomy) != 9 {
-		t.Fatalf("expected 9 taxonomy categories, got %d", len(grid.Taxonomy))
+	// Verify Taxonomy shares (5 disjoint token categories)
+	if len(grid.Taxonomy) != 5 {
+		t.Fatalf("expected 5 taxonomy categories, got %d", len(grid.Taxonomy))
+	}
+	if grid.Composition.CacheReadTokens != 120000 {
+		t.Errorf("expected 120000 cache read tokens, got %d", grid.Composition.CacheReadTokens)
 	}
 }

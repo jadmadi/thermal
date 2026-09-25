@@ -5,15 +5,32 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool, estimatedCost ...float64) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
+	st := NewStyle(noColor)
+	colors := st.Colors
+	muted := st.Muted
+	highlight := st.Highlight
+	dim := st.Dim
+
+	tokenLabel := "tokens"
+	switch toolName {
+	case "command-code":
+		tokenLabel = "messages"
+	case "Agy":
+		tokenLabel = "steps"
+	case "Muse":
+		tokenLabel = "prompts"
+	case "Droid":
+		tokenLabel = "messages"
+	}
 
 	activeDays := make(map[string]bool)
 	for _, d := range daily {
@@ -45,42 +62,26 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		}
 	}
 
-	muted := func(s string) string { return ColorCode(colors, "38;5;245", s) }
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-
-	var sb strings.Builder
-	sb.WriteString("\n")
-
-	tokenLabel := "tokens"
-	switch toolName {
-	case "command-code":
-		tokenLabel = "messages"
-	case "Agy":
-		tokenLabel = "steps"
-	case "Muse":
-		tokenLabel = "prompts"
-	case "Droid":
-		tokenLabel = "messages"
-	}
-
-	sb.WriteString(fmt.Sprintf("  %s  %s %s / %d weeks  %s\n",
-		highlight(toolName+" activity"),
-		highlight(thermal.CompactNumber(visibleTokens)),
-		tokenLabel,
-		weeks,
-		muted(thermal.FormatPath(dbPath)),
-	))
-	sb.WriteString("\n")
-
-	for _, line := range RenderHeatmap(activity, weeks, colors) {
-		sb.WriteString(line + "\n")
-	}
+	var cardLines []string
 
 	allTime := summary.LifetimeTokens
 
-	sb.WriteString(fmt.Sprintf("  %d active days  %s  %d day streak  %s  %d best  %s  %s all-time\n",
-		visibleActive, muted("|"), current, muted("|"), longest, muted("|"), thermal.CompactNumber(allTime),
-	))
+	// Executive KPI strip
+	kpiLine := fmt.Sprintf(" %s %s / %d weeks   ·   %d active days  |  %d day streak  |  %d best  |  %s all-time",
+		highlight(thermal.CompactNumber(visibleTokens)),
+		tokenLabel,
+		weeks,
+		visibleActive,
+		current,
+		longest,
+		thermal.CompactNumber(allTime),
+	)
+	cardLines = append(cardLines, kpiLine)
+	cardLines = append(cardLines, "")
+
+	for _, line := range RenderHeatmap(activity, weeks, colors) {
+		cardLines = append(cardLines, line)
+	}
 
 	// Extra analytics line: cost, code changes, sessions, agent breakdown.
 	var extra []string
@@ -114,32 +115,54 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	if summary.Sessions > 0 {
 		extra = append(extra, fmt.Sprintf("%d sessions", summary.Sessions))
 	}
-	if len(extra) > 0 {
-		sb.WriteString(fmt.Sprintf("  %s\n", strings.Join(extra, muted("  ·  "))))
+
+	if len(extra) > 0 || len(summary.AgentBreakdown) > 0 {
+		maxW := 0
+		for _, l := range cardLines {
+			if w := ansi.StringWidth(l); w > maxW {
+				maxW = w
+			}
+		}
+		if maxW < 60 {
+			maxW = 60
+		}
+		cardLines = append(cardLines, " "+dim(strings.Repeat("─", maxW)))
+		if len(extra) > 0 {
+			cardLines = append(cardLines, " "+strings.Join(extra, muted("  ·  ")))
+		}
+		if len(summary.AgentBreakdown) > 0 {
+			type agentCount struct {
+				agent string
+				n     int
+			}
+			var agents []agentCount
+			for a, n := range summary.AgentBreakdown {
+				agents = append(agents, agentCount{a, n})
+			}
+			sort.Slice(agents, func(i, j int) bool { return agents[i].n > agents[j].n })
+			limit := 3
+			if len(agents) < limit {
+				limit = len(agents)
+			}
+			var parts []string
+			for i := 0; i < limit; i++ {
+				parts = append(parts, fmt.Sprintf("%s: %d", agents[i].agent, agents[i].n))
+			}
+			cardLines = append(cardLines, fmt.Sprintf(" %s agents  %s", muted("·"), strings.Join(parts, muted("  "))))
+		}
 	}
 
-	// Agent breakdown line (top 3 agents by count).
-	if len(summary.AgentBreakdown) > 0 {
-		type agentCount struct {
-			agent string
-			n     int
-		}
-		var agents []agentCount
-		for a, n := range summary.AgentBreakdown {
-			agents = append(agents, agentCount{a, n})
-		}
-		sort.Slice(agents, func(i, j int) bool { return agents[i].n > agents[j].n })
-		limit := 3
-		if len(agents) < limit {
-			limit = len(agents)
-		}
-		var parts []string
-		for i := 0; i < limit; i++ {
-			parts = append(parts, fmt.Sprintf("%s: %d", agents[i].agent, agents[i].n))
-		}
-		sb.WriteString(fmt.Sprintf("  %s agents  %s\n", muted("·"), strings.Join(parts, muted("  "))))
-	}
-
+	var sb strings.Builder
+	sb.WriteString("\n")
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       toolName + " Activity",
+		RightHeader: thermal.FormatPath(dbPath),
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
 	sb.WriteString("\n")
 
 	return sb.String()

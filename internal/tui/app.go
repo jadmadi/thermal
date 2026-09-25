@@ -56,6 +56,7 @@ type Model struct {
 	mixSel      int
 	statsLog    bool // histogram scale override
 	statsDense  bool // 9-box dense FinOps grid toggle
+	statsOffset int  // vertical scroll offset for dense grid
 	modelsSort  ModelSort
 	modelsSel   int
 	modelsTools []ToolShare
@@ -71,15 +72,25 @@ type Model struct {
 
 // New builds a dashboard model over already-loaded data.
 func New(adapter Adapter, colorful bool) Model {
+	return NewWithTab(adapter, colorful, tabOverview)
+}
+
+// NewWithTab builds a dashboard model over already-loaded data, starting on the specified tab.
+func NewWithTab(adapter Adapter, colorful bool, initialTab int) Model {
+	if initialTab < 0 || initialTab >= len(Tabs) {
+		initialTab = 0
+	}
 	return Model{
 		adapter:    adapter,
 		palette:    newPalette(colorful),
+		tab:        initialTab,
 		rng:        Range30d,
 		metric:     MetricTokens,
 		sort:       SortTokens,
 		projSort:   ProjectSortTokens,
 		mixBy:      "tool",
 		modelsSort: ModelSortTokens,
+		statsDense: initialTab == tabStats,
 		width:      80,
 		height:     24,
 	}
@@ -218,7 +229,28 @@ func (m Model) View() tea.View {
 		b.WriteString(indent(renderModels(m.buildModelsView(), m.innerWidth(), m.height, m.modelsSel, m.palette), "  "))
 	case m.tab == tabStats:
 		if m.statsDense {
-			b.WriteString(indent(RenderDenseFinOps(m.adapter.BuildFinOpsGrid(), m.innerWidth(), m.palette.Colorful), "  "))
+			gridContent := RenderDenseFinOps(m.adapter.BuildFinOpsGrid(), m.innerWidth(), m.palette.Colorful)
+			lines := strings.Split(gridContent, "\n")
+			avail := m.height - 5
+			if avail < 1 {
+				avail = 1
+			}
+			offset := m.statsOffset
+			maxOffset := len(lines) - avail
+			if maxOffset < 0 {
+				maxOffset = 0
+			}
+			if offset > maxOffset {
+				offset = maxOffset
+			}
+			if offset < 0 {
+				offset = 0
+			}
+			end := offset + avail
+			if end > len(lines) {
+				end = len(lines)
+			}
+			b.WriteString(indent(strings.Join(lines[offset:end], "\n"), "  "))
 		} else {
 			sv := m.adapter.BuildStats(m.rng, m.metric)
 			if m.statsLog {
@@ -336,12 +368,70 @@ func (m *Model) updateStats(pressed string) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 	case "d":
 		m.statsDense = !m.statsDense
+		m.statsOffset = 0
 		if m.statsDense {
 			m.status = "stats: dense 9-box FinOps grid"
 		} else {
 			m.status = "stats: distribution view"
 		}
 		return true, m, nil
+	case "j", "down":
+		if m.statsDense {
+			m.statsOffset += 2
+			return true, m, nil
+		}
+	case "k", "up":
+		if m.statsDense && m.statsOffset > 0 {
+			m.statsOffset -= 2
+			if m.statsOffset < 0 {
+				m.statsOffset = 0
+			}
+			return true, m, nil
+		}
+	case "J":
+		if m.statsDense {
+			m.statsOffset += 12
+			return true, m, nil
+		}
+	case "K":
+		if m.statsDense && m.statsOffset > 0 {
+			m.statsOffset -= 12
+			if m.statsOffset < 0 {
+				m.statsOffset = 0
+			}
+			return true, m, nil
+		}
+	case "pgdown", "pagedown", "ctrl+d", " ", "space":
+		if m.statsDense {
+			step := m.height / 2
+			if step < 6 {
+				step = 6
+			}
+			m.statsOffset += step
+			return true, m, nil
+		}
+	case "pgup", "pageup", "ctrl+u":
+		if m.statsDense && m.statsOffset > 0 {
+			step := m.height / 2
+			if step < 6 {
+				step = 6
+			}
+			m.statsOffset -= step
+			if m.statsOffset < 0 {
+				m.statsOffset = 0
+			}
+			return true, m, nil
+		}
+	case "g", "home":
+		if m.statsDense {
+			m.statsOffset = 0
+			return true, m, nil
+		}
+	case "G", "end":
+		if m.statsDense {
+			m.statsOffset = 99999
+			return true, m, nil
+		}
 	case "s", "?":
 		return false, m, nil
 	}

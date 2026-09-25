@@ -6,9 +6,9 @@ package render
 import (
 	"fmt"
 	"math"
-	"os"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -22,14 +22,14 @@ const (
 
 // RenderReplay formats the simulation outcome into an executive comparison table.
 func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
-	green := func(s string) string { return ColorCode(colors, "1;32", s) }
-	yellow := func(s string) string { return ColorCode(colors, "1;33", s) }
-	red := func(s string) string { return ColorCode(colors, "1;31", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	gold := st.Gold
+	green := st.Success
+	yellow := st.Warning
+	red := st.Error
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -70,24 +70,26 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 	alignRight := []bool{false, false, true, true, false}
 	widths := []int{planNameWidth, planTypeWidth, planCostWidth, planDeltaWidth, planVerdictWidth}
 
-	sb.WriteString("  ")
+	rule := 2 * (len(widths) - 1)
+	for _, width := range widths {
+		rule += width
+	}
+
+	var cardLines []string
+	var hsb strings.Builder
+	hsb.WriteString(" ")
 	for i, h := range headers {
 		cell := thermal.PadRight(h, widths[i])
 		if alignRight[i] {
 			cell = thermal.PadLeft(h, widths[i])
 		}
-		sb.WriteString(dim(cell))
+		hsb.WriteString(dim(cell))
 		if i < len(headers)-1 {
-			sb.WriteString("  ")
+			hsb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
-
-	rule := 2 * (len(widths) - 1)
-	for _, width := range widths {
-		rule += width
-	}
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 
 	for _, p := range rep.Plans {
 		typeLabel := "Sub"
@@ -125,27 +127,40 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 			thermal.PadRight(verdictStyled, widths[4]),
 		}
 
-		sb.WriteString("  ")
+		var rowB strings.Builder
+		rowB.WriteString(" ")
 		for j, c := range cells {
 			if p.IsRecommended && j < 4 {
 				c = gold(c)
 			}
-			sb.WriteString(c)
+			rowB.WriteString(c)
 			if j < len(cells)-1 {
-				sb.WriteString("  ")
+				rowB.WriteString("  ")
 			}
 		}
-		sb.WriteString("\n")
+		cardLines = append(cardLines, rowB.String())
 	}
 
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Simulation Results",
+		RightHeader: "subscription comparison",
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
+	sb.WriteString("\n")
 
 	if rep.Recommendation != "" {
 		sb.WriteString(fmt.Sprintf("\n  %s\n", highlight("Recommendation:")))
+		recLimit := BoundedCardWidth(2)
 		for _, line := range strings.Split(rep.Recommendation, "\n") {
 			line = strings.TrimSpace(line)
 			if line != "" {
-				sb.WriteString(fmt.Sprintf("  • %s\n", line))
+				for _, wl := range WrapBullet("  • ", line, recLimit) {
+					sb.WriteString(wl + "\n")
+				}
 			}
 		}
 	}

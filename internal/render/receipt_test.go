@@ -60,11 +60,11 @@ func TestRenderReceipt(t *testing.T) {
 	if !strings.Contains(out, "Verification Rate: 50.0%") {
 		t.Errorf("missing verification rate in receipt render:\n%s", out)
 	}
-	if !strings.Contains(out, "[VERIFIED]") || !strings.Contains(out, "[CLAIMED]") {
-		t.Errorf("missing status badges in receipt render:\n%s", out)
+	if !strings.Contains(out, "[PASS] Verified") || !strings.Contains(out, "[CLAIM] Untested") {
+		t.Errorf("missing outcome badges in receipt render:\n%s", out)
 	}
 	if !strings.Contains(out, "Tier 1") || !strings.Contains(out, "Tier 2") {
-		t.Errorf("missing tier badges in receipt render:\n%s", out)
+		t.Errorf("missing tier references in receipt render:\n%s", out)
 	}
 	if !strings.Contains(out, "go test (exit 0)") {
 		t.Errorf("missing evidence summary in receipt render:\n%s", out)

@@ -5,10 +5,10 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -33,11 +33,11 @@ func RenderProjectsBreakdown(rep thermal.ProjectReport, top int, noColor bool) s
 }
 
 func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	gold := st.Gold
 
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -58,24 +58,27 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	alignRight := []bool{false, false, false, true, true, true, false}
 	widths := []int{rankWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
 
-	sb.WriteString("  ")
+	rule := 2 * (len(widths) - 1)
+	for _, w := range widths {
+		rule += w
+	}
+
+	var cardLines []string
+
+	var hsb strings.Builder
+	hsb.WriteString(" ")
 	for i, h := range headers {
 		cell := thermal.PadRight(h, widths[i])
 		if alignRight[i] {
 			cell = thermal.PadLeft(h, widths[i])
 		}
-		sb.WriteString(dim(cell))
+		hsb.WriteString(dim(cell))
 		if i < len(headers)-1 {
-			sb.WriteString("  ")
+			hsb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
-
-	rule := 2 * (len(widths) - 1)
-	for _, w := range widths {
-		rule += w
-	}
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, hsb.String())
+	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 
 	shown := len(rep.Rows)
 	if top > 0 && top < shown {
@@ -83,18 +86,19 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	}
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
-		printProjectRow(&sb, i+1, row, names[row.Project], widths, nil)
+		cardLines = append(cardLines, formatProjectRow(i+1, row, names[row.Project], widths, nil))
 		if breakdown {
-			printProjectBreakdown(&sb, row, dim)
+			for _, bl := range formatProjectBreakdown(row, dim) {
+				cardLines = append(cardLines, bl)
+			}
 		}
 	}
 	if rest := len(rep.Rows) - shown; rest > 0 {
-		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest))))
+		cardLines = append(cardLines, " "+dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest)))
 	}
 
-	sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 	totals := rep.Totals
-	sb.WriteString("  ")
 	cells := []string{
 		thermal.PadRight("", rankWidth),
 		thermal.PadRight("Total", projectWidth),
@@ -104,35 +108,53 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		thermal.PadLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
 		thermal.PadRight(totals.LastDay, lastWidth),
 	}
+	var totalSb strings.Builder
+	totalSb.WriteString(" ")
 	for i, c := range cells {
-		sb.WriteString(gold(c))
+		totalSb.WriteString(gold(c))
 		if i < len(cells)-1 {
-			sb.WriteString("  ")
+			totalSb.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
+	cardLines = append(cardLines, totalSb.String())
 
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Projects",
+		RightHeader: "attribution & spend",
+		Lines:       cardLines,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
+
+	footLimit := BoundedCardWidth(2)
 	if totals.EstimatedCost > 0 {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(fmt.Sprintf(
-			"Total = %s recorded + ~%s estimated from pricing data.",
-			formatCost(totals.StoredCost), formatCost(totals.EstimatedCost)))))
+		note := fmt.Sprintf("Total = %s recorded + ~%s estimated from pricing data.", formatCost(totals.StoredCost), formatCost(totals.EstimatedCost))
+		for _, wl := range WrapText(note, footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
 	}
 	if note := unpriceableNote(totals.UnattributedTokens); note != "" {
-		sb.WriteString("  " + dim(note) + "\n")
+		for _, wl := range WrapText(note, footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
 	}
 	if len(totals.MissingPricing) > 0 {
 		models := totals.MissingPricing
 		if len(models) > 4 {
 			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
 		}
-		sb.WriteString(fmt.Sprintf("  %s\n", dim("No pricing for: "+strings.Join(models, ", "))))
+		for _, wl := range WrapText("No pricing for: "+strings.Join(models, ", "), footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
 	}
 
 	sb.WriteString("\n")
 	return sb.String()
 }
 
-func printProjectRow(sb *strings.Builder, rank int, row thermal.ProjectRow, name string, widths []int, style func(string) string) {
+func formatProjectRow(rank int, row thermal.ProjectRow, name string, widths []int, style func(string) string) string {
 	cells := []string{
 		thermal.PadLeft(fmt.Sprintf("%d.", rank), widths[0]),
 		thermal.PadRight(truncate(name, widths[1]), widths[1]),
@@ -142,17 +164,18 @@ func printProjectRow(sb *strings.Builder, rank int, row thermal.ProjectRow, name
 		thermal.PadLeft(fmt.Sprintf("%d", row.ActiveDays), widths[5]),
 		thermal.PadRight(row.LastDay, widths[6]),
 	}
-	sb.WriteString("  ")
+	var b strings.Builder
+	b.WriteString(" ")
 	for i, c := range cells {
 		if style != nil {
 			c = style(c)
 		}
-		sb.WriteString(c)
+		b.WriteString(c)
 		if i < len(cells)-1 {
-			sb.WriteString("  ")
+			b.WriteString("  ")
 		}
 	}
-	sb.WriteString("\n")
+	return b.String()
 }
 
 func formatCostOrDash(v float64) string {
@@ -178,12 +201,13 @@ func projectPaths(rows []thermal.ProjectRow) []string {
 	return paths
 }
 
-// printProjectBreakdown writes the tool split and top models under one project
+// formatProjectBreakdown formats the tool split and top models under one project
 // row. Both lines show token totals rather than shares, because some tools
 // record no model attribution, which would make percentages misleading.
-func printProjectBreakdown(sb *strings.Builder, row thermal.ProjectRow, dim func(string) string) {
+func formatProjectBreakdown(row thermal.ProjectRow, dim func(string) string) []string {
+	var lines []string
 	if len(row.Tools) > 1 {
-		sb.WriteString("        " + dim("tools   "+weightLine(row.Tools, row.ToolTokens, 3)) + "\n")
+		lines = append(lines, "       "+dim("tools   "+weightLine(row.Tools, row.ToolTokens, 3)))
 	}
 	if len(row.Models) > 1 {
 		names := make([]string, 0, len(row.Models))
@@ -202,8 +226,9 @@ func printProjectBreakdown(sb *strings.Builder, row thermal.ProjectRow, dim func
 		for i, name := range names {
 			shortWeights[labels[i]] = weights[name]
 		}
-		sb.WriteString("        " + dim("models  "+weightLine(labels, shortWeights, 3)) + "\n")
+		lines = append(lines, "       "+dim("models  "+weightLine(labels, shortWeights, 3)))
 	}
+	return lines
 }
 
 // weightLine renders "name tokens" entries, largest first, capped at limit.

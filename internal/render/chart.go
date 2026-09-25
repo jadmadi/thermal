@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -43,7 +44,7 @@ func omittedLine(omitted int, colors bool) string {
 	if omitted <= 0 {
 		return ""
 	}
-	return fmt.Sprintf("  %s\n", ColorCode(colors, "38;5;239",
+	return fmt.Sprintf("  %s\n", theme.Border.Sprint(colors,
 		fmt.Sprintf("… and %d more rows (raise --top to see them in the table)", omitted)))
 }
 
@@ -79,7 +80,7 @@ func chartBar(value, maxVal float64, width int, colors bool) string {
 	if !colors {
 		return full + rest
 	}
-	return ColorCode(true, "38;5;40", full) + ColorCode(true, "38;5;239", rest)
+	return theme.Primary.Sprint(true, full) + theme.Border.Sprint(true, rest)
 }
 
 // titleCase capitalises the first letter of an ASCII word. strings.Title is
@@ -132,18 +133,24 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, widt
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("  %s  %s\n",
-		ColorCode(colors, "1;38;5;255", "Projects by tokens"),
-		ColorCode(colors, "38;5;239", fmt.Sprintf("bar = share of the largest row, %s", thermal.CompactNumber(rep.Rows[0].Tokens)))))
+		theme.Text.SprintBold(colors, "Projects by tokens"),
+		theme.TextMuted.Sprint(colors, fmt.Sprintf("bar = share of the largest row, %s", thermal.CompactNumber(rep.Rows[0].Tokens)))))
 	b.WriteString("\n")
+
+	if names == nil {
+		var paths []string
+		for _, r := range rep.Rows {
+			paths = append(paths, r.Project)
+		}
+		names = thermal.ProjectDisplayNames(paths)
+	}
 
 	maxVal := float64(rep.Rows[0].Tokens)
 	shown, omitted := chartRows(len(rep.Rows))
 	for _, row := range rep.Rows[:shown] {
 		label := row.Project
-		if names != nil {
-			if display, ok := names[label]; ok && display != "" {
-				label = display
-			}
+		if display, ok := names[label]; ok && display != "" {
+			label = display
 		}
 		name := truncateLabel(label, labelW)
 		b.WriteString(fmt.Sprintf("  %s  %s  %s\n",
@@ -167,8 +174,8 @@ func RenderModelChart(rep thermal.ModelReport, width int, noColor bool) string {
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("  %s  %s\n",
-		ColorCode(colors, "1;38;5;255", "Models by tokens"),
-		ColorCode(colors, "38;5;239", "estimated cost beside each bar")))
+		theme.Text.SprintBold(colors, "Models by tokens"),
+		theme.TextMuted.Sprint(colors, "estimated cost beside each bar")))
 	b.WriteString("\n")
 
 	maxVal := float64(rep.Rows[0].Tokens)
@@ -228,8 +235,8 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("  %s  %s\n",
-		ColorCode(colors, "1;38;5;255", title),
-		ColorCode(colors, "38;5;239", "bar = share of the largest period on screen")))
+		theme.Text.SprintBold(colors, title),
+		theme.TextMuted.Sprint(colors, "bar = share of the largest period on screen")))
 	b.WriteString("\n")
 
 	shown, omitted := chartRows(len(order))

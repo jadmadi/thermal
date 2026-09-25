@@ -6,6 +6,7 @@ package render
 import (
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -13,8 +14,13 @@ func heatCell(level int, colors bool) string {
 	if !colors {
 		return []string{"□", "░", "▒", "▓", "█"}[level]
 	}
-	palette := []string{"38;5;238", "38;5;22", "38;5;28", "38;5;34", "38;5;40"}
-	return ColorCode(true, palette[level], "■")
+	if level < 0 {
+		level = 0
+	}
+	if level >= len(theme.HeatmapLevels) {
+		level = len(theme.HeatmapLevels) - 1
+	}
+	return theme.HeatmapLevels[level].Sprint(true, "■")
 }
 
 func RenderHeatmap(activity map[string]thermal.DayActivity, weeks int, colors bool) []string {

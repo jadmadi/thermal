@@ -5,32 +5,32 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
 const (
-	yieldRankWidth    = 4
-	yieldEntityWidth  = 30
-	yieldTokensWidth  = 11
-	yieldLinesWidth   = 9
-	yieldNetWidth     = 10
-	yieldRatioWidth   = 13
-	yieldEffWidth     = 13
+	yieldRankWidth   = 4
+	yieldEntityWidth = 30
+	yieldTokensWidth = 11
+	yieldLinesWidth  = 9
+	yieldNetWidth    = 10
+	yieldRatioWidth  = 13
+	yieldEffWidth    = 13
 )
 
 // RenderYield renders the token yield and code output delta table.
 func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
-	colors := !noColor && IsTerminal() && os.Getenv("NO_COLOR") == ""
-
-	highlight := func(s string) string { return ColorCode(colors, "1;38;5;255", s) }
-	dim := func(s string) string { return ColorCode(colors, "38;5;239", s) }
-	green := func(s string) string { return ColorCode(colors, "1;32", s) }
-	gold := func(s string) string { return ColorCode(colors, "1;33", s) }
-	magenta := func(s string) string { return ColorCode(colors, "1;35", s) }
-	cyan := func(s string) string { return ColorCode(colors, "36", s) }
+	st := NewStyle(noColor)
+	colors := st.Colors
+	highlight := st.Highlight
+	dim := st.Dim
+	green := st.Success
+	gold := st.Gold
+	magenta := st.Warning
+	cyan := st.Accent
 
 	effBadge := func(eff, status string) string {
 		if status == "UNMEASURED" {
@@ -70,26 +70,38 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 		rule += w
 	}
 
+	cardWidth := BoundedCardWidth(2)
+
+	// Resolve project slugs from paths
+	var projPaths []string
+	for _, p := range rep.Projects {
+		if p.Path != "" {
+			projPaths = append(projPaths, p.Path)
+		} else {
+			projPaths = append(projPaths, p.Name)
+		}
+	}
+	projDisplayNames := thermal.ProjectDisplayNames(projPaths)
+
 	renderSection := func(title string, rows []thermal.YieldRow) {
 		if len(rows) == 0 {
 			return
 		}
-		if title != "" {
-			sb.WriteString(fmt.Sprintf("  %s\n", highlight(title)))
-		}
-		sb.WriteString("  ")
+		var cardLines []string
+		var hsb strings.Builder
+		hsb.WriteString(" ")
 		for i, h := range headers {
 			cell := thermal.PadRight(h, widths[i])
 			if alignRight[i] {
 				cell = thermal.PadLeft(h, widths[i])
 			}
-			sb.WriteString(dim(cell))
+			hsb.WriteString(dim(cell))
 			if i < len(headers)-1 {
-				sb.WriteString("  ")
+				hsb.WriteString("  ")
 			}
 		}
-		sb.WriteString("\n")
-		sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n")
+		cardLines = append(cardLines, hsb.String())
+		cardLines = append(cardLines, strings.Repeat("─", rule))
 
 		shown := len(rows)
 		if top > 0 && top < shown {
@@ -112,29 +124,56 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 				yieldStr = fmt.Sprintf("%s tok/ln", thermal.CompactNumber(int64(r.TokensPerNet)))
 			}
 
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadRight(truncate(r.Name, widths[1]), widths[1]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(thermal.CompactNumber(r.Tokens), widths[2]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(addStr, widths[3]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(delStr, widths[4]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(netStr, widths[5]))
-			sb.WriteString("  ")
-			sb.WriteString(thermal.PadLeft(yieldStr, widths[6]))
-			sb.WriteString("  ")
-			sb.WriteString(effBadge(r.Efficiency, r.Status))
-			sb.WriteString("\n")
+			displayName := r.Name
+			if r.Type == "project" {
+				if r.Path != "" {
+					if dn, ok := projDisplayNames[r.Path]; ok && dn != "" {
+						displayName = dn
+					} else {
+						displayName = thermal.ProjectSlug(r.Path)
+					}
+				} else if dn, ok := projDisplayNames[r.Name]; ok && dn != "" {
+					displayName = dn
+				} else {
+					displayName = thermal.ProjectSlug(r.Name)
+				}
+			}
+
+			var rowB strings.Builder
+			rowB.WriteString(" ")
+			rowB.WriteString(thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadRight(truncate(displayName, widths[1]), widths[1]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadLeft(thermal.CompactNumber(r.Tokens), widths[2]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadLeft(addStr, widths[3]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadLeft(delStr, widths[4]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadLeft(netStr, widths[5]))
+			rowB.WriteString("  ")
+			rowB.WriteString(thermal.PadLeft(yieldStr, widths[6]))
+			rowB.WriteString("  ")
+			rowB.WriteString(effBadge(r.Efficiency, r.Status))
+			cardLines = append(cardLines, rowB.String())
 		}
 
 		if rest := len(rows) - shown; rest > 0 {
-			sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest))))
+			cardLines = append(cardLines, " "+dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest)))
 		}
-		sb.WriteString("  " + dim(strings.Repeat("─", rule)) + "\n\n")
+
+		sb.WriteString(RenderCard(CardOptions{
+			Title:       title,
+			RightHeader: "code delta & efficiency",
+			Lines:       cardLines,
+			Indent:      2,
+			Colors:      colors,
+			TitleColor:  theme.Primary,
+			BorderColor: theme.Border,
+			MaxWidth:    cardWidth,
+		}))
+		sb.WriteString("\n")
 	}
 
 	// Render Models if present
@@ -182,6 +221,18 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 		highlight(totYieldStr),
 		effBadge(tot.Efficiency, tot.Status),
 	))
+
+	effScale := fmt.Sprintf("%s %s · %s · %s · %s",
+		highlight("Efficiency Scale:"),
+		green("[HIGH] <=250 tok/ln"),
+		gold("[BALANCED] <=1K tok/ln"),
+		magenta("[VERBOSE] >1K tok/ln"),
+		dim("[EXPLORATORY] unmeasured"),
+	)
+	for _, wl := range WrapBullet("  • ", effScale, BoundedCardWidth(2)) {
+		sb.WriteString(wl + "\n")
+	}
+	sb.WriteString("\n")
 
 	return sb.String()
 }
