@@ -60,7 +60,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 
 Prefer a hosted page? The documentation site in
 [`docs/pages`](docs/pages) covers the same ground with rendered terminal
-output: https://jadmadi.net/projects/thermal/
+output: https://jadmadi.net/project/thermal/
 
 Or download a pre-built binary from [Releases](https://github.com/jadmadi/thermal/releases).
 

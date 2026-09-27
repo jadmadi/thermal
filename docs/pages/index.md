@@ -6,7 +6,7 @@
 
 Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.
 
-- **Website**: https://jadmadi.net/projects/thermal/
+- **Website**: https://jadmadi.net/project/thermal/
 - **Repository**: https://github.com/jadmadi/thermal
 - **License**: Dual-licensed under AGPL-3.0 (Community Edition) and Commercial Enterprise License
 
@@ -165,7 +165,7 @@ Thermal automatically ingests activity and disjoint token metrics from 14 AI cod
 
 ## Documentation & Project Links
 
-- **Documentation**: https://jadmadi.net/projects/thermal/
+- **Documentation**: https://jadmadi.net/project/thermal/
 - **Repository**: https://github.com/jadmadi/thermal
 - **License Terms**: Dual-licensed under GNU AGPL-3.0 (Community Edition) and Commercial Enterprise License
 - **Governance & Scope**: [GOVERNANCE.md](https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md)

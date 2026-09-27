@@ -282,7 +282,7 @@ func RenderHelp(noColor bool) string {
 	}
 
 	// 7. Footer
-	footerText := "Documentation & guides: https://jadmadi.net/projects/thermal/ · AGPL-3.0 / Commercial"
+	footerText := "Documentation & guides: https://jadmadi.net/project/thermal/ · AGPL-3.0 / Commercial"
 	for _, line := range WrapText(footerText, termWidth-4) {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
 	}

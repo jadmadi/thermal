@@ -457,7 +457,7 @@ func TestSimulatedUser_ShareCommand(t *testing.T) {
 	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "share · stateless streak card") {
 		t.Errorf("'thermal share' missing header: %s", stdout)
 	}
-	if !strings.Contains(stdout, "https://jadmadi.net/projects/thermal/share#v1.") {
+	if !strings.Contains(stdout, "https://jadmadi.net/project/thermal/share#v1.") {
 		t.Errorf("'thermal share' missing valid share URL: %s", stdout)
 	}
 

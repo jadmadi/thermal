@@ -13,7 +13,7 @@
   "links": {
     "repository": "https://github.com/jadmadi/thermal",
     "releases": "https://github.com/jadmadi/thermal/releases",
-    "docs": "https://jadmadi.net/projects/thermal/"
+    "docs": "https://jadmadi.net/project/thermal/"
   },
   "install": {
     "curl": "curl -fsSL https://jadmadi.net/thermal/install.sh | sh",

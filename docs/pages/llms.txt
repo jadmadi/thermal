@@ -4,10 +4,10 @@
 
 Thermal scans local databases and session transcripts across 15 AI coding tools (Claude Code, Devin, OpenCode, Codex, Grok, Agy, DeepSeek DSH, Nous Hermes, MiMoCode, codewhale, ZCode, Muse, Droid, command-code), aggregates tokens and cost metrics, and renders beautiful terminal heatmaps and reports.
 
-- Canonical Site: https://jadmadi.net/projects/thermal/
+- Canonical Site: https://jadmadi.net/project/thermal/
 - Repository: https://github.com/jadmadi/thermal
-- Full Specification: https://jadmadi.net/projects/thermal/llms-full.txt
-- Migration Guide: https://jadmadi.net/projects/thermal/migration
+- Full Specification: https://jadmadi.net/project/thermal/llms-full.txt
+- Migration Guide: https://jadmadi.net/project/thermal/migration
 
 ## Quickstart & Installation
 

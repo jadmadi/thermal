@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Advanced Mode Worker
- * High-SEO 301 Permanent Redirect Engine for thermal.jadmadi.net -> jadmadi.net/projects/thermal/
+ * High-SEO 301 Permanent Redirect Engine for thermal.jadmadi.net -> jadmadi.net/project/thermal/
  */
 export default {
   async fetch(request, env) {
@@ -12,13 +12,13 @@ export default {
     }
 
     // 2. Target URL construction preserving subpaths when relevant
-    let target = "https://jadmadi.net/projects/thermal/";
+    let target = "https://jadmadi.net/project/thermal/";
     if (url.pathname === "/share" || url.pathname === "/share.html") {
-      target = "https://jadmadi.net/projects/thermal/share" + url.search;
+      target = "https://jadmadi.net/project/thermal/share" + url.search;
     } else if (url.pathname === "/llms.txt") {
-      target = "https://jadmadi.net/projects/thermal/llms.txt";
+      target = "https://jadmadi.net/project/thermal/llms.txt";
     } else if (url.pathname === "/llms-full.txt") {
-      target = "https://jadmadi.net/projects/thermal/llms-full.txt";
+      target = "https://jadmadi.net/project/thermal/llms-full.txt";
     }
 
     // 3. High-SEO 301 Permanent Redirect Response
@@ -40,7 +40,7 @@ export default {
 </head>
 <body style="font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;padding:40px;text-align:center;">
   <h1>Redirecting to <a href="${target}" style="color:#58a6ff;">${target}</a>...</h1>
-  <p>Thermal has moved to <a href="${target}" style="color:#58a6ff;">https://jadmadi.net/projects/thermal/</a>.</p>
+  <p>Thermal has moved to <a href="${target}" style="color:#58a6ff;">https://jadmadi.net/project/thermal/</a>.</p>
 </body>
 </html>`;
 
