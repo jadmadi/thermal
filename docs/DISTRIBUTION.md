@@ -19,8 +19,8 @@ Thermal employs a **Coverage-First** distribution model focused on zero-friction
 3. **Go Toolchain**:
    - Direct module compilation: `go install github.com/jadmadi/thermal/cmd/thermal@latest`.
 4. **Machine & Agent Discoverability**:
-   - Web standard `llms.txt`: `https://jadmadi.net/projects/thermal/llms.txt`
-   - Exhaustive specification: `https://jadmadi.net/projects/thermal/llms-full.txt`
+   - Web standard `llms.txt`: `https://jadmadi.net/project/thermal/llms.txt`
+   - Exhaustive specification: `https://jadmadi.net/project/thermal/llms-full.txt`
 5. **Cryptographic Release Provenance (SLSA Level 3)**:
    - Built and attested via OpenSSF generic SLSA3 generator inside ephemeral GitHub Actions runners.
    - Non-falsifiable in-toto provenance (`checksums.txt.intoto.jsonl`) generated using Sigstore keyless OIDC (Fulcio + Rekor transparency log).
@@ -130,9 +130,9 @@ To measure channel performance without invading user privacy or transmitting run
 | Channel | URL Parameter | Destination Surface |
 | :--- | :--- | :--- |
 | Awesome Go | `?ref=awesome-go` | `https://github.com/jadmadi/thermal` |
-| Awesome AI Tools | `?ref=awesome-ai` | `https://jadmadi.net/projects/thermal` |
-| Homebrew Tap | `?utm_source=homebrew` | `https://jadmadi.net/projects/thermal` |
-| Standalone Script | `?utm_source=install-sh` | `https://jadmadi.net/projects/thermal` |
+| Awesome AI Tools | `?ref=awesome-ai` | `https://jadmadi.net/project/thermal` |
+| Homebrew Tap | `?utm_source=homebrew` | `https://jadmadi.net/project/thermal` |
+| Standalone Script | `?utm_source=install-sh` | `https://jadmadi.net/project/thermal` |
 
 ---
 

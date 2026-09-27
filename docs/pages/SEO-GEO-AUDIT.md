@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 Scope: `docs/pages/` (one page, `index.html`, mirrored as `404.html`)
-Target URL for canonical tags: `https://jadmadi.net/projects/thermal/`
+Target URL for canonical tags: `https://jadmadi.net/project/thermal/`
 
 ## Status after this pass
 
@@ -110,6 +110,6 @@ Where thermal differs, and where the content should push:
 
 ## Notes on the canonical URL
 
-Every canonical reference points at `https://jadmadi.net/projects/thermal/`.
+Every canonical reference points at `https://jadmadi.net/project/thermal/`.
 The canonical link, `og:url`, `og:image`, `twitter:image`, the `Sitemap:` line
 in `robots.txt`, and the `<loc>` in `sitemap.xml` all point to the unified project path.
