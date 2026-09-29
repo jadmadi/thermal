@@ -39,7 +39,7 @@ func TestLoadCodexData_NestedTokenTypes(t *testing.T) {
 	}
 
 	// tokens_used matches the rollout total, so no scaling applies.
-	_, err = db.Exec(`INSERT INTO threads VALUES ('t1', 90, 'gpt-4o', 'cli', '', '', 1710504000, 1710504060, ?, 0)`, rolloutPath)
+	_, err = db.Exec(`INSERT INTO threads VALUES ('t1', 90, 'gpt-4o', 'cli', 'high', '', 1710504000, 1710504060, ?, 0)`, rolloutPath)
 	if err != nil {
 		t.Fatalf("failed inserting thread: %v", err)
 	}
@@ -56,12 +56,18 @@ func TestLoadCodexData_NestedTokenTypes(t *testing.T) {
 		t.Errorf("expected disjoint summary 40/20/10/20, got %d/%d/%d/%d",
 			sum.InputTokens, sum.OutputTokens, sum.ReasoningTokens, sum.CacheTokens)
 	}
+	if sum.ReasoningBreakdown["high"] != 1 {
+		t.Errorf("expected summary reasoning breakdown high=1, got %v", sum.ReasoningBreakdown)
+	}
 	if len(daily) != 1 {
 		t.Fatalf("expected 1 daily row, got %d", len(daily))
 	}
 	d := daily[0]
 	if d.Input != 40 || d.Output != 20 || d.Reasoning != 10 || d.Cache != 20 {
 		t.Errorf("expected disjoint daily 40/20/10/20, got %d/%d/%d/%d", d.Input, d.Output, d.Reasoning, d.Cache)
+	}
+	if d.ReasoningEffort["high"] != 1 {
+		t.Errorf("expected daily reasoning effort high=1, got %v", d.ReasoningEffort)
 	}
 	if d.Input+d.Output+d.Reasoning+d.Cache != d.Tokens {
 		t.Errorf("daily types %d must add up to tokens %d",

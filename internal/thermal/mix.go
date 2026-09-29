@@ -233,6 +233,9 @@ func normalMixBy(by string) string {
 	if strings.EqualFold(by, "model") {
 		return "model"
 	}
+	if strings.EqualFold(by, "reasoning") {
+		return "reasoning"
+	}
 	return "tool"
 }
 
@@ -315,4 +318,80 @@ func dayCost(day DailyRow, pricer Pricer) (float64, bool) {
 	}
 	cost, _ := pricer.PriceDay(day)
 	return cost, cost > 0
+}
+
+// AggregateReasoningMix buckets per-day reasoning effort and cognitive intensity into periods.
+func AggregateReasoningMix(batches []ToolDays, opts MixOptions, pricer Pricer) MixReport {
+	since, until, lastStart := windowBounds(opts.Since, opts.Until, opts.Last, opts.Now)
+	a := newMixAccumulator(opts)
+	a.metric = normalMixMetric(opts.Metric)
+
+	for _, batch := range batches {
+		for _, day := range batch.Days {
+			t, ok := ParseDay(day.Day)
+			if !ok || !inWindow(t, since, until, lastStart) {
+				continue
+			}
+			if isActivityOnly(day) {
+				continue
+			}
+
+			if len(day.ReasoningEffort) > 0 {
+				totalEffortSessions := 0
+				for _, count := range day.ReasoningEffort {
+					totalEffortSessions += count
+				}
+
+				if a.metric == "cost" {
+					cost, estimated := dayCost(day, pricer)
+					if cost > 0 && totalEffortSessions > 0 {
+						for effort, count := range day.ReasoningEffort {
+							share := float64(count) / float64(totalEffortSessions)
+							a.add(day.Day, effort, cost*share)
+						}
+					}
+					a.estimated = a.estimated || estimated
+					continue
+				}
+
+				if day.Reasoning > 0 && totalEffortSessions > 0 {
+					for effort, count := range day.ReasoningEffort {
+						share := float64(count) / float64(totalEffortSessions)
+						a.add(day.Day, effort, float64(day.Reasoning)*share)
+					}
+				}
+				standardTokens := day.Tokens - day.Reasoning
+				if standardTokens > 0 {
+					a.add(day.Day, "standard", float64(standardTokens))
+				}
+			} else if day.Reasoning > 0 {
+				if a.metric == "cost" {
+					cost, estimated := dayCost(day, pricer)
+					if cost > 0 {
+						a.add(day.Day, "thinking", cost)
+					}
+					a.estimated = a.estimated || estimated
+				} else {
+					a.add(day.Day, "thinking", float64(day.Reasoning))
+					standardTokens := day.Tokens - day.Reasoning
+					if standardTokens > 0 {
+						a.add(day.Day, "standard", float64(standardTokens))
+					}
+				}
+			} else {
+				if a.metric == "cost" {
+					cost, estimated := dayCost(day, pricer)
+					if cost > 0 {
+						a.add(day.Day, "standard", cost)
+					}
+					a.estimated = a.estimated || estimated
+				} else {
+					if day.Tokens > 0 {
+						a.add(day.Day, "standard", float64(day.Tokens))
+					}
+				}
+			}
+		}
+	}
+	return a.finish(opts)
 }

@@ -62,6 +62,15 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 					toolSets[model][batch.Tool] = true
 				}
 
+				if counts.Reasoning > 0 && len(day.ReasoningEffort) > 0 {
+					if row.ReasoningEffort == nil {
+						row.ReasoningEffort = make(map[string]int)
+					}
+					for effort, n := range day.ReasoningEffort {
+						row.ReasoningEffort[effort] += n
+					}
+				}
+
 				if row.FirstDay == "" || day.Day < row.FirstDay {
 					row.FirstDay = day.Day
 				}

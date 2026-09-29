@@ -73,12 +73,13 @@ type Summary struct {
 	Cost             float64 `json:"cost"`
 	LongestSessionMs int64   `json:"longestSessionMs"`
 	// New analytics fields — populated by tools that have them; 0/nil otherwise.
-	LinesAdded     int64            `json:"linesAdded"`
-	LinesDeleted   int64            `json:"linesDeleted"`
-	FilesTouched   int64            `json:"filesTouched"`
-	AgentBreakdown map[string]int   `json:"agentBreakdown,omitempty"`
-	ModelBreakdown map[string]int64 `json:"modelBreakdown,omitempty"`
-	Warnings       []string         `json:"-"`
+	LinesAdded         int64            `json:"linesAdded"`
+	LinesDeleted       int64            `json:"linesDeleted"`
+	FilesTouched       int64            `json:"filesTouched"`
+	AgentBreakdown     map[string]int   `json:"agentBreakdown,omitempty"`
+	ModelBreakdown     map[string]int64 `json:"modelBreakdown,omitempty"`
+	ReasoningBreakdown map[string]int   `json:"reasoningBreakdown,omitempty"`
+	Warnings           []string         `json:"-"`
 }
 
 // ModelTokens holds per-model token counts for a single day. Loaders fill it
@@ -121,19 +122,20 @@ func (m ModelTokens) Add(o ModelTokens) ModelTokens {
 // activity-only tools. Cost holds cost recorded by the source, never an
 // estimate.
 type DailyRow struct {
-	Day          string                 `json:"day"`
-	Tokens       int64                  `json:"tokens"`
-	Turns        int                    `json:"turns"`
-	Input        int64                  `json:"input,omitempty"`
-	Output       int64                  `json:"output,omitempty"`
-	Reasoning    int64                  `json:"reasoning,omitempty"`
-	Cache        int64                  `json:"cache,omitempty"`
-	Cost         float64                `json:"cost,omitempty"`
-	Models       map[string]ModelTokens `json:"models,omitempty"`
-	LinesAdded   int64                  `json:"linesAdded,omitempty"`
-	LinesDeleted int64                  `json:"linesDeleted,omitempty"`
-	FilesTouched int64                  `json:"filesTouched,omitempty"`
-	ModelLines   map[string]LineDelta   `json:"modelLines,omitempty"`
+	Day             string                 `json:"day"`
+	Tokens          int64                  `json:"tokens"`
+	Turns           int                    `json:"turns"`
+	Input           int64                  `json:"input,omitempty"`
+	Output          int64                  `json:"output,omitempty"`
+	Reasoning       int64                  `json:"reasoning,omitempty"`
+	Cache           int64                  `json:"cache,omitempty"`
+	Cost            float64                `json:"cost,omitempty"`
+	Models          map[string]ModelTokens `json:"models,omitempty"`
+	LinesAdded      int64                  `json:"linesAdded,omitempty"`
+	LinesDeleted    int64                  `json:"linesDeleted,omitempty"`
+	FilesTouched    int64                  `json:"filesTouched,omitempty"`
+	ModelLines      map[string]LineDelta   `json:"modelLines,omitempty"`
+	ReasoningEffort map[string]int         `json:"reasoningEffort,omitempty"`
 }
 
 type LineDelta struct {
@@ -293,19 +295,20 @@ type ProjectOptions struct {
 // pricing data because recorded cost attaches to a session or day, never to a
 // single model.
 type ModelRow struct {
-	Model          string   `json:"model"`
-	Tools          []string `json:"tools,omitempty"`
-	Input          int64    `json:"inputTokens"`
-	Output         int64    `json:"outputTokens"`
-	Reasoning      int64    `json:"reasoningTokens"`
-	CacheRead      int64    `json:"cacheReadTokens"`
-	CacheWrite     int64    `json:"cacheWriteTokens"`
-	Tokens         int64    `json:"totalTokens"`
-	Days           int      `json:"activeDays"`
-	FirstDay       string   `json:"firstDay,omitempty"`
-	LastDay        string   `json:"lastDay,omitempty"`
-	Cost           float64  `json:"estimatedCost"`
-	MissingPricing []string `json:"missingPricing,omitempty"`
+	Model           string         `json:"model"`
+	Tools           []string       `json:"tools,omitempty"`
+	Input           int64          `json:"inputTokens"`
+	Output          int64          `json:"outputTokens"`
+	Reasoning       int64          `json:"reasoningTokens"`
+	CacheRead       int64          `json:"cacheReadTokens"`
+	CacheWrite      int64          `json:"cacheWriteTokens"`
+	Tokens          int64          `json:"totalTokens"`
+	Days            int            `json:"activeDays"`
+	FirstDay        string         `json:"firstDay,omitempty"`
+	LastDay         string         `json:"lastDay,omitempty"`
+	Cost            float64        `json:"estimatedCost"`
+	MissingPricing  []string       `json:"missingPricing,omitempty"`
+	ReasoningEffort map[string]int `json:"reasoningEffort,omitempty"`
 }
 
 // ModelReport is the payload behind thermal models.

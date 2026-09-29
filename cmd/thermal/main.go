@@ -566,9 +566,9 @@ func validateReportFlags(opts thermal.Options) error {
 		}
 		if opts.Report == "mix" {
 			switch byKey {
-			case "tool", "model":
+			case "tool", "model", "reasoning":
 			default:
-				return fmt.Errorf("--by must be tool or model")
+				return fmt.Errorf("--by must be tool, model, or reasoning")
 			}
 			switch grainKey {
 			case "day", "week", "month":
@@ -1207,7 +1207,11 @@ func runModelReport(opts thermal.Options) {
 		return
 	}
 
-	fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
+	if opts.Breakdown {
+		fmt.Print(render.RenderModelsBreakdown(rep, opts.Top, opts.NoColor))
+	} else {
+		fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
+	}
 	if opts.Chart {
 		fmt.Print(render.RenderModelChart(rep, reportWidth(), opts.NoColor))
 	}
@@ -1230,6 +1234,8 @@ func runMixReport(opts thermal.Options) {
 	var rep thermal.MixReport
 	if mixOpts.By == "model" {
 		rep = thermal.AggregateModelMix(set.days, mixOpts, pricer)
+	} else if mixOpts.By == "reasoning" {
+		rep = thermal.AggregateReasoningMix(set.byTool, mixOpts, pricer)
 	} else {
 		rep = thermal.AggregateToolMix(set.byTool, mixOpts, pricer)
 	}
