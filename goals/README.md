@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 77
-- 🟢 **Implemented & Verified**: 72
-- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented & Verified**: 73
+- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 76 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 314/329 completed (95%)
+- 📋 **Execution Tasks Progress**: 317/329 completed (96%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#73)` | - | Codex Sandboxed Execution Verification Receipts — Extract local test runner and linter execution commands and exit codes from Code... | `/goal goals/codex-sandboxed-receipts/goal.md` |
 | [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#74)` | - | Zero-Leak Markdown PR Contribution Receipts — Add --format md (and --format markdown) to thermal receipt and thermal yield to ... | `/goal goals/markdown-pr-receipts/goal.md` |
 | [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#75)` | - | Session Fork & Branch Tree Yield Analytics — Ingest parent-child thread relationships and session forks from Codex (and branc... | `/goal goals/session-fork-tree-analytics/goal.md` |
 | [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#76)` | - | Instant Terminal Statusline & Prompt Composable Helper — Introduce an ultra-fast (<3ms) thermal statusline (or thermal prompt) command de... | `/goal goals/terminal-statusline-helper/goal.md` |
@@ -66,6 +65,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e2a569f` |
 | [`reasoning-effort-telemetry`](reasoning-effort-telemetry/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `0f3f533` |
 | [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `b0759e0` |
+| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `198772e` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
