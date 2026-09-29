@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 77
-- 🟢 **Implemented & Verified**: 74
-- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented & Verified**: 75
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 76 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 320/329 completed (97%)
+- 📋 **Execution Tasks Progress**: 323/329 completed (98%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#75)` | - | Session Fork & Branch Tree Yield Analytics — Ingest parent-child thread relationships and session forks from Codex (and branc... | `/goal goals/session-fork-tree-analytics/goal.md` |
 | [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#76)` | - | Instant Terminal Statusline & Prompt Composable Helper — Introduce an ultra-fast (<3ms) thermal statusline (or thermal prompt) command de... | `/goal goals/terminal-statusline-helper/goal.md` |
 | [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#77)` | - | Repository Agent Readiness and AGENTS.md Audit — Extend thermal audit with an agent-readiness check verifying local repository in... | `/goal goals/agent-readiness-audit/goal.md` |
 
@@ -66,6 +65,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `b0759e0` |
 | [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `198772e` |
 | [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c00ef02` |
+| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `56ec02b` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
