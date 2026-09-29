@@ -66,9 +66,17 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 		dim("· Peak"), thermal.CompactNumber(w.PeakDailyTokens),
 	))
 
+	verdictColWidth := planVerdictWidth
+	for _, p := range rep.Plans {
+		plainVerdict := fmt.Sprintf("%s (%s)", p.CapacityVerdict, p.VerdictDetail)
+		if len(plainVerdict) > verdictColWidth {
+			verdictColWidth = len(plainVerdict)
+		}
+	}
+
 	headers := []string{"Plan / Target Model", "Type", "Cost/Mo", "Delta vs Actual", "Capacity Verdict"}
 	alignRight := []bool{false, false, true, true, false}
-	widths := []int{planNameWidth, planTypeWidth, planCostWidth, planDeltaWidth, planVerdictWidth}
+	widths := []int{planNameWidth, planTypeWidth, planCostWidth, planDeltaWidth, verdictColWidth}
 
 	rule := 2 * (len(widths) - 1)
 	for _, width := range widths {
@@ -76,20 +84,8 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 	}
 
 	var cardLines []string
-	var hsb strings.Builder
-	hsb.WriteString(" ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, widths[i])
-		if alignRight[i] {
-			cell = thermal.PadLeft(h, widths[i])
-		}
-		hsb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			hsb.WriteString("  ")
-		}
-	}
-	cardLines = append(cardLines, hsb.String())
-	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
+	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+	cardLines = append(cardLines, " "+tableRule(widths))
 
 	for _, p := range rep.Plans {
 		typeLabel := "Sub"
@@ -104,41 +100,57 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 		}
 		deltaStr := fmt.Sprintf("%s$%.2f (%+.0f%%)", deltaSign, math.Abs(p.CostDelta), p.CostDeltaPercent)
 
-		var verdictStyled string
-		switch p.CapacityVerdict {
-		case "PASS":
-			verdictStyled = green(fmt.Sprintf("PASS (%s)", p.VerdictDetail))
-		case "DEGRADED":
-			verdictStyled = yellow(fmt.Sprintf("DEGRADED (%s)", p.VerdictDetail))
-		default:
-			verdictStyled = red(fmt.Sprintf("FAIL (%s)", p.VerdictDetail))
+		plainVerdict := fmt.Sprintf("%s (%s)", p.CapacityVerdict, p.VerdictDetail)
+		var verdictCell string
+		if colors {
+			var verdictStyled string
+			switch p.CapacityVerdict {
+			case "PASS":
+				verdictStyled = green(plainVerdict)
+			case "DEGRADED":
+				verdictStyled = yellow(plainVerdict)
+			default:
+				verdictStyled = red(plainVerdict)
+			}
+			verdictCell = padRightStyledPrecolored(plainVerdict, verdictStyled, widths[4])
+		} else {
+			verdictCell = padRight(plainVerdict, widths[4])
 		}
 
 		nameLabel := p.Name
 		if p.IsRecommended {
 			nameLabel = "★ " + nameLabel
 		}
-
-		cells := []string{
-			thermal.PadRight(truncate(nameLabel, widths[0]), widths[0]),
-			thermal.PadRight(typeLabel, widths[1]),
-			thermal.PadLeft(costStr, widths[2]),
-			thermal.PadLeft(deltaStr, widths[3]),
-			thermal.PadRight(verdictStyled, widths[4]),
+		var nameCell string
+		if p.IsRecommended && colors {
+			nameCell = padRightStyled(truncate(nameLabel, widths[0]), widths[0], gold)
+		} else {
+			nameCell = padRight(truncate(nameLabel, widths[0]), widths[0])
 		}
 
-		var rowB strings.Builder
-		rowB.WriteString(" ")
-		for j, c := range cells {
-			if p.IsRecommended && j < 4 {
-				c = gold(c)
-			}
-			rowB.WriteString(c)
-			if j < len(cells)-1 {
-				rowB.WriteString("  ")
-			}
+		var typeCell string
+		if p.IsRecommended && colors {
+			typeCell = padRightStyled(typeLabel, widths[1], gold)
+		} else {
+			typeCell = padRight(typeLabel, widths[1])
 		}
-		cardLines = append(cardLines, rowB.String())
+
+		var costCell string
+		if p.IsRecommended && colors {
+			costCell = padLeftStyled(costStr, widths[2], gold)
+		} else {
+			costCell = padLeft(costStr, widths[2])
+		}
+
+		var deltaCell string
+		if p.IsRecommended && colors {
+			deltaCell = padLeftStyled(deltaStr, widths[3], gold)
+		} else {
+			deltaCell = padLeft(deltaStr, widths[3])
+		}
+
+		cells := []string{nameCell, typeCell, costCell, deltaCell, verdictCell}
+		cardLines = append(cardLines, " "+strings.Join(cells, "  "))
 	}
 
 	sb.WriteString(RenderCard(CardOptions{
