@@ -27,11 +27,24 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 70
-- 🟢 **Implemented & Verified**: 70
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 69 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 308/308 completed (100%)
+- **Total Goals**: 77
+- 🟢 **Implemented & Verified**: 71
+- 🟡 **Ready to Execute (Pending)**: 6 (6 independent ⚡, 0 unblocked 🔗)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 76 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 311/329 completed (94%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#72)` | - | ChatGPT Rolling 5-Hour Burst Capacity Replay — Enhance thermal replay to model dynamic 5-hour rolling message and token burst l... | `/goal goals/chatgpt-rolling-burst-replay/goal.md` |
+| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#73)` | - | Codex Sandboxed Execution Verification Receipts — Extract local test runner and linter execution commands and exit codes from Code... | `/goal goals/codex-sandboxed-receipts/goal.md` |
+| [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#74)` | - | Zero-Leak Markdown PR Contribution Receipts — Add --format md (and --format markdown) to thermal receipt and thermal yield to ... | `/goal goals/markdown-pr-receipts/goal.md` |
+| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#75)` | - | Session Fork & Branch Tree Yield Analytics — Ingest parent-child thread relationships and session forks from Codex (and branc... | `/goal goals/session-fork-tree-analytics/goal.md` |
+| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#76)` | - | Instant Terminal Statusline & Prompt Composable Helper — Introduce an ultra-fast (<3ms) thermal statusline (or thermal prompt) command de... | `/goal goals/terminal-statusline-helper/goal.md` |
+| [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#77)` | - | Repository Agent Readiness and AGENTS.md Audit — Extend thermal audit with an agent-readiness check verifying local repository in... | `/goal goals/agent-readiness-audit/goal.md` |
 
 ---
 
@@ -52,6 +65,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `d2cd4a2` |
 | [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `d182cf9` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e2a569f` |
+| [`reasoning-effort-telemetry`](reasoning-effort-telemetry/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `0f3f533` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e087bf4` |
