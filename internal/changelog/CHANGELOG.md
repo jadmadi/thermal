@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/jadmadi/thermal/compare/v0.15.0...v0.16.0) (2026-09-29)
+
+
+### Features
+
+* **audit:** add repository AGENTS.md readiness and agent hygiene check (goals/agent-readiness-audit/goal.md) ([259d1e0](https://github.com/jadmadi/thermal/commit/259d1e0b408a11f160ddd956dc6220bbfe11b13d))
+* **cli:** add instant shell statusline and prompt composable helper (goals/terminal-statusline-helper/goal.md) ([26a20ae](https://github.com/jadmadi/thermal/commit/26a20ae6c7dbf6c66ac2df486ad41d091dd060a0))
+* **models:** add reasoning effort breakdown & cognitive intensity telemetry (goals/reasoning-effort-telemetry/goal.md) ([0f3f533](https://github.com/jadmadi/thermal/commit/0f3f533f91307842a0461583e519ac4b01359c03))
+* **receipt:** extract Codex sandboxed test runs and exit codes (goals/codex-sandboxed-receipts/goal.md) ([198772e](https://github.com/jadmadi/thermal/commit/198772efb99c05aea1eb00864adfb08c0ebbfe63))
+* **render:** add PR-ready markdown output for receipt and yield (goals/markdown-pr-receipts/goal.md) ([c00ef02](https://github.com/jadmadi/thermal/commit/c00ef02ff312df8df8bdfa8ad01af79135aefa13))
+* **replay:** add ChatGPT 5-hour rolling burst modeling (goals/chatgpt-rolling-burst-replay/goal.md) ([b0759e0](https://github.com/jadmadi/thermal/commit/b0759e00379cd9efc4c0d5b519957ce726a270ee))
+* **yield:** analyze session fork lineage and branch churn in code delta yield (goals/session-fork-tree-analytics/goal.md) ([56ec02b](https://github.com/jadmadi/thermal/commit/56ec02bf8efeb8b952eb4ea7fbde80d4f2e8ae4c))
+
+
+### Bug Fixes
+
+* **upgrade:** increase asset download timeout to 120s for slower networks ([25b9b5f](https://github.com/jadmadi/thermal/commit/25b9b5fcf606f27868422ec1a74bce554847bfe8))
+
 ## [0.15.0](https://github.com/jadmadi/thermal/compare/v0.14.0...v0.15.0) (2026-09-25)
 
 
