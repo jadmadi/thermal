@@ -98,6 +98,7 @@ func RenderHelp(noColor bool) string {
 			Title: "Dashboards & Views:",
 			Items: []HelpItem{
 				{Name: "live", Desc: "Real-time token burn monitor with velocity, flame & sparkline"},
+				{Name: "statusline", Desc: "Instant shell statusline and prompt helper (<3ms, alias: prompt)"},
 				{Name: "dashboard", Desc: "Interactive terminal dashboard (TUI)"},
 				{Name: "share", Desc: "Generate a stateless, private URL card for your streak"},
 				{Name: "web", Desc: "Embedded localhost web dashboard & live telemetry (alias: serve)"},
@@ -215,6 +216,8 @@ func RenderHelp(noColor bool) string {
 				{Name: "--breakdown", Desc: "Show per-model token breakdown under each period"},
 				{Name: "--dense", Desc: "High-density 9-box FinOps grid view (default for stats)"},
 				{Name: "--dist", Desc: "Show volume/cost distribution histogram"},
+				{Name: "--nerd", Desc: "Use Nerd Font flame glyph (󰈸) in statusline"},
+				{Name: "--plain", Desc: "Plain text statusline output without emoji or glyphs"},
 				{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
 			},
 		},

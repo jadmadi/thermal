@@ -12,6 +12,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
+  - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
   - [Changed: Local Web Dashboard Request Authority Boundary](#changed-localhost-request-boundary)
   - [Changed: Live Monitor Metric Parity and Burn Accounting](#changed-live-metric-parity)
@@ -121,6 +122,47 @@ thermal yield --format md
 
 **Escape hatch**:
 Omit `--format` or specify `--format text` to retain the default ANSI/ASCII terminal output, or use `--format json` / `--json` for machine-readable payloads.
+
+---
+
+### Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)
+<a id="added-terminal-statusline-helper"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*\(statusline\|prompt\)' .`
+- **Detection signal**: Error output `thermal: report options do not apply to the statusline command` when report flags like `--since`, `--until`, `--last`, or `--chart` are passed to `statusline`, or `thermal: --sort does not apply to the statusline command`.
+
+**What changed and why**:
+Thermal introduces an ultra-fast (<3ms) `thermal statusline` (alias: `thermal prompt`) command purpose-built for shell prompt integration (Starship, Zsh, Bash, Tmux). Unlike the full leaderboard or live monitor, `statusline` outputs a single composable line with the current streak, today's token volume, and active tool using an atomic disk-backed snapshot (`~/.cache/thermal/statusline.json`), avoiding expensive disk and SQLite rescans on every prompt draw.
+
+**Before / After**:
+```bash
+# Before (Shell prompts had to parse full JSON or run slow leaderboard)
+thermal --json | jq -r '...' # ~1.1s latency, too slow for shell prompts
+
+# After (v0.16.0+)
+thermal statusline           # <3ms warm cached draw
+thermal prompt --plain       # Plain ASCII without emojis
+thermal statusline --nerd    # Nerd Font flame glyph (󰈸)
+thermal statusline --json    # Structured JSON snapshot for custom prompt engines
+```
+
+**The fix**:
+Integrate `thermal statusline` directly into your shell configuration or prompt manager (e.g. Starship custom command module):
+```toml
+# ~/.config/starship.toml
+[custom.thermal]
+command = "thermal statusline"
+when = "command -v thermal"
+format = "[$output]($style) "
+style = "bold yellow"
+```
+
+**Escape hatch**:
+Pass `--fresh` to bypass the 120-second snapshot cache and force an immediate recomputation across all tool databases:
+```bash
+thermal statusline --fresh
+```
 
 ## Upgrading to v0.14.x
 
