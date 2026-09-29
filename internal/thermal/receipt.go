@@ -4,13 +4,18 @@
 package thermal
 
 import (
+	"bufio"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 // EvidenceKind designates the category of factual verification observed in a session.
@@ -113,13 +118,52 @@ type ReceiptOptions struct {
 	Now   time.Time
 }
 
+// UnwrapCommand strips outer quotes and shell execution wrappers (e.g. /bin/bash -lc '...')
+// to expose the inner executable command string for evidence parsing.
+func UnwrapCommand(cmd string) string {
+	c := strings.TrimSpace(cmd)
+	if (strings.HasPrefix(c, "\"") && strings.HasSuffix(c, "\"")) ||
+		(strings.HasPrefix(c, "'") && strings.HasSuffix(c, "'")) {
+		if len(c) >= 2 {
+			c = strings.TrimSpace(c[1 : len(c)-1])
+		}
+	}
+	for {
+		stripped := false
+		for _, prefix := range []string{
+			"/bin/bash -lc ", "bash -lc ",
+			"/bin/bash -c ", "bash -c ",
+			"/bin/sh -c ", "sh -c ",
+			"/usr/bin/bash -lc ", "/usr/bin/bash -c ",
+			"/usr/bin/sh -c ",
+		} {
+			if strings.HasPrefix(c, prefix) {
+				rest := strings.TrimSpace(strings.TrimPrefix(c, prefix))
+				if (strings.HasPrefix(rest, "'") && strings.HasSuffix(rest, "'")) ||
+					(strings.HasPrefix(rest, "\"") && strings.HasSuffix(rest, "\"")) {
+					if len(rest) >= 2 {
+						c = strings.TrimSpace(rest[1 : len(rest)-1])
+						stripped = true
+						break
+					}
+				} else {
+					c = rest
+					stripped = true
+					break
+				}
+			}
+		}
+		if !stripped {
+			break
+		}
+	}
+	return c
+}
+
 // ParseCommandEvidence inspects a command string, its exit code, and output snippet
 // to extract sanitized verification evidence without preserving sensitive paths or prompts.
 func ParseCommandEvidence(cmd string, exitCode int, output string) (EvidenceKind, string, bool) {
-	cmdClean := strings.TrimSpace(cmd)
-	if strings.HasPrefix(cmdClean, "\"") && strings.HasSuffix(cmdClean, "\"") && len(cmdClean) >= 2 {
-		cmdClean = strings.TrimSpace(cmdClean[1 : len(cmdClean)-1])
-	}
+	cmdClean := UnwrapCommand(cmd)
 	cmdLower := strings.ToLower(cmdClean)
 	outLower := strings.ToLower(output)
 
@@ -484,6 +528,8 @@ func ScanSessionReceipts(homeDir string, toolFilter string, pricer Pricer) []Wor
 		filter = "codewhale"
 	case "command-code", "commandcode", "ccode":
 		filter = "command-code"
+	case "codex", "codex-cli":
+		filter = "codex"
 	}
 	includeAll := filter == "" || filter == "all" || filter == "auto"
 
@@ -538,6 +584,15 @@ func ScanSessionReceipts(homeDir string, toolFilter string, pricer Pricer) []Wor
 				}
 			}
 		}
+	}
+
+	// 4. Scan Codex transcripts and state (~/.codex/state_5.sqlite, ~/.codex/sessions/**/*.jsonl)
+	if includeAll || filter == "codex" {
+		codexDir := os.Getenv("CODEX_HOME")
+		if codexDir == "" {
+			codexDir = filepath.Join(homeDir, ".codex")
+		}
+		receipts = append(receipts, ScanCodexReceipts(codexDir, pricer)...)
 	}
 
 	return receipts
@@ -1021,4 +1076,451 @@ func parseCodewhaleReceipt(path string) (WorkReceipt, bool) {
 // IsActivityOnly reports whether a row is activity telemetry rather than token telemetry.
 func IsActivityOnly(day DailyRow) bool {
 	return isActivityOnly(day)
+}
+
+func newReceiptJSONLScanner(r io.Reader) *bufio.Scanner {
+	scanner := bufio.NewScanner(r)
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 32*1024*1024)
+	return scanner
+}
+
+func extractCodexCommand(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return UnwrapCommand(s)
+	}
+	var arr []string
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		if len(arr) == 0 {
+			return ""
+		}
+		if len(arr) >= 3 && (strings.HasSuffix(arr[0], "bash") || strings.HasSuffix(arr[0], "sh")) && (arr[1] == "-lc" || arr[1] == "-c") {
+			return UnwrapCommand(arr[2])
+		}
+		return UnwrapCommand(strings.Join(arr, " "))
+	}
+	return ""
+}
+
+func hasColumnReceipt(db *sql.DB, table, col string) bool {
+	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull, pk int
+		var dfltValue any
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err == nil {
+			if strings.EqualFold(name, col) {
+				return true
+			}
+		}
+	}
+	return rows.Err() == nil
+}
+
+// parseCodexRollout parses a Codex rollout JSONL file to extract commands, exit codes,
+// tokens, and factual verification evidence.
+func parseCodexRollout(path string, threadID string, tokensOverride int64, modelOverride, cwdOverride string, createdOverride, updatedOverride int64, pricer Pricer) (WorkReceipt, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return WorkReceipt{}, false
+	}
+	defer f.Close()
+
+	var (
+		tokens       int64
+		firstTs      time.Time
+		lastTs       time.Time
+		cwd          = cwdOverride
+		model        = modelOverride
+		evList       []Evidence
+		agentClaimed bool
+		sessID       = threadID
+		seenEvLabels = make(map[string]bool)
+	)
+
+	if sessID == "" {
+		base := filepath.Base(path)
+		sessID = strings.TrimSuffix(base, ".jsonl")
+		if strings.HasPrefix(sessID, "rollout-") {
+			parts := strings.Split(sessID, "-")
+			if len(parts) >= 8 {
+				sessID = strings.Join(parts[len(parts)-5:], "-")
+			}
+		}
+	}
+
+	scanner := newReceiptJSONLScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		var rec struct {
+			Timestamp string          `json:"timestamp"`
+			Type      string          `json:"type"`
+			Payload   json.RawMessage `json:"payload"`
+		}
+		if json.Unmarshal([]byte(line), &rec) != nil {
+			continue
+		}
+
+		if rec.Timestamp != "" {
+			if t, err := time.Parse(time.RFC3339Nano, rec.Timestamp); err == nil {
+				if firstTs.IsZero() || t.Before(firstTs) {
+					firstTs = t
+				}
+				if t.After(lastTs) {
+					lastTs = t
+				}
+			} else if t, err := time.Parse(time.RFC3339, rec.Timestamp); err == nil {
+				if firstTs.IsZero() || t.Before(firstTs) {
+					firstTs = t
+				}
+				if t.After(lastTs) {
+					lastTs = t
+				}
+			}
+		}
+
+		// 1. turn_context: cwd, model
+		if rec.Type == "turn_context" {
+			var tc struct {
+				Cwd   string `json:"cwd"`
+				Model string `json:"model"`
+			}
+			if json.Unmarshal(rec.Payload, &tc) == nil {
+				if cwd == "" && tc.Cwd != "" {
+					cwd = strings.TrimPrefix(tc.Cwd, "file://")
+				}
+				if model == "" && tc.Model != "" {
+					model = tc.Model
+				}
+			}
+			continue
+		}
+
+		// 2. event_msg
+		if rec.Type == "event_msg" {
+			var ev struct {
+				Type     string          `json:"type"`
+				ThreadID string          `json:"thread_id"`
+				Item     json.RawMessage `json:"item"`
+				Info     *struct {
+					TotalTokenUsage *struct {
+						InputTokens           int64 `json:"input_tokens"`
+						CachedInputTokens     int64 `json:"cached_input_tokens"`
+						OutputTokens          int64 `json:"output_tokens"`
+						ReasoningOutputTokens int64 `json:"reasoning_output_tokens"`
+						TotalTokens           int64 `json:"total_tokens"`
+					} `json:"total_token_usage"`
+				} `json:"info"`
+				LastAgentMessage *string `json:"last_agent_message"`
+			}
+			if json.Unmarshal(rec.Payload, &ev) != nil {
+				continue
+			}
+
+			if sessID == "" && ev.ThreadID != "" {
+				sessID = ev.ThreadID
+			}
+
+			// Token count
+			if ev.Type == "token_count" && ev.Info != nil && ev.Info.TotalTokenUsage != nil {
+				tu := ev.Info.TotalTokenUsage
+				if tu.TotalTokens > 0 {
+					tokens = tu.TotalTokens
+				} else {
+					tokens = tu.InputTokens + tu.OutputTokens
+				}
+			}
+
+			// Task complete / agent message claims
+			if ev.Type == "task_complete" {
+				agentClaimed = true
+				if ev.LastAgentMessage != nil {
+					lower := strings.ToLower(*ev.LastAgentMessage)
+					if strings.Contains(lower, "all tests pass") || strings.Contains(lower, "verified") || strings.Contains(lower, "task complete") {
+						agentClaimed = true
+					}
+				}
+			}
+
+			// Item handling (CommandExecution, AgentMessage)
+			if len(ev.Item) > 0 {
+				var itHeader struct {
+					Type string `json:"type"`
+				}
+				if json.Unmarshal(ev.Item, &itHeader) == nil {
+					if itHeader.Type == "CommandExecution" {
+						var itCmd struct {
+							Command    json.RawMessage `json:"command"`
+							ExitCode   *int            `json:"exit_code"`
+							Status     string          `json:"status"`
+							Stdout     string          `json:"stdout"`
+							Stderr     string          `json:"stderr"`
+							Aggregated string          `json:"aggregated_output"`
+							Cwd        string          `json:"cwd"`
+						}
+						if json.Unmarshal(ev.Item, &itCmd) == nil {
+							if cwd == "" && itCmd.Cwd != "" {
+								cwd = strings.TrimPrefix(itCmd.Cwd, "file://")
+							}
+							rawCmd := extractCodexCommand(itCmd.Command)
+							if rawCmd != "" {
+								exitCode := -1
+								if itCmd.ExitCode != nil {
+									exitCode = *itCmd.ExitCode
+								}
+								if exitCode == 0 && (itCmd.Status == "failed" || itCmd.Status == "error") {
+									exitCode = 1
+								}
+								output := itCmd.Aggregated
+								if output == "" {
+									output = itCmd.Stdout + "\n" + itCmd.Stderr
+								}
+
+								// Check compound commands (e.g. split on "&&")
+								subCommands := []string{rawCmd}
+								if strings.Contains(rawCmd, "&&") {
+									for _, sub := range strings.Split(rawCmd, "&&") {
+										subTrimmed := strings.TrimSpace(sub)
+										if subTrimmed != "" {
+											subCommands = append(subCommands, subTrimmed)
+										}
+									}
+								}
+
+								for _, sc := range subCommands {
+									if kind, label, ok := ParseCommandEvidence(sc, exitCode, output); ok {
+										if !seenEvLabels[label] {
+											evList = append(evList, Evidence{Kind: kind, Label: label})
+											seenEvLabels[label] = true
+										}
+									}
+								}
+							}
+						}
+					} else if itHeader.Type == "AgentMessage" {
+						var itMsg struct {
+							Content []struct {
+								Type string `json:"type"`
+								Text string `json:"text"`
+							} `json:"content"`
+						}
+						if json.Unmarshal(ev.Item, &itMsg) == nil {
+							for _, c := range itMsg.Content {
+								lower := strings.ToLower(c.Text)
+								if strings.Contains(lower, "all tests pass") || strings.Contains(lower, "task complete") || strings.Contains(lower, "verified") {
+									agentClaimed = true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 3. direct item.completed format
+		if rec.Type == "item.completed" {
+			var itCmd struct {
+				Type     string          `json:"type"`
+				Command  json.RawMessage `json:"command"`
+				ExitCode *int            `json:"exit_code"`
+				Status   string          `json:"status"`
+			}
+			if json.Unmarshal(rec.Payload, &itCmd) == nil && (itCmd.Type == "command_execution" || itCmd.Type == "CommandExecution" || itCmd.Type == "bash") {
+				rawCmd := extractCodexCommand(itCmd.Command)
+				if rawCmd != "" {
+					exitCode := -1
+					if itCmd.ExitCode != nil {
+						exitCode = *itCmd.ExitCode
+					}
+					if kind, label, ok := ParseCommandEvidence(rawCmd, exitCode, ""); ok {
+						if !seenEvLabels[label] {
+							evList = append(evList, Evidence{Kind: kind, Label: label})
+							seenEvLabels[label] = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if tokensOverride > 0 {
+		tokens = tokensOverride
+	}
+	if modelOverride != "" {
+		model = modelOverride
+	}
+
+	var day string
+	var durationMs int64
+	if createdOverride > 0 {
+		day = LocalDay(time.Unix(createdOverride, 0).Local())
+		if updatedOverride > createdOverride {
+			durationMs = (updatedOverride - createdOverride) * 1000
+		}
+	} else if !firstTs.IsZero() {
+		day = LocalDay(firstTs)
+		if !lastTs.IsZero() && lastTs.After(firstTs) {
+			durationMs = lastTs.Sub(firstTs).Milliseconds()
+		}
+	} else {
+		day = LocalDay(time.Now())
+	}
+
+	outcome := EvaluateSessionOutcome(evList, agentClaimed)
+
+	var cost float64
+	var estCost bool
+	if pricer != nil && model != "" && tokens > 0 {
+		c, _ := pricer.PriceDay(DailyRow{
+			Day:    day,
+			Tokens: tokens,
+			Models: map[string]ModelTokens{
+				model: {Unclassified: tokens},
+			},
+		})
+		if c > 0 {
+			cost = c
+			estCost = true
+		}
+	}
+
+	return WorkReceipt{
+		SessionID:       sessID,
+		Tool:            "Codex",
+		Project:         ProjectKey(cwd),
+		Day:             day,
+		Tier:            outcome.Tier,
+		Status:          outcome.Status,
+		Tokens:          tokens,
+		Cost:            cost,
+		EstimatedCost:   estCost,
+		TestsPassed:     outcome.TestsPassed,
+		TestsFailed:     outcome.TestsFailed,
+		LintersPassed:   outcome.LintersPassed,
+		LintersFailed:   outcome.LintersFailed,
+		CommitsCreated:  outcome.CommitsCreated,
+		EvidenceSummary: outcome.EvidenceSummary,
+		DurationMs:      durationMs,
+	}, true
+}
+
+// ScanCodexReceipts scans Codex SQLite database and rollout logs in dataDir
+// to extract factual work receipts with local test and linter evidence.
+func ScanCodexReceipts(codexDir string, pricer Pricer) []WorkReceipt {
+	var receipts []WorkReceipt
+
+	stateDB := filepath.Join(codexDir, "state_5.sqlite")
+	if fi, err := os.Stat(stateDB); err == nil && !fi.IsDir() {
+		db, err := sql.Open("sqlite", "file:"+stateDB+"?mode=ro")
+		if err == nil {
+			defer db.Close()
+			_, _ = db.Exec("PRAGMA mmap_size=268435456")
+
+			cwdExpr := "''"
+			if hasColumnReceipt(db, "threads", "cwd") {
+				cwdExpr = "cwd"
+			}
+
+			rows, err := db.Query(`
+				SELECT id, tokens_used, model, created_at, updated_at, rollout_path, ` + cwdExpr + `
+				FROM threads
+				WHERE archived = 0
+				ORDER BY created_at
+			`)
+			if err == nil {
+				defer rows.Close()
+				for rows.Next() {
+					var id, model, rolloutPath, cwd sql.NullString
+					var tokensUsed, createdAt, updatedAt int64
+					if err := rows.Scan(&id, &tokensUsed, &model, &createdAt, &updatedAt, &rolloutPath, &cwd); err != nil {
+						continue
+					}
+
+					var r WorkReceipt
+					var ok bool
+					if rolloutPath.Valid && rolloutPath.String != "" {
+						r, ok = parseCodexRollout(rolloutPath.String, id.String, tokensUsed, model.String, cwd.String, createdAt, updatedAt, pricer)
+					}
+					if !ok {
+						day := LocalDay(time.Unix(createdAt, 0).Local())
+						tier := Tier3Unverified
+						status := "UNVERIFIED"
+						if tokensUsed > 0 {
+							tier = Tier2Claimed
+							status = "CLAIMED"
+						}
+						var cost float64
+						var estCost bool
+						if pricer != nil && model.Valid && model.String != "" && tokensUsed > 0 {
+							c, _ := pricer.PriceDay(DailyRow{
+								Day:    day,
+								Tokens: tokensUsed,
+								Models: map[string]ModelTokens{
+									model.String: {Unclassified: tokensUsed},
+								},
+							})
+							if c > 0 {
+								cost = c
+								estCost = true
+							}
+						}
+						duration := int64(0)
+						if updatedAt > createdAt {
+							duration = (updatedAt - createdAt) * 1000
+						}
+						r = WorkReceipt{
+							SessionID:     id.String,
+							Tool:          "Codex",
+							Project:       ProjectKey(cwd.String),
+							Day:           day,
+							Tier:          tier,
+							Status:        status,
+							Tokens:        tokensUsed,
+							Cost:          cost,
+							EstimatedCost: estCost,
+							DurationMs:    duration,
+						}
+					}
+					receipts = append(receipts, r)
+				}
+				if err := rows.Err(); err == nil && len(receipts) > 0 {
+					return receipts
+				}
+			}
+		}
+	}
+
+	// Fallback when state_5.sqlite is missing or empty: scan session rollout JSONL files directly
+	var files []string
+	for _, pattern := range []string{
+		filepath.Join(codexDir, "sessions", "*", "*", "*", "*.jsonl"),
+		filepath.Join(codexDir, "sessions", "*", "*.jsonl"),
+		filepath.Join(codexDir, "sessions", "*.jsonl"),
+		filepath.Join(codexDir, "*.jsonl"),
+	} {
+		if matches, err := filepath.Glob(pattern); err == nil && len(matches) > 0 {
+			files = append(files, matches...)
+		}
+	}
+
+	for _, file := range files {
+		if r, ok := parseCodexRollout(file, "", 0, "", "", 0, 0, pricer); ok {
+			receipts = append(receipts, r)
+		}
+	}
+
+	return receipts
 }

@@ -396,3 +396,8 @@ func nonNegative(v int64) int64 {
 	}
 	return v
 }
+
+// ScanCodexReceipts extracts verifiable work receipts from Codex state database and rollout logs.
+func ScanCodexReceipts(dataDir string, pricer thermal.Pricer) []thermal.WorkReceipt {
+	return thermal.ScanCodexReceipts(dataDir, pricer)
+}

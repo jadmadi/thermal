@@ -439,3 +439,45 @@ func TestCodexRolloutCache_Pruning(t *testing.T) {
 		t.Fatalf("expected r1 to remain in cache")
 	}
 }
+
+func TestScanCodexReceipts(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "state_5.sqlite")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("failed opening sqlite: %v", err)
+	}
+	_, err = db.Exec(`
+		CREATE TABLE threads (
+			id TEXT, tokens_used INTEGER, model TEXT, source TEXT,
+			reasoning_effort TEXT, agent_role TEXT, created_at INTEGER,
+			updated_at INTEGER, rollout_path TEXT, cwd TEXT, archived INTEGER
+		);
+	`)
+	if err != nil {
+		t.Fatalf("failed creating schema: %v", err)
+	}
+
+	rPath := filepath.Join(dir, "rollout_pass.jsonl")
+	rContent := `{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/usr/bin/bash","-lc","cargo test"],"exit_code":0,"status":"completed"}}}` + "\n"
+	if err := os.WriteFile(rPath, []byte(rContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = db.Exec(`INSERT INTO threads VALUES ('th-cargo', 1500, 'gpt-4o', 'cli', '', '', 1710504000, 1710504060, ?, '/test/project', 0)`, rPath)
+	db.Close()
+
+	receipts := ScanCodexReceipts(dir, nil)
+	if len(receipts) != 1 {
+		t.Fatalf("expected 1 receipt, got %d", len(receipts))
+	}
+	r := receipts[0]
+	if r.Tool != "Codex" {
+		t.Errorf("expected Tool Codex, got %s", r.Tool)
+	}
+	if r.Status != "VERIFIED" {
+		t.Errorf("expected Status VERIFIED, got %s", r.Status)
+	}
+	if r.TestsPassed != 1 {
+		t.Errorf("expected TestsPassed 1, got %d", r.TestsPassed)
+	}
+}

@@ -4,9 +4,11 @@
 package thermal
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -599,5 +601,158 @@ func TestAggregateReceipts_UnpricedTokens(t *testing.T) {
 	}
 	if rep.Summary.UnpricedTokens != 5000 {
 		t.Errorf("UnpricedTokens = %d, want 5000", rep.Summary.UnpricedTokens)
+	}
+}
+
+func TestUnwrapCommand(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{in: `"/bin/bash -lc 'go test ./...'"`, want: `go test ./...`},
+		{in: `/usr/bin/bash -lc "cargo test"`, want: `cargo test`},
+		{in: `bash -c 'pytest tests/'`, want: `pytest tests/`},
+		{in: `"npm test"`, want: `npm test`},
+		{in: `go test -v ./...`, want: `go test -v ./...`},
+	}
+	for _, tc := range tests {
+		got := UnwrapCommand(tc.in)
+		if got != tc.want {
+			t.Errorf("UnwrapCommand(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestScanCodexReceipts_VerifiedAndFailed(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "state_5.sqlite")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("failed opening sqlite: %v", err)
+	}
+	_, err = db.Exec(`
+		CREATE TABLE threads (
+			id TEXT, tokens_used INTEGER, model TEXT, source TEXT,
+			reasoning_effort TEXT, agent_role TEXT, created_at INTEGER,
+			updated_at INTEGER, rollout_path TEXT, cwd TEXT, archived INTEGER
+		);
+	`)
+	if err != nil {
+		t.Fatalf("failed creating schema: %v", err)
+	}
+
+	// 1. Thread 1: Verified (exit 0 test run)
+	r1Path := filepath.Join(dir, "rollout_pass.jsonl")
+	r1Content := `{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/usr/bin/bash","-lc","go test -v ./..."],"exit_code":0,"status":"completed","aggregated_output":"ok package 0.1s"}}}` + "\n"
+	if err := os.WriteFile(r1Path, []byte(r1Content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = db.Exec(`INSERT INTO threads VALUES ('th-pass', 1000, 'gpt-4o', 'cli', 'high', '', 1710504000, 1710504060, ?, '/path/to/project', 0)`, r1Path)
+
+	// 2. Thread 2: Failed (exit 1 test run)
+	r2Path := filepath.Join(dir, "rollout_fail.jsonl")
+	r2Content := `{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/usr/bin/bash","-lc","npm test"],"exit_code":1,"status":"failed","aggregated_output":"1 test failed"}}}` + "\n"
+	if err := os.WriteFile(r2Path, []byte(r2Content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = db.Exec(`INSERT INTO threads VALUES ('th-fail', 2000, 'gpt-4o', 'cli', '', '', 1710504100, 1710504160, ?, '/path/to/project', 0)`, r2Path)
+
+	// 3. Thread 3: Claimed (no tests, agent completion)
+	r3Path := filepath.Join(dir, "rollout_claim.jsonl")
+	r3Content := `{"type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+	if err := os.WriteFile(r3Path, []byte(r3Content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = db.Exec(`INSERT INTO threads VALUES ('th-claim', 500, 'gpt-4o', 'cli', '', '', 1710504200, 1710504260, ?, '/path/to/project', 0)`, r3Path)
+
+	db.Close()
+
+	receipts := ScanCodexReceipts(dir, nil)
+	if len(receipts) != 3 {
+		t.Fatalf("expected 3 receipts, got %d", len(receipts))
+	}
+
+	receiptMap := make(map[string]WorkReceipt)
+	for _, r := range receipts {
+		receiptMap[r.SessionID] = r
+	}
+
+	passR := receiptMap["th-pass"]
+	if passR.Status != "VERIFIED" || passR.Tier != Tier1Verified {
+		t.Errorf("th-pass: expected VERIFIED / Tier1Verified, got %s / %s", passR.Status, passR.Tier)
+	}
+	if passR.TestsPassed != 1 || passR.TestsFailed != 0 {
+		t.Errorf("th-pass: expected 1 test passed, 0 failed, got %d/%d", passR.TestsPassed, passR.TestsFailed)
+	}
+	if len(passR.EvidenceSummary) != 1 || passR.EvidenceSummary[0] != "go test (exit 0)" {
+		t.Errorf("th-pass: unexpected evidence summary: %v", passR.EvidenceSummary)
+	}
+
+	failR := receiptMap["th-fail"]
+	if failR.Status != "FAILED" || failR.Tier != Tier3Failed {
+		t.Errorf("th-fail: expected FAILED / Tier3Failed, got %s / %s", failR.Status, failR.Tier)
+	}
+	if failR.TestsFailed != 1 {
+		t.Errorf("th-fail: expected 1 test failed, got %d", failR.TestsFailed)
+	}
+
+	claimR := receiptMap["th-claim"]
+	if claimR.Status != "CLAIMED" || claimR.Tier != Tier2Claimed {
+		t.Errorf("th-claim: expected CLAIMED / Tier2Claimed, got %s / %s", claimR.Status, claimR.Tier)
+	}
+}
+
+func TestScanCodexReceipts_ZeroLeakage(t *testing.T) {
+	dir := t.TempDir()
+	rPath := filepath.Join(dir, "rollout-zero-leak.jsonl")
+	// Rollout contains sensitive secret and user prompt
+	rContent := `{"timestamp":"2026-09-20T10:00:00Z","type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":["/usr/bin/bash","-lc","go test -v ./..."],"exit_code":0,"stdout":"SECRET_TOKEN=xyz123456 confidential database credentials\nPASS","aggregated_output":"SECRET_TOKEN=xyz123456 confidential database credentials\nPASS"}}}` + "\n"
+	if err := os.WriteFile(rPath, []byte(rContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	receipts := ScanCodexReceipts(dir, nil)
+	if len(receipts) != 1 {
+		t.Fatalf("expected 1 receipt, got %d", len(receipts))
+	}
+	r := receipts[0]
+
+	// Verify no confidential stdout text leaked into evidence summary or fields
+	for _, ev := range r.EvidenceSummary {
+		if strings.Contains(ev, "SECRET_TOKEN") || strings.Contains(ev, "confidential") {
+			t.Errorf("secret leaked in evidence summary: %s", ev)
+		}
+	}
+}
+
+func TestScanSessionReceipts_Codex(t *testing.T) {
+	homeDir := t.TempDir()
+	codexDir := filepath.Join(homeDir, ".codex")
+	if err := os.MkdirAll(codexDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	rPath := filepath.Join(codexDir, "rollout_test.jsonl")
+	rContent := `{"type":"event_msg","payload":{"type":"item_completed","item":{"type":"CommandExecution","command":"pytest tests/","exit_code":0}}}` + "\n"
+	if err := os.WriteFile(rPath, []byte(rContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Scan with toolFilter="codex"
+	receipts := ScanSessionReceipts(homeDir, "codex", nil)
+	if len(receipts) != 1 {
+		t.Fatalf("expected 1 codex receipt, got %d", len(receipts))
+	}
+	if receipts[0].Tool != "Codex" {
+		t.Errorf("expected tool Codex, got %s", receipts[0].Tool)
+	}
+	if receipts[0].Status != "VERIFIED" {
+		t.Errorf("expected status VERIFIED, got %s", receipts[0].Status)
+	}
+
+	// 2. Scan with toolFilter="all"
+	allReceipts := ScanSessionReceipts(homeDir, "all", nil)
+	if len(allReceipts) != 1 {
+		t.Fatalf("expected 1 receipt with 'all', got %d", len(allReceipts))
 	}
 }
