@@ -43,7 +43,10 @@ type asset struct {
 	Size               int64  `json:"size"`
 }
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	httpClient     = &http.Client{Timeout: 30 * time.Second}
+	downloadClient = &http.Client{Timeout: 120 * time.Second}
+)
 
 // runUpgrade checks for a newer release and self-replaces the binary.
 func runUpgrade() int {
@@ -244,9 +247,9 @@ func findAsset(assets []asset) (string, string, error) {
 	return "", "", fmt.Errorf("no binary found for %s/%s", goos, goarch)
 }
 
-// downloadFile downloads a URL to a local path.
+// downloadFile downloads a URL to a local path with a generous timeout for slower networks.
 func downloadFile(url, dest string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -254,7 +257,7 @@ func downloadFile(url, dest string) error {
 		return err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
 		return err
 	}
