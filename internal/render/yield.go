@@ -62,15 +62,7 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 	}
 
 	headers := []string{"#", "Entity / Model", "Tokens", "+Lines", "-Lines", "Net Lines", "Yield", "Efficiency"}
-	alignRight := []bool{false, false, true, true, true, true, true, false}
-	widths := []int{yieldRankWidth, yieldEntityWidth, yieldTokensWidth, yieldLinesWidth, yieldLinesWidth, yieldNetWidth, yieldRatioWidth, yieldEffWidth}
-
-	rule := 2 * (len(widths) - 1)
-	for _, w := range widths {
-		rule += w
-	}
-
-	cardWidth := BoundedCardWidth(2)
+	alignRight := []bool{true, false, true, true, true, true, true, false}
 
 	// Resolve project slugs from paths
 	var projPaths []string
@@ -87,26 +79,21 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 		if len(rows) == 0 {
 			return
 		}
-		var cardLines []string
-		var hsb strings.Builder
-		hsb.WriteString(" ")
-		for i, h := range headers {
-			cell := thermal.PadRight(h, widths[i])
-			if alignRight[i] {
-				cell = thermal.PadLeft(h, widths[i])
-			}
-			hsb.WriteString(dim(cell))
-			if i < len(headers)-1 {
-				hsb.WriteString("  ")
-			}
-		}
-		cardLines = append(cardLines, hsb.String())
-		cardLines = append(cardLines, strings.Repeat("─", rule))
-
 		shown := len(rows)
 		if top > 0 && top < shown {
 			shown = top
 		}
+
+		rWidth := yieldRankWidth
+		if shown >= 100 {
+			rWidth = 5
+		}
+		widths := []int{rWidth, yieldEntityWidth, yieldTokensWidth, yieldLinesWidth, yieldLinesWidth, yieldNetWidth, yieldRatioWidth, yieldEffWidth}
+
+		var cardLines []string
+		cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+		cardLines = append(cardLines, " "+tableRule(widths))
+
 		for i := 0; i < shown; i++ {
 			r := rows[i]
 
@@ -119,7 +106,7 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 				netStr = "0"
 			}
 
-			yieldStr := dim("unmeasured")
+			yieldStr := "unmeasured"
 			if r.Status == "MEASURED" {
 				yieldStr = fmt.Sprintf("%s tok/ln", thermal.CompactNumber(int64(r.TokensPerNet)))
 			}
@@ -141,19 +128,27 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 
 			var rowB strings.Builder
 			rowB.WriteString(" ")
-			rowB.WriteString(thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]))
+			rowB.WriteString(formatRankCell(i+1, widths[0], colors))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadRight(truncate(displayName, widths[1]), widths[1]))
+			rowB.WriteString(padRight(truncate(displayName, widths[1]), widths[1]))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadLeft(thermal.CompactNumber(r.Tokens), widths[2]))
+			rowB.WriteString(padLeft(thermal.CompactNumber(r.Tokens), widths[2]))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadLeft(addStr, widths[3]))
+			rowB.WriteString(padLeft(addStr, widths[3]))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadLeft(delStr, widths[4]))
+			rowB.WriteString(padLeft(delStr, widths[4]))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadLeft(netStr, widths[5]))
+			rowB.WriteString(padLeft(netStr, widths[5]))
 			rowB.WriteString("  ")
-			rowB.WriteString(thermal.PadLeft(yieldStr, widths[6]))
+			if r.Status == "MEASURED" {
+				rowB.WriteString(padLeft(yieldStr, widths[6]))
+			} else {
+				if colors {
+					rowB.WriteString(padLeftStyled(yieldStr, widths[6], dim))
+				} else {
+					rowB.WriteString(padLeft(yieldStr, widths[6]))
+				}
+			}
 			rowB.WriteString("  ")
 			rowB.WriteString(effBadge(r.Efficiency, r.Status))
 			cardLines = append(cardLines, rowB.String())
@@ -171,7 +166,6 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 			Colors:      colors,
 			TitleColor:  theme.Primary,
 			BorderColor: theme.Border,
-			MaxWidth:    cardWidth,
 		}))
 		sb.WriteString("\n")
 	}
@@ -233,6 +227,92 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 		sb.WriteString(wl + "\n")
 	}
 	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// RenderYieldMarkdown formats token yield and code delta metrics into a GitHub PR-ready Markdown block.
+func RenderYieldMarkdown(rep thermal.YieldReport, top int) string {
+	var sb strings.Builder
+
+	sb.WriteString("### ⚡ Token Yield & Code Delta\n\n")
+
+	if len(rep.Models) == 0 && len(rep.Tools) == 0 && len(rep.Projects) == 0 {
+		sb.WriteString("> *No token activity or code deltas found in the selected window.*\n\n")
+		return sb.String()
+	}
+
+	renderSection := func(title string, rows []thermal.YieldRow) {
+		if len(rows) == 0 {
+			return
+		}
+		sb.WriteString(fmt.Sprintf("#### %s\n\n", title))
+		sb.WriteString("| # | Entity / Model | Tokens | +Lines | -Lines | Net Lines | Yield | Efficiency |\n")
+		sb.WriteString("|---:|:---|---:|---:|---:|---:|---:|:---|\n")
+
+		shown := len(rows)
+		if top > 0 && top < shown {
+			shown = top
+		}
+
+		for i := 0; i < shown; i++ {
+			r := rows[i]
+
+			addStr := fmt.Sprintf("+%s", thermal.CompactNumber(r.LinesAdded))
+			delStr := fmt.Sprintf("-%s", thermal.CompactNumber(r.LinesDeleted))
+			netStr := fmt.Sprintf("+%s", thermal.CompactNumber(r.NetLines))
+			if r.NetLines < 0 {
+				netStr = fmt.Sprintf("-%s", thermal.CompactNumber(-r.NetLines))
+			} else if r.NetLines == 0 {
+				netStr = "0"
+			}
+
+			yieldStr := "unmeasured"
+			if r.Status == "MEASURED" {
+				yieldStr = fmt.Sprintf("%s tok/ln", thermal.CompactNumber(int64(r.TokensPerNet)))
+			}
+
+			effStr := "`[EXPLORATORY]`"
+			if r.Status == "MEASURED" {
+				effStr = fmt.Sprintf("`[%s]`", r.Efficiency)
+			}
+
+			sb.WriteString(fmt.Sprintf("| %d | `%s` | %s | %s | %s | %s | %s | %s |\n",
+				i+1,
+				r.Name,
+				thermal.CompactNumber(r.Tokens),
+				addStr,
+				delStr,
+				netStr,
+				yieldStr,
+				effStr,
+			))
+		}
+
+		if shown < len(rows) {
+			remainder := len(rows) - shown
+			sb.WriteString(fmt.Sprintf("\n*... and %d more rows*\n", remainder))
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(rep.Models) > 0 {
+		renderSection("Models", rep.Models)
+	}
+	if len(rep.Projects) > 0 {
+		renderSection("Projects", rep.Projects)
+	}
+	if len(rep.Tools) > 0 {
+		renderSection("Tools", rep.Tools)
+	}
+
+	sb.WriteString("<details>\n<summary>ℹ️ Token Yield Legend & Efficiency Scale</summary>\n\n")
+	sb.WriteString("- **Yield**: Tokens burned per net line of code added. Lower is leaner and more concise.\n")
+	sb.WriteString("- `[HIGH]`: <=250 tok/net line (efficient, direct code generation).\n")
+	sb.WriteString("- `[BALANCED]`: <=1,000 tok/net line (balanced code and iteration).\n")
+	sb.WriteString("- `[VERBOSE]`: >1,000 tok/net line (high conversational or reasoning token volume).\n")
+	sb.WriteString("- `[EXPLORATORY]`: Sessions without file changes or zero net delta.\n")
+	sb.WriteString("</details>\n")
 
 	return sb.String()
 }

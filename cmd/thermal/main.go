@@ -109,6 +109,7 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Fresh, "fresh", false, "Start live session counters from 0 instead of today's total")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
+	flag.StringVar(&opts.Format, "format", "text", "Output format: text, json, md, or markdown")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
@@ -290,7 +291,25 @@ func parseArgs() thermal.Options {
 			opts.Stream = true
 		case "--fresh", "-fresh", "--zero":
 			opts.Fresh = true
+		case "--format":
+			if v, ok := takeValue(); ok {
+				opts.Format = v
+			}
 		}
+	}
+
+	opts.Format = strings.ToLower(strings.TrimSpace(opts.Format))
+	if opts.Format == "" {
+		opts.Format = "text"
+	}
+	if opts.JSON && (opts.Format == "md" || opts.Format == "markdown") {
+		fmt.Fprintf(os.Stderr, "thermal: --json cannot be combined with --format %s\n", opts.Format)
+		os.Exit(1)
+	}
+	if opts.JSON {
+		opts.Format = "json"
+	} else if opts.Format == "json" {
+		opts.JSON = true
 	}
 
 	if len(positionals) > 0 {
@@ -366,6 +385,17 @@ func validateReportFlags(opts thermal.Options) error {
 	grainKey := strings.ToLower(opts.Grain)
 	if grainKey == "" {
 		grainKey = "week"
+	}
+
+	switch opts.Format {
+	case "", "text", "json", "md", "markdown":
+	default:
+		return fmt.Errorf("--format must be text, json, md, or markdown")
+	}
+	if opts.Format == "md" || opts.Format == "markdown" {
+		if opts.Report != "receipt" && opts.Report != "yield" {
+			return fmt.Errorf("--format %s only applies to the receipt and yield commands", opts.Format)
+		}
 	}
 
 	if opts.Last < 0 {
@@ -1623,6 +1653,11 @@ func runYieldReport(opts thermal.Options) {
 		return
 	}
 
+	if opts.Format == "md" || opts.Format == "markdown" {
+		fmt.Print(render.RenderYieldMarkdown(rep, opts.Top))
+		return
+	}
+
 	fmt.Print(render.RenderYield(rep, opts.Top, opts.NoColor))
 }
 
@@ -1704,6 +1739,11 @@ func runReceiptReport(opts thermal.Options) {
 			ReceiptReport: rep,
 			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
 		})
+		return
+	}
+
+	if opts.Format == "md" || opts.Format == "markdown" {
+		fmt.Print(render.RenderReceiptMarkdown(rep, opts.Top))
 		return
 	}
 
