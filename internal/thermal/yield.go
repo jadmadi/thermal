@@ -68,16 +68,30 @@ type YieldRow struct {
 	TokensPerGross float64 `json:"tokensPerGrossLine"` // 0 if unmeasured
 	Efficiency     string  `json:"efficiency"`         // HIGH, BALANCED, VERBOSE, EXPLORATORY
 	Status         string  `json:"status"`             // MEASURED, UNMEASURED
+	MainlineTokens int64   `json:"mainlineTokens,omitempty"`
+	ForkTokens     int64   `json:"forkTokens,omitempty"`
+}
+
+// YieldBranchSummary measures exploratory vs mainline branching analytics across sessions.
+type YieldBranchSummary struct {
+	MainlineTokens int64   `json:"mainlineTokens"`
+	ForkTokens     int64   `json:"forkTokens"`
+	RootSessions   int     `json:"rootSessions"`
+	ForkSessions   int     `json:"forkSessions"`
+	TotalSessions  int     `json:"totalSessions"`
+	ForkRate       float64 `json:"forkRate"`      // percentage of tokens in exploratory forks (0.0 to 100.0)
+	MainlineYield  float64 `json:"mainlineYield"` // MainlineTokens / NetLines (0 if unmeasured)
 }
 
 // YieldReport is the top-level payload for the 'thermal yield' command.
 type YieldReport struct {
-	Type     string     `json:"type"` // "yield"
-	Tool     string     `json:"tool,omitempty"`
-	Tools    []YieldRow `json:"tools,omitempty"`
-	Models   []YieldRow `json:"models,omitempty"`
-	Projects []YieldRow `json:"projects,omitempty"`
-	Totals   YieldRow   `json:"totals"`
+	Type     string              `json:"type"` // "yield"
+	Tool     string              `json:"tool,omitempty"`
+	Tools    []YieldRow          `json:"tools,omitempty"`
+	Models   []YieldRow          `json:"models,omitempty"`
+	Projects []YieldRow          `json:"projects,omitempty"`
+	Totals   YieldRow            `json:"totals"`
+	Lineage  *YieldBranchSummary `json:"lineage,omitempty"`
 }
 
 // YieldOptions controls filtering, sorting, and row limits for yield reports.
@@ -145,14 +159,18 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 	var toolRows []YieldRow
 
 	var (
-		totalTokens  int64
-		totalAdded   int64
-		totalDeleted int64
-		totalFiles   int64
+		totalTokens       int64
+		totalAdded        int64
+		totalDeleted      int64
+		totalFiles        int64
+		totalMainline     int64
+		totalFork         int64
+		totalRootSessions int
+		totalForkSessions int
 	)
 
 	for _, res := range results {
-		var toolTok, toolAdd, toolDel, toolFil int64
+		var toolTok, toolAdd, toolDel, toolFil, toolMainline, toolFork int64
 		daysWithLines := 0
 
 		for _, day := range res.Daily {
@@ -168,6 +186,14 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 			toolAdd += day.LinesAdded
 			toolDel += day.LinesDeleted
 			toolFil += day.FilesTouched
+
+			ml := day.MainlineTokens
+			fk := day.ForkTokens
+			if ml == 0 && fk == 0 && day.Tokens > 0 {
+				ml = day.Tokens
+			}
+			toolMainline += ml
+			toolFork += fk
 			if day.LinesAdded > 0 || day.LinesDeleted > 0 || day.FilesTouched > 0 {
 				daysWithLines++
 			}
@@ -207,6 +233,13 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 			if toolTok == 0 {
 				toolTok = res.Summary.LifetimeTokens
 			}
+			if toolMainline == 0 && toolFork == 0 {
+				toolMainline = res.Summary.MainlineTokens
+				toolFork = res.Summary.ForkTokens
+				if toolMainline == 0 && toolFork == 0 {
+					toolMainline = toolTok
+				}
+			}
 		}
 
 		if toolTok == 0 && toolAdd == 0 && toolDel == 0 {
@@ -227,12 +260,22 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 			TokensPerGross: perGross,
 			Efficiency:     eff,
 			Status:         status,
+			MainlineTokens: toolMainline,
+			ForkTokens:     toolFork,
 		})
 
 		totalTokens += toolTok
 		totalAdded += toolAdd
 		totalDeleted += toolDel
 		totalFiles += toolFil
+		totalMainline += toolMainline
+		totalFork += toolFork
+		if res.Summary.RootSessions > 0 || res.Summary.ForkSessions > 0 {
+			totalRootSessions += res.Summary.RootSessions
+			totalForkSessions += res.Summary.ForkSessions
+		} else if res.Summary.Sessions > 0 {
+			totalRootSessions += res.Summary.Sessions
+		}
 	}
 
 	// Build Model rows
@@ -381,6 +424,29 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 		TokensPerGross: totPerGross,
 		Efficiency:     totEff,
 		Status:         totStatus,
+		MainlineTokens: totalMainline,
+		ForkTokens:     totalFork,
+	}
+
+	var lineage *YieldBranchSummary
+	if totalFork > 0 || totalForkSessions > 0 {
+		var forkRate float64
+		if totalTokens > 0 {
+			forkRate = float64(totalFork) / float64(totalTokens) * 100.0
+		}
+		var mainlineYield float64
+		if totNet > 0 {
+			mainlineYield = float64(totalMainline) / float64(totNet)
+		}
+		lineage = &YieldBranchSummary{
+			MainlineTokens: totalMainline,
+			ForkTokens:     totalFork,
+			RootSessions:   totalRootSessions,
+			ForkSessions:   totalForkSessions,
+			TotalSessions:  totalRootSessions + totalForkSessions,
+			ForkRate:       forkRate,
+			MainlineYield:  mainlineYield,
+		}
 	}
 
 	return YieldReport{
@@ -389,5 +455,6 @@ func AggregateYield(results []ToolResult, projects []ProjectDay, opts YieldOptio
 		Models:   modelRows,
 		Projects: projectRows,
 		Totals:   totals,
+		Lineage:  lineage,
 	}
 }

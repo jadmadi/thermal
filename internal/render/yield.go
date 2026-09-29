@@ -216,6 +216,27 @@ func RenderYield(rep thermal.YieldReport, top int, noColor bool) string {
 		effBadge(tot.Efficiency, tot.Status),
 	))
 
+	if rep.Lineage != nil && (rep.Lineage.ForkTokens > 0 || rep.Lineage.ForkSessions > 0) {
+		mainlineStr := thermal.CompactNumber(rep.Lineage.MainlineTokens)
+		forkStr := thermal.CompactNumber(rep.Lineage.ForkTokens)
+		mYieldStr := "unmeasured"
+		if rep.Lineage.MainlineYield > 0 {
+			mYieldStr = fmt.Sprintf("%s tok/ln", thermal.CompactNumber(int64(rep.Lineage.MainlineYield)))
+		}
+		sb.WriteString(fmt.Sprintf("  %s\n", highlight("Session Lineage & Branch Churn:")))
+		sb.WriteString(fmt.Sprintf("    • Mainline:    %s tok (%d sessions) · %.1f%% · yield: %s\n",
+			highlight(mainlineStr),
+			rep.Lineage.RootSessions,
+			100.0-rep.Lineage.ForkRate,
+			green(mYieldStr),
+		))
+		sb.WriteString(fmt.Sprintf("    • Fork/Branch: %s tok (%d sessions) · %.1f%% exploratory churn\n\n",
+			gold(forkStr),
+			rep.Lineage.ForkSessions,
+			rep.Lineage.ForkRate,
+		))
+	}
+
 	effScale := fmt.Sprintf("%s %s · %s · %s · %s",
 		highlight("Efficiency Scale:"),
 		green("[HIGH] <=250 tok/ln"),
@@ -306,12 +327,32 @@ func RenderYieldMarkdown(rep thermal.YieldReport, top int) string {
 		renderSection("Tools", rep.Tools)
 	}
 
+	if rep.Lineage != nil && (rep.Lineage.ForkTokens > 0 || rep.Lineage.ForkSessions > 0) {
+		mYieldStr := "unmeasured"
+		if rep.Lineage.MainlineYield > 0 {
+			mYieldStr = fmt.Sprintf("%s tok/ln", thermal.CompactNumber(int64(rep.Lineage.MainlineYield)))
+		}
+		sb.WriteString("#### 🌿 Session Branching & Exploratory Lineage\n\n")
+		sb.WriteString(fmt.Sprintf("- **Mainline Work**: `%s tok` across %d sessions (%.1f%%) · Mainline Yield: `%s`\n",
+			thermal.CompactNumber(rep.Lineage.MainlineTokens),
+			rep.Lineage.RootSessions,
+			100.0-rep.Lineage.ForkRate,
+			mYieldStr,
+		))
+		sb.WriteString(fmt.Sprintf("- **Fork / Prototyping**: `%s tok` across %d sessions (%.1f%% exploratory churn)\n\n",
+			thermal.CompactNumber(rep.Lineage.ForkTokens),
+			rep.Lineage.ForkSessions,
+			rep.Lineage.ForkRate,
+		))
+	}
+
 	sb.WriteString("<details>\n<summary>ℹ️ Token Yield Legend & Efficiency Scale</summary>\n\n")
 	sb.WriteString("- **Yield**: Tokens burned per net line of code added. Lower is leaner and more concise.\n")
 	sb.WriteString("- `[HIGH]`: <=250 tok/net line (efficient, direct code generation).\n")
 	sb.WriteString("- `[BALANCED]`: <=1,000 tok/net line (balanced code and iteration).\n")
 	sb.WriteString("- `[VERBOSE]`: >1,000 tok/net line (high conversational or reasoning token volume).\n")
 	sb.WriteString("- `[EXPLORATORY]`: Sessions without file changes or zero net delta.\n")
+	sb.WriteString("- **Session Lineage**: Distinguishes mainline code generation from exploratory sub-agent forks and review threads, revealing true mainline yield vs prototyping churn.\n")
 	sb.WriteString("</details>\n")
 
 	return sb.String()

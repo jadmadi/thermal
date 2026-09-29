@@ -173,3 +173,74 @@ func TestRenderYieldMarkdown(t *testing.T) {
 		t.Errorf("expected empty markdown notice, got:\n%s", emptyMd)
 	}
 }
+
+func TestRenderYield_WithLineage(t *testing.T) {
+	rep := thermal.YieldReport{
+		Type: "yield",
+		Tools: []thermal.YieldRow{
+			{
+				Name:           "Codex",
+				Type:           "tool",
+				Tokens:         100000,
+				LinesAdded:     1200,
+				LinesDeleted:   200,
+				NetLines:       1000,
+				GrossLines:     1400,
+				FilesTouched:   5,
+				TokensPerNet:   100.0,
+				Efficiency:     "HIGH",
+				Status:         "MEASURED",
+				MainlineTokens: 80000,
+				ForkTokens:     20000,
+			},
+		},
+		Totals: thermal.YieldRow{
+			Name:           "Totals",
+			Type:           "total",
+			Tokens:         100000,
+			LinesAdded:     1200,
+			LinesDeleted:   200,
+			NetLines:       1000,
+			GrossLines:     1400,
+			FilesTouched:   5,
+			TokensPerNet:   100.0,
+			Efficiency:     "HIGH",
+			Status:         "MEASURED",
+			MainlineTokens: 80000,
+			ForkTokens:     20000,
+		},
+		Lineage: &thermal.YieldBranchSummary{
+			MainlineTokens: 80000,
+			ForkTokens:     20000,
+			RootSessions:   8,
+			ForkSessions:   2,
+			TotalSessions:  10,
+			ForkRate:       20.0,
+			MainlineYield:  80.0,
+		},
+	}
+
+	// 1. Terminal text render
+	txt := RenderYield(rep, 0, true)
+	if !strings.Contains(txt, "Session Lineage & Branch Churn:") {
+		t.Errorf("missing Lineage header in text yield:\n%s", txt)
+	}
+	if !strings.Contains(txt, "Mainline:    80.0K tok (8 sessions) · 80.0% · yield: 80 tok/ln") {
+		t.Errorf("missing Mainline metrics in text yield:\n%s", txt)
+	}
+	if !strings.Contains(txt, "Fork/Branch: 20.0K tok (2 sessions) · 20.0% exploratory churn") {
+		t.Errorf("missing Fork metrics in text yield:\n%s", txt)
+	}
+
+	// 2. Markdown render
+	md := RenderYieldMarkdown(rep, 0)
+	if !strings.Contains(md, "#### 🌿 Session Branching & Exploratory Lineage") {
+		t.Errorf("missing lineage section in markdown yield:\n%s", md)
+	}
+	if !strings.Contains(md, "- **Mainline Work**: `80.0K tok` across 8 sessions (80.0%) · Mainline Yield: `80 tok/ln`") {
+		t.Errorf("missing mainline markdown metrics:\n%s", md)
+	}
+	if !strings.Contains(md, "- **Fork / Prototyping**: `20.0K tok` across 2 sessions (20.0% exploratory churn)") {
+		t.Errorf("missing fork markdown metrics:\n%s", md)
+	}
+}

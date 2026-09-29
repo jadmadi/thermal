@@ -481,3 +481,67 @@ func TestScanCodexReceipts(t *testing.T) {
 		t.Errorf("expected TestsPassed 1, got %d", r.TestsPassed)
 	}
 }
+
+func TestLoadCodexData_ThreadLineageAndForks(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "state_5.sqlite")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("failed opening sqlite: %v", err)
+	}
+	_, err = db.Exec(`
+		CREATE TABLE threads (
+			id TEXT PRIMARY KEY, tokens_used INTEGER, model TEXT, source TEXT,
+			reasoning_effort TEXT, agent_role TEXT, created_at INTEGER,
+			updated_at INTEGER, rollout_path TEXT, cwd TEXT, thread_source TEXT, archived INTEGER
+		);
+		CREATE TABLE thread_spawn_edges (
+			child_thread_id TEXT PRIMARY KEY,
+			parent_thread_id TEXT,
+			status TEXT
+		);
+	`)
+	if err != nil {
+		t.Fatalf("failed creating schema: %v", err)
+	}
+
+	// Insert 1 mainline root thread and 1 spawned child fork thread
+	_, err = db.Exec(`INSERT INTO threads VALUES ('th-root', 50000, 'gpt-4o', 'cli', '', '', 1710504000, 1710504060, '', '/test/project', 'user', 0)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec(`INSERT INTO threads VALUES ('th-child', 15000, 'gpt-4o', '{"subagent":{"other":"review"}}', '', '', 1710504100, 1710504160, '', '/test/project', 'subagent', 0)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec(`INSERT INTO thread_spawn_edges VALUES ('th-child', 'th-root', 'open')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	sum, daily, _, err := LoadCodexData(dir)
+	if err != nil {
+		t.Fatalf("LoadCodexData error: %v", err)
+	}
+
+	if sum.Sessions != 2 {
+		t.Errorf("expected 2 sessions, got %d", sum.Sessions)
+	}
+	if sum.RootSessions != 1 || sum.ForkSessions != 1 {
+		t.Errorf("expected 1 root session and 1 fork session, got root=%d fork=%d", sum.RootSessions, sum.ForkSessions)
+	}
+	if sum.MainlineTokens != 50000 {
+		t.Errorf("expected 50000 mainline tokens, got %d", sum.MainlineTokens)
+	}
+	if sum.ForkTokens != 15000 {
+		t.Errorf("expected 15000 fork tokens, got %d", sum.ForkTokens)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if daily[0].MainlineTokens != 50000 || daily[0].ForkTokens != 15000 {
+		t.Errorf("expected daily mainline=50000 fork=15000, got mainline=%d fork=%d",
+			daily[0].MainlineTokens, daily[0].ForkTokens)
+	}
+}

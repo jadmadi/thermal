@@ -162,3 +162,56 @@ func TestAggregateYield(t *testing.T) {
 		t.Errorf("unexpected totals: %+v", report.Totals)
 	}
 }
+
+func TestAggregateYield_LineageAndForkTokens(t *testing.T) {
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+	results := []ToolResult{
+		{
+			Tool: ToolCodex,
+			Name: "Codex",
+			Summary: Summary{
+				LifetimeTokens: 100000,
+				MainlineTokens: 80000,
+				ForkTokens:     20000,
+				RootSessions:   8,
+				ForkSessions:   2,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{
+					Day:            "2026-09-29",
+					Tokens:         100000,
+					LinesAdded:     1200,
+					LinesDeleted:   200,
+					FilesTouched:   5,
+					MainlineTokens: 80000,
+					ForkTokens:     20000,
+				},
+			},
+		},
+	}
+
+	report := AggregateYield(results, nil, YieldOptions{Now: now})
+
+	if report.Totals.MainlineTokens != 80000 {
+		t.Errorf("expected 80000 mainline tokens, got %d", report.Totals.MainlineTokens)
+	}
+	if report.Totals.ForkTokens != 20000 {
+		t.Errorf("expected 20000 fork tokens, got %d", report.Totals.ForkTokens)
+	}
+
+	if report.Lineage == nil {
+		t.Fatalf("expected non-nil Lineage in report")
+	}
+	if report.Lineage.ForkRate != 20.0 {
+		t.Errorf("expected 20.0%% fork rate, got %.2f%%", report.Lineage.ForkRate)
+	}
+	// Net lines = 1200 - 200 = 1000. Mainline tokens = 80000.
+	// Mainline yield = 80000 / 1000 = 80 tok/line
+	if report.Lineage.MainlineYield != 80.0 {
+		t.Errorf("expected 80.0 mainline yield, got %.2f", report.Lineage.MainlineYield)
+	}
+	if report.Lineage.RootSessions != 8 || report.Lineage.ForkSessions != 2 {
+		t.Errorf("unexpected session counts: root=%d fork=%d", report.Lineage.RootSessions, report.Lineage.ForkSessions)
+	}
+}
