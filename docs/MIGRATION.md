@@ -10,6 +10,8 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 - [Staged Deprecations (v0.14.0)](#staged-deprecations-v0140)
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
   - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
+- [Upgrading to v0.16.x](#upgrading-to-v016x)
+  - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
 - [Upgrading to v0.14.x](#upgrading-to-v014x)
   - [Changed: Local Web Dashboard Request Authority Boundary](#changed-localhost-request-boundary)
   - [Changed: Live Monitor Metric Parity and Burn Accounting](#changed-live-metric-parity)
@@ -86,6 +88,39 @@ thermal hermes weekly
 
 **Escape hatch**:
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
+
+## Upgrading to v0.16.x
+
+### Added: GitHub Flavored Markdown Output for Receipt and Yield Reports
+<a id="added-markdown-pr-receipts-and-yield"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*--format' .`
+- **Detection signal**: Error output `thermal: --format must be text, json, md, or markdown` when an invalid format is specified, or `thermal: --format md only applies to the receipt and yield commands` when `--format md` is combined with unsupported commands, or `thermal: --json cannot be combined with --format md`.
+
+**What changed and why**:
+Thermal now supports `--format md` and `--format markdown` for `thermal receipt` and `thermal yield`, rendering copy-paste ready GitHub Flavored Markdown blocks with summary blockquotes, structured metric tables, and collapsible details for PR descriptions and issue audits. Previously, script automation requiring Markdown had to transform raw ASCII box-drawing characters or parse `--json` output manually. The `--format` flag strictly validates input options (`text`, `json`, `md`, `markdown`), rejects invalid commands, and prevents conflicting `--json` combinations.
+
+**Before / After**:
+```bash
+# Before (Only ASCII terminal tables or JSON available)
+thermal receipt
+# Output: ASCII box-drawing border table
+
+# After (GitHub Flavored Markdown ready for PR summaries)
+thermal receipt --format md
+# Output: ### 🧾 Verifiable Work Receipts ...
+```
+
+**The fix**:
+Use `--format md` or `--format markdown` directly on `thermal receipt` or `thermal yield`:
+```bash
+thermal receipt --format md
+thermal yield --format md
+```
+
+**Escape hatch**:
+Omit `--format` or specify `--format text` to retain the default ANSI/ASCII terminal output, or use `--format json` / `--json` for machine-readable payloads.
 
 ## Upgrading to v0.14.x
 

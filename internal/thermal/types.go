@@ -31,6 +31,7 @@ type Options struct {
 	DBPath        string
 	Weeks         int
 	JSON          bool
+	Format        string // "text", "json", "md", "markdown"
 	NoColor       bool
 	Verbose       bool
 	Report        string // "", "daily", "weekly", "monthly", "projects"
