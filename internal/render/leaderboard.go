@@ -147,48 +147,95 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 
 	if len(tokenResults) > 0 {
 		var tokenLines []string
-		tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s %s  %s  %s   %s  %s",
-			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6),
-			thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), thermal.PadRight("Tokens", 10), "Cost",
-		))
-		tokenLines = append(tokenLines, strings.Repeat("─", 65))
+		tokenHeaders := []string{"#", "Tool", "Strk", "Best", "Days", "Tokens", "Cost"}
+		tokenAlign := []bool{true, false, true, true, true, true, true}
+		tokenWidths := []int{3, 14, 6, 6, 6, 11, 11}
+
+		tokenLines = append(tokenLines, formatHeaderRow(tokenHeaders, tokenWidths, tokenAlign, colors))
+		tokenLines = append(tokenLines, " "+tableRule(tokenWidths))
 
 		for i, r := range tokenResults {
 			rank := i + 1
-			medal := medals(rank, colors)
+			rankCell := formatRankCell(rank, tokenWidths[0], colors)
 
-			nameStr := thermal.PadRight(r.Name, 14)
-			if rank == 1 {
-				nameStr = gold(r.Name) + strings.Repeat(" ", 14-len(r.Name))
+			nameStr := padRight(r.Name, tokenWidths[1])
+			if colors {
+				if rank == 1 {
+					nameStr = padRightStyled(r.Name, tokenWidths[1], func(s string) string { return gold(s) })
+				} else {
+					nameStr = padRightStyled(r.Name, tokenWidths[1], func(s string) string { return theme.Text.Sprint(true, s) })
+				}
 			}
 
 			streakPlain := fmt.Sprintf("%dd", r.CurrentStreak)
-			streakStr := thermal.PadLeft(streakPlain, 6)
-			if r.CurrentStreak > 0 {
-				streakStr = strings.Repeat(" ", 6-len(streakPlain)) + green(streakPlain)
+			var streakStr string
+			if colors && r.CurrentStreak > 0 {
+				streakStr = padLeftStyled(streakPlain, tokenWidths[2], func(s string) string { return green(s) })
+			} else if colors {
+				streakStr = padLeftStyled(streakPlain, tokenWidths[2], func(s string) string { return theme.TextMuted.Sprint(true, s) })
+			} else {
+				streakStr = padLeft(streakPlain, tokenWidths[2])
 			}
 
-			bestStr := thermal.PadLeft(fmt.Sprintf("%dd", r.LongestStreak), 6)
-			activeStr := thermal.PadLeft(fmt.Sprintf("%dd", r.ActiveDays), 6)
-			activityStr := thermal.PadRight(fmt.Sprintf("%s tok", thermal.CompactNumber(r.TotalActivity)), 10)
+			bestPlain := fmt.Sprintf("%dd", r.LongestStreak)
+			var bestStr string
+			if colors {
+				bestStr = padLeftStyled(bestPlain, tokenWidths[3], func(s string) string { return theme.Text.Sprint(true, s) })
+			} else {
+				bestStr = padLeft(bestPlain, tokenWidths[3])
+			}
 
-			costStr := "—"
+			activePlain := fmt.Sprintf("%dd", r.ActiveDays)
+			var activeStr string
+			if colors {
+				activeStr = padLeftStyled(activePlain, tokenWidths[4], func(s string) string { return theme.Text.Sprint(true, s) })
+			} else {
+				activeStr = padLeft(activePlain, tokenWidths[4])
+			}
+
+			tokPlain := fmt.Sprintf("%s tok", thermal.CompactNumber(r.TotalActivity))
+			var tokStr string
+			if colors {
+				if r.TotalActivity >= 1_000_000_000 {
+					tokStr = padLeftStyled(tokPlain, tokenWidths[5], func(s string) string { return theme.Primary.SprintBold(true, s) })
+				} else if r.TotalActivity >= 100_000_000 {
+					tokStr = padLeftStyled(tokPlain, tokenWidths[5], func(s string) string { return theme.Secondary.Sprint(true, s) })
+				} else {
+					tokStr = padLeftStyled(tokPlain, tokenWidths[5], func(s string) string { return theme.Text.Sprint(true, s) })
+				}
+			} else {
+				tokStr = padLeft(tokPlain, tokenWidths[5])
+			}
+
+			costPlain := "—"
 			if r.Summary.Cost > 0 {
 				if r.Summary.Cost < 0.01 {
-					costStr = fmt.Sprintf("$%.4f", r.Summary.Cost)
+					costPlain = fmt.Sprintf("$%.4f", r.Summary.Cost)
 				} else {
-					costStr = fmt.Sprintf("$%.2f", r.Summary.Cost)
+					costPlain = fmt.Sprintf("$%.2f", r.Summary.Cost)
 				}
 			} else if estimate && r.EstimatedCost > 0 {
 				if r.EstimatedCost < 0.01 {
-					costStr = fmt.Sprintf("~$%.4f", r.EstimatedCost)
+					costPlain = fmt.Sprintf("~$%.4f", r.EstimatedCost)
 				} else {
-					costStr = fmt.Sprintf("~$%.2f", r.EstimatedCost)
+					costPlain = fmt.Sprintf("~$%.2f", r.EstimatedCost)
 				}
 			}
+			var costStr string
+			if colors {
+				if costPlain == "—" {
+					costStr = padLeftStyled(costPlain, tokenWidths[6], func(s string) string { return theme.TextMuted.Sprint(true, s) })
+				} else if strings.HasPrefix(costPlain, "~") {
+					costStr = padLeftStyled(costPlain, tokenWidths[6], func(s string) string { return theme.Secondary.Sprint(true, s) })
+				} else {
+					costStr = padLeftStyled(costPlain, tokenWidths[6], func(s string) string { return theme.Text.Sprint(true, s) })
+				}
+			} else {
+				costStr = padLeft(costPlain, tokenWidths[6])
+			}
 
-			tokenLines = append(tokenLines, fmt.Sprintf("%s %s %s  %s  %s   %s  %s",
-				medal, nameStr, streakStr, bestStr, activeStr, activityStr, costStr,
+			tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s  %s",
+				rankCell, nameStr, streakStr, bestStr, activeStr, tokStr, costStr,
 			))
 		}
 
@@ -206,29 +253,51 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 
 	if len(activityResults) > 0 {
 		var actLines []string
-		actLines = append(actLines, fmt.Sprintf(" %s  %s %s  %s  %s   %s",
-			thermal.PadRight("#", 3), thermal.PadRight("Tool", 14), thermal.PadRight("Strk", 6),
-			thermal.PadRight("Best", 6), thermal.PadRight("Days", 6), "Activity",
-		))
-		actLines = append(actLines, strings.Repeat("─", 55))
+		actHeaders := []string{"#", "Tool", "Strk", "Best", "Days", "Activity"}
+		actAlign := []bool{true, false, true, true, true, true}
+		actWidths := []int{3, 14, 6, 6, 6, 12}
+
+		actLines = append(actLines, formatHeaderRow(actHeaders, actWidths, actAlign, colors))
+		actLines = append(actLines, " "+tableRule(actWidths))
 
 		for i, r := range activityResults {
 			rank := i + 1
-			medal := medals(rank, colors)
+			rankCell := formatRankCell(rank, actWidths[0], colors)
 
-			nameStr := thermal.PadRight(r.Name, 14)
-			if rank == 1 {
-				nameStr = gold(r.Name) + strings.Repeat(" ", 14-len(r.Name))
+			nameStr := padRight(r.Name, actWidths[1])
+			if colors {
+				if rank == 1 {
+					nameStr = padRightStyled(r.Name, actWidths[1], func(s string) string { return gold(s) })
+				} else {
+					nameStr = padRightStyled(r.Name, actWidths[1], func(s string) string { return theme.Text.Sprint(true, s) })
+				}
 			}
 
 			streakPlain := fmt.Sprintf("%dd", r.CurrentStreak)
-			streakStr := thermal.PadLeft(streakPlain, 6)
-			if r.CurrentStreak > 0 {
-				streakStr = strings.Repeat(" ", 6-len(streakPlain)) + green(streakPlain)
+			var streakStr string
+			if colors && r.CurrentStreak > 0 {
+				streakStr = padLeftStyled(streakPlain, actWidths[2], func(s string) string { return green(s) })
+			} else if colors {
+				streakStr = padLeftStyled(streakPlain, actWidths[2], func(s string) string { return theme.TextMuted.Sprint(true, s) })
+			} else {
+				streakStr = padLeft(streakPlain, actWidths[2])
 			}
 
-			bestStr := thermal.PadLeft(fmt.Sprintf("%dd", r.LongestStreak), 6)
-			activeStr := thermal.PadLeft(fmt.Sprintf("%dd", r.ActiveDays), 6)
+			bestPlain := fmt.Sprintf("%dd", r.LongestStreak)
+			var bestStr string
+			if colors {
+				bestStr = padLeftStyled(bestPlain, actWidths[3], func(s string) string { return theme.Text.Sprint(true, s) })
+			} else {
+				bestStr = padLeft(bestPlain, actWidths[3])
+			}
+
+			activePlain := fmt.Sprintf("%dd", r.ActiveDays)
+			var activeStr string
+			if colors {
+				activeStr = padLeftStyled(activePlain, actWidths[4], func(s string) string { return theme.Text.Sprint(true, s) })
+			} else {
+				activeStr = padLeft(activePlain, actWidths[4])
+			}
 
 			var actLabel string
 			switch r.Tool {
@@ -243,10 +312,16 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			default:
 				actLabel = "act"
 			}
-			activityStr := fmt.Sprintf("%s %s", thermal.CompactNumber(r.TotalActivity), actLabel)
+			actPlain := fmt.Sprintf("%s %s", thermal.CompactNumber(r.TotalActivity), actLabel)
+			var actStr string
+			if colors {
+				actStr = padLeftStyled(actPlain, actWidths[5], func(s string) string { return theme.Text.Sprint(true, s) })
+			} else {
+				actStr = padLeft(actPlain, actWidths[5])
+			}
 
-			actLines = append(actLines, fmt.Sprintf("%s %s %s  %s  %s   %s",
-				medal, nameStr, streakStr, bestStr, activeStr, activityStr,
+			actLines = append(actLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s",
+				rankCell, nameStr, streakStr, bestStr, activeStr, actStr,
 			))
 		}
 

@@ -480,3 +480,83 @@ func TestLiveModel_SeedTodayAndActivityUnits(t *testing.T) {
 		t.Errorf("expected view to contain 'step/s' for Speed, got:\n%s", view)
 	}
 }
+
+func TestLiveModel_HybridTokenAndActivity(t *testing.T) {
+	hybridPoll := func() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
+		return []thermal.ToolResult{
+			{
+				Tool: thermal.ToolCodex,
+				Name: "Codex",
+				Summary: thermal.Summary{
+					LifetimeTokens: 6_200_000,
+					Sessions:       2,
+				},
+				Daily: []thermal.DailyRow{
+					{
+						Day:    thermal.LocalDay(time.Now()),
+						Tokens: 6_200_000,
+						Input:  5_000_000,
+						Output: 1_200_000,
+						Turns:  2,
+					},
+				},
+			},
+			{
+				Tool: thermal.ToolAgy,
+				Name: "Agy",
+				Summary: thermal.Summary{
+					LifetimeTokens: 0,
+					Sessions:       10,
+					ModelBreakdown: map[string]int64{
+						"gemini-3.8-flash": 4_000,
+					},
+				},
+				Daily: []thermal.DailyRow{
+					{
+						Day:   thermal.LocalDay(time.Now()),
+						Turns: 4_000,
+					},
+				},
+			},
+		}, nil, nil
+	}
+
+	m := NewLiveModel(hybridPoll, time.Second, "", false)
+	m.width = 120
+	m.height = 30
+
+	view := m.View().Content
+	if !strings.Contains(view, "6.2M tok · 4.0K step") {
+		t.Errorf("expected view to contain hybrid volume '6.2M tok · 4.0K step', got:\n%s", view)
+	}
+	if !strings.Contains(view, "+6.2M tok · +4.0K step") {
+		t.Errorf("expected view to contain hybrid burned '+6.2M tok · +4.0K step', got:\n%s", view)
+	}
+	if !strings.Contains(view, "RECENT TOKEN & ACTIVITY BURSTS") {
+		t.Errorf("expected view to contain 'RECENT TOKEN & ACTIVITY BURSTS', got:\n%s", view)
+	}
+	if !strings.Contains(view, "TOK/STEP") {
+		t.Errorf("expected view to contain 'TOK/STEP', got:\n%s", view)
+	}
+}
+
+func TestLiveModel_CompactViewport(t *testing.T) {
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "", false)
+	m.width = 80
+	m.height = 14
+
+	view := m.View().Content
+	lines := strings.Split(strings.TrimRight(view, "\n"), "\n")
+	if len(lines) > 14 {
+		t.Errorf("expected at most 14 lines in compact viewport, got %d:\n%s", len(lines), view)
+	}
+	if !strings.Contains(view, "THERMAL LIVE") {
+		t.Errorf("expected top line in compact viewport, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Controls:") {
+		t.Errorf("expected footer controls in compact viewport, got:\n%s", view)
+	}
+	if strings.Contains(view, "ROLLING ACTIVITY") {
+		t.Errorf("expected sparkline to be omitted at height 14, got:\n%s", view)
+	}
+}

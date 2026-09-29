@@ -41,6 +41,12 @@ func TestPadding(t *testing.T) {
 	if got := PadLeft("abc", 5); got != "  abc" {
 		t.Errorf("PadLeft = %q, want %q", got, "  abc")
 	}
+	if got := PadLeft("—", 5); got != "    —" {
+		t.Errorf("PadLeft em dash = %q, want %q", got, "    —")
+	}
+	if got := PadRight("—", 5); got != "—    " {
+		t.Errorf("PadRight em dash = %q, want %q", got, "—    ")
+	}
 }
 
 func TestFormatPath(t *testing.T) {

@@ -125,12 +125,6 @@ func RenderCard(opts CardOptions) string {
 func prepareCardLines(lines []string, innerWidth int) []string {
 	var out []string
 	for _, line := range lines {
-		w := ansi.StringWidth(line)
-		if w <= innerWidth {
-			out = append(out, line)
-			continue
-		}
-
 		stripped := ansi.Strip(line)
 		trimmed := strings.TrimSpace(stripped)
 
@@ -145,7 +139,22 @@ func prepareCardLines(lines []string, innerWidth int) []string {
 			if strings.Contains(trimmed, "-") {
 				char = "-"
 			}
-			out = append(out, strings.Repeat(" ", leadingSpaces)+strings.Repeat(char, ruleLen))
+			res := strings.Repeat(" ", leadingSpaces) + strings.Repeat(char, ruleLen)
+			if strings.Contains(line, "\033[") {
+				idx := strings.Index(line, "\033[")
+				endIdx := strings.Index(line[idx:], "m")
+				if endIdx != -1 {
+					ansiPrefix := line[idx : idx+endIdx+1]
+					res = strings.Repeat(" ", leadingSpaces) + ansiPrefix + strings.Repeat(char, ruleLen) + "\033[0m"
+				}
+			}
+			out = append(out, res)
+			continue
+		}
+
+		w := ansi.StringWidth(line)
+		if w <= innerWidth {
+			out = append(out, line)
 			continue
 		}
 

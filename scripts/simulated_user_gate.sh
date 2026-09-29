@@ -42,7 +42,7 @@ mkdir -p "${GATE_HOME}/.codewhale/sessions"
 mkdir -p "${GATE_HOME}/.claude/projects/mockproj"
 mkdir -p "${GATE_HOME}/.cache/thermal"
 
-TODAY_ISO="$(date -u +"%Y-%m-%dT12:00:00Z")"
+TODAY_ISO="$(date +"%Y-%m-%dT12:00:00Z")"
 
 # Mock CodeWhale session (750,000 tokens, $1.75 recorded cost, claude-3-5-sonnet)
 cat <<EOF > "${GATE_HOME}/.codewhale/sessions/session_1.json"
