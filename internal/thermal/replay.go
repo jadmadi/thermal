@@ -12,10 +12,10 @@ import (
 
 // BuildWorkloadSnapshot aggregates historical token telemetry over the
 // requested window for replay simulation.
-func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (WorkloadSnapshot, map[string]int64, int) {
+func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (WorkloadSnapshot, map[string]DailyRow, int) {
 	since, until, lastStart := windowBounds(opts.Since, opts.Until, opts.Last, opts.Now)
 
-	byDay := make(map[string]int64)
+	byDay := make(map[string]DailyRow)
 	var (
 		uncachedInput int64
 		output        int64
@@ -43,7 +43,24 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 			isEstimated = true
 		}
 
-		byDay[day.Day] += day.Tokens
+		existing := byDay[day.Day]
+		existing.Day = day.Day
+		existing.Tokens += day.Tokens
+		existing.Input += day.Input
+		existing.Output += day.Output
+		existing.Reasoning += day.Reasoning
+		existing.Cache += day.Cache
+		existing.Turns += day.Turns
+		if len(day.ReasoningEffort) > 0 {
+			if existing.ReasoningEffort == nil {
+				existing.ReasoningEffort = make(map[string]int)
+			}
+			for eff, n := range day.ReasoningEffort {
+				existing.ReasoningEffort[eff] += n
+			}
+		}
+		byDay[day.Day] = existing
+
 		if minDay == "" || day.Day < minDay {
 			minDay = day.Day
 		}
@@ -74,7 +91,8 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 	var dailyValues []int64
 	var peakTokens int64
 	var peakDay string
-	for day, val := range byDay {
+	for day, row := range byDay {
+		val := row.Tokens
 		if val > 0 {
 			dailyValues = append(dailyValues, val)
 			if val > peakTokens {
@@ -144,7 +162,7 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 }
 
 // SimulatePlan evaluates a subscription plan or API tier against a workload snapshot.
-func SimulatePlan(snap WorkloadSnapshot, byDay map[string]int64, calendarDays int, plan SubscriptionPlan, pricer ReplayPricer) PlanReplayRow {
+func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays int, plan SubscriptionPlan, pricer ReplayPricer) PlanReplayRow {
 	if calendarDays <= 0 {
 		calendarDays = 30
 	}
@@ -177,26 +195,57 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]int64, calendarDays in
 	} else {
 		row.MonthlyCost = plan.MonthlyFee
 		throttled := 0
-		if plan.DailyTokenLimit > 0 {
-			for _, tokens := range byDay {
-				if tokens > plan.DailyTokenLimit {
-					throttled++
-				}
+		burstThrottles := 0
+
+		multiplier := plan.BurstMultiplier
+		if multiplier <= 0 {
+			multiplier = 1.0
+		}
+
+		for _, dayRow := range byDay {
+			dayTokens := dayRow.Tokens
+			effectiveBurstTokens := dayTokens
+			if multiplier > 1.0 && dayRow.Reasoning > 0 {
+				effectiveBurstTokens = (dayTokens - dayRow.Reasoning) + int64(float64(dayRow.Reasoning)*multiplier)
+			}
+
+			dayThrottled := false
+			if plan.DailyTokenLimit > 0 && effectiveBurstTokens > plan.DailyTokenLimit {
+				dayThrottled = true
+			}
+			if plan.RollingWindowLimit > 0 && effectiveBurstTokens > plan.RollingWindowLimit {
+				burstThrottles++
+				dayThrottled = true
+			}
+
+			if dayThrottled {
+				throttled++
 			}
 		}
+
 		row.ThrottledDays = throttled
+		row.BurstThrottles = burstThrottles
 		if snap.ActiveDays > 0 {
 			row.ThrottleRate = float64(throttled) / float64(snap.ActiveDays)
 		}
+
 		if throttled == 0 {
 			row.CapacityVerdict = "PASS"
 			row.VerdictDetail = "0% throttled"
 		} else if row.ThrottleRate <= 0.20 {
 			row.CapacityVerdict = "DEGRADED"
-			row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
+			if burstThrottles > 0 {
+				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%) · %d burst limit spikes", throttled, snap.ActiveDays, row.ThrottleRate*100, burstThrottles)
+			} else {
+				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
+			}
 		} else {
 			row.CapacityVerdict = "FAIL"
-			row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
+			if burstThrottles > 0 {
+				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%) · %d burst limit spikes", throttled, snap.ActiveDays, row.ThrottleRate*100, burstThrottles)
+			} else {
+				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
+			}
 		}
 	}
 

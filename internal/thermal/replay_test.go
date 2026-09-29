@@ -4,6 +4,7 @@
 package thermal
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -165,5 +166,80 @@ func TestAggregateReplay_AgainstModel(t *testing.T) {
 	}
 	if rep.Plans[0].CapacityVerdict != "PASS" {
 		t.Errorf("expected PASS verdict for API model replay, got %s", rep.Plans[0].CapacityVerdict)
+	}
+}
+
+func TestAggregateReplay_ChatGPTBurst(t *testing.T) {
+	// Day 1: 4M tokens, 2M reasoning -> effective burst = 2M + (2M * 3.0) = 8M tokens.
+	// This exceeds ChatGPT Plus 5M RollingWindowLimit!
+	// But it does not exceed ChatGPT Pro 40M RollingWindowLimit.
+	days := []DailyRow{
+		{
+			Day:       "2026-09-01",
+			Tokens:    4_000_000,
+			Input:     1_000_000,
+			Output:    1_000_000,
+			Reasoning: 2_000_000,
+		},
+	}
+
+	pricer := &mockReplayPricer{
+		prices: map[string][4]float64{
+			"gpt-4o": {2.5, 10.0, 1.25, 0},
+		},
+	}
+
+	plans := []SubscriptionPlan{
+		{
+			ID:                 "chatgpt-plus",
+			Name:               "ChatGPT Plus ($20)",
+			Type:               PlanTypeSubscription,
+			MonthlyFee:         20.0,
+			DailyTokenLimit:    20_000_000,
+			RollingWindowLimit: 5_000_000,
+			BurstMultiplier:    3.0,
+			DefaultModel:       "gpt-4o",
+		},
+		{
+			ID:                 "chatgpt-pro",
+			Name:               "ChatGPT Pro ($200)",
+			Type:               PlanTypeSubscription,
+			MonthlyFee:         200.0,
+			DailyTokenLimit:    100_000_000,
+			RollingWindowLimit: 40_000_000,
+			BurstMultiplier:    3.0,
+			DefaultModel:       "gpt-4o",
+		},
+	}
+
+	opts := ReplayOptions{
+		Since:   "2026-09-01",
+		Until:   "2026-09-01",
+		Compare: plans,
+		Now:     time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC),
+	}
+
+	rep := AggregateReplay(days, opts, pricer)
+	if len(rep.Plans) != 2 {
+		t.Fatalf("expected 2 plans, got %d", len(rep.Plans))
+	}
+
+	plus := rep.Plans[0]
+	if plus.CapacityVerdict != "DEGRADED" && plus.CapacityVerdict != "FAIL" {
+		t.Errorf("expected ChatGPT Plus to be throttled due to burst limit, got %s", plus.CapacityVerdict)
+	}
+	if plus.BurstThrottles != 1 {
+		t.Errorf("expected 1 burst throttle, got %d", plus.BurstThrottles)
+	}
+	if !strings.Contains(plus.VerdictDetail, "burst limit spikes") {
+		t.Errorf("expected verdict detail to mention burst limit spikes, got: %s", plus.VerdictDetail)
+	}
+
+	pro := rep.Plans[1]
+	if pro.CapacityVerdict != "PASS" {
+		t.Errorf("expected ChatGPT Pro to pass, got %s", pro.CapacityVerdict)
+	}
+	if pro.BurstThrottles != 0 {
+		t.Errorf("expected 0 burst throttles for ChatGPT Pro, got %d", pro.BurstThrottles)
 	}
 }

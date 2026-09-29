@@ -88,3 +88,37 @@ func TestRenderReplay_Empty(t *testing.T) {
 		t.Errorf("expected empty window notice, got: %s", out)
 	}
 }
+
+func TestRenderReplay_BurstSpikes(t *testing.T) {
+	rep := thermal.ReplayReport{
+		Type: "replay",
+		Workload: thermal.WorkloadSnapshot{
+			ActiveDays:        10,
+			TotalDays:         14,
+			TotalTokens:       100_000_000,
+			CacheHitRate:      0.80,
+			MedianDailyTokens: 10_000_000,
+			P90DailyTokens:    18_000_000,
+			PeakDailyTokens:   25_000_000,
+			ActualSpend:       30.0,
+		},
+		Plans: []thermal.PlanReplayRow{
+			{
+				ID:               "chatgpt-plus",
+				Name:             "ChatGPT Plus ($20)",
+				Type:             "sub",
+				MonthlyCost:      20.0,
+				CostDelta:        -10.0,
+				CostDeltaPercent: -33.3,
+				CapacityVerdict:  "DEGRADED",
+				VerdictDetail:    "throttled 2/10 days (20%) · 2 burst limit spikes",
+				BurstThrottles:   2,
+			},
+		},
+	}
+
+	out := RenderReplay(rep, true)
+	if !strings.Contains(out, "DEGRADED (throttled 2/10 days (20%) · 2 burst limit spikes)") {
+		t.Errorf("missing formatted burst verdict detail, got: %s", out)
+	}
+}

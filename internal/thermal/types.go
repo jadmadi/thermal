@@ -360,6 +360,7 @@ type PlanReplayRow struct {
 	ThrottledDays    int     `json:"throttledDays"`
 	TotalDays        int     `json:"totalDays"`
 	ThrottleRate     float64 `json:"throttleRate"`
+	BurstThrottles   int     `json:"burstThrottles,omitempty"`
 	CapacityVerdict  string  `json:"capacityVerdict"` // "PASS", "DEGRADED", "FAIL"
 	VerdictDetail    string  `json:"verdictDetail"`
 	IsRecommended    bool    `json:"isRecommended,omitempty"`
@@ -376,14 +377,16 @@ const (
 // SubscriptionPlan models a commercial AI coding subscription or pay-as-you-go
 // API tier with throughput limits and default model assignments.
 type SubscriptionPlan struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Type            PlanType `json:"type"`
-	MonthlyFee      float64  `json:"monthlyFee"`      // USD flat fee (0 for payg)
-	DailyTokenLimit int64    `json:"dailyTokenLimit"` // 0 if unmetered/payg
-	DefaultModel    string   `json:"defaultModel"`    // model id in catalog
-	Provider        string   `json:"provider"`
-	Notes           string   `json:"notes"`
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	Type               PlanType `json:"type"`
+	MonthlyFee         float64  `json:"monthlyFee"`                   // USD flat fee (0 for payg)
+	DailyTokenLimit    int64    `json:"dailyTokenLimit"`              // 0 if unmetered/payg
+	RollingWindowLimit int64    `json:"rollingWindowLimit,omitempty"` // rolling burst limit (e.g. 5-hour window)
+	BurstMultiplier    float64  `json:"burstMultiplier,omitempty"`    // reasoning model token burst multiplier (default 1.0)
+	DefaultModel       string   `json:"defaultModel"`                 // model id in catalog
+	Provider           string   `json:"provider"`
+	Notes              string   `json:"notes"`
 }
 
 // ReplayOptions configures the historical window and simulation parameters.
