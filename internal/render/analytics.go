@@ -62,44 +62,29 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		headers = append(headers, truncate(otherLabel, seriesWidth))
 	}
 	headers = append(headers, "Total")
-
-	rule := 2 * (len(headers) - 1)
-	for i := range headers {
-		if i == 0 {
-			rule += analyticsNumber + 2
-		} else if i == len(headers)-1 {
-			rule += analyticsNumber
-		} else {
-			rule += seriesWidth
-		}
+	widths := []int{analyticsNumber + 2}
+	alignRight := []bool{false}
+	for range shown {
+		widths = append(widths, seriesWidth)
+		alignRight = append(alignRight, false)
 	}
+	if otherLabel != "" {
+		widths = append(widths, seriesWidth)
+		alignRight = append(alignRight, false)
+	}
+	widths = append(widths, analyticsNumber)
+	alignRight = append(alignRight, true)
 
 	var cardLines []string
-
-	var hsb strings.Builder
-	hsb.WriteString(" ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, seriesWidth)
-		if i == 0 {
-			cell = thermal.PadRight(h, analyticsNumber+2)
-		}
-		if i == len(headers)-1 {
-			cell = thermal.PadLeft(h, analyticsNumber)
-		}
-		hsb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			hsb.WriteString("  ")
-		}
-	}
-	cardLines = append(cardLines, hsb.String())
-	cardLines = append(cardLines, strings.Repeat("─", rule))
+	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+	cardLines = append(cardLines, " "+tableRule(widths))
 
 	formatRow := func(label string, shares []float64, total float64, style func(string) string) string {
-		cells := []string{thermal.PadRight(label, analyticsNumber+2)}
+		cells := []string{padRight(label, analyticsNumber+2)}
 		for _, share := range shares {
-			cells = append(cells, thermal.PadRight(fmt.Sprintf("%.0f%%", share*100), seriesWidth))
+			cells = append(cells, padRight(fmt.Sprintf("%.0f%%", share*100), seriesWidth))
 		}
-		cells = append(cells, thermal.PadLeft(formatMixValue(total, rep.Metric), analyticsNumber))
+		cells = append(cells, padLeft(formatMixValue(total, rep.Metric), analyticsNumber))
 		var rsb strings.Builder
 		rsb.WriteString(" ")
 		for i, c := range cells {
@@ -135,7 +120,7 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		cardLines = append(cardLines, formatRow(bucket.Period, shares, total, nil))
 	}
 
-	cardLines = append(cardLines, strings.Repeat("─", rule))
+	cardLines = append(cardLines, " "+tableRule(widths))
 	totalShares := make([]float64, 0, len(shown)+1)
 	for _, s := range shown {
 		totalShares = append(totalShares, s.Share)

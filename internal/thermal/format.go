@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 func CompactNumber(v int64) string {
@@ -23,14 +24,14 @@ func CompactNumber(v int64) string {
 }
 
 func PadRight(s string, width int) string {
-	if n := width - len(s); n > 0 {
+	if n := width - utf8.RuneCountInString(s); n > 0 {
 		return s + strings.Repeat(" ", n)
 	}
 	return s
 }
 
 func PadLeft(s string, width int) string {
-	if n := width - len(s); n > 0 {
+	if n := width - utf8.RuneCountInString(s); n > 0 {
 		return strings.Repeat(" ", n) + s
 	}
 	return s

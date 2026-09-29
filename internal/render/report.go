@@ -118,42 +118,38 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 
 	var cardLines []string
 
-	var hsb strings.Builder
-	hsb.WriteString(" ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, widths[i])
-		if alignRight[i] {
-			cell = thermal.PadLeft(h, widths[i])
-		}
-		hsb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			hsb.WriteString("  ")
-		}
-	}
-	cardLines = append(cardLines, hsb.String())
-	cardLines = append(cardLines, strings.Repeat("─", rule))
+	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+	cardLines = append(cardLines, " "+tableRule(widths))
 
-	formatRow := func(period, models string, row thermal.PeriodRow, style func(string) string) string {
-		cells := []string{thermal.PadRight(truncate(period, periodWidth), periodWidth),
-			thermal.PadRight(truncate(models, modelsWidth), modelsWidth)}
+	formatRow := func(period, models string, row thermal.PeriodRow, isTotal bool, isBreakdown bool) string {
+		cells := []string{
+			padRight(truncate(period, periodWidth), periodWidth),
+			padRight(truncate(models, modelsWidth), modelsWidth),
+		}
 		nums := []int64{row.Input, row.Output}
 		if hasReasoning {
 			nums = append(nums, row.Reasoning)
 		}
 		nums = append(nums, row.Cache, row.Tokens)
 		for _, n := range nums {
-			cells = append(cells, thermal.PadLeft(thermal.CompactNumber(n), numberWidth))
+			cells = append(cells, padLeft(thermal.CompactNumber(n), numberWidth))
 		}
 		if row.Cost > 0 {
-			cells = append(cells, thermal.PadLeft(formatCost(row.Cost), numberWidth))
+			cells = append(cells, padLeft(formatCost(row.Cost), numberWidth))
 		} else {
-			cells = append(cells, thermal.PadLeft("—", numberWidth))
+			if colors && !isTotal && !isBreakdown {
+				cells = append(cells, padLeftStyled("—", numberWidth, func(s string) string { return theme.TextMuted.Sprint(true, s) }))
+			} else {
+				cells = append(cells, padLeft("—", numberWidth))
+			}
 		}
 		var rsb strings.Builder
 		rsb.WriteString(" ")
 		for i, c := range cells {
-			if style != nil {
-				c = style(c)
+			if isTotal {
+				c = gold(c)
+			} else if isBreakdown {
+				c = faint(c)
 			}
 			rsb.WriteString(c)
 			if i < len(cells)-1 {
@@ -164,7 +160,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	}
 
 	for _, row := range rep.Rows {
-		cardLines = append(cardLines, formatRow(row.Period, modelCell(row.Models, modelsWidth), row, nil))
+		cardLines = append(cardLines, formatRow(row.Period, modelCell(row.Models, modelsWidth), row, false, false))
 		if !breakdown {
 			continue
 		}
@@ -176,12 +172,12 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 				Reasoning: m.Reasoning,
 				Cache:     m.Cache(),
 				Tokens:    m.Total(),
-			}, faint))
+			}, false, true))
 		}
 	}
 
-	cardLines = append(cardLines, strings.Repeat("─", rule))
-	cardLines = append(cardLines, formatRow("Total", "", rep.Totals, gold))
+	cardLines = append(cardLines, " "+tableRule(widths))
+	cardLines = append(cardLines, formatRow("Total", "", rep.Totals, true, false))
 
 	cardWidth := BoundedCardWidth(2)
 
@@ -195,7 +191,6 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		Colors:      colors,
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
-		MaxWidth:    cardWidth,
 	}))
 
 	if rep.Totals.EstimatedCost > 0 {

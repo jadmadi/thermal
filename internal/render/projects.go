@@ -54,9 +54,22 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 
 	names := displayNames(projectPaths(rep.Rows))
 
+	shown := len(rep.Rows)
+	if top > 0 && top < shown {
+		shown = top
+	}
+
+	rWidth := rankWidth
+	if shown >= 100 {
+		rWidth = 4
+	}
+	if shown >= 1000 {
+		rWidth = 5
+	}
+
 	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "Days", "Last"}
-	alignRight := []bool{false, false, false, true, true, true, false}
-	widths := []int{rankWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+	alignRight := []bool{true, false, false, true, true, true, false}
+	widths := []int{rWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
 
 	rule := 2 * (len(widths) - 1)
 	for _, w := range widths {
@@ -65,30 +78,15 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 
 	var cardLines []string
 
-	var hsb strings.Builder
-	hsb.WriteString(" ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, widths[i])
-		if alignRight[i] {
-			cell = thermal.PadLeft(h, widths[i])
-		}
-		hsb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			hsb.WriteString("  ")
-		}
-	}
-	cardLines = append(cardLines, hsb.String())
-	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
+	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+	cardLines = append(cardLines, " "+tableRule(widths))
 
-	shown := len(rep.Rows)
-	if top > 0 && top < shown {
-		shown = top
-	}
+	breakdownIndent := 1 + rWidth + 2 + 1
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
-		cardLines = append(cardLines, formatProjectRow(i+1, row, names[row.Project], widths, nil))
+		cardLines = append(cardLines, formatProjectRow(i+1, row, names[row.Project], widths, colors, st))
 		if breakdown {
-			for _, bl := range formatProjectBreakdown(row, dim) {
+			for _, bl := range formatProjectBreakdown(row, breakdownIndent, colors, st) {
 				cardLines = append(cardLines, bl)
 			}
 		}
@@ -100,13 +98,13 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 	totals := rep.Totals
 	cells := []string{
-		thermal.PadRight("", rankWidth),
-		thermal.PadRight("Total", projectWidth),
-		thermal.PadRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
-		thermal.PadLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		thermal.PadLeft(formatCostOrDash(totals.Cost), numberWidth),
-		thermal.PadLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
-		thermal.PadRight(totals.LastDay, lastWidth),
+		padRight("", rWidth),
+		padRight("Total", projectWidth),
+		padRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
+		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+		padLeft(formatCostOrDash(totals.Cost), numberWidth),
+		padLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
+		padRight(totals.LastDay, lastWidth),
 	}
 	var totalSb strings.Builder
 	totalSb.WriteString(" ")
@@ -154,35 +152,56 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	return sb.String()
 }
 
-func formatProjectRow(rank int, row thermal.ProjectRow, name string, widths []int, style func(string) string) string {
-	cells := []string{
-		thermal.PadLeft(fmt.Sprintf("%d.", rank), widths[0]),
-		thermal.PadRight(truncate(name, widths[1]), widths[1]),
-		thermal.PadRight(toolsCell(row.Tools, widths[2]), widths[2]),
-		thermal.PadLeft(thermal.CompactNumber(row.Tokens), widths[3]),
-		thermal.PadLeft(formatCostOrDash(row.Cost), widths[4]),
-		thermal.PadLeft(fmt.Sprintf("%d", row.ActiveDays), widths[5]),
-		thermal.PadRight(row.LastDay, widths[6]),
+func formatProjectRow(rank int, row thermal.ProjectRow, name string, widths []int, colors bool, st Style) string {
+	rWidth := widths[0]
+	pWidth := widths[1]
+	tWidth := widths[2]
+	tokWidth := widths[3]
+	costWidth := widths[4]
+	daysWidth := widths[5]
+	lastWidth := widths[6]
+
+	rankCell := formatRankCell(rank, rWidth, colors)
+
+	// 2. Project Name
+	truncName := truncate(name, pWidth)
+	var projCell string
+	if colors {
+		if row.Tokens == 0 {
+			projCell = padRightStyled(truncName, pWidth, func(s string) string { return theme.TextMuted.Sprint(true, s) })
+		} else if rank == 1 {
+			projCell = padRightStyled(truncName, pWidth, func(s string) string { return theme.Text.SprintBold(true, s) })
+		} else {
+			// Subtle dimming for parent disambiguation hint like " (aqaba-dev)"
+			if idx := strings.Index(truncName, " ("); idx != -1 && strings.HasSuffix(truncName, ")") {
+				base := truncName[:idx]
+				hint := truncName[idx:]
+				styled := theme.Text.Sprint(true, base) + theme.TextMuted.Sprint(true, hint)
+				projCell = padRightStyledPrecolored(truncName, styled, pWidth)
+			} else {
+				projCell = padRightStyled(truncName, pWidth, func(s string) string { return theme.Text.Sprint(true, s) })
+			}
+		}
+	} else {
+		projCell = padRight(truncName, pWidth)
 	}
+
+	toolsCellStr := formatToolsCell(row.Tools, tWidth, colors)
+	tokCell := formatTokensCell(row.Tokens, tokWidth, colors)
+	costCell := formatCostCell(row.Cost, costWidth, colors)
+	daysCell := formatDaysCell(row.ActiveDays, daysWidth, colors)
+	lastCell := formatDateCell(row.LastDay, lastWidth, colors)
+
+	cells := []string{rankCell, projCell, toolsCellStr, tokCell, costCell, daysCell, lastCell}
 	var b strings.Builder
 	b.WriteString(" ")
 	for i, c := range cells {
-		if style != nil {
-			c = style(c)
-		}
 		b.WriteString(c)
 		if i < len(cells)-1 {
 			b.WriteString("  ")
 		}
 	}
 	return b.String()
-}
-
-func formatCostOrDash(v float64) string {
-	if v <= 0 {
-		return "—"
-	}
-	return formatCost(v)
 }
 
 // displayNames maps each path to a short label. A lone repository shows as its
@@ -204,10 +223,16 @@ func projectPaths(rows []thermal.ProjectRow) []string {
 // formatProjectBreakdown formats the tool split and top models under one project
 // row. Both lines show token totals rather than shares, because some tools
 // record no model attribution, which would make percentages misleading.
-func formatProjectBreakdown(row thermal.ProjectRow, dim func(string) string) []string {
+func formatProjectBreakdown(row thermal.ProjectRow, indent int, colors bool, st Style) []string {
 	var lines []string
+	prefix := strings.Repeat(" ", indent)
 	if len(row.Tools) > 1 {
-		lines = append(lines, "       "+dim("tools   "+weightLine(row.Tools, row.ToolTokens, 3)))
+		line := weightLine(row.Tools, row.ToolTokens, 3, colors, st)
+		if colors {
+			lines = append(lines, prefix+st.Dim("tools   ")+line)
+		} else {
+			lines = append(lines, prefix+"tools   "+line)
+		}
 	}
 	if len(row.Models) > 1 {
 		names := make([]string, 0, len(row.Models))
@@ -226,13 +251,18 @@ func formatProjectBreakdown(row thermal.ProjectRow, dim func(string) string) []s
 		for i, name := range names {
 			shortWeights[labels[i]] = weights[name]
 		}
-		lines = append(lines, "       "+dim("models  "+weightLine(labels, shortWeights, 3)))
+		line := weightLine(labels, shortWeights, 3, colors, st)
+		if colors {
+			lines = append(lines, prefix+st.Dim("models  ")+line)
+		} else {
+			lines = append(lines, prefix+"models  "+line)
+		}
 	}
 	return lines
 }
 
 // weightLine renders "name tokens" entries, largest first, capped at limit.
-func weightLine(names []string, weights map[string]int64, limit int) string {
+func weightLine(names []string, weights map[string]int64, limit int, colors bool, st Style) string {
 	sorted := append([]string{}, names...)
 	sort.Slice(sorted, func(i, j int) bool {
 		if weights[sorted[i]] != weights[sorted[j]] {
@@ -247,11 +277,24 @@ func weightLine(names []string, weights map[string]int64, limit int) string {
 	}
 	parts := make([]string, 0, len(shown))
 	for _, name := range shown {
-		parts = append(parts, fmt.Sprintf("%s %s", name, thermal.CompactNumber(weights[name])))
+		tokStr := thermal.CompactNumber(weights[name])
+		if colors {
+			parts = append(parts, fmt.Sprintf("%s %s", theme.Text.Sprint(true, name), theme.Secondary.Sprint(true, tokStr)))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s %s", name, tokStr))
+		}
 	}
-	line := strings.Join(parts, " · ")
+	sep := " · "
+	if colors {
+		sep = st.Dim(" · ")
+	}
+	line := strings.Join(parts, sep)
 	if rest := len(sorted) - len(shown); rest > 0 {
-		line += fmt.Sprintf(" · +%d", rest)
+		if colors {
+			line += st.Dim(fmt.Sprintf(" · +%d", rest))
+		} else {
+			line += fmt.Sprintf(" · +%d", rest)
+		}
 	}
 	return line
 }
