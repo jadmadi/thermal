@@ -150,6 +150,22 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 			}
 			cardLines = append(cardLines, fmt.Sprintf(" %s agents  %s", muted("·"), strings.Join(parts, muted("  "))))
 		}
+		if len(summary.ReasoningBreakdown) > 0 {
+			type reasoningCount struct {
+				level string
+				n     int
+			}
+			var levels []reasoningCount
+			for l, n := range summary.ReasoningBreakdown {
+				levels = append(levels, reasoningCount{l, n})
+			}
+			sort.Slice(levels, func(i, j int) bool { return levels[i].n > levels[j].n })
+			var parts []string
+			for _, lc := range levels {
+				parts = append(parts, fmt.Sprintf("%s: %d", lc.level, lc.n))
+			}
+			cardLines = append(cardLines, fmt.Sprintf(" %s reasoning  %s", muted("·"), strings.Join(parts, muted("  "))))
+		}
 	}
 
 	var sb strings.Builder

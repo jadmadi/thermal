@@ -102,3 +102,40 @@ func TestRenderProjectsBreakdown(t *testing.T) {
 		t.Errorf("plain table should not carry the breakdown:\n%s", plain)
 	}
 }
+
+func TestRenderModelsBreakdown(t *testing.T) {
+	rep := thermal.ModelReport{
+		Type: "models",
+		Rows: []thermal.ModelRow{
+			{
+				Model:           "o3-mini",
+				Tools:           []string{"Codex"},
+				Input:           100_000,
+				Output:          20_000,
+				Reasoning:       80_000,
+				CacheRead:       50_000,
+				Tokens:          250_000,
+				Days:            2,
+				LastDay:         "2026-09-28",
+				ReasoningEffort: map[string]int{"high": 3, "medium": 1},
+			},
+		},
+		Totals: thermal.ModelRow{
+			Tokens: 250_000,
+			Days:   2,
+		},
+	}
+
+	out := RenderModelsBreakdown(rep, 0, true)
+	for _, want := range []string{"o3-mini", "Input: 100.0K", "Output: 20.0K", "Reasoning: 80.0K", "80.0% cognitive share", "Cache: 50.0K", "Effort:", "high: 3", "medium: 1"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in breakdown:\n%s", want, out)
+		}
+	}
+
+	// Plain table does not include breakdown details
+	plain := RenderModels(rep, 0, true)
+	if strings.Contains(plain, "cognitive share") || strings.Contains(plain, "Effort:") {
+		t.Errorf("plain table should not carry the breakdown details:\n%s", plain)
+	}
+}

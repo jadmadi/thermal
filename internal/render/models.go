@@ -5,6 +5,7 @@ package render
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jadmadi/thermal/internal/theme"
@@ -21,6 +22,16 @@ const (
 // estimate, because recorded cost attaches to a session or a day, never to a
 // single model. That is called out below the table.
 func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
+	return renderModels(rep, top, noColor, false)
+}
+
+// RenderModelsBreakdown adds token types and cognitive intensity (reasoning effort)
+// breakdown rows under each model.
+func RenderModelsBreakdown(rep thermal.ModelReport, top int, noColor bool) string {
+	return renderModels(rep, top, noColor, true)
+}
+
+func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool) string {
 	st := NewStyle(noColor)
 	colors := st.Colors
 	highlight := st.Highlight
@@ -46,47 +57,50 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 	}
 	names := displayNames(paths)
 
-	headers := []string{"#", "Model", "Tools", "Tokens", "Cost", "Days", "Last"}
-	alignRight := []bool{false, false, false, true, true, true, false}
-	widths := []int{rankWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
-
-	rule := 2 * (len(widths) - 1)
-	for _, w := range widths {
-		rule += w
-	}
-
-	var cardLines []string
-
-	var hsb strings.Builder
-	hsb.WriteString(" ")
-	for i, h := range headers {
-		cell := thermal.PadRight(h, widths[i])
-		if alignRight[i] {
-			cell = thermal.PadLeft(h, widths[i])
-		}
-		hsb.WriteString(dim(cell))
-		if i < len(headers)-1 {
-			hsb.WriteString("  ")
-		}
-	}
-	cardLines = append(cardLines, hsb.String())
-	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
-
 	shown := len(rep.Rows)
 	if top > 0 && top < shown {
 		shown = top
 	}
+
+	rWidth := rankWidth
+	if shown >= 100 {
+		rWidth = 4
+	}
+	if shown >= 1000 {
+		rWidth = 5
+	}
+
+	headers := []string{"#", "Model", "Tools", "Tokens", "Cost", "Days", "Last"}
+	alignRight := []bool{true, false, false, true, true, true, false}
+	widths := []int{rWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+
+	var cardLines []string
+	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
+	cardLines = append(cardLines, " "+tableRule(widths))
+
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
-		cells := []string{
-			thermal.PadLeft(fmt.Sprintf("%d.", i+1), widths[0]),
-			thermal.PadRight(truncate(names[row.Model], widths[1]), widths[1]),
-			thermal.PadRight(toolsCell(row.Tools, widths[2]), widths[2]),
-			thermal.PadLeft(thermal.CompactNumber(row.Tokens), widths[3]),
-			thermal.PadLeft(formatCostOrDash(row.Cost), widths[4]),
-			thermal.PadLeft(fmt.Sprintf("%d", row.Days), widths[5]),
-			thermal.PadRight(row.LastDay, widths[6]),
+		rankCell := formatRankCell(i+1, rWidth, colors)
+		truncName := truncate(names[row.Model], modelWidth)
+		var modelCell string
+		if colors {
+			if row.Tokens == 0 {
+				modelCell = padRightStyled(truncName, modelWidth, func(s string) string { return theme.TextMuted.Sprint(true, s) })
+			} else if i == 0 {
+				modelCell = padRightStyled(truncName, modelWidth, func(s string) string { return theme.Text.SprintBold(true, s) })
+			} else {
+				modelCell = padRightStyled(truncName, modelWidth, func(s string) string { return theme.Text.Sprint(true, s) })
+			}
+		} else {
+			modelCell = padRight(truncName, modelWidth)
 		}
+		toolsCellStr := formatToolsCell(row.Tools, modelToolsWidth, colors)
+		tokCell := formatTokensCell(row.Tokens, numberWidth, colors)
+		costCell := formatCostCell(row.Cost, numberWidth, colors)
+		daysCell := formatDaysCell(row.Days, daysWidth, colors)
+		lastCell := formatDateCell(row.LastDay, lastWidth, colors)
+
+		cells := []string{rankCell, modelCell, toolsCellStr, tokCell, costCell, daysCell, lastCell}
 		var rowSb strings.Builder
 		rowSb.WriteString(" ")
 		for j, c := range cells {
@@ -96,21 +110,26 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 			}
 		}
 		cardLines = append(cardLines, rowSb.String())
+		if breakdown {
+			for _, bl := range formatModelBreakdown(row, rWidth+4, colors, st) {
+				cardLines = append(cardLines, bl)
+			}
+		}
 	}
 	if rest := len(rep.Rows) - shown; rest > 0 {
 		cardLines = append(cardLines, " "+dim(fmt.Sprintf("… and %d more (use --json for the full list)", rest)))
 	}
 
-	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
+	cardLines = append(cardLines, " "+tableRule(widths))
 	totals := rep.Totals
 	totalCells := []string{
-		thermal.PadRight("", rankWidth),
-		thermal.PadRight("Total", modelWidth),
-		thermal.PadRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
-		thermal.PadLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		thermal.PadLeft(formatCostOrDash(totals.Cost), numberWidth),
-		thermal.PadLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
-		thermal.PadRight(totals.LastDay, lastWidth),
+		padRight("", rWidth),
+		padRight("Total", modelWidth),
+		padRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
+		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+		padLeft(formatCostOrDash(totals.Cost), numberWidth),
+		padLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
+		padRight(totals.LastDay, lastWidth),
 	}
 	var totalSb strings.Builder
 	totalSb.WriteString(" ")
@@ -150,4 +169,52 @@ func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
 
 	sb.WriteString("\n")
 	return sb.String()
+}
+
+func formatModelBreakdown(row thermal.ModelRow, indent int, colors bool, st Style) []string {
+	dim := st.Dim
+	muted := st.Muted
+	pad := strings.Repeat(" ", indent)
+	var lines []string
+
+	// Line 1: Disjoint tokens breakdown with cognitive intensity share
+	var parts []string
+	parts = append(parts, fmt.Sprintf("Input: %s", thermal.CompactNumber(row.Input)))
+	parts = append(parts, fmt.Sprintf("Output: %s", thermal.CompactNumber(row.Output)))
+	if row.Reasoning > 0 {
+		share := 0.0
+		if row.Output+row.Reasoning > 0 {
+			share = (float64(row.Reasoning) / float64(row.Output+row.Reasoning)) * 100
+		}
+		parts = append(parts, fmt.Sprintf("Reasoning: %s (%s)",
+			thermal.CompactNumber(row.Reasoning),
+			dim(fmt.Sprintf("%.1f%% cognitive share", share)),
+		))
+	}
+	cacheTotal := row.CacheRead + row.CacheWrite
+	if cacheTotal > 0 {
+		parts = append(parts, fmt.Sprintf("Cache: %s", thermal.CompactNumber(cacheTotal)))
+	}
+
+	lines = append(lines, fmt.Sprintf("%s%s %s", pad, dim("└─"), strings.Join(parts, muted("  ·  "))))
+
+	// Line 2: If reasoning effort distribution is recorded (e.g. Codex or reasoning models)
+	if len(row.ReasoningEffort) > 0 {
+		type effortCount struct {
+			effort string
+			n      int
+		}
+		var efforts []effortCount
+		for e, n := range row.ReasoningEffort {
+			efforts = append(efforts, effortCount{e, n})
+		}
+		sort.Slice(efforts, func(i, j int) bool { return efforts[i].n > efforts[j].n })
+		var eparts []string
+		for _, ec := range efforts {
+			eparts = append(eparts, fmt.Sprintf("%s: %d", ec.effort, ec.n))
+		}
+		lines = append(lines, fmt.Sprintf("%s   %s %s", pad, dim("Effort:"), strings.Join(eparts, muted("  "))))
+	}
+
+	return lines
 }

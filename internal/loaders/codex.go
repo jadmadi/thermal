@@ -52,17 +52,18 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	defer rows.Close()
 
 	type dayAgg struct {
-		tokens       int64
-		turns        int
-		input        int64
-		output       int64
-		reasoning    int64
-		cache        int64
-		linesAdded   int64
-		linesDeleted int64
-		filesTouched int64
-		models       map[string]thermal.ModelTokens
-		modelLines   map[string]thermal.LineDelta
+		tokens          int64
+		turns           int
+		input           int64
+		output          int64
+		reasoning       int64
+		cache           int64
+		linesAdded      int64
+		linesDeleted    int64
+		filesTouched    int64
+		models          map[string]thermal.ModelTokens
+		modelLines      map[string]thermal.LineDelta
+		reasoningEffort map[string]int
 	}
 	byDay := make(map[string]*dayAgg)
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
@@ -124,6 +125,12 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		}
 		agg.tokens += t.tokensUsed
 		agg.turns++
+		if reasoning.String != "" {
+			if agg.reasoningEffort == nil {
+				agg.reasoningEffort = make(map[string]int)
+			}
+			agg.reasoningEffort[reasoning.String]++
+		}
 
 		if t.project != "" {
 			key := projectDayKey{t.day, t.project}
@@ -150,6 +157,9 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	}
 	if len(sourceCounts) > 0 {
 		summary.AgentBreakdown = sourceCounts
+	}
+	if len(reasoningCounts) > 0 {
+		summary.ReasoningBreakdown = reasoningCounts
 	}
 
 	// Load incremental rollout cache
@@ -338,18 +348,19 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	var daily []thermal.DailyRow
 	for day, agg := range byDay {
 		daily = append(daily, thermal.DailyRow{
-			Day:          day,
-			Tokens:       agg.tokens,
-			Input:        agg.input,
-			Output:       agg.output,
-			Reasoning:    agg.reasoning,
-			Cache:        agg.cache,
-			Turns:        agg.turns,
-			Models:       agg.models,
-			LinesAdded:   agg.linesAdded,
-			LinesDeleted: agg.linesDeleted,
-			FilesTouched: agg.filesTouched,
-			ModelLines:   agg.modelLines,
+			Day:             day,
+			Tokens:          agg.tokens,
+			Input:           agg.input,
+			Output:          agg.output,
+			Reasoning:       agg.reasoning,
+			Cache:           agg.cache,
+			Turns:           agg.turns,
+			Models:          agg.models,
+			LinesAdded:      agg.linesAdded,
+			LinesDeleted:    agg.linesDeleted,
+			FilesTouched:    agg.filesTouched,
+			ModelLines:      agg.modelLines,
+			ReasoningEffort: agg.reasoningEffort,
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })

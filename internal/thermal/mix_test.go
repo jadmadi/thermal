@@ -130,3 +130,33 @@ func TestAggregateToolMixExcludesActivityOnly(t *testing.T) {
 		t.Errorf("expected total 1000, got %v", rep.Total)
 	}
 }
+
+func TestAggregateReasoningMix(t *testing.T) {
+	batches := []ToolDays{
+		{Tool: "Codex", Days: []DailyRow{
+			{
+				Day:             "2026-09-08",
+				Tokens:          1000,
+				Input:           200,
+				Output:          300,
+				Reasoning:       500,
+				Turns:           2,
+				ReasoningEffort: map[string]int{"high": 1, "low": 1},
+			},
+		}},
+	}
+	rep := AggregateReasoningMix(batches, MixOptions{Grain: GrainDay, By: "reasoning", Metric: "tokens"}, nil)
+	if rep.By != "reasoning" || rep.Metric != "tokens" {
+		t.Errorf("report labels = %s/%s", rep.By, rep.Metric)
+	}
+	if len(rep.Buckets) != 1 || rep.Buckets[0].Total != 1000 {
+		t.Fatalf("expected bucket total 1000, got %+v", rep.Buckets)
+	}
+	seriesMap := make(map[string]float64)
+	for _, s := range rep.Series {
+		seriesMap[s.Name] = s.Total
+	}
+	if seriesMap["high"] != 250 || seriesMap["low"] != 250 || seriesMap["standard"] != 500 {
+		t.Errorf("expected high=250 low=250 standard=500, got %v", seriesMap)
+	}
+}
