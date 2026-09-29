@@ -130,3 +130,123 @@ func TestAuditMCPServerSchema(t *testing.T) {
 		t.Errorf("expected 1700 total tax, got %d", rep.TotalMCPTax)
 	}
 }
+
+func TestAuditAgentReadiness_MissingAgentsMD(t *testing.T) {
+	workDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	rep := RunAuditWithOptions(workDir, homeDir)
+
+	var foundMissing bool
+	for _, rf := range rep.ReadinessFindings {
+		if rf.Check == "Instructions" {
+			foundMissing = true
+			if rf.Status != "WARN" {
+				t.Errorf("expected WARN for missing instructions, got %s", rf.Status)
+			}
+			if !strings.Contains(rf.Message, "No AGENTS.md") {
+				t.Errorf("unexpected message: %s", rf.Message)
+			}
+		}
+	}
+	if !foundMissing {
+		t.Fatal("expected Instructions finding")
+	}
+}
+
+func TestAuditAgentReadiness_ValidAgentsMDAndAnchoredGitignore(t *testing.T) {
+	workDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	agentsFile := filepath.Join(workDir, "AGENTS.md")
+	if err := os.WriteFile(agentsFile, []byte("# Agents Standards\nRules and guidelines.\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	gitignoreFile := filepath.Join(workDir, ".gitignore")
+	gitignoreContent := "/thermal\n/dist/\n*.exe\n"
+	if err := os.WriteFile(gitignoreFile, []byte(gitignoreContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rep := RunAuditWithOptions(workDir, homeDir)
+
+	var foundAgents, foundGitignore bool
+	for _, rf := range rep.ReadinessFindings {
+		if rf.Check == "Instructions" {
+			foundAgents = true
+			if rf.Status != "PASS" {
+				t.Errorf("expected PASS for valid AGENTS.md, got %s", rf.Status)
+			}
+		}
+		if rf.Check == "Gitignore" {
+			foundGitignore = true
+			if rf.Status != "PASS" {
+				t.Errorf("expected PASS for anchored .gitignore, got %s", rf.Status)
+			}
+		}
+	}
+	if !foundAgents || !foundGitignore {
+		t.Errorf("missing readiness findings: agents=%v, gitignore=%v", foundAgents, foundGitignore)
+	}
+}
+
+func TestAuditAgentReadiness_BareGitignoreRule(t *testing.T) {
+	workDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(workDir, "AGENTS.md"), []byte("# Agents\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	gitignoreFile := filepath.Join(workDir, ".gitignore")
+	gitignoreContent := "thermal\n/dist/\n"
+	if err := os.WriteFile(gitignoreFile, []byte(gitignoreContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rep := RunAuditWithOptions(workDir, homeDir)
+
+	var foundBareRule bool
+	for _, rf := range rep.ReadinessFindings {
+		if rf.Check == "Gitignore" {
+			foundBareRule = true
+			if rf.Status != "WARN" {
+				t.Errorf("expected WARN for bare binary rule, got %s", rf.Status)
+			}
+			if !strings.Contains(rf.Message, "Unanchored rule") {
+				t.Errorf("unexpected message: %s", rf.Message)
+			}
+		}
+	}
+	if !foundBareRule {
+		t.Fatal("expected Gitignore finding with bare rule")
+	}
+}
+
+func TestAuditAgentReadiness_EmptyAgentsMD(t *testing.T) {
+	workDir := t.TempDir()
+	homeDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(workDir, "AGENTS.md"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rep := RunAuditWithOptions(workDir, homeDir)
+
+	var foundEmpty bool
+	for _, rf := range rep.ReadinessFindings {
+		if rf.Check == "Instructions" {
+			foundEmpty = true
+			if rf.Status != "WARN" {
+				t.Errorf("expected WARN for empty AGENTS.md, got %s", rf.Status)
+			}
+			if !strings.Contains(rf.Message, "empty") {
+				t.Errorf("unexpected message: %s", rf.Message)
+			}
+		}
+	}
+	if !foundEmpty {
+		t.Fatal("expected Repository Instructions finding for empty file")
+	}
+}

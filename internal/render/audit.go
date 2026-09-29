@@ -149,7 +149,37 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 	}))
 	sb.WriteString("\n")
 
-	// 3. Recommendations
+	// 3. Agent Readiness & Repository Hygiene
+	var cardLinesReadiness []string
+	if len(rep.ReadinessFindings) == 0 {
+		cardLinesReadiness = append(cardLinesReadiness, " "+faint("No readiness checks recorded."))
+	} else {
+		for _, rf := range rep.ReadinessFindings {
+			badge := padStyled(statusBadge(rf.Status), len(rf.Status), 4)
+			chk := padStyled(highlight(rf.Check), len(rf.Check), 16)
+			cardLinesReadiness = append(cardLinesReadiness, fmt.Sprintf(" %s  %s  %s",
+				badge,
+				chk,
+				rf.Message,
+			))
+			if rf.Advice != "" {
+				cardLinesReadiness = append(cardLinesReadiness, "       "+faint("↳ "+rf.Advice))
+			}
+		}
+	}
+	sb.WriteString(RenderCard(CardOptions{
+		Title:       "Agent Readiness & Repository Hygiene",
+		RightHeader: "environment check",
+		Lines:       cardLinesReadiness,
+		Width:       cardWidth,
+		Indent:      2,
+		Colors:      colors,
+		TitleColor:  theme.Primary,
+		BorderColor: theme.Border,
+	}))
+	sb.WriteString("\n")
+
+	// 4. Recommendations
 	if len(rep.Recommendations) > 0 {
 		var cardLinesRec []string
 		for _, rec := range rep.Recommendations {

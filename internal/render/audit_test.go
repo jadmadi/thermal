@@ -25,6 +25,9 @@ func TestRenderAudit_NoColor(t *testing.T) {
 		MCPFindings: []audit.MCPFinding{
 			{Client: "Claude Code", ServerName: "test-server", EstimatedTax: 850, Status: "ACTIVE"},
 		},
+		ReadinessFindings: []audit.ReadinessFinding{
+			{Check: "Repository Instructions", Status: "PASS", Message: "AGENTS.md verified (280 lines)"},
+		},
 		Recommendations: []string{"Everything looks great."},
 	}
 
@@ -40,6 +43,12 @@ func TestRenderAudit_NoColor(t *testing.T) {
 	}
 	if !strings.Contains(out, "test-server") {
 		t.Errorf("expected test-server in output")
+	}
+	if !strings.Contains(out, "Agent Readiness & Repository Hygiene") {
+		t.Errorf("expected Agent Readiness & Repository Hygiene card in output")
+	}
+	if !strings.Contains(out, "AGENTS.md verified") {
+		t.Errorf("expected AGENTS.md verified in output")
 	}
 
 	jsonOut := RenderAuditJSON(rep)
