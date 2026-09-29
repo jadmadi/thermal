@@ -61,6 +61,8 @@ type Options struct {
 	Interval      time.Duration // polling interval for live monitor (live verb, default 1s)
 	Stream        bool          // stream continuous NDJSON live events (live verb)
 	Fresh         bool          // start live session counters from 0 instead of seeding from today
+	Nerd          bool          // use Nerd Font glyphs in statusline
+	Plain         bool          // plain text output without glyphs or icons
 }
 
 type Summary struct {

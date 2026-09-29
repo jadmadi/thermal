@@ -477,7 +477,7 @@ func maybeCheckForUpdate(opts thermal.Options) {
 	if os.Getenv("THERMAL_NO_UPDATE_CHECK") != "" || os.Getenv("CI") != "" {
 		return
 	}
-	if opts.Tool == "upgrade" || opts.Tool == "--check-update-bg" {
+	if opts.Tool == "upgrade" || opts.Tool == "--check-update-bg" || opts.Report == "statusline" || opts.Report == "prompt" || opts.Report == "status" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
 		return
 	}
 	// Do not nag if not in an interactive terminal

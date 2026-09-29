@@ -110,6 +110,8 @@ func parseArgs() thermal.Options {
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
 	flag.StringVar(&opts.Format, "format", "text", "Output format: text, json, md, or markdown")
+	flag.BoolVar(&opts.Nerd, "nerd", false, "Use Nerd Font glyphs in statusline")
+	flag.BoolVar(&opts.Plain, "plain", false, "Plain text output without glyphs or icons")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
@@ -295,6 +297,10 @@ func parseArgs() thermal.Options {
 			if v, ok := takeValue(); ok {
 				opts.Format = v
 			}
+		case "--nerd":
+			opts.Nerd = true
+		case "--plain":
+			opts.Plain = true
 		}
 	}
 
@@ -334,6 +340,10 @@ func parseArgs() thermal.Options {
 		}
 	}
 
+	if opts.Report == "statusline" || opts.Report == "prompt" || opts.Report == "status" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
+		opts.NoUpdateCheck = true
+	}
+
 	if err := validateReportFlags(opts); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 		os.Exit(1)
@@ -349,7 +359,7 @@ func parseArgs() thermal.Options {
 
 func isReportWord(s string) bool {
 	switch strings.ToLower(s) {
-	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt", "web", "serve", "changelog", "live":
+	case "daily", "weekly", "monthly", "projects", "models", "trend", "mix", "stats", "replay", "yield", "receipt", "web", "serve", "changelog", "live", "statusline", "prompt":
 		return true
 	}
 	return false
@@ -430,12 +440,12 @@ func validateReportFlags(opts thermal.Options) error {
 	if opts.Distribution && opts.Report != "stats" {
 		return fmt.Errorf("--distribution only applies to the stats command")
 	}
-	if opts.Fresh && opts.Report != "live" && opts.Tool != "live" {
-		return fmt.Errorf("--fresh only applies to the live command")
+	if opts.Fresh && opts.Report != "live" && opts.Tool != "live" && opts.Report != "statusline" && opts.Report != "prompt" && opts.Report != "status" && opts.Tool != "statusline" && opts.Tool != "prompt" && opts.Tool != "status" {
+		return fmt.Errorf("--fresh only applies to the live and statusline commands")
 	}
 
 	if opts.Report == "" {
-		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "web" || opts.Tool == "serve" || opts.Tool == "changelog" || opts.Tool == "live" {
+		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "web" || opts.Tool == "serve" || opts.Tool == "changelog" || opts.Tool == "live" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
@@ -468,6 +478,25 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	switch opts.Report {
+	case "statusline", "prompt", "status":
+		if opts.Against != "" || opts.Compare != "" {
+			return fmt.Errorf("--against and --compare only apply to the replay command")
+		}
+		if opts.Breakdown || opts.Chart {
+			return fmt.Errorf("--breakdown and --chart do not apply to the statusline command")
+		}
+		if opts.Top != 0 {
+			return fmt.Errorf("--top does not apply to the statusline command")
+		}
+		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
+			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
+		}
+		if sortKey != "" {
+			return fmt.Errorf("--sort does not apply to the statusline command")
+		}
+		if opts.Since != "" || opts.Until != "" || opts.Last != 0 {
+			return fmt.Errorf("report options do not apply to the statusline command")
+		}
 	case "live":
 		if opts.Against != "" || opts.Compare != "" {
 			return fmt.Errorf("--against and --compare only apply to the replay command")
@@ -677,6 +706,11 @@ func main() {
 	case "live":
 		runLive(opts)
 		return
+	case "statusline", "prompt", "status":
+		opts.Report = opts.Tool
+		opts.Tool = "all"
+		runStatusline(opts)
+		return
 	case "share":
 		runShare(opts)
 		return
@@ -699,6 +733,9 @@ func main() {
 
 	if opts.Report != "" {
 		switch opts.Report {
+		case "statusline", "prompt", "status":
+			runStatusline(opts)
+			return
 		case "live":
 			runLive(opts)
 		case "projects":
@@ -2136,4 +2173,102 @@ func runLive(opts thermal.Options) {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// runStatusline handles thermal statusline and thermal prompt commands, formatting
+// a lightweight, one-line status string for shell prompts and multiplexers.
+func runStatusline(opts thermal.Options) {
+	opts.NoUpdateCheck = true
+
+	// Fast-path: read cache if warm (<120s), not --fresh, and query is for all tools
+	isAllTools := opts.Tool == "" || opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status"
+	if !opts.Fresh && isAllTools {
+		if data, ok := render.LoadStatuslineCache(""); ok {
+			fmt.Print(render.RenderStatusline(data, render.StatuslineOptions{
+				NoColor: opts.NoColor,
+				Nerd:    opts.Nerd,
+				Plain:   opts.Plain,
+				JSON:    opts.JSON,
+			}))
+			return
+		}
+	}
+
+	// Normal path: load usage data
+	if isAllTools {
+		opts.Tool = "all"
+	}
+	set := loadUsage(opts)
+	today := thermal.LocalDay(time.Now())
+
+	activeDays := make(map[string]bool)
+	var todayTokens int64
+	var todayTurns int
+	toolTodayTokens := make(map[string]int64)
+	toolTodayTurns := make(map[string]int)
+
+	for _, r := range set.results {
+		for _, d := range r.Daily {
+			if d.Tokens > 0 || d.Turns > 0 {
+				activeDays[d.Day] = true
+			}
+			if d.Day == today {
+				todayTokens += d.Tokens
+				todayTurns += d.Turns
+				toolTodayTokens[r.Name] += d.Tokens
+				toolTodayTurns[r.Name] += d.Turns
+			}
+		}
+	}
+
+	currentStreak, longestStreak := thermal.ComputeStreaks(activeDays)
+
+	// Determine active tool: highest tokens today, or highest turns today, or tool with highest lifetime
+	var activeTool string
+	var maxTodayTokens int64
+	for toolName, tok := range toolTodayTokens {
+		if tok > maxTodayTokens {
+			maxTodayTokens = tok
+			activeTool = toolName
+		}
+	}
+	if activeTool == "" {
+		var maxTurns int
+		for toolName, turns := range toolTodayTurns {
+			if turns > maxTurns {
+				maxTurns = turns
+				activeTool = toolName
+			}
+		}
+	}
+	if activeTool == "" && len(set.results) > 0 {
+		var maxLifetime int64
+		for _, r := range set.results {
+			if r.Summary.LifetimeTokens > maxLifetime {
+				maxLifetime = r.Summary.LifetimeTokens
+				activeTool = r.Name
+			}
+		}
+	}
+
+	data := render.StatuslineData{
+		Streak:        currentStreak,
+		LongestStreak: longestStreak,
+		TodayTokens:   todayTokens,
+		TodayTurns:    todayTurns,
+		ActiveTool:    activeTool,
+		Day:           today,
+		UpdatedAt:     time.Now().Unix(),
+	}
+
+	if isAllTools {
+		_ = render.SaveStatuslineCache("", data)
+	}
+
+	fmt.Print(render.RenderStatusline(data, render.StatuslineOptions{
+		NoColor: opts.NoColor,
+		Nerd:    opts.Nerd,
+		Plain:   opts.Plain,
+		JSON:    opts.JSON,
+	}))
 }
