@@ -80,6 +80,10 @@ type Summary struct {
 	AgentBreakdown     map[string]int   `json:"agentBreakdown,omitempty"`
 	ModelBreakdown     map[string]int64 `json:"modelBreakdown,omitempty"`
 	ReasoningBreakdown map[string]int   `json:"reasoningBreakdown,omitempty"`
+	MainlineTokens     int64            `json:"mainlineTokens,omitempty"`
+	ForkTokens         int64            `json:"forkTokens,omitempty"`
+	RootSessions       int              `json:"rootSessions,omitempty"`
+	ForkSessions       int              `json:"forkSessions,omitempty"`
 	Warnings           []string         `json:"-"`
 }
 
@@ -137,6 +141,8 @@ type DailyRow struct {
 	FilesTouched    int64                  `json:"filesTouched,omitempty"`
 	ModelLines      map[string]LineDelta   `json:"modelLines,omitempty"`
 	ReasoningEffort map[string]int         `json:"reasoningEffort,omitempty"`
+	MainlineTokens  int64                  `json:"mainlineTokens,omitempty"`
+	ForkTokens      int64                  `json:"forkTokens,omitempty"`
 }
 
 type LineDelta struct {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,7 +24,12 @@ func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 	if _, err := os.Stat(stateDB); err == nil {
 		return loadCodexFromStateDB(stateDB)
 	}
-	return loadJsonlData(dataDir, "ts", false)
+	sum, daily, proj, err := loadJsonlData(dataDir, "ts", false)
+	if err == nil {
+		sum.MainlineTokens = sum.LifetimeTokens
+		sum.RootSessions = sum.Sessions
+	}
+	return sum, daily, proj, err
 }
 
 func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
@@ -34,14 +40,34 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	defer db.Close()
 	_, _ = db.Exec("PRAGMA mmap_size=268435456")
 
+	// Query thread lineage DAG edges (parent-child relationships) if supported
+	forkThreads := make(map[string]string)
+	if hasTable(db, "thread_spawn_edges") {
+		edgeRows, err := db.Query(`SELECT child_thread_id, parent_thread_id FROM thread_spawn_edges`)
+		if err == nil {
+			for edgeRows.Next() {
+				var child, parent string
+				if err := edgeRows.Scan(&child, &parent); err == nil {
+					forkThreads[child] = parent
+				}
+			}
+			_ = edgeRows.Err()
+			edgeRows.Close()
+		}
+	}
+
 	// Older Codex schemas lack the cwd column.
 	cwdExpr := "''"
 	if hasColumn(db, "threads", "cwd") {
 		cwdExpr = "cwd"
 	}
+	threadSourceExpr := "''"
+	if hasColumn(db, "threads", "thread_source") {
+		threadSourceExpr = "thread_source"
+	}
 	rows, err := db.Query(`
 		SELECT id, tokens_used, model, source, reasoning_effort, agent_role,
-		       created_at, updated_at, rollout_path, ` + cwdExpr + `
+		       created_at, updated_at, rollout_path, ` + cwdExpr + `, ` + threadSourceExpr + `
 		FROM threads
 		WHERE archived = 0
 		ORDER BY created_at
@@ -64,6 +90,8 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		models          map[string]thermal.ModelTokens
 		modelLines      map[string]thermal.LineDelta
 		reasoningEffort map[string]int
+		mainlineTokens  int64
+		forkTokens      int64
 	}
 	byDay := make(map[string]*dayAgg)
 	byProjectDay := make(map[projectDayKey]*thermal.ProjectDay)
@@ -82,21 +110,31 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		day         string
 		model       string
 		project     string
+		isFork      bool
 	}
 	var threads []threadInfo
 
 	for rows.Next() {
 		var t threadInfo
-		var model, source, reasoning, agentRole, rolloutPath, cwd sql.NullString
+		var model, source, reasoning, agentRole, rolloutPath, cwd, threadSource sql.NullString
 		var createdAt, updatedAt int64
 
 		if err := rows.Scan(&t.id, &t.tokensUsed, &model, &source, &reasoning,
-			&agentRole, &createdAt, &updatedAt, &rolloutPath, &cwd); err != nil {
+			&agentRole, &createdAt, &updatedAt, &rolloutPath, &cwd, &threadSource); err != nil {
 			continue
 		}
 
 		t.day = thermal.LocalDay(time.Unix(createdAt, 0).Local())
 		t.project = thermal.ProjectKey(cwd.String)
+
+		// Classify thread as exploratory fork / subagent vs mainline root session
+		isFork := false
+		if _, ok := forkThreads[t.id]; ok {
+			isFork = true
+		} else if strings.EqualFold(threadSource.String, "subagent") || strings.Contains(source.String, "parent_thread_id") {
+			isFork = true
+		}
+		t.isFork = isFork
 
 		durationMs := (updatedAt - createdAt) * 1000
 		if durationMs > summary.LongestSessionMs {
@@ -118,6 +156,14 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		summary.Sessions++
 		summary.LifetimeTokens += t.tokensUsed
 
+		if isFork {
+			summary.ForkTokens += t.tokensUsed
+			summary.ForkSessions++
+		} else {
+			summary.MainlineTokens += t.tokensUsed
+			summary.RootSessions++
+		}
+
 		agg := byDay[t.day]
 		if agg == nil {
 			agg = &dayAgg{models: make(map[string]thermal.ModelTokens)}
@@ -125,6 +171,11 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		}
 		agg.tokens += t.tokensUsed
 		agg.turns++
+		if isFork {
+			agg.forkTokens += t.tokensUsed
+		} else {
+			agg.mainlineTokens += t.tokensUsed
+		}
 		if reasoning.String != "" {
 			if agg.reasoningEffort == nil {
 				agg.reasoningEffort = make(map[string]int)
@@ -361,6 +412,8 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 			FilesTouched:    agg.filesTouched,
 			ModelLines:      agg.modelLines,
 			ReasoningEffort: agg.reasoningEffort,
+			MainlineTokens:  agg.mainlineTokens,
+			ForkTokens:      agg.forkTokens,
 		})
 	}
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
