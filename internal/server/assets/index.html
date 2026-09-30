@@ -1,771 +1,915 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thermal — AI Developer Contribution Heatmap & FinOps Telemetry</title>
+  <title>Thermal — Operator FinOps & Contribution Telemetry Dashboard</title>
   <style>
-    :root {
-      /* Dark Theme Design Tokens */
-      --bg: #090d16;
-      --card-bg: #0f172a;
-      --card-elevated: #1e293b;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-border-hover: rgba(255, 106, 0, 0.35);
+    /* ==========================================================================
+       Thermal Dense Dashboard — Design System & Color Tokens
+       CRAFT_LEVEL = 7 | MOTION_INTENSITY = 3 | VISUAL_DENSITY = 9
+       ========================================================================== */
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #080c14;
+      --surface: #0d1527;
+      --surface-elevated: #131e35;
+      --surface-hover: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
 
-      /* Semantic Accents */
-      --accent-flame: #ff6a00;
-      --accent-flame-glow: rgba(255, 106, 0, 0.4);
-      --accent-amber: #f59e0b;
-      --accent-emerald: #10b981;
-      --accent-sky: #38bdf8;
-      --accent-purple: #a855f7;
-      --accent-rose: #f43f5e;
-      --accent-indigo: #6366f1;
+      /* Subdued Semantic OKLCH Palette */
+      --brand: #ff6a00;
+      --brand-tint: rgba(255, 106, 0, 0.08);
+      --brand-tint-strong: rgba(255, 106, 0, 0.18);
+      --success: #10b981;
+      --success-tint: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-tint: rgba(245, 158, 11, 0.1);
+      --danger: #f43f5e;
+      --info: #38bdf8;
+      --info-tint: rgba(56, 189, 248, 0.1);
+      --purple: #a855f7;
 
-      /* Heatmap Color Scale (5 Levels) */
-      --level-0: #162032;
-      --level-1: #451a03;
-      --level-2: #9a3412;
-      --level-3: #ea580c;
-      --level-4: #ff6a00;
-
-      /* UI Radii & Transitions */
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --transition-fast: 0.15s ease;
-      --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Heatmap 5-Level Scale */
+      --heat-0: #141d30;
+      --heat-1: #3b1704;
+      --heat-2: #802f06;
+      --heat-3: #c24905;
+      --heat-4: #ff6a00;
     }
 
-    * {
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f1f5f9;
+      --surface-hover: rgba(0, 0, 0, 0.03);
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #64748b;
+
+      /* Subdued Semantic Palette for Light Mode */
+      --brand: #ea580c;
+      --brand-tint: rgba(234, 88, 12, 0.08);
+      --brand-tint-strong: rgba(234, 88, 12, 0.16);
+      --success: #059669;
+      --success-tint: rgba(5, 150, 105, 0.1);
+      --warning: #d97706;
+      --warning-tint: rgba(217, 119, 6, 0.1);
+      --danger: #e11d48;
+      --info: #0284c7;
+      --info-tint: rgba(2, 132, 199, 0.1);
+      --purple: #9333ea;
+
+      /* Heatmap 5-Level Scale Light */
+      --heat-0: #e2e8f0;
+      --heat-1: #fed7aa;
+      --heat-2: #fb923c;
+      --heat-3: #ea580c;
+      --heat-4: #c2410c;
+    }
+
+    /* Reset & Base Typography */
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     body {
       background-color: var(--bg);
-      background-image: radial-gradient(ellipse 90% 40% at 50% -10%, rgba(255, 106, 0, 0.12), transparent 70%);
       color: var(--text-main);
-      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 16px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 24px;
-      line-height: 1.5;
+      gap: 12px;
+      scrollbar-gutter: stable;
     }
 
-    /* Top Bar & Branding */
+    /* Accessibility Focus Rings */
+    :focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* Monospace Utility */
+    .mono {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-variant-numeric: tabular-nums slashed-zero;
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    /* Header Chrome */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
-      gap: 16px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--card-border);
     }
 
-    .brand-wrap {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .brand-flame {
-      font-size: 34px;
-      line-height: 1;
-      filter: drop-shadow(0 0 12px var(--accent-flame-glow));
-      animation: flame-pulse 2.2s infinite ease-in-out;
-      display: inline-block;
-    }
-
-    @keyframes flame-pulse {
-      0%, 100% { transform: scale(1) rotate(-1deg); filter: drop-shadow(0 0 10px var(--accent-flame-glow)); }
-      50% { transform: scale(1.1) rotate(2deg); filter: drop-shadow(0 0 20px rgba(255, 106, 0, 0.7)); }
-    }
-
-    .brand-titles h1 {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      background: linear-gradient(135deg, #ff8a3c, #ff4500);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-titles p {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .header-controls {
+    .header-left {
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .brand-mark {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-version {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    .status-badge {
+    .status-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 12px;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
       font-weight: 600;
-      border: 1px solid var(--card-border);
-      background-color: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      background: var(--surface);
       color: var(--text-muted);
-      backdrop-filter: blur(8px);
     }
 
-    .badge-live {
-      border-color: rgba(16, 185, 129, 0.35);
-      color: var(--accent-emerald);
-      background-color: rgba(16, 185, 129, 0.1);
+    .status-indicator.live {
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
     }
 
-    .live-dot {
-      width: 8px;
-      height: 8px;
+    .status-dot {
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background-color: var(--accent-emerald);
-      box-shadow: 0 0 8px var(--accent-emerald);
-      animation: pulse-dot 2s infinite ease-in-out;
+      background: var(--success);
     }
 
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.85); }
+    .status-indicator.live .status-dot {
+      box-shadow: 0 0 6px var(--success);
     }
 
-    /* Filter & Timeframe Toolbar */
+    /* Dense Toolbars & Filter Controls */
     .toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
       flex-wrap: wrap;
-      gap: 12px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 10px 16px;
-      border-radius: var(--radius-md);
     }
 
-    .timeframe-tabs {
+    .toolbar-left, .toolbar-right {
       display: flex;
       align-items: center;
-      gap: 4px;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 3px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--card-border);
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
-    .tab-btn {
+    .btn-group {
+      display: inline-flex;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .btn-chip {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      padding: 5px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition-fast);
-    }
-
-    .tab-btn:hover {
-      color: var(--text-main);
-    }
-
-    .tab-btn.active {
-      background-color: var(--accent-flame);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(255, 106, 0, 0.35);
-    }
-
-    .filter-group {
-      display: flex;
+      transition: background var(--transition-fast), color var(--transition-fast);
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
-    select.tool-select {
-      background: var(--card-elevated);
-      border: 1px solid var(--card-border);
+    .btn-chip:hover {
       color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      background: var(--surface-hover);
+    }
+
+    .btn-chip.active {
+      background: var(--brand);
+      color: #ffffff;
+    }
+
+    .kbd-hint {
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: inherit;
+    }
+
+    [data-theme="light"] .btn-chip:not(.active) .kbd-hint {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.15);
+    }
+
+    .select-dense {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       outline: none;
-      transition: var(--transition-fast);
     }
 
-    select.tool-select:hover, select.tool-select:focus {
-      border-color: var(--accent-flame);
+    .select-dense:focus {
+      border-color: var(--brand);
     }
 
-    .btn-action {
-      background: var(--card-elevated);
-      border: 1px solid var(--card-border);
+    .btn-icon {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
       color: var(--text-main);
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition-fast);
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      transition: border-color var(--transition-fast);
     }
 
-    .btn-action:hover {
-      border-color: var(--accent-flame);
-      color: var(--accent-flame);
+    .btn-icon:hover {
+      border-color: var(--brand);
+      color: var(--brand);
     }
 
-    .btn-action.spinning svg {
+    .btn-icon.spinning svg {
       animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
 
-    /* KPI Grid */
-    .kpi-grid {
+    /* Metric Cards Grid — 4/8px Scale */
+    .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
-      transition: transform var(--transition-normal), border-color var(--transition-normal);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card:hover {
-      border-color: var(--card-border-hover);
-      transform: translateY(-2px);
-    }
-
-    .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .card-title {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 8px;
     }
 
-    .card-value {
-      font-size: 30px;
-      font-weight: 800;
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    /* Primary Metric Card gets subtle brand tint */
+    .metric-card.primary {
+      background: var(--brand-tint);
+      border-color: rgba(255, 106, 0, 0.3);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .metric-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .metric-val {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
       color: var(--text-main);
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.5px;
     }
 
-    .card-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
+    .metric-card.primary .metric-val {
+      font-size: 28px;
+      color: var(--brand);
     }
 
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 9999px;
+    .metric-sparkline {
+      width: 72px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .metric-footer {
       font-size: 11px;
-      font-weight: 700;
-      line-height: 1.4;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px solid var(--border);
     }
 
-    .pill-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .pill-sky { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-    .pill-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-    .pill-flame { background: rgba(255, 106, 0, 0.15); color: #ff8a3c; }
+    .delta-text {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
 
-    /* Segmented Composition Bar */
-    .composition-bar {
-      height: 8px;
-      background: #1e293b;
-      border-radius: 9999px;
-      overflow: hidden;
+    .delta-text.pos { color: var(--success); }
+    .delta-text.neu { color: var(--text-muted); }
+
+    /* Composition Progress Bar (Cache vs Input vs Reasoning vs Output) */
+    .stacked-bar {
+      height: 6px;
+      background: var(--surface-elevated);
+      border-radius: 3px;
       display: flex;
+      overflow: hidden;
       margin-top: 4px;
     }
 
-    .comp-seg {
-      height: 100%;
-      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+    .seg { height: 100%; }
+    .seg-cache { background: var(--success); }
+    .seg-input { background: var(--info); }
+    .seg-reas { background: var(--purple); }
+    .seg-out { background: var(--danger); }
 
-    .comp-seg.cache { background-color: var(--accent-emerald); }
-    .comp-seg.input { background-color: var(--accent-sky); }
-    .comp-seg.reasoning { background-color: var(--accent-purple); }
-    .comp-seg.output { background-color: var(--accent-rose); }
-
-    /* Section Cards */
-    .section-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 24px;
+    /* Surface Cards & Data Grid */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
     }
 
-    .section-header {
+    .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-elevated);
+      font-size: 12px;
+      font-weight: 600;
     }
 
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
+    .panel-title {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       color: var(--text-main);
+      font-size: 13px;
     }
 
-    /* Heatmap Grid & Month Labels */
-    .heatmap-wrap {
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-
-    .heatmap-header-months {
-      display: flex;
-      gap: 3px;
+    .panel-meta {
       font-size: 11px;
-      font-weight: 600;
       color: var(--text-dim);
-      margin-bottom: 6px;
-      margin-left: 28px; /* space for weekday labels */
+      font-weight: 500;
     }
 
-    .heatmap-layout {
+    /* 52-Week Contribution Matrix */
+    .heatmap-outer {
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    .heatmap-months-row {
+      display: flex;
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 500;
+      margin-left: 28px;
+      margin-bottom: 4px;
+      height: 14px;
+    }
+
+    .heatmap-body {
       display: flex;
       gap: 6px;
     }
 
-    .heatmap-days-col {
+    .heatmap-weekdays {
       display: grid;
-      grid-template-rows: repeat(7, 13px);
+      grid-template-rows: repeat(7, 12px);
       gap: 3px;
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 9px;
       color: var(--text-dim);
-      line-height: 13px;
+      font-weight: 500;
+      line-height: 12px;
+      width: 22px;
+      text-align: right;
     }
 
-    .heatmap-grid {
+    .heatmap-matrix {
       display: grid;
-      grid-template-rows: repeat(7, 13px);
+      grid-template-rows: repeat(7, 12px);
       grid-auto-flow: column;
-      grid-auto-columns: 13px;
+      grid-auto-columns: 12px;
       gap: 3px;
     }
 
-    .heatmap-cell {
-      width: 13px;
-      height: 13px;
-      border-radius: 2.5px;
-      background-color: var(--level-0);
+    .cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--heat-0);
       cursor: pointer;
-      transition: transform 0.15s ease, outline 0.15s ease;
-      outline: 1px solid transparent;
+      transition: transform 80ms ease, outline 80ms ease;
     }
 
-    .heatmap-cell:hover {
+    .cell:hover {
       transform: scale(1.35);
-      z-index: 5;
-      outline: 1.5px solid #fff;
+      z-index: 10;
+      outline: 1.5px solid var(--text-main);
     }
 
-    .heatmap-cell.active-inspect {
-      outline: 2px solid var(--accent-amber);
-      transform: scale(1.3);
+    .cell.selected {
+      outline: 2px solid var(--brand);
+      transform: scale(1.25);
     }
 
-    .heatmap-footer {
+    .heatmap-legend-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .heatmap-legend {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      padding: 8px 12px 12px;
       font-size: 11px;
       color: var(--text-dim);
+      border-top: 1px solid var(--border);
+    }
+
+    .legend-ramp {
+      display: flex;
+      align-items: center;
+      gap: 3px;
     }
 
     .legend-box {
-      width: 11px;
-      height: 11px;
+      width: 10px;
+      height: 10px;
       border-radius: 2px;
     }
 
-    /* Day Inspection Drawer */
-    .day-inspect-drawer {
-      background: var(--card-elevated);
-      border: 1px solid rgba(255, 106, 0, 0.3);
-      padding: 12px 18px;
-      border-radius: var(--radius-sm);
+    /* Selected Day Detail Strip */
+    .day-strip {
+      background: var(--brand-tint);
+      border: 1px solid rgba(255, 106, 0, 0.25);
+      padding: 6px 12px;
+      margin: 0 12px 12px;
+      border-radius: 4px;
+      font-size: 11px;
       display: none;
-      align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      animation: fadeIn 0.25s ease;
+      align-items: center;
     }
 
-    .day-inspect-drawer.visible {
-      display: flex;
-    }
+    .day-strip.active { display: flex; }
 
-    /* Layout Two Column Grid */
-    .two-col {
+    /* Split Two-Column Grid */
+    .split-grid {
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 20px;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 12px;
     }
 
-    @media (max-width: 980px) {
-      .two-col {
+    @media (max-width: 960px) {
+      .split-grid {
         grid-template-columns: 1fr;
       }
     }
 
-    /* Tables */
-    .table-container {
+    /* Dense Tables — 4/8px Scale */
+    .table-wrap {
       overflow-x: auto;
+      max-height: 380px;
+      overflow-y: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 12px;
       text-align: left;
-      font-size: 13px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: var(--surface-elevated);
+      backdrop-filter: blur(8px);
+      z-index: 2;
     }
 
     th {
-      color: var(--text-dim);
+      padding: 7px 10px;
       font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--card-border);
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
 
+    th.num { text-align: right; }
+
     td {
-      padding: 12px;
-      border-bottom: 1px solid var(--card-border);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
       color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    td.num {
+      text-align: right;
       font-variant-numeric: tabular-nums;
     }
 
+    /* Row Hover & Selection Micro-Motion (80ms) */
     tbody tr {
-      transition: background-color var(--transition-fast);
+      transition: background 80ms ease;
+      cursor: pointer;
     }
 
     tbody tr:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background: var(--surface-hover);
     }
 
-    .rank-cell {
-      font-weight: 700;
-      width: 38px;
-      text-align: center;
+    tbody tr.selected-row {
+      background: var(--brand-tint);
+      border-left: 2px solid var(--brand);
     }
 
-    .tool-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-      font-weight: 700;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
+    /* Status Dot (No bulky badges) */
+    .status-dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
     }
 
-    .tool-badge.warrior { border-color: rgba(56, 189, 248, 0.3); color: #7dd3fc; }
-    .tool-badge.hunter { border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+    .status-dot-inline.warrior { background: var(--info); }
+    .status-dot-inline.hunter { background: var(--warning); }
 
-    .streak-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-weight: 700;
-      color: var(--accent-flame);
-    }
-
-    /* Distribution Progress Bars */
-    .bar-list {
+    /* Category Horizontal Bar Lists */
+    .cat-list {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 8px;
+      padding: 10px 12px;
     }
 
-    .bar-item {
+    .cat-item {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 3px;
     }
 
-    .bar-label-row {
+    .cat-meta {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 500;
     }
 
-    .bar-track {
-      width: 100%;
-      height: 7px;
-      background: var(--card-elevated);
-      border-radius: 9999px;
+    .cat-track {
+      height: 5px;
+      background: var(--surface-elevated);
+      border-radius: 2px;
       overflow: hidden;
     }
 
-    .bar-fill {
+    .cat-fill {
       height: 100%;
-      border-radius: 9999px;
-      background: linear-gradient(90deg, #ff6a00, #ff8a3c);
-      transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      background: var(--brand);
+      border-radius: 2px;
+      transition: width 0.4s ease;
     }
 
-    .bar-fill.model {
-      background: linear-gradient(90deg, #6366f1, #a855f7);
+    .cat-fill.alt {
+      background: var(--purple);
     }
 
-    /* Search Input */
-    .search-box {
-      background: var(--card-elevated);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-sm);
-      padding: 5px 10px;
+    /* Search Box */
+    .input-dense {
+      background: var(--surface);
+      border: 1px solid var(--border);
       color: var(--text-main);
-      font-size: 12px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 3px;
       outline: none;
-      width: 180px;
-      transition: border-color var(--transition-fast), width var(--transition-fast);
+      width: 160px;
     }
 
-    .search-box:focus {
-      border-color: var(--accent-flame);
-      width: 220px;
+    .input-dense:focus {
+      border-color: var(--brand);
     }
 
-    /* Tooltip */
+    /* Floating Tooltip */
     #tooltip {
       position: fixed;
       display: none;
-      background: rgba(15, 23, 42, 0.95);
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
+      background: var(--surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-strong);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 11px;
       pointer-events: none;
       z-index: 1000;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(10px);
-      line-height: 1.45;
-      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      line-height: 1.4;
+      max-width: 240px;
+    }
+
+    /* Keyboard Shortcuts Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 16px;
+      width: 360px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .shortcut-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kbd {
+      font-family: ui-monospace, monospace;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-strong);
+      font-size: 10px;
+      font-weight: 600;
     }
 
     /* Footer */
     footer {
-      border-top: 1px solid var(--card-border);
-      padding: 20px 0;
-      margin-top: auto;
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-dim);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-dim);
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
     }
 
     footer a {
       color: var(--text-muted);
       text-decoration: none;
-      transition: color var(--transition-fast);
     }
 
     footer a:hover {
-      color: var(--accent-flame);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
+      color: var(--brand);
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header>
-    <div class="brand-wrap">
-      <span class="brand-flame">🔥</span>
-      <div class="brand-titles">
-        <h1>THERMAL</h1>
-        <p>Local AI Coding Assistant Heatmap & FinOps Telemetry</p>
+  <!-- Top Header Chrome -->
+  <header role="banner">
+    <div class="header-left">
+      <span class="brand-mark" aria-hidden="true">🔥</span>
+      <div class="brand-title">
+        <span>THERMAL</span>
+        <span class="brand-version mono">v0.16.0</span>
       </div>
+      <span style="color: var(--border);">|</span>
+      <span style="font-size: 11px; color: var(--text-muted);">Operator FinOps Telemetry</span>
     </div>
 
-    <div class="header-controls">
-      <div class="status-badge" title="Localhost Clean-Room Boundary">
-        <span>🔒 127.0.0.1</span>
+    <div class="header-right">
+      <div class="status-indicator mono" title="Localhost Clean-Room Isolation">
+        <span>127.0.0.1</span>
       </div>
-      <div class="status-badge badge-live" id="stream-badge" title="Real-Time Server Sent Events">
-        <span class="live-dot"></span>
-        <span id="stream-text">LIVE STREAM</span>
+      <div class="status-indicator live" id="stream-status" role="status" aria-label="Live Stream Active">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="mono" style="font-size: 10px;">LIVE SSE</span>
       </div>
-      <button class="btn-action" id="btn-refresh" title="Refresh local data (Hotkey: R)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <button class="btn-icon" id="theme-toggle" aria-label="Toggle Dark/Light Theme (Hotkey: T)" title="Toggle Theme (T)">
+        <span id="theme-icon">🌙</span>
+        <span class="kbd-hint">T</span>
+      </button>
+      <button class="btn-icon" id="btn-refresh" aria-label="Refresh Data (Hotkey: R)" title="Refresh (R)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
         </svg>
         <span>Refresh</span>
+        <span class="kbd-hint">R</span>
+      </button>
+      <button class="btn-icon" id="btn-shortcuts" aria-label="Keyboard Shortcuts (Hotkey: ?)" title="Keyboard Shortcuts (?)">
+        <span>?</span>
       </button>
     </div>
   </header>
 
-  <!-- Interactive Filter Toolbar -->
-  <div class="toolbar">
-    <div class="timeframe-tabs">
-      <button class="tab-btn active" data-last="0">All Time</button>
-      <button class="tab-btn" data-last="90">90 Days</button>
-      <button class="tab-btn" data-last="30">30 Days</button>
-      <button class="tab-btn" data-last="7">7 Days</button>
-      <button class="tab-btn" data-last="1">Today</button>
+  <!-- Dense Sub-Toolbar -->
+  <div class="toolbar" role="toolbar" aria-label="Dashboard Filters">
+    <div class="toolbar-left">
+      <span style="font-size: 11px; font-weight: 500; color: var(--text-dim);">Window:</span>
+      <div class="btn-group" role="group" aria-label="Timeframe selection">
+        <button class="btn-chip active" data-last="0">All Time <span class="kbd-hint">1</span></button>
+        <button class="btn-chip" data-last="90">90d <span class="kbd-hint">2</span></button>
+        <button class="btn-chip" data-last="30">30d <span class="kbd-hint">3</span></button>
+        <button class="btn-chip" data-last="7">7d <span class="kbd-hint">4</span></button>
+        <button class="btn-chip" data-last="1">Today <span class="kbd-hint">5</span></button>
+      </div>
     </div>
 
-    <div class="filter-group">
-      <label for="tool-filter" style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Tool:</label>
-      <select class="tool-select" id="tool-filter">
+    <div class="toolbar-right">
+      <label for="tool-select" style="font-size: 11px; font-weight: 500; color: var(--text-dim);">Filter Tool:</label>
+      <select class="select-dense mono" id="tool-select">
         <option value="">All Tools</option>
       </select>
     </div>
   </div>
 
-  <!-- KPI Cards Grid -->
-  <div class="kpi-grid">
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">🔥 Current Streak</span>
-        <span class="pill pill-flame" id="kpi-streak-pill">Active</span>
+  <!-- Metric Cards Grid — 4/8px Scale -->
+  <section class="metrics-grid" aria-label="Key Performance Indicators">
+    <!-- Primary: Streak Card -->
+    <div class="metric-card primary">
+      <div class="metric-header">
+        <span>STREAK CADENCE</span>
+        <span class="mono" id="streak-max">Best: 0d</span>
       </div>
-      <div class="card-value" id="kpi-streak">0 days</div>
-      <div class="card-sub" id="kpi-streak-sub">Longest: 0 days</div>
+      <div class="metric-body">
+        <span class="metric-val mono" id="metric-streak">0d</span>
+        <svg class="metric-sparkline" id="spark-streak" viewBox="0 0 72 24" aria-hidden="true"></svg>
+      </div>
+      <div class="metric-footer">
+        <span id="streak-status">Active streak</span>
+        <span class="delta-text pos" id="active-days-count">0 days active</span>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">⚡ Lifetime Tokens</span>
-        <span class="pill pill-emerald" id="kpi-cache-pill">0% Cached</span>
+    <!-- Secondary: Token Volume & Composition -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>LIFETIME TOKENS</span>
+        <span class="mono delta-text pos" id="cache-rate-pill">0% Cached</span>
       </div>
-      <div class="card-value" id="kpi-tokens">0 tok</div>
-      <div class="composition-bar" id="comp-bar" title="Token Composition: Cache (Green) · Input (Blue) · Reasoning (Purple) · Output (Red)">
-        <div class="comp-seg cache" style="width: 0%"></div>
-        <div class="comp-seg input" style="width: 0%"></div>
-        <div class="comp-seg reasoning" style="width: 0%"></div>
-        <div class="comp-seg output" style="width: 0%"></div>
+      <div class="metric-body">
+        <span class="metric-val mono" id="metric-tokens">0</span>
+        <svg class="metric-sparkline" id="spark-tokens" viewBox="0 0 72 24" aria-hidden="true"></svg>
       </div>
-      <div class="card-sub" id="kpi-tokens-sub">In: 0 · Out: 0 · Cache: 0</div>
+      <div class="stacked-bar" title="Token Composition: Cache (Green) · Input (Blue) · Reasoning (Purple) · Output (Red)">
+        <div class="seg seg-cache" id="seg-cache" style="width: 0%"></div>
+        <div class="seg seg-input" id="seg-input" style="width: 0%"></div>
+        <div class="seg seg-reas" id="seg-reas" style="width: 0%"></div>
+        <div class="seg seg-out" id="seg-out" style="width: 0%"></div>
+      </div>
+      <div class="metric-footer">
+        <span id="metric-tokens-breakdown" class="mono" style="font-size: 10px;">In: 0 · Out: 0 · Cache: 0</span>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">💰 Estimated Spend</span>
-        <span class="pill pill-sky" id="kpi-cost-type">FinOps</span>
+    <!-- Secondary: FinOps Spend -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>ESTIMATED SPEND</span>
+        <span class="mono">USD ($)</span>
       </div>
-      <div class="card-value" id="kpi-cost">$0.00</div>
-      <div class="card-sub" id="kpi-cost-sub">Recorded: $0.00 · Estimated: $0.00</div>
+      <div class="metric-body">
+        <span class="metric-val mono" id="metric-spend">$0.00</span>
+        <svg class="metric-sparkline" id="spark-spend" viewBox="0 0 72 24" aria-hidden="true"></svg>
+      </div>
+      <div class="metric-footer">
+        <span id="spend-recorded" class="mono">Rec: $0.00</span>
+        <span id="spend-estimated" class="mono">Est: $0.00</span>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">🛠️ Active AI Tools</span>
-        <span class="pill pill-purple" id="kpi-days-pill">0 Days</span>
+    <!-- Secondary: Active Harnesses -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>ACTIVE HARNESSES</span>
+        <span class="mono" id="tools-ratio">14 Installed</span>
       </div>
-      <div class="card-value" id="kpi-tools">0</div>
-      <div class="card-sub" id="kpi-tools-sub">0 active days recorded</div>
+      <div class="metric-body">
+        <span class="metric-val mono" id="metric-tools">0</span>
+        <div style="font-size: 11px; color: var(--text-dim); text-align: right;" class="mono" id="split-summary">
+          Warriors: 0<br>Hunters: 0
+        </div>
+      </div>
+      <div class="metric-footer">
+        <span>Discovered local databases</span>
+        <span class="delta-text neu mono" id="projects-count">0 projects</span>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- 52-Week Contribution Heatmap Section -->
-  <div class="section-card">
-    <div class="section-header">
-      <div class="section-title">
+  <!-- 52-Week Contribution Matrix -->
+  <section class="panel" aria-label="52-Week Activity Heatmap">
+    <div class="panel-header">
+      <div class="panel-title">
         <span>52-Week Contribution Activity Heatmap</span>
       </div>
-      <div class="heatmap-legend">
-        <span>Less</span>
-        <div class="legend-box" style="background-color: var(--level-0)"></div>
-        <div class="legend-box" style="background-color: var(--level-1)"></div>
-        <div class="legend-box" style="background-color: var(--level-2)"></div>
-        <div class="legend-box" style="background-color: var(--level-3)"></div>
-        <div class="legend-box" style="background-color: var(--level-4)"></div>
-        <span>More</span>
+      <div class="panel-meta" id="heatmap-meta">
+        364 days · Quantile density
       </div>
     </div>
 
-    <div class="heatmap-wrap">
-      <div class="heatmap-header-months" id="heatmap-months"></div>
-      <div class="heatmap-layout">
-        <div class="heatmap-days-col">
+    <div class="heatmap-outer">
+      <div class="heatmap-months-row" id="matrix-months"></div>
+      <div class="heatmap-body">
+        <div class="heatmap-weekdays" aria-hidden="true">
           <span></span>
           <span>Mon</span>
           <span></span>
@@ -774,117 +918,179 @@
           <span>Fri</span>
           <span></span>
         </div>
-        <div class="heatmap-grid" id="heatmap-grid"></div>
+        <div class="heatmap-matrix" id="matrix-grid" role="grid" aria-label="Contribution Calendar"></div>
       </div>
     </div>
 
-    <div class="day-inspect-drawer" id="day-drawer">
+    <div class="day-strip" id="day-strip" role="region" aria-live="polite">
       <div>
-        <strong id="drawer-date" style="font-size: 13px; color: var(--text-main);">Selected Day</strong>
-        <div id="drawer-stats" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;"></div>
+        <strong id="strip-date" class="mono">Selected Date</strong>:
+        <span id="strip-detail" class="mono" style="margin-left: 6px;">0 tokens · 0 turns · $0.00</span>
       </div>
-      <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" onclick="closeDrawer()">✕ Close</button>
+      <button class="btn-chip" onclick="clearDaySelection()" style="padding: 2px 6px; font-size: 10px;">Clear [Esc]</button>
     </div>
 
-    <div class="heatmap-footer">
-      <span id="heatmap-summary">Loading contribution heatmap...</span>
-      <span>Tip: Click any cell to inspect daily telemetry</span>
-    </div>
-  </div>
-
-  <!-- Leaderboard & Volume Distribution Section -->
-  <div class="two-col">
-    <div class="section-card">
-      <div class="section-header">
-        <div class="section-title">Tool Leaderboard</div>
-        <span style="font-size: 12px; color: var(--text-dim);" id="leaderboard-count">0 tools</span>
+    <div class="heatmap-legend-row">
+      <span id="matrix-summary" class="mono" style="font-size: 11px;">0 active contribution days</span>
+      <div class="legend-ramp" aria-label="Activity Level Legend">
+        <span>Less</span>
+        <div class="legend-box" style="background: var(--heat-0)" title="No activity"></div>
+        <div class="legend-box" style="background: var(--heat-1)" title="Low volume"></div>
+        <div class="legend-box" style="background: var(--heat-2)" title="Moderate volume"></div>
+        <div class="legend-box" style="background: var(--heat-3)" title="High volume"></div>
+        <div class="legend-box" style="background: var(--heat-4)" title="Peak volume"></div>
+        <span>More</span>
       </div>
-      <div class="table-container">
-        <table>
+    </div>
+  </section>
+
+  <!-- Split Grid: Leaderboard & Volume Share -->
+  <div class="split-grid">
+    <!-- Tool Leaderboard -->
+    <section class="panel" aria-label="Tool Leaderboard">
+      <div class="panel-header">
+        <div class="panel-title">Tool Leaderboard</div>
+        <span class="panel-meta mono" id="leaderboard-meta">J/K to navigate</span>
+      </div>
+      <div class="table-wrap">
+        <table id="leaderboard-table" role="table">
           <thead>
             <tr>
-              <th class="rank-cell">#</th>
+              <th style="width: 32px;">#</th>
               <th>Tool</th>
-              <th>Streak</th>
-              <th>Days</th>
-              <th>Volume / Activity</th>
-              <th>Spend</th>
+              <th class="num">Streak</th>
+              <th class="num">Days</th>
+              <th class="num">Activity / Volume</th>
+              <th class="num">Spend</th>
             </tr>
           </thead>
-          <tbody id="leaderboard-body">
-            <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading leaderboard...</td></tr>
+          <tbody id="leaderboard-tbody">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 16px;">Loading leaderboard telemetry...</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
 
-    <div class="section-card">
-      <div class="section-header">
-        <div class="section-title">Tool Volume Share</div>
-        <span style="font-size: 12px; color: var(--text-dim);">Top Sources</span>
+    <!-- Categorical Tool Volume -->
+    <section class="panel" aria-label="Tool Volume Share">
+      <div class="panel-header">
+        <div class="panel-title">Volume Share</div>
+        <span class="panel-meta">Relative %</span>
       </div>
-      <div class="bar-list" id="tool-bars">
-        <div style="color: var(--text-muted); font-size: 13px;">Loading distribution...</div>
+      <div class="cat-list" id="tool-volume-bars">
+        <div style="color: var(--text-dim); font-size: 11px;">Loading volume bars...</div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <!-- Projects & Model Breakdown Section -->
-  <div class="two-col">
-    <div class="section-card">
-      <div class="section-header">
-        <div class="section-title">Top Workspaces & Projects</div>
-        <input type="text" class="search-box" id="project-search" placeholder="Search projects...">
+  <!-- Split Grid: Top Workspaces & Model Breakdown -->
+  <div class="split-grid">
+    <!-- Top Projects -->
+    <section class="panel" aria-label="Top Projects">
+      <div class="panel-header">
+        <div class="panel-title">Top Workspaces & Repositories</div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="text" class="input-dense mono" id="search-projects" placeholder="Search [/]" aria-label="Search Projects">
+        </div>
       </div>
-      <div class="table-container">
-        <table>
+      <div class="table-wrap">
+        <table id="projects-table" role="table">
           <thead>
             <tr>
-              <th>Project</th>
-              <th>Active Days</th>
-              <th>Tokens</th>
-              <th>Cost</th>
+              <th>Workspace</th>
+              <th class="num">Active Days</th>
+              <th class="num">Tokens</th>
+              <th class="num">Cost ($)</th>
             </tr>
           </thead>
-          <tbody id="projects-body">
-            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading projects...</td></tr>
+          <tbody id="projects-tbody">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 16px;">Loading workspaces...</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
 
-    <div class="section-card">
-      <div class="section-header">
-        <div class="section-title">Model Token Breakdown</div>
-        <span style="font-size: 12px; color: var(--text-dim);">Top Models</span>
+    <!-- Model Breakdown -->
+    <section class="panel" aria-label="Model Breakdown">
+      <div class="panel-header">
+        <div class="panel-title">Model Token Breakdown</div>
+        <span class="panel-meta mono">By Token Count</span>
       </div>
-      <div class="bar-list" id="model-bars">
-        <div style="color: var(--text-muted); font-size: 13px;">Loading models...</div>
+      <div class="cat-list" id="model-volume-bars">
+        <div style="color: var(--text-dim); font-size: 11px;">Loading models...</div>
       </div>
-    </div>
+    </section>
   </div>
 
   <!-- Footer -->
-  <footer>
+  <footer role="contentinfo">
     <div>
-      Thermal · Clean-Room Terminal & Web Telemetry · <a href="https://jadmadi.net/project/thermal" target="_blank" rel="noopener">jadmadi.net/project/thermal</a>
+      Thermal Clean-Room Telemetry · <a href="https://jadmadi.net/project/thermal" target="_blank" rel="noopener">jadmadi.net/project/thermal</a>
     </div>
-    <div>
-      Dual License: GNU AGPL-3.0 & Commercial Enterprise · Author: Jad Madi
+    <div class="mono" style="font-size: 10px;">
+      Dual License: AGPL-3.0 & Commercial Enterprise · Author: Jad Madi
     </div>
   </footer>
 
-  <!-- Tooltip Element -->
-  <div id="tooltip"></div>
+  <!-- Floating Accessible Tooltip -->
+  <div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-overlay" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="modal-heading">Keyboard Shortcuts</span>
+        <button class="btn-chip" onclick="toggleShortcutsModal()" aria-label="Close modal">✕</button>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-item"><span>Refresh Telemetry</span><span class="kbd">R</span></div>
+        <div class="shortcut-item"><span>Toggle Light/Dark Theme</span><span class="kbd">T</span></div>
+        <div class="shortcut-item"><span>Timeframe: All Time</span><span class="kbd">1</span></div>
+        <div class="shortcut-item"><span>Timeframe: 90 Days</span><span class="kbd">2</span></div>
+        <div class="shortcut-item"><span>Timeframe: 30 Days</span><span class="kbd">3</span></div>
+        <div class="shortcut-item"><span>Timeframe: 7 Days</span><span class="kbd">4</span></div>
+        <div class="shortcut-item"><span>Timeframe: Today</span><span class="kbd">5</span></div>
+        <div class="shortcut-item"><span>Search Workspaces</span><span class="kbd">/</span></div>
+        <div class="shortcut-item"><span>Navigate Rows Up / Down</span><span class="kbd">J / K</span></div>
+        <div class="shortcut-item"><span>Close Modal / Clear Selection</span><span class="kbd">Esc</span></div>
+        <div class="shortcut-item"><span>Show This Help Sheet</span><span class="kbd">?</span></div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // State Store
-    let currentData = null;
-    let selectedLast = 0;
-    let selectedTool = "";
-    let activeCellDate = null;
+    // =========================================================================
+    // Thermal Dense Dashboard Client Engine
+    // =========================================================================
 
-    // Formatting Utilities
+    // Global State
+    let state = {
+      telemetry: null,
+      selectedLast: 0,
+      selectedTool: "",
+      selectedRowIdx: -1,
+      theme: localStorage.getItem("thermal_theme") || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+    };
+
+    // Apply Initial Theme
+    document.documentElement.setAttribute("data-theme", state.theme);
+    updateThemeIcon();
+
+    function updateThemeIcon() {
+      const icon = document.getElementById("theme-icon");
+      if (icon) icon.textContent = state.theme === "dark" ? "🌙" : "☀️";
+    }
+
+    function toggleTheme() {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", state.theme);
+      localStorage.setItem("thermal_theme", state.theme);
+      updateThemeIcon();
+      // Re-render heatmap to reflect theme-specific colors
+      if (state.telemetry) renderHeatmap(state.telemetry.dailyActivity || {});
+    }
+
+    // Number Formatting
     function formatNumber(n) {
       if (n === null || n === undefined || isNaN(n) || n === 0) return "0";
       if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
@@ -913,20 +1119,47 @@
       return "tok";
     }
 
-    // Tooltip Logic
+    // Inline SVG Sparkline Generator
+    function generateSparkline(dataPoints, width = 72, height = 24, strokeColor = "var(--brand)") {
+      if (!dataPoints || dataPoints.length < 2) {
+        return `<line x1="0" y1="${height/2}" x2="${width}" y2="${height/2}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="2,2"/>`;
+      }
+      const min = Math.min(...dataPoints);
+      const max = Math.max(...dataPoints);
+      const range = max - min || 1;
+
+      const step = width / (dataPoints.length - 1);
+      const points = dataPoints.map((v, i) => {
+        const x = (i * step).toFixed(1);
+        const y = (height - 3 - ((v - min) / range) * (height - 6)).toFixed(1);
+        return `${x},${y}`;
+      });
+
+      const polyPoints = points.join(" ");
+      const areaPoints = `0,${height} ${polyPoints} ${width},${height}`;
+
+      return `
+        <defs>
+          <linearGradient id="sg-${width}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${strokeColor}" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="${strokeColor}" stop-opacity="0.0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="${areaPoints}" fill="url(#sg-${width})"/>
+        <polyline points="${polyPoints}" fill="none" stroke="${strokeColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      `;
+    }
+
+    // Tooltip Handling
     const tooltip = document.getElementById("tooltip");
     function showTooltip(html, x, y) {
       tooltip.innerHTML = html;
       tooltip.style.display = "block";
       const rect = tooltip.getBoundingClientRect();
-      let left = x + 12;
-      let top = y + 12;
-      if (left + rect.width > window.innerWidth - 16) {
-        left = x - rect.width - 8;
-      }
-      if (top + rect.height > window.innerHeight - 16) {
-        top = y - rect.height - 8;
-      }
+      let left = x + 10;
+      let top = y + 10;
+      if (left + rect.width > window.innerWidth - 12) left = x - rect.width - 8;
+      if (top + rect.height > window.innerHeight - 12) top = y - rect.height - 8;
       tooltip.style.left = left + "px";
       tooltip.style.top = top + "px";
     }
@@ -938,75 +1171,83 @@
     // Telemetry Application
     function applyTelemetry(data) {
       if (!data) return;
-      currentData = data;
+      state.telemetry = data;
+
       renderKPIs(data);
       renderHeatmap(data.dailyActivity || {});
       renderLeaderboard(data.results || []);
-      renderToolBars(data.results || []);
+      renderToolVolume(data.results || []);
       renderProjects(data.projects || []);
       renderModels(data.models || {});
-      updateToolSelectOptions(data.results || []);
+      populateToolSelect(data.results || []);
     }
 
-    // KPI Card Rendering
+    // KPI Cards
     function renderKPIs(data) {
       const curStreak = data.currentStreak ?? 0;
       const longStreak = data.longestStreak ?? 0;
-      document.getElementById("kpi-streak").textContent = curStreak + " days";
-      document.getElementById("kpi-streak-sub").textContent = "Longest: " + longStreak + " days";
-      const streakPill = document.getElementById("kpi-streak-pill");
-      streakPill.textContent = curStreak > 0 ? "🔥 On Fire" : "Ready";
+      document.getElementById("metric-streak").textContent = `${curStreak}d`;
+      document.getElementById("streak-max").textContent = `Best: ${longStreak}d`;
+      document.getElementById("active-days-count").textContent = `${data.activeDays ?? 0} active days`;
+      document.getElementById("streak-status").textContent = curStreak > 0 ? "🔥 In-Streak" : "Streak Paused";
 
       const totalTokens = data.totalTokens ?? 0;
-      document.getElementById("kpi-tokens").textContent = formatNumber(totalTokens) + " tok";
+      document.getElementById("metric-tokens").textContent = formatNumber(totalTokens);
 
       const inTok = data.inputTokens ?? 0;
       const outTok = data.outputTokens ?? 0;
       const cacheTok = data.cacheTokens ?? 0;
       const reasTok = data.reasoningTokens ?? 0;
 
-      document.getElementById("kpi-tokens-sub").textContent =
+      document.getElementById("metric-tokens-breakdown").textContent =
         `In: ${formatNumber(inTok)} · Out: ${formatNumber(outTok)} · Cache: ${formatNumber(cacheTok)}`;
 
-      // Calculate percentages for segmented bar
-      const tokSum = inTok + outTok + cacheTok + reasTok;
-      if (tokSum > 0) {
-        const cachePct = ((cacheTok / tokSum) * 100).toFixed(1);
-        const inPct = ((inTok / tokSum) * 100).toFixed(1);
-        const reasPct = ((reasTok / tokSum) * 100).toFixed(1);
-        const outPct = ((outTok / tokSum) * 100).toFixed(1);
+      const sumTok = inTok + outTok + cacheTok + reasTok;
+      if (sumTok > 0) {
+        const cachePct = ((cacheTok / sumTok) * 100).toFixed(1);
+        const inPct = ((inTok / sumTok) * 100).toFixed(1);
+        const reasPct = ((reasTok / sumTok) * 100).toFixed(1);
+        const outPct = ((outTok / sumTok) * 100).toFixed(1);
 
-        document.getElementById("kpi-cache-pill").textContent = cachePct + "% Cached";
-
-        const compBar = document.getElementById("comp-bar");
-        compBar.children[0].style.width = cachePct + "%";
-        compBar.children[1].style.width = inPct + "%";
-        compBar.children[2].style.width = reasPct + "%";
-        compBar.children[3].style.width = outPct + "%";
+        document.getElementById("cache-rate-pill").textContent = `${cachePct}% Cached`;
+        document.getElementById("seg-cache").style.width = cachePct + "%";
+        document.getElementById("seg-input").style.width = inPct + "%";
+        document.getElementById("seg-reas").style.width = reasPct + "%";
+        document.getElementById("seg-out").style.width = outPct + "%";
       }
 
       const totCost = data.totalCost ?? 0;
       const recCost = data.recordedCost ?? 0;
       const estCost = data.estimatedCost ?? 0;
-      document.getElementById("kpi-cost").textContent = formatCurrency(totCost);
-      document.getElementById("kpi-cost-sub").textContent =
-        `Recorded: ${formatCurrency(recCost)} · Est: ${formatCurrency(estCost)}`;
+      document.getElementById("metric-spend").textContent = formatCurrency(totCost);
+      document.getElementById("spend-recorded").textContent = `Rec: ${formatCurrency(recCost)}`;
+      document.getElementById("spend-estimated").textContent = `Est: ${formatCurrency(estCost)}`;
 
-      const toolsCount = (data.results || []).length;
-      const activeDays = data.activeDays ?? 0;
-      document.getElementById("kpi-tools").textContent = toolsCount;
-      document.getElementById("kpi-tools-sub").textContent = `${activeDays} active days recorded`;
-      document.getElementById("kpi-days-pill").textContent = `${activeDays} Active Days`;
+      const results = data.results || [];
+      const hunters = results.filter(r => isActivityTool(r.tool || r.Tool)).length;
+      const warriors = results.length - hunters;
+      document.getElementById("metric-tools").textContent = results.length;
+      document.getElementById("split-summary").innerHTML = `Warriors: ${warriors}<br>Hunters: ${hunters}`;
+      document.getElementById("projects-count").textContent = `${(data.projects || []).length} projects`;
+
+      // Generate 14-day Trend Sparklines
+      const days = Object.keys(data.dailyActivity || {}).sort().slice(-14);
+      const tokenPoints = days.map(d => data.dailyActivity[d]?.tokens || data.dailyActivity[d]?.Tokens || 0);
+      const spendPoints = days.map(d => data.dailyActivity[d]?.cost || data.dailyActivity[d]?.Cost || 0);
+      const turnsPoints = days.map(d => data.dailyActivity[d]?.turns || data.dailyActivity[d]?.Turns || 0);
+
+      document.getElementById("spark-streak").innerHTML = generateSparkline(turnsPoints, 72, 24, "var(--brand)");
+      document.getElementById("spark-tokens").innerHTML = generateSparkline(tokenPoints, 72, 24, "var(--info)");
+      document.getElementById("spark-spend").innerHTML = generateSparkline(spendPoints, 72, 24, "var(--success)");
     }
 
-    // Heatmap Rendering
+    // 52-Week Contribution Matrix
     function renderHeatmap(dailyActivity) {
-      const grid = document.getElementById("heatmap-grid");
-      const monthsRow = document.getElementById("heatmap-months");
+      const grid = document.getElementById("matrix-grid");
+      const monthsRow = document.getElementById("matrix-months");
       grid.innerHTML = "";
       monthsRow.innerHTML = "";
 
-      // 52 weeks * 7 days = 364 days ending today
       const today = new Date();
       const dates = [];
       for (let i = 363; i >= 0; i--) {
@@ -1016,7 +1257,7 @@
         dates.push({ date: d, str: dayStr });
       }
 
-      // Generate Month Headers aligned to week columns
+      // Generate Month Headers
       let lastMonth = -1;
       const monthCols = [];
       dates.forEach((item, idx) => {
@@ -1028,27 +1269,25 @@
         }
       });
 
-      // Render Month Labels
       let mHtml = "";
       let curCol = 0;
       monthCols.forEach(m => {
-        const offset = (m.weekIdx - curCol) * 16;
-        mHtml += `<span style="display:inline-block; margin-left: ${Math.max(offset, 4)}px;">${m.name}</span>`;
+        const offset = (m.weekIdx - curCol) * 15;
+        mHtml += `<span style="display:inline-block; margin-left: ${Math.max(offset, 2)}px;">${m.name}</span>`;
         curCol = m.weekIdx;
       });
       monthsRow.innerHTML = mHtml;
 
-      // Calculate Quantiles for 5 Color Levels
-      const tokenValues = Object.values(dailyActivity).map(a => a.tokens ?? a.Tokens ?? 0).filter(v => v > 0);
-      tokenValues.sort((a, b) => a - b);
-      const q1 = tokenValues[Math.floor(tokenValues.length * 0.25)] || 5000;
-      const q2 = tokenValues[Math.floor(tokenValues.length * 0.50)] || 25000;
-      const q3 = tokenValues[Math.floor(tokenValues.length * 0.75)] || 100000;
+      // Quantile thresholds
+      const vals = Object.values(dailyActivity).map(a => a.tokens ?? a.Tokens ?? 0).filter(v => v > 0).sort((a,b) => a-b);
+      const q1 = vals[Math.floor(vals.length * 0.25)] || 5000;
+      const q2 = vals[Math.floor(vals.length * 0.50)] || 25000;
+      const q3 = vals[Math.floor(vals.length * 0.75)] || 100000;
 
-      let totalActiveDays = 0;
+      let activeDaysCount = 0;
       dates.forEach(item => {
         const cell = document.createElement("div");
-        cell.className = "heatmap-cell";
+        cell.className = "cell";
         cell.dataset.date = item.str;
 
         const act = dailyActivity[item.str] || { tokens: 0, turns: 0, cost: 0 };
@@ -1058,20 +1297,21 @@
 
         let level = 0;
         if (tokens > 0 || turns > 0) {
-          totalActiveDays++;
+          activeDaysCount++;
           if (tokens <= q1) level = 1;
           else if (tokens <= q2) level = 2;
           else if (tokens <= q3) level = 3;
           else level = 4;
         }
-        cell.style.backgroundColor = `var(--level-${level})`;
+        cell.style.backgroundColor = `var(--heat-${level})`;
 
         cell.addEventListener("mouseenter", (e) => {
-          const formattedDate = item.date.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+          const dateFormatted = item.date.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
           const tip = `
-            <strong>${formattedDate}</strong><br>
-            <span style="color:#ff8a3c;">⚡ ${formatNumber(tokens)} tokens</span> · <span>${turns} turns</span><br>
-            <span style="color:#34d399;">💰 ${formatCurrency(cost)} spend</span>
+            <div class="mono" style="font-weight:700; margin-bottom: 2px;">${dateFormatted}</div>
+            <div>Volume: <span class="mono" style="color:var(--brand);">${formatNumber(tokens)} tok</span></div>
+            <div>Activity: <span class="mono">${turns} turns</span></div>
+            <div>Spend: <span class="mono" style="color:var(--success);">${formatCurrency(cost)}</span></div>
           `;
           showTooltip(tip, e.clientX, e.clientY);
         });
@@ -1083,49 +1323,41 @@
         cell.addEventListener("mouseleave", hideTooltip);
 
         cell.addEventListener("click", () => {
-          inspectDay(item.str, tokens, turns, cost);
-          document.querySelectorAll(".heatmap-cell").forEach(c => c.classList.remove("active-inspect"));
-          cell.classList.add("active-inspect");
+          selectDay(item.str, tokens, turns, cost);
+          document.querySelectorAll(".cell").forEach(c => c.classList.remove("selected"));
+          cell.classList.add("selected");
         });
 
         grid.appendChild(cell);
       });
 
-      document.getElementById("heatmap-summary").textContent =
-        `${totalActiveDays} active contribution days across 52 weeks`;
+      document.getElementById("matrix-summary").textContent = `${activeDaysCount} active days in 52-week window`;
     }
 
-    function inspectDay(dateStr, tokens, turns, cost) {
-      const drawer = document.getElementById("day-drawer");
+    function selectDay(dateStr, tokens, turns, cost) {
+      const strip = document.getElementById("day-strip");
       const d = new Date(dateStr + "T00:00:00");
-      const formatted = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      document.getElementById("drawer-date").textContent = formatted;
-      document.getElementById("drawer-stats").textContent =
-        `Volume: ${formatNumber(tokens)} tokens  ·  Activity: ${turns} turns  ·  Estimated Spend: ${formatCurrency(cost)}`;
-      drawer.classList.add("visible");
+      const formatted = d.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+      document.getElementById("strip-date").textContent = formatted;
+      document.getElementById("strip-detail").textContent =
+        `${formatNumber(tokens)} tokens  ·  ${turns} turns  ·  ${formatCurrency(cost)} spend`;
+      strip.classList.add("active");
     }
 
-    function closeDrawer() {
-      document.getElementById("day-drawer").classList.remove("visible");
-      document.querySelectorAll(".heatmap-cell").forEach(c => c.classList.remove("active-inspect"));
+    function clearDaySelection() {
+      document.getElementById("day-strip").classList.remove("active");
+      document.querySelectorAll(".cell").forEach(c => c.classList.remove("selected"));
     }
 
-    // Leaderboard Rendering
+    // Leaderboard Table
     function renderLeaderboard(results) {
-      const tbody = document.getElementById("leaderboard-body");
+      const tbody = document.getElementById("leaderboard-tbody");
       if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No active AI tools found.</td></tr>`;
-        document.getElementById("leaderboard-count").textContent = "0 tools";
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 16px;">No tools recorded.</td></tr>`;
         return;
       }
 
-      document.getElementById("leaderboard-count").textContent = `${results.length} tools`;
-
       tbody.innerHTML = results.map((r, i) => {
-        const medals = ["🥇", "🥈", "🥉"];
-        const rank = medals[i] || (i + 1);
-
-        // Defensive field extractors
         const name = r.name || r.Name || r.tool || r.Tool || "Tool";
         const toolId = (r.tool || r.Tool || name).toLowerCase();
         const streak = r.currentStreak ?? r.CurrentStreak ?? 0;
@@ -1133,13 +1365,10 @@
 
         const summary = r.summary || r.Summary;
         let totalAct = r.totalActivity ?? r.TotalActivity ?? 0;
-        if (totalAct === 0 && summary) {
-          totalAct = summary.lifetimeTokens ?? summary.LifetimeTokens ?? 0;
-        }
+        if (totalAct === 0 && summary) totalAct = summary.lifetimeTokens ?? summary.LifetimeTokens ?? 0;
 
         const isAct = isActivityTool(toolId);
         const unit = getActivityUnit(toolId);
-        const volStr = `${formatNumber(totalAct)} ${unit}`;
 
         let cost = 0;
         if (summary && (summary.cost ?? summary.Cost) > 0) {
@@ -1148,57 +1377,73 @@
           cost = r.estimatedCost ?? r.EstimatedCost ?? 0;
         }
         const costStr = isAct ? "—" : (cost > 0 && !summary?.cost ? "~" : "") + formatCurrency(cost);
-        const badgeClass = isAct ? "hunter" : "warrior";
+        const dotClass = isAct ? "hunter" : "warrior";
 
         return `
-          <tr style="cursor: pointer;" onclick="filterByTool('${toolId}')" title="Filter dashboard by ${name}">
-            <td class="rank-cell">${rank}</td>
+          <tr data-index="${i}" data-tool="${toolId}" onclick="onRowClick(${i}, '${toolId}')">
+            <td class="mono" style="color: var(--text-dim);">${i + 1}</td>
             <td>
-              <span class="tool-badge ${badgeClass}">${name}</span>
+              <span class="status-dot-inline ${dotClass}" aria-hidden="true"></span>
+              <strong class="mono" style="font-size: 12px;">${name}</strong>
             </td>
-            <td><span class="streak-pill">${streak}d 🔥</span></td>
-            <td>${days}d</td>
-            <td><strong>${volStr}</strong></td>
-            <td>${costStr}</td>
+            <td class="num mono" style="color: var(--brand); font-weight: 600;">${streak}d 🔥</td>
+            <td class="num mono">${days}d</td>
+            <td class="num mono"><strong>${formatNumber(totalAct)}</strong> <span style="font-size: 10px; color: var(--text-dim);">${unit}</span></td>
+            <td class="num mono" style="color: ${cost > 0 ? 'var(--text-main)' : 'var(--text-dim)'};">${costStr}</td>
           </tr>
         `;
       }).join("");
     }
 
-    // Tool Volume Bar Chart Rendering
-    function renderToolBars(results) {
-      const container = document.getElementById("tool-bars");
+    function onRowClick(idx, toolId) {
+      highlightRow(idx);
+      filterTool(toolId);
+    }
+
+    function highlightRow(idx) {
+      state.selectedRowIdx = idx;
+      const rows = document.querySelectorAll("#leaderboard-tbody tr");
+      rows.forEach((r, i) => {
+        if (i === idx) {
+          r.classList.add("selected-row");
+          r.scrollIntoView({ block: "nearest" });
+        } else {
+          r.classList.remove("selected-row");
+        }
+      });
+    }
+
+    // Categorical Volume Share
+    function renderToolVolume(results) {
+      const container = document.getElementById("tool-volume-bars");
       if (!results || results.length === 0) {
-        container.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">No data</div>`;
+        container.innerHTML = `<div style="color: var(--text-dim); font-size: 11px;">No data</div>`;
         return;
       }
+      const maxAct = Math.max(...results.map(r => r.totalActivity ?? r.TotalActivity ?? (r.summary?.lifetimeTokens ?? 0)), 1);
 
-      const maxActivity = Math.max(...results.map(r => r.totalActivity ?? r.TotalActivity ?? (r.summary?.lifetimeTokens ?? 0)), 1);
-
-      container.innerHTML = results.slice(0, 7).map(r => {
+      container.innerHTML = results.slice(0, 6).map(r => {
         const name = r.name || r.Name || r.tool || r.Tool;
         const toolId = (r.tool || r.Tool || name).toLowerCase();
         const act = r.totalActivity ?? r.TotalActivity ?? (r.summary?.lifetimeTokens ?? 0);
         const unit = getActivityUnit(toolId);
-        const pct = Math.max(Math.round((act / maxActivity) * 100), 2);
+        const pct = Math.max(Math.round((act / maxAct) * 100), 2);
 
         return `
-          <div class="bar-item">
-            <div class="bar-label-row">
-              <span>${name}</span>
-              <span style="color: var(--text-muted); font-variant-numeric: tabular-nums;">
-                <strong>${formatNumber(act)}</strong> ${unit} (${pct}%)
-              </span>
+          <div class="cat-item">
+            <div class="cat-meta">
+              <span class="mono">${name}</span>
+              <span class="mono">${formatNumber(act)} ${unit} (${pct}%)</span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${pct}%"></div>
+            <div class="cat-track">
+              <div class="cat-fill" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    // Top Projects Rendering with Live Search
+    // Projects Directory
     let cachedProjects = [];
     function renderProjects(projects) {
       cachedProjects = projects || [];
@@ -1206,27 +1451,24 @@
     }
 
     function filterAndRenderProjects() {
-      const query = (document.getElementById("project-search")?.value || "").toLowerCase().trim();
-      const tbody = document.getElementById("projects-body");
+      const query = (document.getElementById("search-projects")?.value || "").toLowerCase().trim();
+      const tbody = document.getElementById("projects-tbody");
 
       let filtered = cachedProjects;
       if (query) {
-        filtered = cachedProjects.filter(p => {
-          const path = (p.project || p.Project || "").toLowerCase();
-          return path.includes(query);
-        });
+        filtered = cachedProjects.filter(p => (p.project || p.Project || "").toLowerCase().includes(query));
       }
 
       if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No matching projects found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 16px;">No matching projects.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.slice(0, 8).map(p => {
         const fullPath = p.project || p.Project || "unknown";
         const parts = fullPath.split("/");
-        const baseName = parts[parts.length - 1] || fullPath;
-        const parentPath = parts.slice(0, -1).join("/") || "";
+        const base = parts[parts.length - 1] || fullPath;
+        const parent = parts.slice(0, -1).join("/") || "";
 
         const days = p.activeDays ?? p.ActiveDays ?? p.days ?? 1;
         const tokens = p.totalTokens ?? p.TotalTokens ?? p.tokens ?? p.Tokens ?? 0;
@@ -1235,14 +1477,14 @@
         return `
           <tr>
             <td>
-              <strong style="color: var(--text-main); font-size: 13px;">${baseName}</strong>
-              <div style="font-size: 11px; color: var(--text-dim); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fullPath}">
-                ${parentPath}
+              <strong class="mono" style="font-size: 12px; color: var(--text-main);">${base}</strong>
+              <div class="mono" style="font-size: 10px; color: var(--text-dim); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fullPath}">
+                ${parent}
               </div>
             </td>
-            <td>${days}d</td>
-            <td><strong>${formatNumber(tokens)}</strong></td>
-            <td><span style="color: #34d399;">${formatCurrency(cost)}</span></td>
+            <td class="num mono">${days}d</td>
+            <td class="num mono"><strong>${formatNumber(tokens)}</strong></td>
+            <td class="num mono" style="color: var(--success);">${formatCurrency(cost)}</td>
           </tr>
         `;
       }).join("");
@@ -1250,66 +1492,62 @@
 
     // Model Token Breakdown
     function renderModels(models) {
-      const container = document.getElementById("model-bars");
+      const container = document.getElementById("model-volume-bars");
       const entries = Object.entries(models || {});
       if (entries.length === 0) {
-        container.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">No models recorded</div>`;
+        container.innerHTML = `<div style="color: var(--text-dim); font-size: 11px;">No models recorded</div>`;
         return;
       }
       entries.sort((a, b) => b[1] - a[1]);
-      const maxTokens = entries[0][1] || 1;
+      const maxTok = entries[0][1] || 1;
 
-      container.innerHTML = entries.slice(0, 7).map(([name, tokens]) => {
-        const pct = Math.max(Math.round((tokens / maxTokens) * 100), 2);
+      container.innerHTML = entries.slice(0, 6).map(([name, tokens]) => {
+        const pct = Math.max(Math.round((tokens / maxTok) * 100), 2);
         return `
-          <div class="bar-item">
-            <div class="bar-label-row">
-              <span style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px;">${name}</span>
-              <span style="color: var(--text-muted); font-variant-numeric: tabular-nums;">
-                <strong>${formatNumber(tokens)}</strong> tok (${pct}%)
-              </span>
+          <div class="cat-item">
+            <div class="cat-meta">
+              <span class="mono">${name}</span>
+              <span class="mono">${formatNumber(tokens)} tok (${pct}%)</span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill model" style="width: ${pct}%"></div>
+            <div class="cat-track">
+              <div class="cat-fill alt" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    // Populate Tool Dropdown Options Dynamically
-    function updateToolSelectOptions(results) {
-      const select = document.getElementById("tool-filter");
+    // Filter Tool Options
+    function populateToolSelect(results) {
+      const select = document.getElementById("tool-select");
       if (!select) return;
-      const currentVal = select.value;
+      const current = select.value;
       const options = ['<option value="">All Tools</option>'];
       (results || []).forEach(r => {
         const name = r.name || r.Name || r.tool || r.Tool;
         const toolId = (r.tool || r.Tool || name).toLowerCase();
-        const selected = toolId === currentVal ? "selected" : "";
-        options.push(`<option value="${toolId}" ${selected}>${name}</option>`);
+        const sel = toolId === current ? "selected" : "";
+        options.push(`<option value="${toolId}" ${sel}>${name}</option>`);
       });
       select.innerHTML = options.join("");
     }
 
-    function filterByTool(toolId) {
-      const select = document.getElementById("tool-filter");
-      if (select) {
-        select.value = toolId;
-        selectedTool = toolId;
-        loadDashboard();
-      }
+    function filterTool(toolId) {
+      const select = document.getElementById("tool-select");
+      if (select) select.value = toolId;
+      state.selectedTool = toolId;
+      loadTelemetry();
     }
 
-    // Data Fetching with Parameter Construction
-    async function loadDashboard() {
+    // API Query Pipeline
+    async function loadTelemetry() {
       const btn = document.getElementById("btn-refresh");
       if (btn) btn.classList.add("spinning");
 
       try {
         const params = new URLSearchParams();
-        if (selectedLast > 0) params.set("last", selectedLast);
-        if (selectedTool) params.set("tool", selectedTool);
+        if (state.selectedLast > 0) params.set("last", state.selectedLast);
+        if (state.selectedTool) params.set("tool", state.selectedTool);
 
         const url = "/api/telemetry" + (params.toString() ? "?" + params.toString() : "");
         const res = await fetch(url);
@@ -1317,13 +1555,13 @@
         const data = await res.json();
         applyTelemetry(data);
       } catch (err) {
-        console.error("Failed loading telemetry:", err);
+        console.error("Telemetry fetch failed:", err);
       } finally {
         if (btn) btn.classList.remove("spinning");
       }
     }
 
-    // Live Streaming via SSE
+    // SSE Stream
     function initStream() {
       if (!window.EventSource) return;
       try {
@@ -1332,59 +1570,111 @@
           try {
             const data = JSON.parse(e.data);
             applyTelemetry(data);
-            const badge = document.getElementById("stream-badge");
-            if (badge) badge.classList.add("badge-live");
+            const status = document.getElementById("stream-status");
+            if (status) status.classList.add("live");
           } catch (err) {
             console.error("SSE parse error:", err);
           }
         });
         es.onerror = () => {
-          const badge = document.getElementById("stream-badge");
-          if (badge) badge.classList.remove("badge-live");
+          const status = document.getElementById("stream-status");
+          if (status) status.classList.remove("live");
         };
       } catch (err) {
-        console.warn("EventSource setup failed, fallback to polling:", err);
+        console.warn("EventSource unavailable:", err);
       }
     }
 
-    // Attach Event Listeners
+    // Shortcuts Modal
+    function toggleShortcutsModal() {
+      const modal = document.getElementById("shortcuts-modal");
+      modal.classList.toggle("active");
+    }
+
+    // Keyboard Controller
     window.addEventListener("DOMContentLoaded", () => {
-      loadDashboard();
+      loadTelemetry();
       initStream();
+      setInterval(loadTelemetry, 15000);
 
-      // Polling fallback
-      setInterval(loadDashboard, 15000);
-
-      // Refresh Button
-      document.getElementById("btn-refresh")?.addEventListener("click", loadDashboard);
+      document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
+      document.getElementById("btn-refresh")?.addEventListener("click", loadTelemetry);
+      document.getElementById("btn-shortcuts")?.addEventListener("click", toggleShortcutsModal);
 
       // Timeframe Tab Buttons
-      document.querySelectorAll(".tab-btn").forEach(btn => {
+      document.querySelectorAll(".btn-chip[data-last]").forEach(btn => {
         btn.addEventListener("click", () => {
-          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".btn-chip[data-last]").forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
-          selectedLast = parseInt(btn.dataset.last, 10) || 0;
-          loadDashboard();
+          state.selectedLast = parseInt(btn.dataset.last, 10) || 0;
+          loadTelemetry();
         });
       });
 
-      // Tool Filter Select
-      document.getElementById("tool-filter")?.addEventListener("change", (e) => {
-        selectedTool = e.target.value;
-        loadDashboard();
+      // Tool Selector
+      document.getElementById("tool-select")?.addEventListener("change", (e) => {
+        state.selectedTool = e.target.value;
+        loadTelemetry();
       });
 
       // Project Search Input
-      document.getElementById("project-search")?.addEventListener("input", filterAndRenderProjects);
+      document.getElementById("search-projects")?.addEventListener("input", filterAndRenderProjects);
 
       // Keyboard Shortcuts
       window.addEventListener("keydown", (e) => {
-        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
-        if (e.key === "r" || e.key === "R") {
-          loadDashboard();
-        } else if (e.key === "Escape") {
-          closeDrawer();
-          hideTooltip();
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") {
+          if (e.key === "Escape") e.target.blur();
+          return;
+        }
+
+        switch (e.key) {
+          case "r":
+          case "R":
+            loadTelemetry();
+            break;
+          case "t":
+          case "T":
+            toggleTheme();
+            break;
+          case "/":
+            e.preventDefault();
+            document.getElementById("search-projects")?.focus();
+            break;
+          case "?":
+            toggleShortcutsModal();
+            break;
+          case "Escape":
+            clearDaySelection();
+            hideTooltip();
+            document.getElementById("shortcuts-modal")?.classList.remove("active");
+            break;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+            const idx = parseInt(e.key, 10) - 1;
+            const buttons = document.querySelectorAll(".btn-chip[data-last]");
+            if (buttons[idx]) buttons[idx].click();
+            break;
+          case "j":
+          case "J":
+            // Navigate row down
+            const rowsDown = document.querySelectorAll("#leaderboard-tbody tr");
+            if (rowsDown.length > 0) {
+              const next = Math.min(state.selectedRowIdx + 1, rowsDown.length - 1);
+              highlightRow(next);
+            }
+            break;
+          case "k":
+          case "K":
+            // Navigate row up
+            const rowsUp = document.querySelectorAll("#leaderboard-tbody tr");
+            if (rowsUp.length > 0) {
+              const prev = Math.max(state.selectedRowIdx - 1, 0);
+              highlightRow(prev);
+            }
+            break;
         }
       });
     });
