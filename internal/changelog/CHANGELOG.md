@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0](https://github.com/jadmadi/thermal/compare/v0.16.0...v0.17.0) (2026-09-30)
+
+
+### Features
+
+* **server:** craft dense operator dashboard with dark/light themes, inline sparklines & keyboard navigation ([a2bfb9f](https://github.com/jadmadi/thermal/commit/a2bfb9f67bb4a4836e700cd8186278494e7d6560))
+
+
+### Bug Fixes
+
+* **loaders:** support relative ANTIGRAVITY_APP_DATA_DIR, unified sibling folding & ~/.config/thermal/thermal.config paths ([8024634](https://github.com/jadmadi/thermal/commit/8024634a44a3a9e5b610f0ff9ff34f3975b4c03e))
+* **server:** eliminate CPU thrashing via streaming timeout fix, file signature change detection & delta cache ([f8e7759](https://github.com/jadmadi/thermal/commit/f8e77592ff9b307c5ff310359425be1f6746c5cf))
+* **server:** resolve undefined web telemetry fields, add JSON tags & craft polished animated dashboard ([30fb8ff](https://github.com/jadmadi/thermal/commit/30fb8ff6ebbd06a5728cc9f5aac9c92bfb03ac4f))
+
 ## [0.16.0](https://github.com/jadmadi/thermal/compare/v0.15.0...v0.16.0) (2026-09-29)
 
 
