@@ -1595,7 +1595,9 @@
     window.addEventListener("DOMContentLoaded", () => {
       loadTelemetry();
       initStream();
-      setInterval(loadTelemetry, 15000);
+      if (!window.EventSource) {
+        setInterval(loadTelemetry, 15000);
+      }
 
       document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
       document.getElementById("btn-refresh")?.addEventListener("click", loadTelemetry);

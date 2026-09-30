@@ -9,10 +9,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -1826,15 +1824,14 @@ func runServe(opts thermal.Options) {
 	}
 }
 
-type liveSourceSig struct {
-	fileCount int
-	totalSize int64
-	maxNano   int64
-	missing   bool
+type liveSourceSig = loaders.SourceSig
+
+func getLiveToolSourceSig(t thermal.Tool, info loaders.ToolInfo, dbPathOverride string) loaders.SourceSig {
+	return loaders.GetToolSourceSig(t, info, dbPathOverride)
 }
 
 type liveToolCache struct {
-	sig       liveSourceSig
+	sig       loaders.SourceSig
 	result    thermal.ToolResult
 	projects  []thermal.ProjectDay
 	lastCheck time.Time
@@ -1854,140 +1851,6 @@ func newLiveCollector(opts thermal.Options, pricer thermal.Pricer) *liveCollecto
 		pricer:    pricer,
 		toolsInfo: loaders.AllTools(),
 		cache:     make(map[thermal.Tool]*liveToolCache),
-	}
-}
-
-func getLiveToolSourceSig(t thermal.Tool, info loaders.ToolInfo, dbPathOverride string) liveSourceSig {
-	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
-		p := dbPathOverride
-		if p == "" {
-			p = info.DBPath
-		}
-		if p == "" {
-			return liveSourceSig{missing: true}
-		}
-		fi, err := os.Stat(p)
-		if err != nil {
-			return liveSourceSig{missing: true}
-		}
-		sig := liveSourceSig{
-			fileCount: 1,
-			totalSize: fi.Size(),
-			maxNano:   fi.ModTime().UnixNano(),
-		}
-		if wfi, err := os.Stat(p + "-wal"); err == nil {
-			sig.fileCount++
-			sig.totalSize += wfi.Size()
-			sig.maxNano ^= wfi.ModTime().UnixNano()
-		}
-		if sfi, err := os.Stat(p + "-shm"); err == nil {
-			sig.fileCount++
-			sig.totalSize += sfi.Size()
-			sig.maxNano ^= sfi.ModTime().UnixNano()
-		}
-		return sig
-
-	default:
-		dir := info.DataDir
-		if dbPathOverride != "" {
-			dir = dbPathOverride
-		}
-		if dir == "" {
-			return liveSourceSig{missing: true}
-		}
-		if t == thermal.ToolAgy {
-			scanDir := loaders.ResolveAgyBrainDir(dir)
-			if st, err := os.Stat(scanDir); err != nil || !st.IsDir() {
-				return liveSourceSig{missing: true}
-			}
-			var sig liveSourceSig
-			if bst, err := os.Stat(scanDir); err == nil {
-				sig.fileCount++
-				sig.totalSize += bst.Size()
-				sig.maxNano = bst.ModTime().UnixNano()
-			}
-			parentDir := filepath.Dir(scanDir)
-			csDB := filepath.Join(parentDir, "conversation_summaries.db")
-			if cst, err := os.Stat(csDB); err == nil {
-				sig.fileCount++
-				sig.totalSize += cst.Size()
-				if nano := cst.ModTime().UnixNano(); nano > sig.maxNano {
-					sig.maxNano = nano
-				}
-			}
-			if walt, err := os.Stat(csDB + "-wal"); err == nil {
-				sig.fileCount++
-				sig.totalSize += walt.Size()
-				if nano := walt.ModTime().UnixNano(); nano > sig.maxNano {
-					sig.maxNano = nano
-				}
-			}
-			entries, err := os.ReadDir(scanDir)
-			if err == nil {
-				for _, entry := range entries {
-					if !entry.IsDir() {
-						continue
-					}
-					logsDir := filepath.Join(scanDir, entry.Name(), ".system_generated", "logs")
-					transPath := filepath.Join(logsDir, "transcript.jsonl")
-					fi, err := os.Stat(transPath)
-					if err != nil {
-						transPath = filepath.Join(logsDir, "overview.txt")
-						fi, err = os.Stat(transPath)
-					}
-					if err == nil && !fi.IsDir() {
-						sig.fileCount++
-						sig.totalSize += fi.Size()
-						if nano := fi.ModTime().UnixNano(); nano > sig.maxNano {
-							sig.maxNano = nano
-						}
-					}
-				}
-			}
-			return sig
-		}
-
-		scanDir := dir
-		if info.DataSubdir != "" {
-			sub := filepath.Join(dir, info.DataSubdir)
-			if _, err := os.Stat(sub); err == nil {
-				scanDir = sub
-			}
-		}
-		if _, err := os.Stat(scanDir); err != nil {
-			return liveSourceSig{missing: true}
-		}
-
-		var sig liveSourceSig
-		if t == thermal.ToolCodex {
-			stateDB := filepath.Join(dir, "state_5.sqlite")
-			if sfi, err := os.Stat(stateDB); err == nil {
-				sig.fileCount++
-				sig.totalSize += sfi.Size()
-				sig.maxNano = sfi.ModTime().UnixNano()
-			}
-		}
-
-		_ = filepath.WalkDir(scanDir, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return nil
-			}
-			if d.IsDir() {
-				return nil
-			}
-			info, err := d.Info()
-			if err != nil {
-				return nil
-			}
-			sig.fileCount++
-			sig.totalSize += info.Size()
-			if nano := info.ModTime().UnixNano(); nano > sig.maxNano {
-				sig.maxNano = nano
-			}
-			return nil
-		})
-		return sig
 	}
 }
 
@@ -2024,7 +1887,7 @@ func (c *liveCollector) Collect() ([]thermal.ToolResult, []thermal.ProjectDay, e
 		}
 
 		sig := getLiveToolSourceSig(t, info, c.opts.DBPath)
-		if sig.missing {
+		if sig.Missing {
 			delete(c.cache, t)
 			continue
 		}
