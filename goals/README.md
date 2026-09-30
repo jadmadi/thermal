@@ -27,11 +27,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 77
-- 🟢 **Implemented & Verified**: 77
+- **Total Goals**: 78
+- 🟢 **Implemented & Verified**: 78
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 76 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 329/329 completed (100%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 77 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 333/333 completed (100%)
 
 ---
 
@@ -116,4 +116,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `7b0813c` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `25163db` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `80b3e4f` |
+| [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `de17df6` |
 
