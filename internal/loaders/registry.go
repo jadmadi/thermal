@@ -31,7 +31,7 @@ type ToolData struct {
 
 func AllTools() map[thermal.Tool]ToolInfo {
 	home := thermal.HomeDir()
-	return map[thermal.Tool]ToolInfo{
+	tools := map[thermal.Tool]ToolInfo{
 		thermal.ToolMiMoCode: {
 			DBPath:  filepath.Join(home, ".local", "share", "mimocode", "mimocode.db"),
 			DataDir: filepath.Join(home, ".local", "share", "mimocode"),
@@ -117,6 +117,58 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Loader:  LoadHermesData,
 		},
 	}
+
+	// Apply user overrides from ~/.config/thermal/thermal.config or config.json
+	for tool, customPath := range LoadUserConfig(home) {
+		info, ok := tools[tool]
+		if !ok || customPath == "" {
+			continue
+		}
+		if fi, err := os.Stat(customPath); err == nil && !fi.IsDir() {
+			// Direct file specified (e.g. SQLite database or single file)
+			info.DBPath = customPath
+			info.DataDir = filepath.Dir(customPath)
+		} else {
+			// Directory specified
+			info.DataDir = customPath
+			// For tools with standard DB filenames, probe inside the custom directory
+			switch tool {
+			case thermal.ToolOpenCode:
+				cand := filepath.Join(customPath, "opencode.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolMiMoCode:
+				cand := filepath.Join(customPath, "mimocode.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolDevin:
+				cand := filepath.Join(customPath, "sessions.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolHermes:
+				cand := filepath.Join(customPath, "state.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolZCode:
+				cand := filepath.Join(customPath, "db.sqlite")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolMuse:
+				cand := filepath.Join(customPath, "session-index.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			}
+		}
+		tools[tool] = info
+	}
+
+	return tools
 }
 
 func hermesHomeDir(home string) string {
@@ -141,12 +193,41 @@ func grokHomeDir(home string) string {
 }
 
 func agyHomeDir(home string) string {
-	if env := os.Getenv("ANTIGRAVITY_APP_DATA_DIR"); env != "" {
+	for _, raw := range []string{os.Getenv("ANTIGRAVITY_APP_DATA_DIR"), os.Getenv("AGY_HOME")} {
+		env := strings.TrimSpace(raw)
+		if env == "" {
+			continue
+		}
+		if strings.HasPrefix(env, "~/") {
+			env = filepath.Join(home, env[2:])
+		}
+		if filepath.IsAbs(env) {
+			if _, err := os.Stat(env); err == nil {
+				return env
+			}
+			if _, err := os.Stat(filepath.Join(env, "brain")); err == nil {
+				return env
+			}
+		}
+		// Google Antigravity convention: relative app_data_dir names
+		// represent subdirectories under ~/.gemini/ (e.g. "antigravity", "antigravity-cli", "antigravity-ide")
+		geminiCand := filepath.Join(home, ".gemini", env)
+		if _, err := os.Stat(geminiCand); err == nil {
+			return geminiCand
+		}
+		if fi, err := os.Stat(env); err == nil && fi.IsDir() {
+			if abs, err := filepath.Abs(env); err == nil {
+				return abs
+			}
+			return env
+		}
+		if !strings.Contains(env, string(filepath.Separator)) {
+			return geminiCand
+		}
 		return env
 	}
-	if env := os.Getenv("AGY_HOME"); env != "" {
-		return env
-	}
+
+	// Default auto-discovery across known Antigravity locations
 	agyDir := filepath.Join(home, ".gemini", "antigravity")
 	if _, err := os.Stat(filepath.Join(agyDir, "brain")); err == nil {
 		return agyDir
@@ -154,6 +235,10 @@ func agyHomeDir(home string) string {
 	cliDir := filepath.Join(home, ".gemini", "antigravity-cli")
 	if _, err := os.Stat(filepath.Join(cliDir, "brain")); err == nil {
 		return cliDir
+	}
+	ideDir := filepath.Join(home, ".gemini", "antigravity-ide")
+	if _, err := os.Stat(filepath.Join(ideDir, "brain")); err == nil {
+		return ideDir
 	}
 	return agyDir
 }
@@ -167,6 +252,7 @@ var toolAliases = map[string]thermal.Tool{
 	"codex":            thermal.ToolCodex,
 	"devin":            thermal.ToolDevin,
 	"agy":              thermal.ToolAgy,
+	"antigravity":      thermal.ToolAgy,
 	"cmd":              thermal.ToolCommandCode,
 	"commandcode":      thermal.ToolCommandCode,
 	"command-code":     thermal.ToolCommandCode,
@@ -244,7 +330,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  opencode, oc         OpenCode")
 			fmt.Fprintln(os.Stderr, "  codex                Codex CLI")
 			fmt.Fprintln(os.Stderr, "  devin                Devin")
-			fmt.Fprintln(os.Stderr, "  agy                  Agy (Antigravity)")
+			fmt.Fprintln(os.Stderr, "  agy, antigravity     Agy (Antigravity)")
 			fmt.Fprintln(os.Stderr, "  command-code, cmd    command-code-ai")
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")

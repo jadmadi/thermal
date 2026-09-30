@@ -78,6 +78,16 @@ cat <<EOF > "${GATE_HOME}/.cache/thermal/pricing.json"
 }
 EOF
 
+# Mock Antigravity session (Activity Hunter: 12 steps, gemini-3.1-pro)
+mkdir -p "${GATE_HOME}/.gemini/antigravity/brain/sess-gate/.system_generated/logs"
+cat <<EOF > "${GATE_HOME}/.gemini/antigravity/brain/sess-gate/.system_generated/logs/transcript.jsonl"
+{"created_at":"${TODAY_ISO}","source":"USER_EXPLICIT","type":"USER_INPUT","content":"gate request"}
+{"created_at":"${TODAY_ISO}","source":"SYSTEM","type":"STEP","content":"Model Selection changed from None to Gemini 3.1 Pro (High)."}
+EOF
+for i in $(seq 1 10); do
+  echo "{\"created_at\":\"${TODAY_ISO}\",\"source\":\"MODEL\",\"type\":\"PLANNER_RESPONSE\",\"content\":\"step $i\"}" >> "${GATE_HOME}/.gemini/antigravity/brain/sess-gate/.system_generated/logs/transcript.jsonl"
+done
+
 # Isolate environment to hermetic GATE_HOME and neutral color settings
 export HOME="${GATE_HOME}"
 export GROK_HOME="${GATE_HOME}/.grok"
@@ -85,8 +95,8 @@ export DSH_HOME="${GATE_HOME}/.dsh"
 export HERMES_HOME="${GATE_HOME}/.hermes"
 export CODEX_HOME="${GATE_HOME}/.codex"
 export OPENCODE_HOME="${GATE_HOME}/.opencode"
+export ANTIGRAVITY_APP_DATA_DIR="antigravity"
 export AGY_HOME="${GATE_HOME}/.gemini/antigravity"
-unset ANTIGRAVITY_APP_DATA_DIR
 export NO_COLOR=""
 export CLICOLOR_FORCE=""
 
@@ -203,6 +213,9 @@ run_check "Leaderboard standard output" 0 text "${BIN_PATH}" --no-color
 run_check "Leaderboard sorted by tokens" 0 text "${BIN_PATH}" --sort tokens --no-color
 run_check "Leaderboard sorted by cost" 0 text "${BIN_PATH}" --sort cost --no-color
 run_check "Leaderboard JSON export" 0 json "${BIN_PATH}" --json
+run_check "Agy single-tool dashboard" 0 text "${BIN_PATH}" agy --no-color
+run_check "Agy single-tool antigravity alias" 0 text "${BIN_PATH}" antigravity --no-color
+run_check "Agy single-tool JSON export" 0 json "${BIN_PATH}" agy --json
 
 echo -e "\n${BOLD}3. Reports (Daily, Weekly, Monthly):${RESET}"
 run_check "Daily report with --last 7" 0 text "${BIN_PATH}" daily --last 7 --no-color
@@ -486,7 +499,7 @@ run_check "Persona: Live token burn snapshot export" 0 json "${BIN_PATH}" live -
 echo -e "\n${BOLD}16. Semantic Parity & Release Gate Assertions:${RESET}"
 
 # 1. Static / Web / Live Token Parity Check
-TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[].Summary.lifetimeTokens] | add')
+TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[] | select(.Tool != "agy" and .Tool != "command-code" and .Tool != "droid" and .Tool != "muse") | .Summary.lifetimeTokens] | add')
 TOTAL_SERVE=$("${BIN_PATH}" serve --json --offline | jq '.totalTokens')
 TOTAL_LIVE=$("${BIN_PATH}" live --json --offline | jq '.todayTokens')
 

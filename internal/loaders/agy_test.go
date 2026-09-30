@@ -182,3 +182,38 @@ func TestResolveAgyBrainDir_PrimaryHubPrecedence(t *testing.T) {
 		t.Errorf("expected fallback to legacy %s, got %s", cliBrain, got3)
 	}
 }
+
+func TestLoadAgyData_SiblingFolding(t *testing.T) {
+	dir := t.TempDir()
+	unifiedLogs := filepath.Join(dir, "antigravity", "brain", "sess-shared", ".system_generated", "logs")
+	cliSharedLogs := filepath.Join(dir, "antigravity-cli", "brain", "sess-shared", ".system_generated", "logs")
+	cliUniqueLogs := filepath.Join(dir, "antigravity-cli", "brain", "sess-legacy-unique", ".system_generated", "logs")
+
+	for _, d := range []string{unifiedLogs, cliSharedLogs, cliUniqueLogs} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	line1 := `{"created_at":"2026-09-10T10:00:00Z","source":"SYSTEM","type":"STEP","content":"shared unified"}` + "\n"
+	line2 := `{"created_at":"2026-09-10T10:00:00Z","source":"SYSTEM","type":"STEP","content":"shared cli duplicate"}` + "\n"
+	line3 := `{"created_at":"2026-09-11T10:00:00Z","source":"SYSTEM","type":"STEP","content":"unique legacy"}` + "\n"
+
+	_ = os.WriteFile(filepath.Join(unifiedLogs, "transcript.jsonl"), []byte(line1), 0644)
+	_ = os.WriteFile(filepath.Join(cliSharedLogs, "transcript.jsonl"), []byte(line2), 0644)
+	_ = os.WriteFile(filepath.Join(cliUniqueLogs, "transcript.jsonl"), []byte(line3), 0644)
+
+	sum, daily, _, err := LoadAgyData(filepath.Join(dir, "antigravity"))
+	if err != nil {
+		t.Fatalf("LoadAgyData error: %v", err)
+	}
+	if sum.Sessions != 2 {
+		t.Errorf("expected 2 distinct sessions, got %d", sum.Sessions)
+	}
+	if sum.LifetimeTokens != 2 {
+		t.Errorf("expected 2 steps total (deduplicating sess-shared), got %d", sum.LifetimeTokens)
+	}
+	if len(daily) != 2 {
+		t.Errorf("expected 2 daily rows, got %d", len(daily))
+	}
+}

@@ -334,19 +334,61 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot read %s: %w", brainDir, err)
 	}
 
-	results := make(chan sessionResult, len(entries))
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 8) // max 8 concurrent workers
-
 	workspaces := loadAgyWorkspaces(dataDir)
+
+	type sessionTask struct {
+		sessionDir string
+		project    string
+	}
+	var tasks []sessionTask
+	seenSessions := make(map[string]bool)
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
 		entryName := entry.Name()
-		sessionDir := filepath.Join(brainDir, entryName)
-		project := workspaces[entryName]
+		seenSessions[entryName] = true
+		tasks = append(tasks, sessionTask{
+			sessionDir: filepath.Join(brainDir, entryName),
+			project:    workspaces[entryName],
+		})
+	}
+
+	// Fold in unique sessions from sibling brain directory if present (e.g. antigravity vs antigravity-cli)
+	parentDir := filepath.Dir(brainDir)
+	parentBase := filepath.Base(parentDir)
+	var siblingBrain string
+	if parentBase == "antigravity" {
+		siblingBrain = filepath.Join(filepath.Dir(parentDir), "antigravity-cli", "brain")
+	} else if parentBase == "antigravity-cli" {
+		siblingBrain = filepath.Join(filepath.Dir(parentDir), "antigravity", "brain")
+	}
+	if siblingBrain != "" && siblingBrain != brainDir {
+		if sibEntries, err := os.ReadDir(siblingBrain); err == nil {
+			for _, entry := range sibEntries {
+				if !entry.IsDir() {
+					continue
+				}
+				name := entry.Name()
+				if seenSessions[name] {
+					continue
+				}
+				seenSessions[name] = true
+				tasks = append(tasks, sessionTask{
+					sessionDir: filepath.Join(siblingBrain, name),
+					project:    workspaces[name],
+				})
+			}
+		}
+	}
+
+	results := make(chan sessionResult, len(tasks))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8) // max 8 concurrent workers
+
+	for _, task := range tasks {
+		t := task
 		sem <- struct{}{}
 		wg.Add(1)
 
@@ -375,7 +417,7 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 			if res.steps > 0 || len(res.warnings) > 0 {
 				results <- res
 			}
-		}(sessionDir, project)
+		}(t.sessionDir, t.project)
 	}
 
 	wg.Wait()
