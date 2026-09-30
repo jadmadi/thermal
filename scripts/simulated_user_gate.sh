@@ -499,9 +499,9 @@ run_check "Persona: Live token burn snapshot export" 0 json "${BIN_PATH}" live -
 echo -e "\n${BOLD}16. Semantic Parity & Release Gate Assertions:${RESET}"
 
 # 1. Static / Web / Live Token Parity Check
-TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[] | select(.Tool != "agy" and .Tool != "command-code" and .Tool != "droid" and .Tool != "muse") | .Summary.lifetimeTokens] | add')
-TOTAL_SERVE=$("${BIN_PATH}" serve --json --offline | jq '.totalTokens')
-TOTAL_LIVE=$("${BIN_PATH}" live --json --offline | jq '.todayTokens')
+TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[] | select((.tool // .Tool) != "agy" and (.tool // .Tool) != "command-code" and (.tool // .Tool) != "droid" and (.tool // .Tool) != "muse") | ((.summary // .Summary).lifetimeTokens // 0)] | add // 0')
+TOTAL_SERVE=$("${BIN_PATH}" serve --json --offline | jq '.totalTokens // 0')
+TOTAL_LIVE=$("${BIN_PATH}" live --json --offline | jq '.todayTokens // 0')
 
 if [[ "$TOTAL_STATIC" -eq 759700 && "$TOTAL_SERVE" -eq 759700 && "$TOTAL_LIVE" -eq 759700 ]]; then
     echo -e "  ${GREEN}✔ [PASS]${RESET} Static/Web/Live token parity verified (759,700 tokens)"

@@ -3,52 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thermal — AI Developer Telemetry Dashboard</title>
+  <title>Thermal — AI Developer Contribution Heatmap & FinOps Telemetry</title>
   <style>
     :root {
-      /* Mimocode 12-Step Perceptual Luminance Scale */
-      --bg: #0a0a0a;
-      --card-bg: #141414;
-      --card-elevated: #1e1e1e;
-      --card-border: #323232;
-      --card-border-active: #484848;
-      --text-main: #eeeeee;
-      --text-muted: #808080;
+      /* Dark Theme Design Tokens */
+      --bg: #090d16;
+      --card-bg: #0f172a;
+      --card-elevated: #1e293b;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(255, 106, 0, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
 
-      /* Semantic Tokens */
-      --accent-primary: #FF6A00;
-      --accent-secondary: #FF8A3C;
-      --accent-orange: #FF6A00;
-      --accent-amber: #FF8A3C;
-      --accent-green: #4fd6be;
-      --accent-blue: #818CF8;
-      --accent-purple: #c084fc;
+      /* Semantic Accents */
+      --accent-flame: #ff6a00;
+      --accent-flame-glow: rgba(255, 106, 0, 0.4);
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
       --accent-sky: #38bdf8;
-      --accent-gold: #FBBF24;
-      --accent-rose: #FB7185;
+      --accent-purple: #a855f7;
+      --accent-rose: #f43f5e;
+      --accent-indigo: #6366f1;
 
-      /* 5-Level Amber Heatmap Ramp */
-      --level-0: #242424;
-      --level-1: #5c2400;
-      --level-2: #993c00;
-      --level-3: #d95800;
-      --level-4: #FF6A00;
+      /* Heatmap Color Scale (5 Levels) */
+      --level-0: #162032;
+      --level-1: #451a03;
+      --level-2: #9a3412;
+      --level-3: #ea580c;
+      --level-4: #ff6a00;
+
+      /* UI Radii & Transitions */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --transition-fast: 0.15s ease;
+      --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
+
     body {
       background-color: var(--bg);
+      background-image: radial-gradient(ellipse 90% 40% at 50% -10%, rgba(255, 106, 0, 0.12), transparent 70%);
       color: var(--text-main);
       padding: 24px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       gap: 24px;
+      line-height: 1.5;
     }
+
+    /* Top Bar & Branding */
     header {
       display: flex;
       justify-content: space-between;
@@ -58,125 +70,284 @@
       padding-bottom: 20px;
       border-bottom: 1px solid var(--card-border);
     }
-    .brand {
+
+    .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
+
     .brand-flame {
-      font-size: 32px;
-      animation: pulse 2s infinite ease-in-out;
+      font-size: 34px;
+      line-height: 1;
+      filter: drop-shadow(0 0 12px var(--accent-flame-glow));
+      animation: flame-pulse 2.2s infinite ease-in-out;
+      display: inline-block;
     }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+
+    @keyframes flame-pulse {
+      0%, 100% { transform: scale(1) rotate(-1deg); filter: drop-shadow(0 0 10px var(--accent-flame-glow)); }
+      50% { transform: scale(1.1) rotate(2deg); filter: drop-shadow(0 0 20px rgba(255, 106, 0, 0.7)); }
     }
-    .brand h1 {
+
+    .brand-titles h1 {
       font-size: 24px;
       font-weight: 800;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      letter-spacing: 0.6px;
+      background: linear-gradient(135deg, #ff8a3c, #ff4500);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .brand p {
+
+    .brand-titles p {
       font-size: 13px;
       color: var(--text-muted);
     }
-    .header-badges {
+
+    .header-controls {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .badge {
+
+    .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
+      gap: 7px;
+      padding: 6px 14px;
       border-radius: 9999px;
       font-size: 12px;
       font-weight: 600;
       border: 1px solid var(--card-border);
-      background-color: rgba(31, 41, 55, 0.6);
+      background-color: rgba(15, 23, 42, 0.7);
       color: var(--text-muted);
+      backdrop-filter: blur(8px);
     }
+
     .badge-live {
-      border-color: rgba(16, 185, 129, 0.3);
-      color: var(--accent-green);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: var(--accent-emerald);
       background-color: rgba(16, 185, 129, 0.1);
     }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-    .dot {
+
+    .live-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: var(--accent-green);
-      box-shadow: 0 0 8px var(--accent-green);
+      background-color: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
       animation: pulse-dot 2s infinite ease-in-out;
     }
-    .btn-refresh {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    .btn-refresh:hover {
-      border-color: var(--accent-orange);
-      color: var(--accent-orange);
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
     }
 
-    /* KPI Cards */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 20px;
+    /* Filter & Timeframe Toolbar */
+    .toolbar {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
     }
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
+
+    .timeframe-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
       color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background-color: var(--accent-flame);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(255, 106, 0, 0.35);
+    }
+
+    .filter-group {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .card-value {
-      font-size: 28px;
-      font-weight: 800;
+
+    select.tool-select {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
       color: var(--text-main);
-    }
-    .card-subtitle {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
-      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: var(--transition-fast);
     }
 
-    /* Heatmap Section */
-    .section {
+    select.tool-select:hover, select.tool-select:focus {
+      border-color: var(--accent-flame);
+    }
+
+    .btn-action {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action:hover {
+      border-color: var(--accent-flame);
+      color: var(--accent-flame);
+    }
+
+    .btn-action.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
       background-color: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
+      transition: transform var(--transition-normal), border-color var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: var(--card-border-hover);
+      transform: translateY(-2px);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-value {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .pill-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .pill-sky { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .pill-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .pill-flame { background: rgba(255, 106, 0, 0.15); color: #ff8a3c; }
+
+    /* Segmented Composition Bar */
+    .composition-bar {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      margin-top: 4px;
+    }
+
+    .comp-seg {
+      height: 100%;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .comp-seg.cache { background-color: var(--accent-emerald); }
+    .comp-seg.input { background-color: var(--accent-sky); }
+    .comp-seg.reasoning { background-color: var(--accent-purple); }
+    .comp-seg.output { background-color: var(--accent-rose); }
+
+    /* Section Cards */
+    .section-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
       padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
     }
+
     .section-header {
       display: flex;
       justify-content: space-between;
@@ -184,14 +355,47 @@
       flex-wrap: wrap;
       gap: 12px;
     }
+
     .section-title {
       font-size: 16px;
       font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-main);
     }
-    .heatmap-container {
+
+    /* Heatmap Grid & Month Labels */
+    .heatmap-wrap {
       overflow-x: auto;
-      padding: 8px 0;
+      padding-bottom: 8px;
     }
+
+    .heatmap-header-months {
+      display: flex;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      margin-left: 28px; /* space for weekday labels */
+    }
+
+    .heatmap-layout {
+      display: flex;
+      gap: 6px;
+    }
+
+    .heatmap-days-col {
+      display: grid;
+      grid-template-rows: repeat(7, 13px);
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 13px;
+    }
+
     .heatmap-grid {
       display: grid;
       grid-template-rows: repeat(7, 13px);
@@ -199,167 +403,354 @@
       grid-auto-columns: 13px;
       gap: 3px;
     }
+
     .heatmap-cell {
       width: 13px;
       height: 13px;
-      border-radius: 2px;
+      border-radius: 2.5px;
       background-color: var(--level-0);
       cursor: pointer;
-      position: relative;
-      transition: transform 0.1s;
+      transition: transform 0.15s ease, outline 0.15s ease;
+      outline: 1px solid transparent;
     }
+
     .heatmap-cell:hover {
-      transform: scale(1.3);
-      z-index: 10;
-      outline: 1px solid #fff;
+      transform: scale(1.35);
+      z-index: 5;
+      outline: 1.5px solid #fff;
     }
+
+    .heatmap-cell.active-inspect {
+      outline: 2px solid var(--accent-amber);
+      transform: scale(1.3);
+    }
+
+    .heatmap-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
     .heatmap-legend {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-muted);
-      justify-content: flex-end;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-dim);
     }
+
     .legend-box {
-      width: 12px;
-      height: 12px;
+      width: 11px;
+      height: 11px;
       border-radius: 2px;
     }
 
-    /* Tables & Charts layout */
+    /* Day Inspection Drawer */
+    .day-inspect-drawer {
+      background: var(--card-elevated);
+      border: 1px solid rgba(255, 106, 0, 0.3);
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .day-inspect-drawer.visible {
+      display: flex;
+    }
+
+    /* Layout Two Column Grid */
     .two-col {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap: 20px;
     }
-    @media (max-width: 900px) {
+
+    @media (max-width: 980px) {
       .two-col {
         grid-template-columns: 1fr;
       }
     }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
+      text-align: left;
       font-size: 13px;
     }
+
     th {
-      text-align: left;
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       padding: 10px 12px;
-      color: var(--text-muted);
-      font-weight: 600;
       border-bottom: 1px solid var(--card-border);
     }
+
     td {
       padding: 12px;
       border-bottom: 1px solid var(--card-border);
-    }
-    tr:last-child td {
-      border-bottom: none;
-    }
-    .rank-col {
-      font-weight: 700;
-      width: 40px;
-    }
-    .tool-badge {
-      font-weight: 700;
-      color: var(--accent-orange);
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
     }
 
-    /* Bar charts */
-    .bar-row {
+    tbody tr {
+      transition: background-color var(--transition-fast);
+    }
+
+    tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .rank-cell {
+      font-weight: 700;
+      width: 38px;
+      text-align: center;
+    }
+
+    .tool-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+    }
+
+    .tool-badge.warrior { border-color: rgba(56, 189, 248, 0.3); color: #7dd3fc; }
+    .tool-badge.hunter { border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+
+    .streak-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      color: var(--accent-flame);
+    }
+
+    /* Distribution Progress Bars */
+    .bar-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      margin-bottom: 12px;
+      gap: 14px;
     }
-    .bar-label {
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bar-label-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 12px;
       font-weight: 600;
     }
+
     .bar-track {
-      background-color: var(--card-border);
-      height: 8px;
-      border-radius: 4px;
+      width: 100%;
+      height: 7px;
+      background: var(--card-elevated);
+      border-radius: 9999px;
       overflow: hidden;
     }
+
     .bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--accent-orange), var(--accent-amber));
-      border-radius: 4px;
-      transition: width 0.5s ease-out;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #ff6a00, #ff8a3c);
+      transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bar-fill.model {
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+    }
+
+    /* Search Input */
+    .search-box {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+      width: 180px;
+      transition: border-color var(--transition-fast), width var(--transition-fast);
+    }
+
+    .search-box:focus {
+      border-color: var(--accent-flame);
+      width: 220px;
     }
 
     /* Tooltip */
     #tooltip {
       position: fixed;
       display: none;
-      background-color: var(--card-elevated);
-      color: var(--text-main);
-      padding: 8px 12px;
-      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.95);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
       pointer-events: none;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--card-border);
-      z-index: 100;
+      z-index: 1000;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      line-height: 1.45;
+      min-width: 160px;
     }
+
+    /* Footer */
     footer {
+      border-top: 1px solid var(--card-border);
+      padding: 20px 0;
       margin-top: auto;
       text-align: center;
       font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer a {
       color: var(--text-muted);
-      padding-top: 16px;
-      border-top: 1px solid var(--card-border);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    footer a:hover {
+      color: var(--accent-flame);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <div id="tooltip"></div>
 
+  <!-- Header -->
   <header>
-    <div class="brand">
-      <div class="brand-flame">🔥</div>
-      <div>
+    <div class="brand-wrap">
+      <span class="brand-flame">🔥</span>
+      <div class="brand-titles">
         <h1>THERMAL</h1>
         <p>Local AI Coding Assistant Heatmap & FinOps Telemetry</p>
       </div>
     </div>
-    <div class="header-badges">
-      <span class="badge">🔒 127.0.0.1 LOCALHOST</span>
-      <span class="badge badge-live" id="stream-badge"><span class="dot"></span> LIVE STREAM</span>
-      <button class="btn-refresh" onclick="loadDashboard()">Refresh</button>
+
+    <div class="header-controls">
+      <div class="status-badge" title="Localhost Clean-Room Boundary">
+        <span>🔒 127.0.0.1</span>
+      </div>
+      <div class="status-badge badge-live" id="stream-badge" title="Real-Time Server Sent Events">
+        <span class="live-dot"></span>
+        <span id="stream-text">LIVE STREAM</span>
+      </div>
+      <button class="btn-action" id="btn-refresh" title="Refresh local data (Hotkey: R)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
     </div>
   </header>
 
-  <div class="kpi-grid">
-    <div class="card">
-      <div class="card-title">🔥 CURRENT STREAK</div>
-      <div class="card-value" id="kpi-streak">0 days</div>
-      <div class="card-subtitle" id="kpi-streak-sub">Longest: 0 days</div>
+  <!-- Interactive Filter Toolbar -->
+  <div class="toolbar">
+    <div class="timeframe-tabs">
+      <button class="tab-btn active" data-last="0">All Time</button>
+      <button class="tab-btn" data-last="90">90 Days</button>
+      <button class="tab-btn" data-last="30">30 Days</button>
+      <button class="tab-btn" data-last="7">7 Days</button>
+      <button class="tab-btn" data-last="1">Today</button>
     </div>
-    <div class="card">
-      <div class="card-title">⚡ LIFETIME TOKENS</div>
-      <div class="card-value" id="kpi-tokens">0 tok</div>
-      <div class="card-subtitle" id="kpi-tokens-sub">Input: 0 · Output: 0</div>
-    </div>
-    <div class="card">
-      <div class="card-title">💰 ESTIMATED SPEND</div>
-      <div class="card-value" id="kpi-cost">$0.00</div>
-      <div class="card-subtitle" id="kpi-cost-sub">Across all local sessions</div>
-    </div>
-    <div class="card">
-      <div class="card-title">🛠️ ACTIVE TOOLS</div>
-      <div class="card-value" id="kpi-tools">0</div>
-      <div class="card-subtitle" id="kpi-tools-sub">Active in local environment</div>
+
+    <div class="filter-group">
+      <label for="tool-filter" style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Tool:</label>
+      <select class="tool-select" id="tool-filter">
+        <option value="">All Tools</option>
+      </select>
     </div>
   </div>
 
-  <div class="section">
+  <!-- KPI Cards Grid -->
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">🔥 Current Streak</span>
+        <span class="pill pill-flame" id="kpi-streak-pill">Active</span>
+      </div>
+      <div class="card-value" id="kpi-streak">0 days</div>
+      <div class="card-sub" id="kpi-streak-sub">Longest: 0 days</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">⚡ Lifetime Tokens</span>
+        <span class="pill pill-emerald" id="kpi-cache-pill">0% Cached</span>
+      </div>
+      <div class="card-value" id="kpi-tokens">0 tok</div>
+      <div class="composition-bar" id="comp-bar" title="Token Composition: Cache (Green) · Input (Blue) · Reasoning (Purple) · Output (Red)">
+        <div class="comp-seg cache" style="width: 0%"></div>
+        <div class="comp-seg input" style="width: 0%"></div>
+        <div class="comp-seg reasoning" style="width: 0%"></div>
+        <div class="comp-seg output" style="width: 0%"></div>
+      </div>
+      <div class="card-sub" id="kpi-tokens-sub">In: 0 · Out: 0 · Cache: 0</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">💰 Estimated Spend</span>
+        <span class="pill pill-sky" id="kpi-cost-type">FinOps</span>
+      </div>
+      <div class="card-value" id="kpi-cost">$0.00</div>
+      <div class="card-sub" id="kpi-cost-sub">Recorded: $0.00 · Estimated: $0.00</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">🛠️ Active AI Tools</span>
+        <span class="pill pill-purple" id="kpi-days-pill">0 Days</span>
+      </div>
+      <div class="card-value" id="kpi-tools">0</div>
+      <div class="card-sub" id="kpi-tools-sub">0 active days recorded</div>
+    </div>
+  </div>
+
+  <!-- 52-Week Contribution Heatmap Section -->
+  <div class="section-card">
     <div class="section-header">
-      <div class="section-title">52-Week Contribution Activity Heatmap</div>
+      <div class="section-title">
+        <span>52-Week Contribution Activity Heatmap</span>
+      </div>
       <div class="heatmap-legend">
         <span>Less</span>
         <div class="legend-box" style="background-color: var(--level-0)"></div>
@@ -370,72 +761,132 @@
         <span>More</span>
       </div>
     </div>
-    <div class="heatmap-container">
-      <div class="heatmap-grid" id="heatmap-grid"></div>
+
+    <div class="heatmap-wrap">
+      <div class="heatmap-header-months" id="heatmap-months"></div>
+      <div class="heatmap-layout">
+        <div class="heatmap-days-col">
+          <span></span>
+          <span>Mon</span>
+          <span></span>
+          <span>Wed</span>
+          <span></span>
+          <span>Fri</span>
+          <span></span>
+        </div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+    </div>
+
+    <div class="day-inspect-drawer" id="day-drawer">
+      <div>
+        <strong id="drawer-date" style="font-size: 13px; color: var(--text-main);">Selected Day</strong>
+        <div id="drawer-stats" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;"></div>
+      </div>
+      <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" onclick="closeDrawer()">✕ Close</button>
+    </div>
+
+    <div class="heatmap-footer">
+      <span id="heatmap-summary">Loading contribution heatmap...</span>
+      <span>Tip: Click any cell to inspect daily telemetry</span>
     </div>
   </div>
 
+  <!-- Leaderboard & Volume Distribution Section -->
   <div class="two-col">
-    <div class="section">
-      <div class="section-title">Tool Leaderboard</div>
-      <table>
-        <thead>
-          <tr>
-            <th class="rank-col">#</th>
-            <th>Tool</th>
-            <th>Streak</th>
-            <th>Active Days</th>
-            <th>Tokens</th>
-            <th>Spend</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading telemetry...</td></tr>
-        </tbody>
-      </table>
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Tool Leaderboard</div>
+        <span style="font-size: 12px; color: var(--text-dim);" id="leaderboard-count">0 tools</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="rank-cell">#</th>
+              <th>Tool</th>
+              <th>Streak</th>
+              <th>Days</th>
+              <th>Volume / Activity</th>
+              <th>Spend</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading leaderboard...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Tool Volume Distribution</div>
-      <div id="tool-bars" style="margin-top: 8px;">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Tool Volume Share</div>
+        <span style="font-size: 12px; color: var(--text-dim);">Top Sources</span>
+      </div>
+      <div class="bar-list" id="tool-bars">
         <div style="color: var(--text-muted); font-size: 13px;">Loading distribution...</div>
       </div>
     </div>
   </div>
 
+  <!-- Projects & Model Breakdown Section -->
   <div class="two-col">
-    <div class="section">
-      <div class="section-title">Top Projects</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Project</th>
-            <th>Active Days</th>
-            <th>Tokens</th>
-            <th>Cost</th>
-          </tr>
-        </thead>
-        <tbody id="projects-body">
-          <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading projects...</td></tr>
-        </tbody>
-      </table>
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Top Workspaces & Projects</div>
+        <input type="text" class="search-box" id="project-search" placeholder="Search projects...">
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Active Days</th>
+              <th>Tokens</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody id="projects-body">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading projects...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Model Breakdown</div>
-      <div id="model-bars" style="margin-top: 8px;">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Model Token Breakdown</div>
+        <span style="font-size: 12px; color: var(--text-dim);">Top Models</span>
+      </div>
+      <div class="bar-list" id="model-bars">
         <div style="color: var(--text-muted); font-size: 13px;">Loading models...</div>
       </div>
     </div>
   </div>
 
+  <!-- Footer -->
   <footer>
-    Thermal · Clean-Room Terminal & Web Telemetry · GNU AGPL-3.0 & Commercial License · Author: Jad Madi
+    <div>
+      Thermal · Clean-Room Terminal & Web Telemetry · <a href="https://jadmadi.net/project/thermal" target="_blank" rel="noopener">jadmadi.net/project/thermal</a>
+    </div>
+    <div>
+      Dual License: GNU AGPL-3.0 & Commercial Enterprise · Author: Jad Madi
+    </div>
   </footer>
 
+  <!-- Tooltip Element -->
+  <div id="tooltip"></div>
+
   <script>
+    // State Store
+    let currentData = null;
+    let selectedLast = 0;
+    let selectedTool = "";
+    let activeCellDate = null;
+
+    // Formatting Utilities
     function formatNumber(n) {
-      if (!n || n === 0) return "0";
+      if (n === null || n === undefined || isNaN(n) || n === 0) return "0";
       if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
       if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
       if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
@@ -443,54 +894,117 @@
     }
 
     function formatCurrency(n) {
-      if (!n || n === 0) return "$0.00";
-      return "$" + n.toFixed(2);
+      if (n === null || n === undefined || isNaN(n) || n === 0) return "$0.00";
+      return "$" + Number(n).toFixed(2);
     }
 
-    const tooltip = document.getElementById("tooltip");
+    function isActivityTool(t) {
+      if (!t) return false;
+      const lower = t.toLowerCase();
+      return lower === "agy" || lower === "antigravity" || lower === "command-code" || lower === "droid" || lower === "muse";
+    }
 
+    function getActivityUnit(t) {
+      if (!t) return "act";
+      const lower = t.toLowerCase();
+      if (lower === "agy" || lower === "antigravity") return "step";
+      if (lower === "muse") return "prompt";
+      if (lower === "command-code" || lower === "droid") return "msg";
+      return "tok";
+    }
+
+    // Tooltip Logic
+    const tooltip = document.getElementById("tooltip");
+    function showTooltip(html, x, y) {
+      tooltip.innerHTML = html;
+      tooltip.style.display = "block";
+      const rect = tooltip.getBoundingClientRect();
+      let left = x + 12;
+      let top = y + 12;
+      if (left + rect.width > window.innerWidth - 16) {
+        left = x - rect.width - 8;
+      }
+      if (top + rect.height > window.innerHeight - 16) {
+        top = y - rect.height - 8;
+      }
+      tooltip.style.left = left + "px";
+      tooltip.style.top = top + "px";
+    }
+
+    function hideTooltip() {
+      tooltip.style.display = "none";
+    }
+
+    // Telemetry Application
     function applyTelemetry(data) {
       if (!data) return;
+      currentData = data;
       renderKPIs(data);
       renderHeatmap(data.dailyActivity || {});
       renderLeaderboard(data.results || []);
       renderToolBars(data.results || []);
       renderProjects(data.projects || []);
       renderModels(data.models || {});
+      updateToolSelectOptions(data.results || []);
     }
 
-    async function loadDashboard() {
-      try {
-        const [healthRes, teleRes] = await Promise.all([
-          fetch("/api/health"),
-          fetch("/api/telemetry")
-        ]);
-        const health = await healthRes.json();
-        const data = await teleRes.json();
-        applyTelemetry(data);
-      } catch (err) {
-        console.error("Failed loading telemetry:", err);
-      }
-    }
-
+    // KPI Card Rendering
     function renderKPIs(data) {
-      document.getElementById("kpi-streak").textContent = (data.currentStreak || 0) + " days";
-      document.getElementById("kpi-streak-sub").textContent = "Longest: " + (data.longestStreak || 0) + " days";
+      const curStreak = data.currentStreak ?? 0;
+      const longStreak = data.longestStreak ?? 0;
+      document.getElementById("kpi-streak").textContent = curStreak + " days";
+      document.getElementById("kpi-streak-sub").textContent = "Longest: " + longStreak + " days";
+      const streakPill = document.getElementById("kpi-streak-pill");
+      streakPill.textContent = curStreak > 0 ? "🔥 On Fire" : "Ready";
 
-      const totalTokens = data.totalTokens || 0;
+      const totalTokens = data.totalTokens ?? 0;
       document.getElementById("kpi-tokens").textContent = formatNumber(totalTokens) + " tok";
-      document.getElementById("kpi-tokens-sub").textContent =
-        "In: " + formatNumber(data.inputTokens || 0) + " · Out: " + formatNumber(data.outputTokens || 0) +
-        " · Cache: " + formatNumber(data.cacheTokens || 0);
 
-      document.getElementById("kpi-cost").textContent = formatCurrency(data.totalCost || 0);
-      document.getElementById("kpi-tools").textContent = (data.results || []).length;
-      document.getElementById("kpi-tools-sub").textContent = (data.activeDays || 0) + " active days recorded";
+      const inTok = data.inputTokens ?? 0;
+      const outTok = data.outputTokens ?? 0;
+      const cacheTok = data.cacheTokens ?? 0;
+      const reasTok = data.reasoningTokens ?? 0;
+
+      document.getElementById("kpi-tokens-sub").textContent =
+        `In: ${formatNumber(inTok)} · Out: ${formatNumber(outTok)} · Cache: ${formatNumber(cacheTok)}`;
+
+      // Calculate percentages for segmented bar
+      const tokSum = inTok + outTok + cacheTok + reasTok;
+      if (tokSum > 0) {
+        const cachePct = ((cacheTok / tokSum) * 100).toFixed(1);
+        const inPct = ((inTok / tokSum) * 100).toFixed(1);
+        const reasPct = ((reasTok / tokSum) * 100).toFixed(1);
+        const outPct = ((outTok / tokSum) * 100).toFixed(1);
+
+        document.getElementById("kpi-cache-pill").textContent = cachePct + "% Cached";
+
+        const compBar = document.getElementById("comp-bar");
+        compBar.children[0].style.width = cachePct + "%";
+        compBar.children[1].style.width = inPct + "%";
+        compBar.children[2].style.width = reasPct + "%";
+        compBar.children[3].style.width = outPct + "%";
+      }
+
+      const totCost = data.totalCost ?? 0;
+      const recCost = data.recordedCost ?? 0;
+      const estCost = data.estimatedCost ?? 0;
+      document.getElementById("kpi-cost").textContent = formatCurrency(totCost);
+      document.getElementById("kpi-cost-sub").textContent =
+        `Recorded: ${formatCurrency(recCost)} · Est: ${formatCurrency(estCost)}`;
+
+      const toolsCount = (data.results || []).length;
+      const activeDays = data.activeDays ?? 0;
+      document.getElementById("kpi-tools").textContent = toolsCount;
+      document.getElementById("kpi-tools-sub").textContent = `${activeDays} active days recorded`;
+      document.getElementById("kpi-days-pill").textContent = `${activeDays} Active Days`;
     }
 
+    // Heatmap Rendering
     function renderHeatmap(dailyActivity) {
       const grid = document.getElementById("heatmap-grid");
+      const monthsRow = document.getElementById("heatmap-months");
       grid.innerHTML = "";
+      monthsRow.innerHTML = "";
 
       // 52 weeks * 7 days = 364 days ending today
       const today = new Date();
@@ -502,84 +1016,179 @@
         dates.push({ date: d, str: dayStr });
       }
 
-      // Compute thresholds
-      const tokenCounts = Object.values(dailyActivity).map(a => a.tokens || 0).filter(t => t > 0);
-      tokenCounts.sort((a, b) => a - b);
-      const t1 = tokenCounts[Math.floor(tokenCounts.length * 0.25)] || 1000;
-      const t2 = tokenCounts[Math.floor(tokenCounts.length * 0.50)] || 10000;
-      const t3 = tokenCounts[Math.floor(tokenCounts.length * 0.75)] || 50000;
+      // Generate Month Headers aligned to week columns
+      let lastMonth = -1;
+      const monthCols = [];
+      dates.forEach((item, idx) => {
+        const weekIdx = Math.floor(idx / 7);
+        const m = item.date.getMonth();
+        if (m !== lastMonth && item.date.getDate() <= 7) {
+          monthCols.push({ weekIdx, name: item.date.toLocaleString("default", { month: "short" }) });
+          lastMonth = m;
+        }
+      });
 
+      // Render Month Labels
+      let mHtml = "";
+      let curCol = 0;
+      monthCols.forEach(m => {
+        const offset = (m.weekIdx - curCol) * 16;
+        mHtml += `<span style="display:inline-block; margin-left: ${Math.max(offset, 4)}px;">${m.name}</span>`;
+        curCol = m.weekIdx;
+      });
+      monthsRow.innerHTML = mHtml;
+
+      // Calculate Quantiles for 5 Color Levels
+      const tokenValues = Object.values(dailyActivity).map(a => a.tokens ?? a.Tokens ?? 0).filter(v => v > 0);
+      tokenValues.sort((a, b) => a - b);
+      const q1 = tokenValues[Math.floor(tokenValues.length * 0.25)] || 5000;
+      const q2 = tokenValues[Math.floor(tokenValues.length * 0.50)] || 25000;
+      const q3 = tokenValues[Math.floor(tokenValues.length * 0.75)] || 100000;
+
+      let totalActiveDays = 0;
       dates.forEach(item => {
         const cell = document.createElement("div");
         cell.className = "heatmap-cell";
+        cell.dataset.date = item.str;
+
         const act = dailyActivity[item.str] || { tokens: 0, turns: 0, cost: 0 };
-        const tokens = act.tokens || 0;
+        const tokens = act.tokens ?? act.Tokens ?? 0;
+        const turns = act.turns ?? act.Turns ?? 0;
+        const cost = act.cost ?? act.Cost ?? 0;
 
         let level = 0;
-        if (tokens > 0) {
-          if (tokens <= t1) level = 1;
-          else if (tokens <= t2) level = 2;
-          else if (tokens <= t3) level = 3;
+        if (tokens > 0 || turns > 0) {
+          totalActiveDays++;
+          if (tokens <= q1) level = 1;
+          else if (tokens <= q2) level = 2;
+          else if (tokens <= q3) level = 3;
           else level = 4;
         }
         cell.style.backgroundColor = `var(--level-${level})`;
 
         cell.addEventListener("mouseenter", (e) => {
-          tooltip.style.display = "block";
-          tooltip.innerHTML = `<strong>${item.str}</strong><br>${formatNumber(tokens)} tokens · ${act.turns || 0} turns<br>${formatCurrency(act.cost || 0)}`;
-          tooltip.style.left = (e.clientX + 10) + "px";
-          tooltip.style.top = (e.clientY + 10) + "px";
+          const formattedDate = item.date.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+          const tip = `
+            <strong>${formattedDate}</strong><br>
+            <span style="color:#ff8a3c;">⚡ ${formatNumber(tokens)} tokens</span> · <span>${turns} turns</span><br>
+            <span style="color:#34d399;">💰 ${formatCurrency(cost)} spend</span>
+          `;
+          showTooltip(tip, e.clientX, e.clientY);
         });
+
         cell.addEventListener("mousemove", (e) => {
-          tooltip.style.left = (e.clientX + 10) + "px";
-          tooltip.style.top = (e.clientY + 10) + "px";
+          showTooltip(tooltip.innerHTML, e.clientX, e.clientY);
         });
-        cell.addEventListener("mouseleave", () => {
-          tooltip.style.display = "none";
+
+        cell.addEventListener("mouseleave", hideTooltip);
+
+        cell.addEventListener("click", () => {
+          inspectDay(item.str, tokens, turns, cost);
+          document.querySelectorAll(".heatmap-cell").forEach(c => c.classList.remove("active-inspect"));
+          cell.classList.add("active-inspect");
         });
 
         grid.appendChild(cell);
       });
+
+      document.getElementById("heatmap-summary").textContent =
+        `${totalActiveDays} active contribution days across 52 weeks`;
     }
 
+    function inspectDay(dateStr, tokens, turns, cost) {
+      const drawer = document.getElementById("day-drawer");
+      const d = new Date(dateStr + "T00:00:00");
+      const formatted = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      document.getElementById("drawer-date").textContent = formatted;
+      document.getElementById("drawer-stats").textContent =
+        `Volume: ${formatNumber(tokens)} tokens  ·  Activity: ${turns} turns  ·  Estimated Spend: ${formatCurrency(cost)}`;
+      drawer.classList.add("visible");
+    }
+
+    function closeDrawer() {
+      document.getElementById("day-drawer").classList.remove("visible");
+      document.querySelectorAll(".heatmap-cell").forEach(c => c.classList.remove("active-inspect"));
+    }
+
+    // Leaderboard Rendering
     function renderLeaderboard(results) {
       const tbody = document.getElementById("leaderboard-body");
       if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No active AI tools found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No active AI tools found.</td></tr>`;
+        document.getElementById("leaderboard-count").textContent = "0 tools";
         return;
       }
+
+      document.getElementById("leaderboard-count").textContent = `${results.length} tools`;
 
       tbody.innerHTML = results.map((r, i) => {
         const medals = ["🥇", "🥈", "🥉"];
         const rank = medals[i] || (i + 1);
-        const cost = (r.summary && r.summary.cost > 0) ? r.summary.cost : (r.estimatedCost || 0);
+
+        // Defensive field extractors
+        const name = r.name || r.Name || r.tool || r.Tool || "Tool";
+        const toolId = (r.tool || r.Tool || name).toLowerCase();
+        const streak = r.currentStreak ?? r.CurrentStreak ?? 0;
+        const days = r.activeDays ?? r.ActiveDays ?? 0;
+
+        const summary = r.summary || r.Summary;
+        let totalAct = r.totalActivity ?? r.TotalActivity ?? 0;
+        if (totalAct === 0 && summary) {
+          totalAct = summary.lifetimeTokens ?? summary.LifetimeTokens ?? 0;
+        }
+
+        const isAct = isActivityTool(toolId);
+        const unit = getActivityUnit(toolId);
+        const volStr = `${formatNumber(totalAct)} ${unit}`;
+
+        let cost = 0;
+        if (summary && (summary.cost ?? summary.Cost) > 0) {
+          cost = summary.cost ?? summary.Cost;
+        } else {
+          cost = r.estimatedCost ?? r.EstimatedCost ?? 0;
+        }
+        const costStr = isAct ? "—" : (cost > 0 && !summary?.cost ? "~" : "") + formatCurrency(cost);
+        const badgeClass = isAct ? "hunter" : "warrior";
+
         return `
-          <tr>
-            <td class="rank-col">${rank}</td>
-            <td><span class="tool-badge">${r.name || r.tool}</span></td>
-            <td>${r.currentStreak || 0}d 🔥</td>
-            <td>${r.activeDays || 0}d</td>
-            <td>${formatNumber(r.totalActivity || 0)}</td>
-            <td>${formatCurrency(cost)}</td>
+          <tr style="cursor: pointer;" onclick="filterByTool('${toolId}')" title="Filter dashboard by ${name}">
+            <td class="rank-cell">${rank}</td>
+            <td>
+              <span class="tool-badge ${badgeClass}">${name}</span>
+            </td>
+            <td><span class="streak-pill">${streak}d 🔥</span></td>
+            <td>${days}d</td>
+            <td><strong>${volStr}</strong></td>
+            <td>${costStr}</td>
           </tr>
         `;
       }).join("");
     }
 
+    // Tool Volume Bar Chart Rendering
     function renderToolBars(results) {
       const container = document.getElementById("tool-bars");
       if (!results || results.length === 0) {
         container.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">No data</div>`;
         return;
       }
-      const maxTokens = Math.max(...results.map(r => r.totalActivity || 0), 1);
-      container.innerHTML = results.slice(0, 6).map(r => {
-        const pct = Math.round(((r.totalActivity || 0) / maxTokens) * 100);
+
+      const maxActivity = Math.max(...results.map(r => r.totalActivity ?? r.TotalActivity ?? (r.summary?.lifetimeTokens ?? 0)), 1);
+
+      container.innerHTML = results.slice(0, 7).map(r => {
+        const name = r.name || r.Name || r.tool || r.Tool;
+        const toolId = (r.tool || r.Tool || name).toLowerCase();
+        const act = r.totalActivity ?? r.TotalActivity ?? (r.summary?.lifetimeTokens ?? 0);
+        const unit = getActivityUnit(toolId);
+        const pct = Math.max(Math.round((act / maxActivity) * 100), 2);
+
         return `
-          <div class="bar-row">
-            <div class="bar-label">
-              <span>${r.name || r.tool}</span>
-              <span>${formatNumber(r.totalActivity || 0)} tok (${pct}%)</span>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span>${name}</span>
+              <span style="color: var(--text-muted); font-variant-numeric: tabular-nums;">
+                <strong>${formatNumber(act)}</strong> ${unit} (${pct}%)
+              </span>
             </div>
             <div class="bar-track">
               <div class="bar-fill" style="width: ${pct}%"></div>
@@ -589,22 +1198,57 @@
       }).join("");
     }
 
+    // Top Projects Rendering with Live Search
+    let cachedProjects = [];
     function renderProjects(projects) {
-      const tbody = document.getElementById("projects-body");
-      if (!projects || projects.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No projects recorded.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = projects.slice(0, 6).map(p => `
-        <tr>
-          <td><strong>${p.project}</strong></td>
-          <td>${p.days || 1}d</td>
-          <td>${formatNumber(p.tokens || 0)}</td>
-          <td>${formatCurrency(p.cost || 0)}</td>
-        </tr>
-      `).join("");
+      cachedProjects = projects || [];
+      filterAndRenderProjects();
     }
 
+    function filterAndRenderProjects() {
+      const query = (document.getElementById("project-search")?.value || "").toLowerCase().trim();
+      const tbody = document.getElementById("projects-body");
+
+      let filtered = cachedProjects;
+      if (query) {
+        filtered = cachedProjects.filter(p => {
+          const path = (p.project || p.Project || "").toLowerCase();
+          return path.includes(query);
+        });
+      }
+
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No matching projects found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.slice(0, 8).map(p => {
+        const fullPath = p.project || p.Project || "unknown";
+        const parts = fullPath.split("/");
+        const baseName = parts[parts.length - 1] || fullPath;
+        const parentPath = parts.slice(0, -1).join("/") || "";
+
+        const days = p.activeDays ?? p.ActiveDays ?? p.days ?? 1;
+        const tokens = p.totalTokens ?? p.TotalTokens ?? p.tokens ?? p.Tokens ?? 0;
+        const cost = p.cost ?? p.Cost ?? 0;
+
+        return `
+          <tr>
+            <td>
+              <strong style="color: var(--text-main); font-size: 13px;">${baseName}</strong>
+              <div style="font-size: 11px; color: var(--text-dim); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fullPath}">
+                ${parentPath}
+              </div>
+            </td>
+            <td>${days}d</td>
+            <td><strong>${formatNumber(tokens)}</strong></td>
+            <td><span style="color: #34d399;">${formatCurrency(cost)}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Model Token Breakdown
     function renderModels(models) {
       const container = document.getElementById("model-bars");
       const entries = Object.entries(models || {});
@@ -614,51 +1258,135 @@
       }
       entries.sort((a, b) => b[1] - a[1]);
       const maxTokens = entries[0][1] || 1;
-      container.innerHTML = entries.slice(0, 6).map(([name, tokens]) => {
-        const pct = Math.round((tokens / maxTokens) * 100);
+
+      container.innerHTML = entries.slice(0, 7).map(([name, tokens]) => {
+        const pct = Math.max(Math.round((tokens / maxTokens) * 100), 2);
         return `
-          <div class="bar-row">
-            <div class="bar-label">
-              <span>${name}</span>
-              <span>${formatNumber(tokens)} tok (${pct}%)</span>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px;">${name}</span>
+              <span style="color: var(--text-muted); font-variant-numeric: tabular-nums;">
+                <strong>${formatNumber(tokens)}</strong> tok (${pct}%)
+              </span>
             </div>
             <div class="bar-track">
-              <div class="bar-fill" style="width: ${pct}%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));"></div>
+              <div class="bar-fill model" style="width: ${pct}%"></div>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    function initStream() {
-      if (window.EventSource) {
-        try {
-          const es = new EventSource("/api/stream");
-          es.addEventListener("telemetry", (e) => {
-            try {
-              const data = JSON.parse(e.data);
-              applyTelemetry(data);
-              const badge = document.getElementById("stream-badge");
-              if (badge) {
-                badge.style.display = "inline-flex";
-              }
-            } catch (err) {
-              console.error("Failed parsing stream message:", err);
-            }
-          });
-          es.onerror = () => {
-            // Keep polling active if stream temporarily drops
-          };
-        } catch (err) {
-          console.warn("EventSource init failed, fallback to polling:", err);
-        }
+    // Populate Tool Dropdown Options Dynamically
+    function updateToolSelectOptions(results) {
+      const select = document.getElementById("tool-filter");
+      if (!select) return;
+      const currentVal = select.value;
+      const options = ['<option value="">All Tools</option>'];
+      (results || []).forEach(r => {
+        const name = r.name || r.Name || r.tool || r.Tool;
+        const toolId = (r.tool || r.Tool || name).toLowerCase();
+        const selected = toolId === currentVal ? "selected" : "";
+        options.push(`<option value="${toolId}" ${selected}>${name}</option>`);
+      });
+      select.innerHTML = options.join("");
+    }
+
+    function filterByTool(toolId) {
+      const select = document.getElementById("tool-filter");
+      if (select) {
+        select.value = toolId;
+        selectedTool = toolId;
+        loadDashboard();
       }
     }
 
+    // Data Fetching with Parameter Construction
+    async function loadDashboard() {
+      const btn = document.getElementById("btn-refresh");
+      if (btn) btn.classList.add("spinning");
+
+      try {
+        const params = new URLSearchParams();
+        if (selectedLast > 0) params.set("last", selectedLast);
+        if (selectedTool) params.set("tool", selectedTool);
+
+        const url = "/api/telemetry" + (params.toString() ? "?" + params.toString() : "");
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const data = await res.json();
+        applyTelemetry(data);
+      } catch (err) {
+        console.error("Failed loading telemetry:", err);
+      } finally {
+        if (btn) btn.classList.remove("spinning");
+      }
+    }
+
+    // Live Streaming via SSE
+    function initStream() {
+      if (!window.EventSource) return;
+      try {
+        const es = new EventSource("/api/stream");
+        es.addEventListener("telemetry", (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            applyTelemetry(data);
+            const badge = document.getElementById("stream-badge");
+            if (badge) badge.classList.add("badge-live");
+          } catch (err) {
+            console.error("SSE parse error:", err);
+          }
+        });
+        es.onerror = () => {
+          const badge = document.getElementById("stream-badge");
+          if (badge) badge.classList.remove("badge-live");
+        };
+      } catch (err) {
+        console.warn("EventSource setup failed, fallback to polling:", err);
+      }
+    }
+
+    // Attach Event Listeners
     window.addEventListener("DOMContentLoaded", () => {
       loadDashboard();
       initStream();
+
+      // Polling fallback
       setInterval(loadDashboard, 15000);
+
+      // Refresh Button
+      document.getElementById("btn-refresh")?.addEventListener("click", loadDashboard);
+
+      // Timeframe Tab Buttons
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedLast = parseInt(btn.dataset.last, 10) || 0;
+          loadDashboard();
+        });
+      });
+
+      // Tool Filter Select
+      document.getElementById("tool-filter")?.addEventListener("change", (e) => {
+        selectedTool = e.target.value;
+        loadDashboard();
+      });
+
+      // Project Search Input
+      document.getElementById("project-search")?.addEventListener("input", filterAndRenderProjects);
+
+      // Keyboard Shortcuts
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        if (e.key === "r" || e.key === "R") {
+          loadDashboard();
+        } else if (e.key === "Escape") {
+          closeDrawer();
+          hideTooltip();
+        }
+      });
     });
   </script>
 </body>
