@@ -101,6 +101,13 @@ func AggregateTelemetry(results []ToolResult, projects []ProjectDay, opts Teleme
 			toolDailyInWindow = append(toolDailyInWindow, d)
 			allDailyRows = append(allDailyRows, d)
 
+			c, isEst := dayCost(d, pricer)
+			if isEst {
+				toolEstimatedCost += c
+			} else {
+				toolRecordedCost += c
+			}
+
 			if d.Turns > 0 {
 				toolActiveDays[d.Day] = true
 				activeDaysSet[d.Day] = true
@@ -110,14 +117,8 @@ func AggregateTelemetry(results []ToolResult, projects []ProjectDay, opts Teleme
 					curAct.Tokens += d.Tokens
 				}
 				curAct.Turns += d.Turns
+				curAct.Cost += c
 				dailyActivity[d.Day] = curAct
-			}
-
-			c, isEst := dayCost(d, pricer)
-			if isEst {
-				toolEstimatedCost += c
-			} else {
-				toolRecordedCost += c
 			}
 
 			if isActivityOnly(d) {

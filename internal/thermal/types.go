@@ -154,21 +154,22 @@ type LineDelta struct {
 }
 
 type DayActivity struct {
-	Tokens int64
-	Turns  int
+	Tokens int64   `json:"tokens"`
+	Turns  int     `json:"turns"`
+	Cost   float64 `json:"cost,omitempty"`
 }
 
 type ToolResult struct {
-	Tool          Tool
-	Name          string
-	Summary       Summary
-	Daily         []DailyRow
-	CurrentStreak int
-	LongestStreak int
-	ActiveDays    int
-	TotalActivity int64
-	DataPath      string
-	EstimatedCost float64
+	Tool          Tool       `json:"tool"`
+	Name          string     `json:"name"`
+	Summary       Summary    `json:"summary"`
+	Daily         []DailyRow `json:"daily,omitempty"`
+	CurrentStreak int        `json:"currentStreak"`
+	LongestStreak int        `json:"longestStreak"`
+	ActiveDays    int        `json:"activeDays"`
+	TotalActivity int64      `json:"totalActivity"`
+	DataPath      string     `json:"dataPath,omitempty"`
+	EstimatedCost float64    `json:"estimatedCost"`
 }
 
 // Grain is the bucket size for a period report.

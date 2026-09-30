@@ -835,13 +835,19 @@ func main() {
 		if opts.JSON {
 			type jsonResult struct {
 				thermal.ToolResult
-				CurrentStreak int `json:"currentStreak"`
-				LongestStreak int `json:"longestStreak"`
+				LegacyTool    thermal.Tool    `json:"Tool"`
+				LegacyName    string          `json:"Name"`
+				LegacySummary thermal.Summary `json:"Summary"`
+				CurrentStreak int             `json:"currentStreak"`
+				LongestStreak int             `json:"longestStreak"`
 			}
 			var jsonResults []jsonResult
 			for _, r := range results {
 				jsonResults = append(jsonResults, jsonResult{
 					ToolResult:    r,
+					LegacyTool:    r.Tool,
+					LegacyName:    r.Name,
+					LegacySummary: r.Summary,
 					CurrentStreak: r.CurrentStreak,
 					LongestStreak: r.LongestStreak,
 				})
