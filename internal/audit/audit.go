@@ -469,6 +469,9 @@ func auditAgentReadiness(workDir, homeDir string, rep *AuditReport) {
 
 	// 4. Verify Tool Telemetry DB Permissions
 	checkToolDatabaseAccess(homeDir, rep)
+
+	// 5. Verify User Config Overrides (~/.config/thermal/thermal.config)
+	checkUserConfig(homeDir, rep)
 }
 
 func checkGitignoreBareRules(gitignorePath, repoName string) []string {
@@ -536,6 +539,25 @@ func checkToolDatabaseAccess(homeDir string, rep *AuditReport) {
 			rep.Score -= 5
 		}
 	}
+}
+
+func checkUserConfig(homeDir string, rep *AuditReport) {
+	if homeDir == "" {
+		return
+	}
+	cfgPath := filepath.Join(homeDir, ".config", "thermal", "thermal.config")
+	if _, err := os.Stat(cfgPath); err != nil {
+		cfgPath = filepath.Join(homeDir, ".config", "thermal", "config.json")
+		if _, err := os.Stat(cfgPath); err != nil {
+			return
+		}
+	}
+
+	rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
+		Check:   "Custom Configuration",
+		Status:  "PASS",
+		Message: fmt.Sprintf("Active user tool paths override detected (%s)", filepath.Base(cfgPath)),
+	})
 }
 
 func countFileLines(path string) int {
