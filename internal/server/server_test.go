@@ -755,3 +755,12 @@ func TestServer_LoopbackIntegration(t *testing.T) {
 		t.Errorf("expected rejection message, got %s", string(untrustedBody))
 	}
 }
+
+func TestServer_SourcesStability(t *testing.T) {
+	srv := NewWithOptions(Options{Offline: true})
+	opts := Options{Tool: "devin", Offline: true}
+	sigs1 := srv.getToolSignatures(opts)
+	if srv.sourcesChanged(sigs1, opts) {
+		t.Errorf("sourcesChanged should be false when no files modified")
+	}
+}

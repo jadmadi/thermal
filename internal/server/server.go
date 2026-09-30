@@ -54,8 +54,9 @@ type Options struct {
 }
 
 type cacheEntry struct {
-	data     *TelemetryData
-	cachedAt time.Time
+	data       *TelemetryData
+	cachedAt   time.Time
+	signatures map[thermal.Tool]loaders.SourceSig
 }
 
 // Server provides the local HTTP dashboard and telemetry API server.
@@ -404,6 +405,40 @@ func (s *Server) parseRequestOptions(r *http.Request) (Options, error) {
 	return opts, nil
 }
 
+func (s *Server) getToolSignatures(opts Options) map[thermal.Tool]loaders.SourceSig {
+	allTools := loaders.AllTools()
+	targetTool := strings.ToLower(strings.TrimSpace(opts.Tool))
+	sigs := make(map[thermal.Tool]loaders.SourceSig)
+
+	if targetTool != "" && targetTool != "all" && targetTool != "auto" {
+		if t, ok := loaders.ResolveTool(targetTool); ok {
+			sigs[t] = loaders.GetToolSourceSig(t, allTools[t], opts.DBPath)
+		}
+	} else {
+		for t, info := range allTools {
+			sigs[t] = loaders.GetToolSourceSig(t, info, opts.DBPath)
+		}
+	}
+	return sigs
+}
+
+func (s *Server) sourcesChanged(oldSigs map[thermal.Tool]loaders.SourceSig, opts Options) bool {
+	if oldSigs == nil {
+		return true
+	}
+	currentSigs := s.getToolSignatures(opts)
+	if len(currentSigs) != len(oldSigs) {
+		return true
+	}
+	for t, oldSig := range oldSigs {
+		curSig, ok := currentSigs[t]
+		if !ok || curSig != oldSig {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Server) getOrFetchTelemetry(opts Options) (*TelemetryData, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -414,8 +449,21 @@ func (s *Server) getOrFetchTelemetry(opts Options) (*TelemetryData, error) {
 	}
 
 	key := fmt.Sprintf("%s|%s|%s|%d|%v|%v", opts.Tool, opts.Since, opts.Until, opts.Last, opts.NoEstimate, opts.Offline)
-	if entry, ok := s.cache[key]; ok && now.Sub(entry.cachedAt) < 15*time.Second {
-		return entry.data, nil
+	if entry, ok := s.cache[key]; ok {
+		if s.collector != nil {
+			if now.Sub(entry.cachedAt) < 15*time.Second {
+				return entry.data, nil
+			}
+		} else {
+			// Debounce cooldown: never re-scan disk more often than once per 10s
+			if now.Sub(entry.cachedAt) < 10*time.Second {
+				return entry.data, nil
+			}
+			// Beyond cooldown: only re-scan if local tool source files actually changed
+			if !s.sourcesChanged(entry.signatures, opts) {
+				return entry.data, nil
+			}
+		}
 	}
 
 	var data *TelemetryData
@@ -429,9 +477,11 @@ func (s *Server) getOrFetchTelemetry(opts Options) (*TelemetryData, error) {
 		return nil, err
 	}
 
+	sigs := s.getToolSignatures(opts)
 	s.cache[key] = &cacheEntry{
-		data:     data,
-		cachedAt: now,
+		data:       data,
+		cachedAt:   now,
+		signatures: sigs,
 	}
 	return data, nil
 }
@@ -548,6 +598,10 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Disable response write deadlines for persistent SSE stream
+	rc := http.NewResponseController(w)
+	_ = rc.SetWriteDeadline(time.Time{})
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -555,9 +609,13 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial snapshot
 	data, err := s.getOrFetchTelemetry(opts)
+	var lastSnap *TelemetryData
 	if err == nil {
+		lastSnap = data
 		b, _ := json.Marshal(data)
-		fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b)
+		if _, writeErr := fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b); writeErr != nil {
+			return
+		}
 		flusher.Flush()
 	}
 
@@ -569,15 +627,32 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		case <-ticker.C:
-			s.mu.Lock()
-			s.cache = make(map[string]*cacheEntry)
-			s.mu.Unlock()
-			data, err := s.getOrFetchTelemetry(opts)
-			if err == nil {
-				b, _ := json.Marshal(data)
-				fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b)
-				flusher.Flush()
+			freshData, fetchErr := s.getOrFetchTelemetry(opts)
+			if fetchErr == nil {
+				isDifferent := lastSnap == nil ||
+					freshData.TotalTokens != lastSnap.TotalTokens ||
+					freshData.ActiveDays != lastSnap.ActiveDays ||
+					freshData.CurrentStreak != lastSnap.CurrentStreak ||
+					freshData.TotalCost != lastSnap.TotalCost ||
+					freshData.InputTokens != lastSnap.InputTokens ||
+					freshData.OutputTokens != lastSnap.OutputTokens ||
+					len(freshData.DailyActivity) != len(lastSnap.DailyActivity)
+				if isDifferent {
+					lastSnap = freshData
+					b, _ := json.Marshal(freshData)
+					if _, writeErr := fmt.Fprintf(w, "event: telemetry\ndata: %s\n\n", b); writeErr != nil {
+						return
+					}
+					flusher.Flush()
+					continue
+				}
 			}
+
+			// Keep-alive heartbeat: standard SSE comment line (avoids timeouts & detects dropped connections)
+			if _, writeErr := fmt.Fprintf(w, ": heartbeat\n\n"); writeErr != nil {
+				return
+			}
+			flusher.Flush()
 		}
 	}
 }
@@ -746,9 +821,9 @@ func StartServerWithOptions(opts Options, openBrowser bool) error {
 	}
 
 	s.httpServer = &http.Server{
-		Handler:      s.Handler(),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)

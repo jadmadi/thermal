@@ -186,10 +186,10 @@ func TestLiveCollector_SQLiteSourceTracking(t *testing.T) {
 	}
 
 	sig1 := getLiveToolSourceSig(thermal.ToolHermes, info, "")
-	if sig1.missing {
+	if sig1.Missing {
 		t.Fatalf("expected sig1 not missing")
 	}
-	if sig1.fileCount != 1 || sig1.totalSize == 0 {
+	if sig1.FileCount != 1 || sig1.TotalSize == 0 {
 		t.Fatalf("unexpected sig1: %+v", sig1)
 	}
 
@@ -200,7 +200,7 @@ func TestLiveCollector_SQLiteSourceTracking(t *testing.T) {
 	}
 
 	sig2 := getLiveToolSourceSig(thermal.ToolHermes, info, "")
-	if sig2.totalSize == sig1.totalSize || sig2.maxNano == sig1.maxNano {
+	if sig2.TotalSize == sig1.TotalSize || sig2.MaxNano == sig1.MaxNano {
 		t.Fatalf("expected sig2 to differ from sig1 after write: %+v vs %+v", sig1, sig2)
 	}
 }
