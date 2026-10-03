@@ -19,7 +19,7 @@ import (
 // accumulate model-call frames, a token upgrade can read per-session
 // session.jsonl logs.
 func LoadMuseData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}

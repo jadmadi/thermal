@@ -26,7 +26,7 @@ import (
 // back to the session table, and to message.data JSON aggregation when the
 // session table has no token columns.
 func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
@@ -445,7 +445,7 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 // also surface session.summary_additions/deletions/files (code changes) and
 // message.data.agent (agent mode distribution) that were previously hidden.
 func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
@@ -592,7 +592,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	canonicalPath := CanonicalDatabasePath(dbPath)
 	sourceID, _ := devinSourceIdentity(canonicalPath)
 
-	db, err := sql.Open("sqlite", canonicalPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=30000000000")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(canonicalPath, 30000000000))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
