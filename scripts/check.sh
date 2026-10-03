@@ -300,7 +300,7 @@ if [[ "${MODE}" == "pre-commit" ]]; then
     # 5. Quick Build Verification
     if [ -n "${MODIFIED_GO_FILES}" ]; then
         echo -e "\n${BOLD}5. Verifying Binary Compilation...${RESET}"
-        (cd "${ROOT_DIR}" && go build -o /dev/null ./cmd/thermal)
+        (cd "${ROOT_DIR}" && CGO_ENABLED=0 go build -o /dev/null ./cmd/thermal)
         echo -e "   ${GREEN}✔ Passed:${RESET} cmd/thermal compiled successfully."
     fi
 
@@ -363,7 +363,7 @@ echo -e "   ${GREEN}✔ Passed:${RESET} go vet completed with zero warnings."
 
 # 7. Build Verification
 echo -e "\n${BOLD}7. Verifying Binary Compilation...${RESET}"
-(cd "${ROOT_DIR}" && go build -o /dev/null ./cmd/thermal)
+(cd "${ROOT_DIR}" && CGO_ENABLED=0 go build -o /dev/null ./cmd/thermal)
 echo -e "   ${GREEN}✔ Passed:${RESET} cmd/thermal compiled successfully."
 
 # 8. Simulated User Testing Release Gate
