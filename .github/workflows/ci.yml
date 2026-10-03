@@ -8,8 +8,12 @@ on:
 
 jobs:
   test:
-    name: Test & Quality
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Verify Contributor Sign-off (CLA / DCO)
-        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--') && github.actor != 'github-actions[bot]'
+        if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release-please--') && github.actor != 'github-actions[bot]'
         run: |
           if [[ "${{ github.head_ref }}" =~ ^release-please-- ]] || [[ "${{ github.actor }}" == *"bot"* ]]; then
             echo "Skipping CLA check for automated bot PR."
@@ -57,6 +61,7 @@ jobs:
           cache: true
 
       - name: Verify Formatting (gofmt)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
@@ -68,10 +73,17 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test (with race detection)
-        run: go test -v -race ./...
+      - name: Test
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            go test -v -race ./...
+          else
+            go test -v ./...
+          fi
+        shell: bash
 
       - name: Verify Multi-Target Cross-Compilation
+        if: matrix.os == 'ubuntu-latest'
         run: |
           for target in "linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64"; do
             os="${target%%/*}"
@@ -79,12 +91,14 @@ jobs:
             echo "Cross-compiling for $os/$arch..."
             CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -o /dev/null ./cmd/thermal
           done
-
+        shell: bash
 
       - name: Simulated User Testing Release Gate
+        if: matrix.os == 'ubuntu-latest'
         run: ./scripts/simulated_user_gate.sh
 
       - name: Vulnerability Check (govulncheck)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
