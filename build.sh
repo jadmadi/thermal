@@ -33,9 +33,10 @@ ${BOLD}BUILD MODES (Select one, defaults to --release):${RESET}
                         DWARF local variable debug info or absolute filepaths.
 
   ${YELLOW}--dev${RESET}       ${BOLD}Development / Debug Build${RESET}
-              Command: go build -o thermal ./cmd/thermal
-              • ${BOLD}Pros:${RESET}  Fastest compile time, retains full DWARF debug symbols (-g) and symbol table,
-                        enables step-by-step debugging via gdb/dlv with exact file and line numbers.
+              Command: CGO_ENABLED=0 go build -ldflags="-X ..." -o thermal ./cmd/thermal
+              • ${BOLD}Pros:${RESET}  Fast compile time, fully self-contained (CGO_ENABLED=0), retains full DWARF
+                        debug symbols (-g) and symbol table, enables step-by-step debugging via gdb/dlv
+                        with exact file and line numbers.
               • ${BOLD}Cons:${RESET}  Large binary size (~15MB), embeds host absolute filepaths inside binary.
 
   ${CYAN}--upx${RESET}       ${BOLD}Ultra-Compressed Distribution Build (LZMA Compression)${RESET}
@@ -131,11 +132,10 @@ build_single() {
     echo -e "${BOLD}Building thermal (${CYAN}${MODE}${RESET}${BOLD} mode) for ${YELLOW}${target_goos}/${target_goarch}${RESET}${BOLD}...${RESET}"
 
     local go_flags=()
-    local env_vars=("GOOS=${target_goos}" "GOARCH=${target_goarch}")
+    local env_vars=("GOOS=${target_goos}" "GOARCH=${target_goarch}" "CGO_ENABLED=${CGO_ENABLED:-0}")
 
     case "$MODE" in
         release|upx)
-            env_vars+=("CGO_ENABLED=0")
             go_flags+=("-trimpath" "-ldflags=-s -w ${LDFLAGS}")
             ;;
         dev)
