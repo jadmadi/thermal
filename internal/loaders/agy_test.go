@@ -5,7 +5,7 @@ package loaders
 
 import (
 	"database/sql"
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -92,6 +92,9 @@ func TestLoadAgyData_LegacyRootFallback(t *testing.T) {
 
 func TestLoadAgyData_ProjectAttribution(t *testing.T) {
 	dir := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
 	repoDir := filepath.Join(dir, "cool-project")
 	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0755); err != nil {
 		t.Fatalf("mkdir repo error: %v", err)
@@ -116,7 +119,8 @@ func TestLoadAgyData_ProjectAttribution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create table error: %v", err)
 	}
-	rawURIs := fmt.Sprintf(`["file://%s"]`, repoDir)
+	rawURIsBytes, _ := json.Marshal([]string{"file://" + filepath.ToSlash(repoDir)})
+	rawURIs := string(rawURIsBytes)
 	_, err = db.Exec(`INSERT INTO conversation_summaries VALUES ('conv-123', ?);`, rawURIs)
 	if err != nil {
 		t.Fatalf("insert error: %v", err)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -252,7 +253,11 @@ func TestProgramStartsAndExits(t *testing.T) {
 
 func buildBinary(t *testing.T) string {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "thermal-test")
+	binName := "thermal-test"
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	bin := filepath.Join(t.TempDir(), binName)
 	cmd := exec.Command("go", "build", "-o", bin, "../../cmd/thermal")
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
