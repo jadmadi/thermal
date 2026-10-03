@@ -39,8 +39,10 @@ func PadLeft(s string, width int) string {
 
 func FormatPath(p string) string {
 	home := HomeDir()
-	if home != "" && strings.HasPrefix(p, home+"/") {
-		return "~" + p[len(home):]
+	if home != "" {
+		if strings.HasPrefix(p, home+"/") || strings.HasPrefix(p, home+`\`) {
+			return "~" + p[len(home):]
+		}
 	}
 	return p
 }
