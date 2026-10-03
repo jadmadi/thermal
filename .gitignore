@@ -24,6 +24,7 @@ coverage.html
 .cursor
 .claude/
 CLAUDE.md
+GEMINI.md
 .opencode/
 *.swp
 *.swo
