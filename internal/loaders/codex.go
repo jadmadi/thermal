@@ -33,7 +33,7 @@ func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 }
 
 func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 268435456))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
 	}
