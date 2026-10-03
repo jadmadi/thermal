@@ -216,6 +216,7 @@ func TestIsPlanProvider(t *testing.T) {
 func TestLoadWithMissingCacheAndOverrides(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 
 	overrideDir := filepath.Join(home, ".config", "thermal")
 	if err := os.MkdirAll(overrideDir, 0o755); err != nil {

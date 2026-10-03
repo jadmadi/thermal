@@ -46,6 +46,7 @@ func TestLiveCollector_UnchangedSourcesReuseSnapshot(t *testing.T) {
 	}
 
 	t.Setenv("HOME", td)
+	t.Setenv("USERPROFILE", td)
 
 	opts := thermal.Options{
 		Tool:       "claude",
@@ -115,6 +116,7 @@ func TestLiveCollector_DetectsFileModifications(t *testing.T) {
 	}
 
 	t.Setenv("HOME", td)
+	t.Setenv("USERPROFILE", td)
 
 	opts := thermal.Options{
 		Tool:       "claude",

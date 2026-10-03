@@ -10,8 +10,17 @@ import (
 	"time"
 )
 
+func evalTempDir(t *testing.T) string {
+	t.Helper()
+	d := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(d); err == nil {
+		return resolved
+	}
+	return d
+}
+
 func TestProjectKeyGitRoot(t *testing.T) {
-	root := t.TempDir()
+	root := evalTempDir(t)
 	repo := filepath.Join(root, "repo")
 	sub := filepath.Join(repo, "apps", "web")
 	if err := os.MkdirAll(sub, 0o755); err != nil {
@@ -59,7 +68,7 @@ func TestProjectKeyGitRoot(t *testing.T) {
 }
 
 func TestProjectKeyResolvesSymlinks(t *testing.T) {
-	root := t.TempDir()
+	root := evalTempDir(t)
 	repo := filepath.Join(root, "real", "repo")
 	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
 		t.Fatal(err)
@@ -84,7 +93,7 @@ func TestProjectKeyResolvesSymlinks(t *testing.T) {
 }
 
 func TestProjectKeyFallback(t *testing.T) {
-	root := t.TempDir()
+	root := evalTempDir(t)
 	plain := filepath.Join(root, "plain", "nested")
 	if err := os.MkdirAll(plain, 0o755); err != nil {
 		t.Fatal(err)

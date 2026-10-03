@@ -40,8 +40,8 @@ hermes: /custom/hermes/state.db
 		t.Errorf("ToolAgy = %q, want %q", overrides[thermal.ToolAgy], wantAgy)
 	}
 
-	if overrides[thermal.ToolOpenCode] != "/custom/path/opencode.db" {
-		t.Errorf("ToolOpenCode = %q, want /custom/path/opencode.db", overrides[thermal.ToolOpenCode])
+	if overrides[thermal.ToolOpenCode] != filepath.Clean("/custom/path/opencode.db") {
+		t.Errorf("ToolOpenCode = %q, want %q", overrides[thermal.ToolOpenCode], filepath.Clean("/custom/path/opencode.db"))
 	}
 
 	wantCodex := filepath.Join(fakeHome, "my-codex")
@@ -49,8 +49,8 @@ hermes: /custom/hermes/state.db
 		t.Errorf("ToolCodex = %q, want %q", overrides[thermal.ToolCodex], wantCodex)
 	}
 
-	if overrides[thermal.ToolHermes] != "/custom/hermes/state.db" {
-		t.Errorf("ToolHermes = %q, want /custom/hermes/state.db", overrides[thermal.ToolHermes])
+	if overrides[thermal.ToolHermes] != filepath.Clean("/custom/hermes/state.db") {
+		t.Errorf("ToolHermes = %q, want %q", overrides[thermal.ToolHermes], filepath.Clean("/custom/hermes/state.db"))
 	}
 }
 
@@ -81,8 +81,8 @@ func TestLoadUserConfig_StructuredJSON(t *testing.T) {
 	if overrides[thermal.ToolAgy] != wantAgy {
 		t.Errorf("ToolAgy = %q, want %q", overrides[thermal.ToolAgy], wantAgy)
 	}
-	if overrides[thermal.ToolOpenCode] != "/opt/opencode/opencode.db" {
-		t.Errorf("ToolOpenCode = %q, want /opt/opencode/opencode.db", overrides[thermal.ToolOpenCode])
+	if overrides[thermal.ToolOpenCode] != filepath.Clean("/opt/opencode/opencode.db") {
+		t.Errorf("ToolOpenCode = %q, want %q", overrides[thermal.ToolOpenCode], filepath.Clean("/opt/opencode/opencode.db"))
 	}
 	wantCmd := filepath.Join(fakeHome, "my-command-code")
 	if overrides[thermal.ToolCommandCode] != wantCmd {
@@ -114,8 +114,8 @@ func TestLoadUserConfig_FlatJSON(t *testing.T) {
 	if overrides[thermal.ToolGrok] != wantGrok {
 		t.Errorf("ToolGrok = %q, want %q", overrides[thermal.ToolGrok], wantGrok)
 	}
-	if overrides[thermal.ToolClaude] != "/custom/claude" {
-		t.Errorf("ToolClaude = %q, want /custom/claude", overrides[thermal.ToolClaude])
+	if overrides[thermal.ToolClaude] != filepath.Clean("/custom/claude") {
+		t.Errorf("ToolClaude = %q, want %q", overrides[thermal.ToolClaude], filepath.Clean("/custom/claude"))
 	}
 }
 
@@ -129,7 +129,7 @@ func TestLoadUserConfig_EnvOverride(t *testing.T) {
 
 	t.Setenv("THERMAL_CONFIG", customFile)
 	overrides := LoadUserConfig(fakeHome)
-	if overrides[thermal.ToolMiMoCode] != "/custom/mimo.db" {
+	if overrides[thermal.ToolMiMoCode] != filepath.Clean("/custom/mimo.db") {
 		t.Errorf("THERMAL_CONFIG override failed: got %v", overrides)
 	}
 }
@@ -145,6 +145,7 @@ func TestLoadUserConfig_EmptyWhenMissing(t *testing.T) {
 func TestAllTools_ConfigOverrides(t *testing.T) {
 	fakeHome := t.TempDir()
 	t.Setenv("HOME", fakeHome)
+	t.Setenv("USERPROFILE", fakeHome)
 
 	cfgDir := filepath.Join(fakeHome, ".config", "thermal")
 	if err := os.MkdirAll(cfgDir, 0755); err != nil {

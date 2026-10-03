@@ -220,8 +220,10 @@ func TestMixAndModelsGolden(t *testing.T) {
 			if err != nil {
 				t.Fatalf("golden missing: %v (run: go test ./internal/tui -update)", err)
 			}
-			if got != string(want) {
-				t.Errorf("frame changed at %s\n--- got ---\n%s\n--- want ---\n%s", tc.name, got, want)
+			gotNorm := strings.ReplaceAll(got, "\r\n", "\n")
+			wantNorm := strings.ReplaceAll(string(want), "\r\n", "\n")
+			if gotNorm != wantNorm {
+				t.Errorf("frame changed at %s\n--- got ---\n%s\n--- want ---\n%s", tc.name, gotNorm, wantNorm)
 			}
 		})
 	}

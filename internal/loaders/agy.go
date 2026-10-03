@@ -52,6 +52,22 @@ func ResolveAgyBrainDir(dataDir string) string {
 	return primary
 }
 
+func cleanWorkspaceURI(cand string) string {
+	cand = strings.TrimSpace(cand)
+	cand = strings.TrimPrefix(cand, "file://")
+	if unescaped, err := url.PathUnescape(cand); err == nil {
+		cand = unescaped
+	}
+	// On Windows, file:///C:/path leaves /C:/path; trim the leading slash before drive letters.
+	if len(cand) >= 3 && cand[0] == '/' && (cand[1] >= 'a' && cand[1] <= 'z' || cand[1] >= 'A' && cand[1] <= 'Z') && cand[2] == ':' {
+		cand = cand[1:]
+	}
+	if filepath.IsAbs(cand) {
+		return filepath.Clean(cand)
+	}
+	return ""
+}
+
 func parseWorkspaceURIs(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" || raw == "[]" {
@@ -60,24 +76,12 @@ func parseWorkspaceURIs(raw string) string {
 	var uris []string
 	if err := json.Unmarshal([]byte(raw), &uris); err == nil {
 		for _, u := range uris {
-			cand := strings.TrimSpace(u)
-			cand = strings.TrimPrefix(cand, "file://")
-			if unescaped, err := url.PathUnescape(cand); err == nil {
-				cand = unescaped
-			}
-			if filepath.IsAbs(cand) {
-				return filepath.Clean(cand)
+			if cleaned := cleanWorkspaceURI(u); cleaned != "" {
+				return cleaned
 			}
 		}
 	}
-	cand := strings.TrimPrefix(raw, "file://")
-	if unescaped, err := url.PathUnescape(cand); err == nil {
-		cand = unescaped
-	}
-	if filepath.IsAbs(cand) {
-		return filepath.Clean(cand)
-	}
-	return ""
+	return cleanWorkspaceURI(raw)
 }
 
 func loadAgyWorkspaces(dataDir string) map[string]string {

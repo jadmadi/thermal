@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -28,7 +29,11 @@ func TestMain(m *testing.M) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	testThermalBin = filepath.Join(tmpDir, "thermal")
+	binName := "thermal"
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	testThermalBin = filepath.Join(tmpDir, binName)
 	cmd := exec.Command("go", "build", "-o", testThermalBin, ".")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Fatalf("failed to build thermal binary: %v\n%s", err, out)
@@ -83,6 +88,7 @@ func runSim(t *testing.T, args ...string) (string, string, int) {
 	var env []string
 	for _, e := range os.Environ() {
 		if !strings.HasPrefix(e, "HOME=") &&
+			!strings.HasPrefix(e, "USERPROFILE=") &&
 			!strings.HasPrefix(e, "GROK_HOME=") &&
 			!strings.HasPrefix(e, "DSH_HOME=") &&
 			!strings.HasPrefix(e, "HERMES_HOME=") &&
@@ -95,6 +101,7 @@ func runSim(t *testing.T, args ...string) (string, string, int) {
 	}
 	env = append(env,
 		"HOME="+testFixtureHome,
+		"USERPROFILE="+testFixtureHome,
 		"GROK_HOME="+filepath.Join(testFixtureHome, ".grok"),
 		"DSH_HOME="+filepath.Join(testFixtureHome, ".dsh"),
 		"HERMES_HOME="+filepath.Join(testFixtureHome, ".hermes"),
