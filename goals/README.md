@@ -69,7 +69,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `d39ef40` |
 | [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `2c387fb` |
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `15d2ffb` |
-| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `fc502ec` |
+| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `a6e06bf` |
 | [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c53c32b` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `769b9d6` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `64d1837` |
@@ -82,8 +82,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e460d4a` |
-| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `284cab7` |
-| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `a4fd0f0` |
+| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `c2a7058` |
+| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `598c3d1` |
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ced4751` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `b8fac89` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e657745` |
@@ -98,7 +98,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `f720e57` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `02f3ef6` |
-| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `9a477f1` |
+| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `e30bd4d` |
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | Git Commit | `1ca92ed` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `a059d01` |
 | [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `9a82384` |
