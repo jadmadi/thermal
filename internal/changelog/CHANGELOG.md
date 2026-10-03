@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/jadmadi/thermal/compare/v0.17.0...v0.18.0) (2026-10-03)
+
+
+### Features
+
+* **loaders:** add platform-native application data directory discovery ([598c3d1](https://github.com/jadmadi/thermal/commit/598c3d163b703e432be86c2c3f8f2c8732b8a3d7))
+
+
+### Bug Fixes
+
+* **loaders:** normalize SQLite URI paths for cross-platform compatibility ([e30bd4d](https://github.com/jadmadi/thermal/commit/e30bd4daa49c61fd6ed657f6b4429dc3f06eacf0))
+* **test:** resolve cross-platform paths and line endings on windows and macos ([2b27996](https://github.com/jadmadi/thermal/commit/2b27996648ace992b39a4bddec725e93515c875b))
+
 ## [0.17.0](https://github.com/jadmadi/thermal/compare/v0.16.0...v0.17.0) (2026-09-30)
 
 
