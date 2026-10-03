@@ -27,11 +27,22 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 78
+- **Total Goals**: 82
 - 🟢 **Implemented & Verified**: 78
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 77 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 333/333 completed (100%)
+- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 81 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 333/349 completed (95%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cross-Platform Operating System Test Matrix in CI — Add macOS and Windows test runners to GitHub Actions CI to verify platform behav... | `/goal goals/cross-platform-ci-matrix/goal.md` |
+| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
+| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Platform-Native Application Data Directory Resolution — Add Windows APPDATA/LOCALAPPDATA and macOS Library/Application Support directory... | `/goal goals/platform-native-data-directories/goal.md` |
+| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Windows SQLite URI and Path Normalization — Add shared SQLite connection URI helper in internal/loaders to clean Windows dri... | `/goal goals/windows-sqlite-uri-path-normalization/goal.md` |
 
 ---
 
@@ -117,4 +128,3 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `25163db` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `80b3e4f` |
 | [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | Git Commit | `de17df6` |
-
