@@ -32,30 +32,39 @@ type ToolData struct {
 func AllTools() map[thermal.Tool]ToolInfo {
 	home := thermal.HomeDir()
 	tools := map[thermal.Tool]ToolInfo{
-		thermal.ToolMiMoCode: {
-			DBPath:  filepath.Join(home, ".local", "share", "mimocode", "mimocode.db"),
-			DataDir: filepath.Join(home, ".local", "share", "mimocode"),
-			Name:    "MiMoCode",
-			Loader:  LoadMiMoCodeData,
-		},
-		thermal.ToolOpenCode: {
-			DBPath:  filepath.Join(home, ".local", "share", "opencode", "opencode.db"),
-			DataDir: filepath.Join(home, ".local", "share", "opencode"),
-			Name:    "OpenCode",
-			Loader:  LoadOpenCodeData,
-		},
+		thermal.ToolMiMoCode: func() ToolInfo {
+			db, dir := probePlatformDataPath(home, "mimocode", "mimocode.db")
+			return ToolInfo{
+				DBPath:  db,
+				DataDir: dir,
+				Name:    "MiMoCode",
+				Loader:  LoadMiMoCodeData,
+			}
+		}(),
+		thermal.ToolOpenCode: func() ToolInfo {
+			db, dir := probePlatformDataPath(home, "opencode", "opencode.db")
+			return ToolInfo{
+				DBPath:  db,
+				DataDir: dir,
+				Name:    "OpenCode",
+				Loader:  LoadOpenCodeData,
+			}
+		}(),
 		thermal.ToolCodex: {
 			DataDir:    filepath.Join(home, ".codex"),
 			Name:       "Codex",
 			DataSubdir: "sessions",
 			Loader:     LoadCodexData,
 		},
-		thermal.ToolDevin: {
-			DBPath:  filepath.Join(home, ".local", "share", "devin", "cli", "sessions.db"),
-			DataDir: filepath.Join(home, ".local", "share", "devin", "cli"),
-			Name:    "Devin",
-			Loader:  LoadDevinData,
-		},
+		thermal.ToolDevin: func() ToolInfo {
+			db, dir := probePlatformDataPath(home, filepath.Join("devin", "cli"), "sessions.db")
+			return ToolInfo{
+				DBPath:  db,
+				DataDir: dir,
+				Name:    "Devin",
+				Loader:  LoadDevinData,
+			}
+		}(),
 		thermal.ToolAgy: {
 			DataDir:    agyHomeDir(home),
 			Name:       "Agy",
@@ -86,12 +95,15 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			DataSubdir: "sessions",
 			Loader:     LoadGrokData,
 		},
-		thermal.ToolMuse: {
-			DBPath:  filepath.Join(home, ".local", "share", "muse", "session-index.db"),
-			DataDir: filepath.Join(home, ".local", "share", "muse"),
-			Name:    "Muse",
-			Loader:  LoadMuseData,
-		},
+		thermal.ToolMuse: func() ToolInfo {
+			db, dir := probePlatformDataPath(home, "muse", "session-index.db")
+			return ToolInfo{
+				DBPath:  db,
+				DataDir: dir,
+				Name:    "Muse",
+				Loader:  LoadMuseData,
+			}
+		}(),
 		thermal.ToolClaude: {
 			DataDir:    filepath.Join(home, ".claude"),
 			Name:       "Claude",
@@ -228,19 +240,56 @@ func agyHomeDir(home string) string {
 	}
 
 	// Default auto-discovery across known Antigravity locations
-	agyDir := filepath.Join(home, ".gemini", "antigravity")
-	if _, err := os.Stat(filepath.Join(agyDir, "brain")); err == nil {
-		return agyDir
+	candidates := []string{
+		filepath.Join(home, ".gemini", "antigravity"),
+		filepath.Join(home, ".gemini", "antigravity-cli"),
+		filepath.Join(home, ".gemini", "antigravity-ide"),
 	}
-	cliDir := filepath.Join(home, ".gemini", "antigravity-cli")
-	if _, err := os.Stat(filepath.Join(cliDir, "brain")); err == nil {
-		return cliDir
+	if appData := os.Getenv("APPDATA"); appData != "" {
+		candidates = append(candidates, filepath.Join(appData, "Google", "Antigravity"))
 	}
-	ideDir := filepath.Join(home, ".gemini", "antigravity-ide")
-	if _, err := os.Stat(filepath.Join(ideDir, "brain")); err == nil {
-		return ideDir
+	for _, cand := range candidates {
+		if _, err := os.Stat(filepath.Join(cand, "brain")); err == nil {
+			return cand
+		}
 	}
-	return agyDir
+	return filepath.Join(home, ".gemini", "antigravity")
+}
+
+// probePlatformDataPath probes candidate application data directories in order:
+// 1. Unix XDG path: ~/.local/share/<appSubpath>
+// 2. macOS Application Support: ~/Library/Application Support/<appSubpath>
+// 3. Windows APPDATA / LOCALAPPDATA environment variables
+// 4. Windows user profile AppData fallback: ~/AppData/Roaming and ~/AppData/Local
+// It returns the first path whose dbName exists on disk, or the primary default.
+func probePlatformDataPath(home string, appSubpath string, dbName string) (string, string) {
+	primaryDir := filepath.Join(home, ".local", "share", appSubpath)
+	primaryDB := filepath.Join(primaryDir, dbName)
+
+	candidates := []string{
+		primaryDir,
+		filepath.Join(home, "Library", "Application Support", appSubpath),
+	}
+	if appData := os.Getenv("APPDATA"); appData != "" {
+		candidates = append(candidates, filepath.Join(appData, appSubpath))
+	}
+	if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+		candidates = append(candidates, filepath.Join(localAppData, appSubpath))
+	}
+	if home != "" {
+		candidates = append(candidates,
+			filepath.Join(home, "AppData", "Roaming", appSubpath),
+			filepath.Join(home, "AppData", "Local", appSubpath),
+		)
+	}
+
+	for _, dir := range candidates {
+		candDB := filepath.Join(dir, dbName)
+		if _, err := os.Stat(candDB); err == nil {
+			return candDB, dir
+		}
+	}
+	return primaryDB, primaryDir
 }
 
 var toolAliases = map[string]thermal.Tool{
