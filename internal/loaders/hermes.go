@@ -97,7 +97,7 @@ func LoadHermesData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therm
 		return thermal.Summary{}, nil, nil, fmt.Errorf("hermes: database not found: %s", dbPath)
 	}
 
-	db, err := sql.Open("sqlite", "file:"+dbPath+"?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=268435456")
+	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 268435456))
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
