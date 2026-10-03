@@ -117,3 +117,46 @@ func TestAllTools_Config(t *testing.T) {
 		}
 	}
 }
+
+func TestProbePlatformDataPath(t *testing.T) {
+	fakeHome := t.TempDir()
+
+	// 1. None exists -> returns primary Unix fallback
+	db, dir := probePlatformDataPath(fakeHome, "opencode", "opencode.db")
+	expectedDB := filepath.Join(fakeHome, ".local", "share", "opencode", "opencode.db")
+	expectedDir := filepath.Join(fakeHome, ".local", "share", "opencode")
+	if db != expectedDB || dir != expectedDir {
+		t.Fatalf("expected fallback (%q, %q), got (%q, %q)", expectedDB, expectedDir, db, dir)
+	}
+
+	// 2. macOS Library/Application Support exists
+	macOSDir := filepath.Join(fakeHome, "Library", "Application Support", "opencode")
+	if err := os.MkdirAll(macOSDir, 0755); err != nil {
+		t.Fatalf("mkdir macOS failed: %v", err)
+	}
+	macOSDB := filepath.Join(macOSDir, "opencode.db")
+	if err := os.WriteFile(macOSDB, []byte("mock"), 0644); err != nil {
+		t.Fatalf("write macOS db failed: %v", err)
+	}
+	db, dir = probePlatformDataPath(fakeHome, "opencode", "opencode.db")
+	if db != macOSDB || dir != macOSDir {
+		t.Fatalf("expected macOS discovery (%q, %q), got (%q, %q)", macOSDB, macOSDir, db, dir)
+	}
+
+	// 3. Windows APPDATA takes precedence when Unix and macOS do not exist
+	fakeHomeWin := t.TempDir()
+	appDataDir := filepath.Join(t.TempDir(), "AppDataRoaming")
+	t.Setenv("APPDATA", appDataDir)
+	winAppDir := filepath.Join(appDataDir, "opencode")
+	if err := os.MkdirAll(winAppDir, 0755); err != nil {
+		t.Fatalf("mkdir winAppDir failed: %v", err)
+	}
+	winDB := filepath.Join(winAppDir, "opencode.db")
+	if err := os.WriteFile(winDB, []byte("mock"), 0644); err != nil {
+		t.Fatalf("write winDB failed: %v", err)
+	}
+	db, dir = probePlatformDataPath(fakeHomeWin, "opencode", "opencode.db")
+	if db != winDB || dir != winAppDir {
+		t.Fatalf("expected APPDATA discovery (%q, %q), got (%q, %q)", winDB, winAppDir, db, dir)
+	}
+}
