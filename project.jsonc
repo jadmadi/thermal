@@ -1,0 +1,116 @@
+{
+  "$schema": "https://jadmadi.net/schemas/project.schema.json",
+  // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
+  "lastEdit": "26-10-07-08-08",
+
+  // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
+  "id": "thermal",
+
+  // Human-readable title
+  "title": "Thermal",
+
+  // Single-sentence punchy tagline
+  "tagline": "Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine",
+
+  // Semantic version (SemVer, e.g. "0.18.0", or CalVer, e.g. "2026.9.0")
+  "version": "0.18.0",
+
+  // 2-3 sentence executive summary explaining what it does, why it exists, and zero-bullshit proof
+  "summary": "Local-first GitHub-style contribution heatmap, interactive 9-box FinOps TUI dashboard, workload replay simulator, and verifiable work receipt engine for 14+ AI coding agents. Reads the local telemetry and session transcripts agents already wrote on disk, with zero cloud dependency and zero tracking.",
+
+  // Status on catalog: "featured" | "active" | "in-progress" | "upstream-merged" | "beta" | "archived"
+  "status": "featured",
+
+  // Release or active year
+  "year": "2026",
+
+  // Technical stack breakdown
+  "tech_stack": {
+    "languages": [
+      "Go",
+      "SQLite"
+    ],
+    "frameworks": [
+      "Bubble Tea (Charm)",
+      "Lip Gloss"
+    ],
+    "architecture": "Single static binary, read-only SQLite mmap, concurrent worker pools, sub-10ms delta cache, embedded localhost SSE web server",
+    "license": "Dual: AGPL-3.0 (Community) / Commercial (Enterprise)",
+    "license_type": "copyleft" // "permissive" | "copyleft" | "waqf" | "proprietary"
+  },
+
+  // One-line metrics/capabilities pill shown on cards and tables
+  "stats": "14+ AI Tools · FinOps, Replay, Yield & Receipts · CLI, TUI & Embedded Web · AGPL-3.0 / Commercial",
+
+  // Highlight badges displayed on project cards
+  "badges": [
+    "Go CLI / TUI",
+    "14+ AI Coding Tools",
+    "Token FinOps",
+    "Workload Replay",
+    "Verifiable Receipts",
+    "SLSA Level 3",
+    "Zero Telemetry"
+  ],
+
+  // Primary 1-line installation snippet (shown in copyable terminal widget)
+  "install_command": "curl -fsSL https://jadmadi.net/thermal/install.sh | sh",
+
+  // Multi-platform install commands (optional)
+  "install_commands": {
+    "linux_macos": "curl -fsSL https://jadmadi.net/thermal/install.sh | sh",
+    "go": "go install github.com/jadmadi/thermal/cmd/thermal@latest"
+  },
+
+  // Authoritative external links
+  "links": {
+    "github": "https://github.com/jadmadi/thermal",
+    "website": "https://jadmadi.net/project/thermal",
+    "docs": "https://github.com/jadmadi/thermal/blob/main/README.md",
+    "package": "https://pkg.go.dev/github.com/jadmadi/thermal"
+  },
+
+  // Problem statement: What pain point does this solve?
+  "problem_statement": "Developers using multiple AI coding agents (Devin, OpenCode, Codex, Claude Code, Grok, etc.) lack unified visibility into token expenditure, cost estimates, and daily coding activity across tools.",
+
+  // Solution: How does this solve it?
+  "solution": "An instant, zero-configuration CLI and terminal dashboard that scans local session logs in milliseconds, calculates unified token metrics, prices model usage, and renders interactive heatmaps and charts directly in the terminal.",
+
+  // List of major capabilities and distinct features
+  "features": [
+    "Interactive Bubble Tea TUI with Overview, Projects drill-down, Model breakdown, 9-box FinOps grid (thermal stats --dense), and Mix views",
+    "Supports 14+ agent harnesses: Devin, OpenCode, MiMoCode, Codex, Claude Code, Antigravity/Agy, command-code, codewhale, Droid, DeepSeek (DSH), Grok CLI, Muse, Nous Hermes, and ZCode",
+    "Unified cross-agent disjoint token accounting (input, output, reasoning, cache read/write) with recorded vs estimated cost breakdown via models.dev",
+    "Workload Replay (thermal replay): historical workload capacity simulation against subscription ceilings (ChatGPT Plus/Pro with 5h burst modeling, Claude Pro, Antigravity Pro, Kimi K2) and models.dev rate cards",
+    "Verifiable Work Receipts (thermal receipt): sandboxed test runners (go test, pytest, cargo test, npm test, Codex sandbox) and linter outcome extraction with 3-tier confidence and PR-ready GitHub Flavored Markdown (--format md)",
+    "Token Yield (thermal yield): code output delta telemetry from diffs and patches (tokens per net line added) with session fork/branch lineage analysis",
+    "Reasoning Effort Telemetry: cognitive intensity breakdowns across low, medium, and high reasoning tiers",
+    "Context & Setup Health Audit (thermal audit): repository AGENTS.md context tax, MCP server density, database mmap-readiness, and custom path checks",
+    "Embedded Local Web Dashboard & Live Monitor (thermal web, thermal live): zero-cloud localhost UI with live SSE token streaming, velocity sparklines, and NDJSON export",
+    "Instant Shell Statusline Helper (thermal statusline): prompt-composable terminal helper for tmux and shell statuslines",
+    "Zero-telemetry, offline-first design using read-only SQLite mmap and sub-10ms delta snapshot caching (~/.cache/thermal/)",
+    "Dense operator dashboard with dark/light themes, inline sparklines, and keyboard navigation",
+    "Platform-native application data directory discovery and cross-platform SQLite URI path normalization",
+    "Global configuration overrides via ~/.config/thermal/thermal.config (INI/JSON) for custom tool and database paths"
+  ],
+
+  // Frequently Asked Questions (displayed on project subpage & Schema.org FAQPage)
+  "faq": [
+    {
+      "question": "Does Thermal send my coding session data to the cloud?",
+      "answer": "No. Thermal is 100% local-first and zero-telemetry. It parses only the local JSON session transcripts and SQLite databases already generated on your local disk by your installed agent tools."
+    },
+    {
+      "question": "How do I install Thermal on Linux or macOS?",
+      "answer": "You can install Thermal instantly via curl: `curl -fsSL https://jadmadi.net/thermal/install.sh | sh` or compile directly from Go source with `go install github.com/jadmadi/thermal/cmd/thermal@latest`."
+    },
+    {
+      "question": "How does Thermal calculate costs for tools that do not record dollar spend?",
+      "answer": "Thermal parses the model identifiers used in each session and applies real-time or cached pricing from models.dev list prices. Estimated costs are clearly marked with a `~` prefix."
+    },
+    {
+      "question": "How do I upgrade Thermal to the latest version?",
+      "answer": "Run `thermal upgrade` to automatically check for releases, download the matching binary for your platform, and perform an in-place atomic update. You can also run `go install github.com/jadmadi/thermal/cmd/thermal@latest`."
+    }
+  ]
+}
