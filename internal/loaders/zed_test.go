@@ -327,8 +327,8 @@ func TestLoadZedData_ValidSessions(t *testing.T) {
 	if pDay1.Day != "2026-10-01" {
 		t.Errorf("expected project day 2026-10-01, got %s", pDay1.Day)
 	}
-	if pDay1.Project != projAlpha {
-		t.Errorf("expected project %s, got %s", projAlpha, pDay1.Project)
+	if pDay1.Project != thermal.ProjectKey(projAlpha) {
+		t.Errorf("expected project %s, got %s", thermal.ProjectKey(projAlpha), pDay1.Project)
 	}
 	if pDay1.Tokens != 6200 {
 		t.Errorf("expected project tokens 6200, got %d", pDay1.Tokens)
@@ -339,8 +339,8 @@ func TestLoadZedData_ValidSessions(t *testing.T) {
 	if pDay2.Day != "2026-10-02" {
 		t.Errorf("expected project day 2026-10-02, got %s", pDay2.Day)
 	}
-	if pDay2.Project != projBeta {
-		t.Errorf("expected project %s, got %s", projBeta, pDay2.Project)
+	if pDay2.Project != thermal.ProjectKey(projBeta) {
+		t.Errorf("expected project %s, got %s", thermal.ProjectKey(projBeta), pDay2.Project)
 	}
 	if pDay2.Tokens != 450 {
 		t.Errorf("expected project tokens 450, got %d", pDay2.Tokens)
