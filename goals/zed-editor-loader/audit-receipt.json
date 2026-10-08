@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "zed-editor-loader",
+  "commit_sha": "aa81edd518c120f308347fb65316841c4757c5d3",
+  "spec_hash": "27d0e72202c5f6fe30577a5bf968dab576f698e8b6c23a18b887301cff666fc2",
+  "sandbox_nonce": "1f2de57d01c79c2a",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "63uY9Q90ZZ2E/eK1+dcc5wYs6BEEOmXp1FqdINRznOE=",
+  "auditor_signature": "KkPBbUYWdrvlGsuJ9o0dceI8W5OeX9SKDENdLj87bw04dZNY+SnHNWT8MVbTcwFIJzni6uxAZGNlRQblGJO0Aw==",
+  "certified_at": "2026-10-08T07:20:56.0133848Z"
+}
