@@ -1,5 +1,12 @@
 # Goal: Comprehensive Documentation Parity, Full Scan & Simulated Human User Audit
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_docs-parity-and-human-simulation_1791444818`
+
+
 ## Goal Description
 Update all repository Markdown documentation (README.md, AGENTS.md, docs/*.md) and public GitHub Pages HTML documentation (docs/pages/index.html, docs/pages/404.html) to achieve 100% feature parity across all newly registered and implemented capabilities. Conduct a full codebase scan and end-to-end simulated human user audit across CLI commands, flags, TUI screens, and web dashboard surfaces to ensure zero dead links, accurate command examples, and flawless UX documentation.
 
