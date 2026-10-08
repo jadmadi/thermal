@@ -25,14 +25,15 @@ agy = ~/my-custom-antigravity
 opencode = /custom/path/opencode.db
 codex = ~/my-codex
 hermes: /custom/hermes/state.db
+zed: /custom/zed/threads.db
 `
 	if err := os.WriteFile(filepath.Join(cfgDir, "thermal.config"), []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	overrides := LoadUserConfig(fakeHome)
-	if len(overrides) != 4 {
-		t.Fatalf("expected 4 overrides, got %d", len(overrides))
+	if len(overrides) != 5 {
+		t.Fatalf("expected 5 overrides, got %d", len(overrides))
 	}
 
 	wantAgy := filepath.Join(fakeHome, "my-custom-antigravity")
@@ -51,6 +52,10 @@ hermes: /custom/hermes/state.db
 
 	if overrides[thermal.ToolHermes] != filepath.Clean("/custom/hermes/state.db") {
 		t.Errorf("ToolHermes = %q, want %q", overrides[thermal.ToolHermes], filepath.Clean("/custom/hermes/state.db"))
+	}
+
+	if overrides[thermal.ToolZed] != filepath.Clean("/custom/zed/threads.db") {
+		t.Errorf("ToolZed = %q, want %q", overrides[thermal.ToolZed], filepath.Clean("/custom/zed/threads.db"))
 	}
 }
 

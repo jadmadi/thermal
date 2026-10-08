@@ -24,6 +24,7 @@ const (
 	ToolDroid       Tool = "droid"
 	ToolDsh         Tool = "dsh"
 	ToolHermes      Tool = "hermes"
+	ToolZed         Tool = "zed"
 )
 
 type Options struct {
