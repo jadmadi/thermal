@@ -1,5 +1,12 @@
 # Goal: Purge Devin Bot Contributor Attribution & Git History Rewrite
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_purge-bot-contributors_1791445015`
+
+
 ## Goal Description
 Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and rewrite git commit author/committer history exclusively for commits authored or committed by devin-ai-integration[bot], re-attributing them to Jad Madi <jadmadi@gmail.com> (the default GitHub account email). All other contributors (including github-actions[bot]) remain untouched.
 

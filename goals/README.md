@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 83
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
 - 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 81 (5 verified 📜, 1 stale ⚠️, 75 unverified)
+- 🟢 **Implemented**: 82 (6 verified 📜, 1 stale ⚠️, 75 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 347/353 completed (98%)
 
@@ -40,15 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
+| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -86,6 +78,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d39ef40` |
 | [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2c387fb` |
 | [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `15d2ffb` |
+| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `bac81ce` |
 | [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c53c32b` |
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `769b9d6` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `9b95be6` |
