@@ -24,7 +24,7 @@
     - PTY 120x40 100ms: 1.9% of one core (0.57s CPU / 30.0s) — 50x reduction
 
 - [x] **Checkpoint — Release evidence**: Verify exact metrics against the pre-change fixture, complete `go test -race ./...`, CLI build and simulated gate, inspect owned files, and record actual resource measurements rather than only a timer unit test.
-- [ ] **Attribution commit**: Stage only this implementation and evidence, inspect staged paths, and commit an impact-first Conventional Commit ending in `(goals/live-polling-cpu-budget/goal.md)`. Run `sila goals`; do not push without authorization. Planning commits do not close the goal.
+- [x] **Attribution commit**: Stage only this implementation and evidence, inspect staged paths, and commit an impact-first Conventional Commit ending in `(goals/live-polling-cpu-budget/goal.md)`. Run `sila goals`; do not push without authorization. Planning commits do not close the goal.
 
 ## Dependencies and boundaries
 Ready immediately. Coordinate shared main.go/MIGRATION.md edits with receipt and web goals; those goals are not prerequisites for reducing live CPU. No new daemon, process-global watcher, or unbounded background worker. Increasing the interval alone does not satisfy this goal.

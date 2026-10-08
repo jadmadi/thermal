@@ -14,7 +14,7 @@
   Acceptance and verification: Run `go test -race ./internal/thermal -run 'Receipt|Evidence|Outcome'`; probe unfinished command is no longer VERIFIED; run full gate before closing.
 
 - [x] **Checkpoint — Review scope and release evidence**: Inspect only owned files; confirm acceptance criteria, source-data safety, required six-part migration entry, focused checks, full race tests, build and simulated gate. Record actual command outcomes, including any environment limits.
-- [ ] **Attribution commit**: Stage only this goal's implementation and evidence; inspect `git diff --cached --name-only`; create an impact-first Conventional Commit ending in `(goals/receipt-evidence-integrity/goal.md)`, then run `sila goals`. Do not push without explicit authorization. Planning commits must not close this goal.
+- [x] **Attribution commit**: Stage only this goal's implementation and evidence; inspect `git diff --cached --name-only`; create an impact-first Conventional Commit ending in `(goals/receipt-evidence-integrity/goal.md)`, then run `sila goals`. Do not push without explicit authorization. Planning commits must not close this goal.
 
 ## Dependencies and Handoff
 No prerequisites. Coordinate shared test/document files if another goal is active.
