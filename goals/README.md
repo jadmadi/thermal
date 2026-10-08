@@ -28,11 +28,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 83
-- 🟡 **Ready to Execute (Pending)**: 17 (15 independent ⚡, 2 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 16 (14 independent ⚡, 2 unblocked 🔗)
+- 🔵 **In Progress (Claimed)**: 1
 - ⛔ **Blocked on Prerequisites**: 1
 - 🟢 **Implemented**: 65 (0 verified 📜, 65 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 294/353 completed (83%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`zed-editor-loader`](zed-editor-loader/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -54,7 +63,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
 | [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Windows SQLite URI and Path Normalization — Add shared SQLite connection URI helper in internal/loaders to clean Windows dri... | `/goal goals/windows-sqlite-uri-path-normalization/goal.md` |
-| [`zed-editor-loader`](zed-editor-loader/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Zed Editor Data Ingestion & Heatmap Loader — Ingest Zed AI assistant threads and tokens from threads.db into Thermal | `/goal goals/zed-editor-loader/goal.md` |
 | [`live-metric-parity`](live-metric-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#64)` | Deps met: web-telemetry-parity, live-polling-cpu-budget | Make live burn metrics reflect recorded tokens and turns — Exclude activity-only counts from token burn and use actual turn and cache-read ... | `/goal goals/live-metric-parity/goal.md` |
 | [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#66)` | Deps met: web-telemetry-parity | Reject untrusted hosts at the local telemetry API — Validate request authority before loading private local telemetry while preservi... | `/goal goals/localhost-request-boundary/goal.md` |
 | [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#67)` | Prereqs: live-metric-parity, devin-cache-source-isolation, localhost-request-boundary | Make verification independent of host data and color settings — Use isolated fixtures and explicit color environments, and assert metric semanti... | `/goal goals/hermetic-verification-gates/goal.md` |

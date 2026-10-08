@@ -22,7 +22,7 @@ type SourceSig struct {
 // GetToolSourceSig calculates a lightweight file system signature for a tool's data sources.
 func GetToolSourceSig(t thermal.Tool, info ToolInfo, dbPathOverride string) SourceSig {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes, thermal.ToolZed:
 		p := dbPathOverride
 		if p == "" {
 			p = info.DBPath
