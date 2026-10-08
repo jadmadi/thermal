@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/jadmadi/thermal/compare/v0.18.0...v0.19.0) (2026-10-08)
+
+
+### Features
+
+* **build:** verify multi-target cross-compilation release gate (goals/multi-target-cross-compile-ci-gate/goal.md) ([0efc97b](https://github.com/jadmadi/thermal/commit/0efc97b89ebf630046b0582cadc9f206f0eecf06))
+* **ci:** verify cross-platform operating system test matrix (goals/cross-platform-ci-matrix/goal.md) ([70143cb](https://github.com/jadmadi/thermal/commit/70143cb1e136afa996437d24099928bc4d478f53))
+* **docs:** update documentation parity and simulated human user audit for 15 tools (goals/docs-parity-and-human-simulation/goal.md) ([135b22e](https://github.com/jadmadi/thermal/commit/135b22ef673c49bfea8a32c646ff0fa0d7b13200))
+* **gate:** ensure hermetic verification and release gate semantic parity (goals/hermetic-verification-gates/goal.md) ([1f71cd2](https://github.com/jadmadi/thermal/commit/1f71cd20bd10c90faf05dcabc22c16bcf5423f2b))
+* **git:** verify zero bot contributor attribution in git history (goals/purge-bot-contributors/goal.md) ([cebda93](https://github.com/jadmadi/thermal/commit/cebda9375d156912adf81a950f5a5ec84aa2455c))
+* **loaders:** ingest Zed editor assistant threads and tokens (goals/zed-editor-loader/goal.md) ([9b6a3ef](https://github.com/jadmadi/thermal/commit/9b6a3ef15721bfbbebec4b537a4ebbdc84f00476))
+* **sila:** complete Sila onboarding and strict verification (goals/sila-onboarding/goal.md) ([8e3d3e9](https://github.com/jadmadi/thermal/commit/8e3d3e9afc72d6f3049f316b5e235795c85f068f))
+
 ## [0.18.0](https://github.com/jadmadi/thermal/compare/v0.17.0...v0.18.0) (2026-10-03)
 
 
