@@ -29,22 +29,23 @@ thermal
 
 ## Supported Tools
 
-| Tool | Data Source | Metrics |
-|------|-------------|---------|
-| **Devin** | SQLite DB (sessions + message_nodes) | Token usage, sessions, cost |
-| **OpenCode** | SQLite DB (v1 and v2 storage) | Token usage, sessions, cost |
-| **MiMoCode** | SQLite DB | Token usage, sessions, cost |
-| **Codex** | SQLite DB (state_5.sqlite) + rollout JSONL | Token usage, sessions, model/source breakdown |
-| **codewhale** | JSON sessions | Token usage, sessions, cost |
-| **ZCode** | SQLite DB (`model_usage` telemetry) | Token usage, sessions, model/agent breakdown |
-| **Grok** | JSONL session logs (`turn_completed` usage) | Token usage, sessions, cost, model breakdown |
-| **Muse** | SQLite session index | Prompt activity, sessions, model breakdown |
-| **Claude** | JSONL session transcripts | Token usage, sessions, model breakdown |
-| **Droid** | JSONL session transcripts | Message activity, sessions |
-| **DeepSeek (DSH)** | JSON session cache (`~/.dsh/storages`) | Token usage, sessions, model breakdown |
-| **Nous Hermes** | SQLite DB (`~/.hermes/state.db`) | Token usage, sessions, cost, model breakdown |
-| **command-code** | JSONL transcripts | Message activity, sessions, model breakdown |
-| **Agy** | Transcript logs (JSONL) | Step activity, sessions, model breakdown |
+| Tool               | Data Source                                        | Metrics                                       |
+|--------------------|----------------------------------------------------|-----------------------------------------------|
+| **Devin**          | SQLite DB (sessions + message_nodes)               | Token usage, sessions, cost                   |
+| **OpenCode**       | SQLite DB (v1 and v2 storage)                      | Token usage, sessions, cost                   |
+| **MiMoCode**       | SQLite DB                                          | Token usage, sessions, cost                   |
+| **Codex**          | SQLite DB (state_5.sqlite) + rollout JSONL         | Token usage, sessions, model/source breakdown |
+| **codewhale**      | JSON sessions                                      | Token usage, sessions, cost                   |
+| **ZCode**          | SQLite DB (`model_usage` telemetry)                | Token usage, sessions, model/agent breakdown  |
+| **Grok**           | JSONL session logs (`turn_completed` usage)        | Token usage, sessions, cost, model breakdown  |
+| **Muse**           | SQLite session index                               | Prompt activity, sessions, model breakdown    |
+| **Claude**         | JSONL session transcripts                          | Token usage, sessions, model breakdown        |
+| **Droid**          | JSONL session transcripts                          | Message activity, sessions                    |
+| **DeepSeek (DSH)** | JSON session cache (`~/.dsh/storages`)             | Token usage, sessions, model breakdown        |
+| **Nous Hermes**    | SQLite DB (`~/.hermes/state.db`)                   | Token usage, sessions, cost, model breakdown  |
+| **Zed**            | SQLite DB (`~/.local/share/zed/threads/threads.db`)| Token usage, sessions, model breakdown        |
+| **command-code**   | JSONL transcripts                                  | Message activity, sessions, model breakdown   |
+| **Agy**            | Transcript logs (JSONL)                            | Step activity, sessions, model breakdown      |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
 
