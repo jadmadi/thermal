@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "cross-platform-ci-matrix",
+  "commit_sha": "bac81cebf4a997fb056a7071cf1987203e2be158",
+  "spec_hash": "8c56f1f414bcfc51adf1f2f733852f2a9dead5baebb96debf6898341e2678bb4",
+  "sandbox_nonce": "a887d42afd318b25",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "jB5q/v846Ym9ce4FfLzbhjcaSGGto+DblHIMke7fsYM=",
+  "auditor_signature": "I0tUj6i2ajf3BEMN0pEe+a+wny1I4+YtkmdbkojSDQd9QSXIIlWwJJcpDJXGLyV9p0WFaHl25bXJk9y6n4ILAA==",
+  "certified_at": "2026-10-08T07:39:16.606178492Z"
+}
