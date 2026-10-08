@@ -128,6 +128,15 @@ func AllTools() map[thermal.Tool]ToolInfo {
 			Name:    "Nous Hermes",
 			Loader:  LoadHermesData,
 		},
+		thermal.ToolZed: func() ToolInfo {
+			db, dir := probePlatformDataPath(home, filepath.Join("zed", "threads"), "threads.db")
+			return ToolInfo{
+				DBPath:  db,
+				DataDir: dir,
+				Name:    "Zed",
+				Loader:  LoadZedData,
+			}
+		}(),
 	}
 
 	// Apply user overrides from ~/.config/thermal/thermal.config or config.json
@@ -172,6 +181,11 @@ func AllTools() map[thermal.Tool]ToolInfo {
 				}
 			case thermal.ToolMuse:
 				cand := filepath.Join(customPath, "session-index.db")
+				if _, err := os.Stat(cand); err == nil {
+					info.DBPath = cand
+				}
+			case thermal.ToolZed:
+				cand := filepath.Join(customPath, "threads.db")
 				if _, err := os.Stat(cand); err == nil {
 					info.DBPath = cand
 				}
@@ -321,6 +335,8 @@ var toolAliases = map[string]thermal.Tool{
 	"hermes":           thermal.ToolHermes,
 	"nous":             thermal.ToolHermes,
 	"nous-hermes":      thermal.ToolHermes,
+	"zed":              thermal.ToolZed,
+	"zed-editor":       thermal.ToolZed,
 	"all":              thermal.ToolAll,
 	"auto":             thermal.ToolAuto,
 }
@@ -334,7 +350,7 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 
 func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error) {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes, thermal.ToolZed:
 		p := dbPath
 		if p == "" {
 			p = info.DBPath
@@ -389,6 +405,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  droid                Droid (Factory)")
 			fmt.Fprintln(os.Stderr, "  dsh, deepseek        DeepSeek (DSH)")
 			fmt.Fprintln(os.Stderr, "  hermes, nous         Nous Hermes")
+			fmt.Fprintln(os.Stderr, "  zed, zed-editor      Zed Editor")
 			fmt.Fprintln(os.Stderr, "  all                  Show leaderboard (default)")
 			os.Exit(1)
 		}
@@ -396,7 +413,7 @@ func DetectTool(name string) thermal.Tool {
 	}
 
 	tools := AllTools()
-	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid, thermal.ToolDsh, thermal.ToolHermes} {
+	for _, t := range []thermal.Tool{thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolCodex, thermal.ToolDevin, thermal.ToolAgy, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolMuse, thermal.ToolClaude, thermal.ToolDroid, thermal.ToolDsh, thermal.ToolHermes, thermal.ToolZed} {
 		info := tools[t]
 		if info.DBPath != "" {
 			if _, err := os.Stat(info.DBPath); err == nil {

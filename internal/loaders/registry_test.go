@@ -35,6 +35,8 @@ func TestResolveTool_Aliases(t *testing.T) {
 		{"hermes", thermal.ToolHermes, true},
 		{"nous", thermal.ToolHermes, true},
 		{"nous-hermes", thermal.ToolHermes, true},
+		{"zed", thermal.ToolZed, true},
+		{"zed-editor", thermal.ToolZed, true},
 		{"agy", thermal.ToolAgy, true},
 		{"antigravity", thermal.ToolAgy, true},
 		{"nonexistent", "", false},

@@ -714,7 +714,7 @@ func CollectTelemetryWithDeps(opts Options, pricer thermal.Pricer, customLoader 
 			hasData = true
 		} else {
 			switch t {
-			case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes:
+			case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes, thermal.ToolZed:
 				if info.DBPath != "" {
 					if _, err := os.Stat(info.DBPath); err == nil {
 						hasData = true
