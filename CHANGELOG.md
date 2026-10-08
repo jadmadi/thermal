@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/jadmadi/thermal/compare/v0.19.0...v0.20.0) (2026-10-08)
+
+
+### Features
+
+* **ci:** add fast-path bypass to pre-push gate for docs and metadata diffs ([4ab6ebb](https://github.com/jadmadi/thermal/commit/4ab6ebba3c68e025a4fc5e08ff175fc985f31200))
+
 ## [0.19.0](https://github.com/jadmadi/thermal/compare/v0.18.0...v0.19.0) (2026-10-08)
 
 
