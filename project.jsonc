@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-07-08-08",
+  "lastEdit": "26-10-08-12-03",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -13,10 +13,10 @@
   "tagline": "Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine",
 
   // Semantic version (SemVer, e.g. "0.18.0", or CalVer, e.g. "2026.9.0")
-  "version": "0.18.0",
+  "version": "0.19.0",
 
   // 2-3 sentence executive summary explaining what it does, why it exists, and zero-bullshit proof
-  "summary": "Local-first GitHub-style contribution heatmap, interactive 9-box FinOps TUI dashboard, workload replay simulator, and verifiable work receipt engine for 14+ AI coding agents. Reads the local telemetry and session transcripts agents already wrote on disk, with zero cloud dependency and zero tracking.",
+  "summary": "Local-first GitHub-style contribution heatmap, interactive 9-box FinOps TUI dashboard, workload replay simulator, and verifiable work receipt engine for 15+ AI coding agents. Reads the local telemetry and session transcripts agents already wrote on disk, with zero cloud dependency and zero tracking.",
 
   // Status on catalog: "featured" | "active" | "in-progress" | "upstream-merged" | "beta" | "archived"
   "status": "featured",
@@ -40,12 +40,12 @@
   },
 
   // One-line metrics/capabilities pill shown on cards and tables
-  "stats": "14+ AI Tools · FinOps, Replay, Yield & Receipts · CLI, TUI & Embedded Web · AGPL-3.0 / Commercial",
+  "stats": "15+ AI Tools · FinOps, Replay, Yield & Receipts · CLI, TUI & Embedded Web · AGPL-3.0 / Commercial",
 
   // Highlight badges displayed on project cards
   "badges": [
     "Go CLI / TUI",
-    "14+ AI Coding Tools",
+    "15+ AI Coding Tools",
     "Token FinOps",
     "Workload Replay",
     "Verifiable Receipts",
@@ -79,7 +79,7 @@
   // List of major capabilities and distinct features
   "features": [
     "Interactive Bubble Tea TUI with Overview, Projects drill-down, Model breakdown, 9-box FinOps grid (thermal stats --dense), and Mix views",
-    "Supports 14+ agent harnesses: Devin, OpenCode, MiMoCode, Codex, Claude Code, Antigravity/Agy, command-code, codewhale, Droid, DeepSeek (DSH), Grok CLI, Muse, Nous Hermes, and ZCode",
+    "Supports 15+ agent harnesses: Devin, OpenCode, MiMoCode, Codex, Claude Code, Antigravity/Agy, command-code, codewhale, Droid, DeepSeek (DSH), Grok CLI, Muse, Nous Hermes, ZCode, and Zed",
     "Unified cross-agent disjoint token accounting (input, output, reasoning, cache read/write) with recorded vs estimated cost breakdown via models.dev",
     "Workload Replay (thermal replay): historical workload capacity simulation against subscription ceilings (ChatGPT Plus/Pro with 5h burst modeling, Claude Pro, Antigravity Pro, Kimi K2) and models.dev rate cards",
     "Verifiable Work Receipts (thermal receipt): sandboxed test runners (go test, pytest, cargo test, npm test, Codex sandbox) and linter outcome extraction with 3-tier confidence and PR-ready GitHub Flavored Markdown (--format md)",
