@@ -1,5 +1,12 @@
 # Goal: Instant Terminal Statusline & Prompt Composable Helper
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_terminal-statusline-helper_1791444420`
+
+
 ## Goal Description
 Introduce an ultra-fast (<3ms) thermal statusline (or thermal prompt) command designed for shell prompt composability (starship, zsh, tmux) rendering current streak, daily token burn, and active tool without opening interactive TUIs.
 
