@@ -28,9 +28,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 83
-- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
 - 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 79 (3 verified 📜, 1 stale ⚠️, 75 unverified)
+- 🟢 **Implemented**: 80 (4 verified 📜, 1 stale ⚠️, 75 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 339/353 completed (96%)
 
@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
+| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -50,7 +50,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cross-Platform Operating System Test Matrix in CI — Add macOS and Windows test runners to GitHub Actions CI to verify platform behav... | `/goal goals/cross-platform-ci-matrix/goal.md` |
 | [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
-| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 
 ---
 
@@ -105,6 +104,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fd5ca83` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `8afd798` |
+| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `63fce04` |
 | [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `78b8258` |
 | [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7557bf9` |
 | [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a2467d7` |
