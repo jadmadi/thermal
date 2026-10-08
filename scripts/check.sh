@@ -43,6 +43,7 @@ Modes:
                                 - Fast-fail build check
   --full, --pre-push, -f      Comprehensive pre-push / CI verification (default):
                                 - All pre-commit checks
+                                - Fast-path bypass for docs/metadata-only diffs (<3s)
                                 - Go Report Card & Static Analysis (go vet)
                                 - Full race detector across all packages
                                 - Full package statement coverage table
@@ -133,14 +134,29 @@ MODIFIED_GO_FILES=$( (git diff --cached --name-only --diff-filter=d 2>/dev/null 
                       git ls-files --others --exclude-standard 2>/dev/null || true) \
                       | grep -E '\.go$' | sort -u || true )
 
-# In full mode, if on a branch ahead of origin/main, include all files changed in the branch
+# Find modified code, dependency, or build files in working tree / staging
+CODE_EXT_REGEX='(\.go$|go\.mod$|go\.sum$|^scripts/|^build\.sh$)'
+MODIFIED_CODE_FILES=$( (git diff --cached --name-only --diff-filter=d 2>/dev/null || true; \
+                        git diff --name-only --diff-filter=d 2>/dev/null || true; \
+                        git ls-files --others --exclude-standard 2>/dev/null || true) \
+                        | grep -E "${CODE_EXT_REGEX}" | sort -u || true )
+
+# In full mode, if ahead of origin/main, include all files changed in the commits
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 BASE_BRANCH="origin/main"
 
-if [[ "${MODE}" == "full" ]] && [[ "${CURRENT_BRANCH}" != "main" ]] && git rev-parse --verify "${BASE_BRANCH}" >/dev/null 2>&1; then
-    BRANCH_GO_FILES=$(git diff --name-only --diff-filter=d "${BASE_BRANCH}...HEAD" 2>/dev/null | grep -E '\.go$' || true)
-    if [[ -n "${BRANCH_GO_FILES}" ]]; then
-        MODIFIED_GO_FILES=$(printf "%s\n%s\n" "${MODIFIED_GO_FILES}" "${BRANCH_GO_FILES}" | sed '/^$/d' | sort -u || true)
+if [[ "${MODE}" == "full" ]] && git rev-parse --verify "${BASE_BRANCH}" >/dev/null 2>&1; then
+    AHEAD_COMMITS=$(git rev-list --count "${BASE_BRANCH}..HEAD" 2>/dev/null || echo "0")
+    if [[ "${AHEAD_COMMITS}" -gt 0 ]]; then
+        BRANCH_GO_FILES=$(git diff --name-only --diff-filter=d "${BASE_BRANCH}...HEAD" 2>/dev/null | grep -E '\.go$' || true)
+        if [[ -n "${BRANCH_GO_FILES}" ]]; then
+            MODIFIED_GO_FILES=$(printf "%s\n%s\n" "${MODIFIED_GO_FILES}" "${BRANCH_GO_FILES}" | sed '/^$/d' | sort -u || true)
+        fi
+
+        BRANCH_CODE_FILES=$(git diff --name-only --diff-filter=d "${BASE_BRANCH}...HEAD" 2>/dev/null | grep -E "${CODE_EXT_REGEX}" || true)
+        if [[ -n "${BRANCH_CODE_FILES}" ]]; then
+            MODIFIED_CODE_FILES=$(printf "%s\n%s\n" "${MODIFIED_CODE_FILES}" "${BRANCH_CODE_FILES}" | sed '/^$/d' | sort -u || true)
+        fi
     fi
 fi
 
@@ -315,6 +331,22 @@ fi
 # -----------------------------------------------------------------------------
 # Comprehensive Pre-Push / Pipeline Gate (Mode == "full")
 # -----------------------------------------------------------------------------
+
+# Fast-Path: If zero Go source, module, or build files are modified, bypass expensive full test runs
+if [[ -z "${MODIFIED_CODE_FILES}" ]] && [[ "${ALL_FILES:-0}" -ne 1 ]]; then
+    echo -e "\n${BOLD}4. Verifying Binary Compilation & Asset Embeds...${RESET}"
+    (cd "${ROOT_DIR}" && CGO_ENABLED=0 go build -o /dev/null ./cmd/thermal)
+    echo -e "   ${GREEN}✔ Passed:${RESET} cmd/thermal compiled successfully."
+
+    echo -e "\n   ${CYAN}ℹ Fast-Path Pre-Push Notice:${RESET} No Go source, module, or build files modified in branch (${CURRENT_BRANCH:-main})."
+    echo -e "   Docs/metadata diff verified. Bypassing 3-minute full race suite and simulated user gate."
+
+    ELAPSED=$(( $(date +%s) - START_SECONDS ))
+    echo -e "\n${BOLD}${GREEN}═════════════════════════════════════════════════════════════════════${RESET}"
+    echo -e "${BOLD}${GREEN}  ✔ FAST-PATH PRE-PUSH VERIFICATION CLEARED in ${ELAPSED}s! Ready for push.${RESET}"
+    echo -e "${BOLD}${GREEN}═════════════════════════════════════════════════════════════════════${RESET}\n"
+    exit 0
+fi
 
 # 4. Full Unit Tests with Race Detection
 echo -e "\n${BOLD}4. Running Full Unit Tests with Race Detector...${RESET}"
