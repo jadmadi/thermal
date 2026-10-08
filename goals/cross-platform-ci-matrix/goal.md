@@ -1,5 +1,12 @@
 # Goal: Cross-Platform Operating System Test Matrix in CI
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_cross-platform-ci-matrix_1791445156`
+
+
 ## Goal Description
 Add macOS and Windows test runners to GitHub Actions CI to verify platform behavior and unit tests on every pull request
 
