@@ -28,11 +28,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 83
-- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
 - 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 80 (4 verified 📜, 1 stale ⚠️, 75 unverified)
+- 🟢 **Implemented**: 81 (5 verified 📜, 1 stale ⚠️, 75 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 339/353 completed (96%)
+- 📋 **Execution Tasks Progress**: 347/353 completed (98%)
 
 ---
 
@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
+| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -48,7 +48,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cross-Platform Operating System Test Matrix in CI — Add macOS and Windows test runners to GitHub Actions CI to verify platform behav... | `/goal goals/cross-platform-ci-matrix/goal.md` |
 | [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
 
 ---
@@ -100,6 +99,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e460d4a` |
 | [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `598c3d1` |
+| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `f8d9251` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b8fac89` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fd5ca83` |
