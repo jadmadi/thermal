@@ -95,6 +95,7 @@ export DSH_HOME="${GATE_HOME}/.dsh"
 export HERMES_HOME="${GATE_HOME}/.hermes"
 export CODEX_HOME="${GATE_HOME}/.codex"
 export OPENCODE_HOME="${GATE_HOME}/.opencode"
+export ZED_HOME="${GATE_HOME}/.local/share/zed"
 export ANTIGRAVITY_APP_DATA_DIR="antigravity"
 export AGY_HOME="${GATE_HOME}/.gemini/antigravity"
 export NO_COLOR=""
@@ -295,6 +296,7 @@ run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
 run_check "Rejects --dense on daily report" 1 error "${BIN_PATH}" daily --dense
+run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then

@@ -28,11 +28,19 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 83
-- 🟡 **Ready to Execute (Pending)**: 16 (14 independent ⚡, 2 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 1
-- 🟢 **Implemented**: 66 (1 verified 📜, 65 unverified)
+- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
+- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented**: 77 (1 verified 📜, 1 stale ⚠️, 75 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 298/353 completed (84%)
+- 📋 **Execution Tasks Progress**: 339/353 completed (96%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -40,23 +48,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#65)` | - | Keep cached Devin totals isolated by source database — Key Devin snapshots by canonical source identity and invalidate on relevant sour... | `/goal goals/devin-cache-source-isolation/goal.md` |
-| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#72)` | - | ChatGPT Rolling 5-Hour Burst Capacity Replay — Enhance thermal replay to model dynamic 5-hour rolling message and token burst l... | `/goal goals/chatgpt-rolling-burst-replay/goal.md` |
-| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#73)` | - | Codex Sandboxed Execution Verification Receipts — Extract local test runner and linter execution commands and exit codes from Code... | `/goal goals/codex-sandboxed-receipts/goal.md` |
-| [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#74)` | - | Zero-Leak Markdown PR Contribution Receipts — Add --format md (and --format markdown) to thermal receipt and thermal yield to ... | `/goal goals/markdown-pr-receipts/goal.md` |
-| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#75)` | - | Session Fork & Branch Tree Yield Analytics — Ingest parent-child thread relationships and session forks from Codex (and branc... | `/goal goals/session-fork-tree-analytics/goal.md` |
-| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#76)` | - | Instant Terminal Statusline & Prompt Composable Helper — Introduce an ultra-fast (<3ms) thermal statusline (or thermal prompt) command de... | `/goal goals/terminal-statusline-helper/goal.md` |
-| [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#77)` | - | Repository Agent Readiness and AGENTS.md Audit — Extend thermal audit with an agent-readiness check verifying local repository in... | `/goal goals/agent-readiness-audit/goal.md` |
 | [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cross-Platform Operating System Test Matrix in CI — Add macOS and Windows test runners to GitHub Actions CI to verify platform behav... | `/goal goals/cross-platform-ci-matrix/goal.md` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Comprehensive Documentation Parity, Full Scan & Simulated Human User Audit — Update all repository Markdown documentation (README.md, AGENTS.md, docs/*.md) a... | `/goal goals/docs-parity-and-human-simulation/goal.md` |
 | [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
-| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Platform-Native Application Data Directory Resolution — Add Windows APPDATA/LOCALAPPDATA and macOS Library/Application Support directory... | `/goal goals/platform-native-data-directories/goal.md` |
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
-| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Windows SQLite URI and Path Normalization — Add shared SQLite connection URI helper in internal/loaders to clean Windows dri... | `/goal goals/windows-sqlite-uri-path-normalization/goal.md` |
-| [`live-metric-parity`](live-metric-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#64)` | Deps met: web-telemetry-parity, live-polling-cpu-budget | Make live burn metrics reflect recorded tokens and turns — Exclude activity-only counts from token burn and use actual turn and cache-read ... | `/goal goals/live-metric-parity/goal.md` |
-| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#66)` | Deps met: web-telemetry-parity | Reject untrusted hosts at the local telemetry API — Validate request authority before loading private local telemetry while preservi... | `/goal goals/localhost-request-boundary/goal.md` |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#67)` | Prereqs: live-metric-parity, devin-cache-source-isolation, localhost-request-boundary | Make verification independent of host data and color settings — Use isolated fixtures and explicit color environments, and assert metric semanti... | `/goal goals/hermetic-verification-gates/goal.md` |
 
 ---
 
@@ -75,8 +71,15 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`live-polling-cpu-budget`](live-polling-cpu-budget/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b71d464` |
 | [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7a8ce91` |
 | [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d2cd4a2` |
+| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d182cf9` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e2a569f` |
 | [`reasoning-effort-telemetry`](reasoning-effort-telemetry/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0f3f533` |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b0759e0` |
+| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `198772e` |
+| [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c00ef02` |
+| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `56ec02b` |
+| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `26a20ae` |
+| [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `259d1e0` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
@@ -98,6 +101,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7350bf` |
 | [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e460d4a` |
+| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `598c3d1` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b8fac89` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fd5ca83` |
@@ -110,6 +114,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f720e57` |
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `02f3ef6` |
+| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e30bd4d` |
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `1ca92ed` |
 | [`zed-editor-loader`](zed-editor-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `aa81edd` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a059d01` |
@@ -119,6 +124,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `79bbd75` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `17b6b59` |
 | [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `dd3ab4f` |
+| [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `305f589` |
+| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `d162bf1` |
 | [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `752569e` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
