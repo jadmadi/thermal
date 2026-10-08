@@ -1,5 +1,12 @@
 # Goal: Make verification independent of host data and color settings
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_hermetic-verification-gates_1791444678`
+
+
 ## Goal Description
 Use isolated fixtures and explicit color environments, and assert metric semantics in the release gate.
 

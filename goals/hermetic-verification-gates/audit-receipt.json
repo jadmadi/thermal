@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "hermetic-verification-gates",
+  "commit_sha": "987efd39eff0e6a21ba56114ace73d3b16e77885",
+  "spec_hash": "3d6ab77a6ae475308ba5afa25d60e76a1a3e495639adac65052a76a7d4902048",
+  "sandbox_nonce": "1bd4123b2ecb6cf8",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "kpv34BWWVCEsVN31cEeW3A65H4TJuCRSvbXlmC36SYk=",
+  "auditor_signature": "MGA0ouiguLIninkiXIhZQ7VeUi/rhvBhBjcZOYb/0W2xB03bcNzFjT9A2JP2jvMqJ3rECWmLSXHh237JgHv2CA==",
+  "certified_at": "2026-10-08T07:31:18.993749903Z"
+}

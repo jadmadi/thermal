@@ -88,24 +88,25 @@ thermal upgrade
 
 ## Supported Tools
 
-Thermal automatically ingests activity and disjoint token metrics from 14 AI coding environments:
+Thermal automatically ingests activity and disjoint token metrics from 15 AI coding environments:
 
-| Tool | Category | Token Telemetry | Project Attribution |
-| :--- | :--- | :--- | :--- |
-| **Devin** | Token Warrior | Input, Output, Cache Read/Write | Working directory |
-| **OpenCode** | Token Warrior | Input, Output, Reasoning, Cache Read/Write | Session directory / git worktree |
-| **MiMoCode** | Token Warrior | Input, Output, Reasoning, Cache Read/Write | Session directory |
-| **Codex** | Token Warrior | Input, Output, Reasoning, Cache Read/Write | Thread working directory |
-| **codewhale** | Token Warrior | Total tokens, Recorded USD cost | Session workspace |
-| **ZCode** | Token Warrior | Input, Output, Cache Read | Working directory |
-| **Grok** | Token Warrior | Input, Output, Reasoning, Cache Read | Git root directory |
-| **Claude** | Token Warrior | Input, Output, Cache Read/Write | Per-message working directory |
-| **DeepSeek (DSH)** | Token Warrior | Input, Output, Cache Read/Write | Identity current working directory |
-| **Nous Hermes** | Token Warrior | Input, Output, Reasoning, Cache Read/Write | Session working directory |
-| **Muse** | Activity Hunter | Prompt & turn counts | Session index |
-| **Droid** | Activity Hunter | Turn & message counts | Message logs |
-| **command-code** | Activity Hunter | Message counts, model distributions | Workspace directory |
-| **Agy** | Activity Hunter | Step activity, model selections | CLI session logs |
+| Tool               | Category        | Token Telemetry                             | Project Attribution                 |
+| :----------------- | :-------------- | :------------------------------------------ | :---------------------------------- |
+| **Devin**          | Token Warrior   | Input, Output, Cache Read/Write             | Working directory                   |
+| **OpenCode**       | Token Warrior   | Input, Output, Reasoning, Cache Read/Write  | Session directory / git worktree    |
+| **MiMoCode**       | Token Warrior   | Input, Output, Reasoning, Cache Read/Write  | Session directory                   |
+| **Codex**          | Token Warrior   | Input, Output, Reasoning, Cache Read/Write  | Thread working directory            |
+| **codewhale**      | Token Warrior   | Total tokens, Recorded USD cost             | Session workspace                   |
+| **ZCode**          | Token Warrior   | Input, Output, Cache Read                   | Working directory                   |
+| **Grok**           | Token Warrior   | Input, Output, Reasoning, Cache Read        | Git root directory                  |
+| **Claude**         | Token Warrior   | Input, Output, Cache Read/Write             | Per-message working directory       |
+| **DeepSeek (DSH)** | Token Warrior   | Input, Output, Cache Read/Write             | Identity current working directory  |
+| **Nous Hermes**    | Token Warrior   | Input, Output, Reasoning, Cache Read/Write  | Session working directory           |
+| **Zed**            | Token Warrior   | Input, Output, Cache Read                   | Working directory                   |
+| **Muse**           | Activity Hunter | Prompt & turn counts                        | Session index                       |
+| **Droid**          | Activity Hunter | Turn & message counts                       | Message logs                        |
+| **command-code**   | Activity Hunter | Message counts, model distributions         | Workspace directory                 |
+| **Agy**            | Activity Hunter | Step activity, model selections             | CLI session logs                    |
 
 ---
 

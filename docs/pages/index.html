@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thermal — contribution heatmap for AI coding tools</title>
-<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
+<meta name="description" content="Terminal heatmap, streaks, tokens, and cost for 15 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0B0E13">
 <link rel="canonical" href="https://jadmadi.net/project/thermal/">
@@ -593,7 +593,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "@id": "https://jadmadi.net/project/thermal/#website",
       "url": "https://jadmadi.net/project/thermal/",
       "name": "Thermal",
-      "description": "Terminal contribution heatmap, streaks, tokens, and cost for 14 AI coding tools.",
+      "description": "Terminal contribution heatmap, streaks, tokens, and cost for 15 AI coding tools.",
       "publisher": { "@id": "https://jadmadi.net/#person" }
     },
     {
@@ -603,7 +603,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "name": "Thermal — contribution heatmap for AI coding tools",
       "isPartOf": { "@id": "https://jadmadi.net/project/thermal/#website" },
       "about": { "@id": "https://jadmadi.net/project/thermal/#software" },
-      "description": "Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config."
+      "description": "Terminal heatmap, streaks, tokens, and cost for 15 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config."
     },
     {
       "@type": "SoftwareApplication",
@@ -620,7 +620,7 @@ footer{border-top:1px solid var(--line);padding:var(--s7) 0 var(--s8)}
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "license": "https://github.com/jadmadi/thermal/blob/main/LICENSE",
       "codeRepository": "https://github.com/jadmadi/thermal",
-      "description": "Thermal is a terminal heatmap, streak, token, and cost report for fourteen AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy already write, and never modifies them.",
+      "description": "Thermal is a terminal heatmap, streak, token, and cost report for fifteen AI coding tools. It reads the session databases Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, Zed, command-code, and Agy already write, and never modifies them.",
       "featureList": [
         "Contribution heatmap and streak tracking per tool",
         "Daily, weekly, and monthly token and cost reports",
@@ -806,7 +806,7 @@ thermal version</code></pre>
       <div>
         <h3 style="margin-bottom:var(--s2);font-size:var(--step-0);font-weight:600">Built for Go, designed for developer streaks</h3>
         <p class="muted" style="font-size:var(--step--1)">
-          Thermal is a single static Go binary with zero CGO dependencies. It scans local SQLite databases and session transcripts in strictly read-only mode (<span class="mono">mode=ro</span>) with memory-mapped I/O, computing contribution heatmaps and token metrics across 14 AI coding tools in sub-10ms cached invocations.
+          Thermal is a single static Go binary with zero CGO dependencies. It scans local SQLite databases and session transcripts in strictly read-only mode (<span class="mono">mode=ro</span>) with memory-mapped I/O, computing contribution heatmaps and token metrics across 15 AI coding tools in sub-10ms cached invocations.
         </p>
       </div>
     </div>
@@ -1610,6 +1610,11 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
             <td>Tokens, sessions, cost, models, projects</td>
           </tr>
           <tr>
+            <td><a href="https://zed.dev" rel="noopener noreferrer">Zed</a></td>
+            <td class="mono">zed</td>
+            <td>Tokens, sessions, models, projects</td>
+          </tr>
+          <tr>
             <td><a href="https://commandcode.ai" rel="noopener noreferrer">command-code</a></td>
             <td class="mono">cmd, commandcode</td>
             <td>Message activity, sessions, models</td>
@@ -1739,6 +1744,7 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">--no-color</td><td class="mono">off</td><td>Strip ANSI colour, for logs and CI.</td></tr>
               <tr><td class="mono">DSH_HOME</td><td class="mono">~/.dsh</td><td>Environment variable. Sets the DeepSeek harness (dsh) data root.</td></tr>
               <tr><td class="mono">HERMES_HOME</td><td class="mono">~/.hermes</td><td>Environment variable. Sets the Nous Hermes data root.</td></tr>
+              <tr><td class="mono">ZED_HOME</td><td class="mono">~/.local/share/zed</td><td>Environment variable. Sets the Zed data root.</td></tr>
               <tr><td class="mono">GROK_HOME</td><td class="mono">~/.grok</td><td>Environment variable. Sets the Grok data root; the only path a tool lets you move today.</td></tr>
               <tr><td class="mono">--verbose</td><td class="mono">off</td><td>Non-fatal loader warnings to stderr. stdout stays clean.</td></tr>
               <tr><td class="mono">--offline</td><td class="mono">off</td><td>Use cached prices, never fetch. Reports only.</td></tr>
@@ -1788,8 +1794,8 @@ thermal: --top only applies to the projects and models commands</code></pre>
       <div>
         <div class="faq-q">Which tools does it support?</div>
         <p>
-          Fourteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
-          Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy. Activity-only tools rank
+          Fifteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok,
+          Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, Zed, command-code, and Agy. Activity-only tools rank
           separately from tools that record tokens.
         </p>
       </div>
@@ -2100,7 +2106,7 @@ thermal: --top only applies to the projects and models commands</code></pre>
       "name": "Which AI coding tools does thermal support?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Fourteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
+        "text": "Fifteen: Devin, OpenCode, MiMoCode, Codex, codewhale, ZCode, Grok, Claude, Muse, Droid, DeepSeek (DSH), Nous Hermes, Zed, command-code, and Agy. Tools that record tokens rank in a Token Warriors list; tools that record only activity rank separately in an Activity Hunters list."
       }
     },
     {

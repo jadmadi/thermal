@@ -30,7 +30,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 - **Total Goals**: 83
 - 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
 - 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 77 (1 verified 📜, 1 stale ⚠️, 75 unverified)
+- 🟢 **Implemented**: 78 (2 verified 📜, 1 stale ⚠️, 75 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 339/353 completed (96%)
 
@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@antigravity` | in progress | 0s ago |
+| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
 
 ---
 
@@ -49,7 +49,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Cross-Platform Operating System Test Matrix in CI — Add macOS and Windows test runners to GitHub Actions CI to verify platform behav... | `/goal goals/cross-platform-ci-matrix/goal.md` |
-| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Comprehensive Documentation Parity, Full Scan & Simulated Human User Audit — Update all repository Markdown documentation (README.md, AGENTS.md, docs/*.md) a... | `/goal goals/docs-parity-and-human-simulation/goal.md` |
 | [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Multi-Target Cross-Compilation Verification Gate in CI — Add multi-target cross-compilation check (darwin/arm64, darwin/amd64, windows/am... | `/goal goals/multi-target-cross-compile-ci-gate/goal.md` |
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent` | - | Purge Devin Bot Contributor Attribution & Git History Rewrite — Eliminate devin-ai-integration[bot] from GitHub's contributor graph. Audit and r... | `/goal goals/purge-bot-contributors/goal.md` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Complete Sila Onboarding — Wire thermal-streak fully into sila and verify it: map the legacy task surfaces ... | `/goal goals/sila-onboarding/goal.md` |
@@ -130,6 +129,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `987efd3` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `be1e45f` |
