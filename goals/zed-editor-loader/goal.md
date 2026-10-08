@@ -1,5 +1,12 @@
 # Goal: Zed Editor Data Ingestion & Heatmap Loader
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_zed-editor-loader_1791444056`
+
+
 ## Goal Description
 Ingest Zed AI assistant threads and tokens from threads.db into Thermal
 

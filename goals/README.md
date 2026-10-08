@@ -29,19 +29,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 ## Summary
 - **Total Goals**: 83
 - 🟡 **Ready to Execute (Pending)**: 16 (14 independent ⚡, 2 unblocked 🔗)
-- 🔵 **In Progress (Claimed)**: 1
 - ⛔ **Blocked on Prerequisites**: 1
-- 🟢 **Implemented**: 65 (0 verified 📜, 65 unverified)
+- 🟢 **Implemented**: 66 (1 verified 📜, 65 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 82 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 294/353 completed (83%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`zed-editor-loader`](zed-editor-loader/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@antigravity` | in progress | 0s ago |
+- 📋 **Execution Tasks Progress**: 298/353 completed (84%)
 
 ---
 
@@ -120,6 +111,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ebc550a` |
 | [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `02f3ef6` |
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `1ca92ed` |
+| [`zed-editor-loader`](zed-editor-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `aa81edd` |
 | [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a059d01` |
 | [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9a82384` |
 | [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9fa6245` |
