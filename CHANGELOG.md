@@ -22,18 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance Improvements
 
 * **loaders/agy:** add in-memory session cache and cap live monitor at 10 FPS ([0af717f](https://github.com/jadmadi/thermal/commit/0af717fbf3b28beba9e54cdb3ac2193388525472))
-
-## [Unreleased]
-
-### Bug Fixes
-
-* **loaders:** exclude sqlite shm files to prevent live monitor CPU thrashing ([8192294](https://github.com/jadmadi/thermal/commit/8192294))
-* **tui:** clamp projection stats bar and band bounds against negative values ([54a20bf](https://github.com/jadmadi/thermal/commit/54a20bf))
-
-### Performance Improvements
-
-* **loaders/agy:** add in-memory session cache and cap live monitor at 10 FPS ([1b543f4](https://github.com/jadmadi/thermal/commit/1b543f4))
-
 ## [0.19.0](https://github.com/jadmadi/thermal/compare/v0.18.0...v0.19.0) (2026-10-08)
 
 
