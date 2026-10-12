@@ -330,6 +330,49 @@ func probeAgyModels(path string, res *sessionResult) {
 	}
 }
 
+type agySessionCacheEntry struct {
+	transSize int64
+	transNano int64
+	overSize  int64
+	overNano  int64
+	res       sessionResult
+}
+
+var (
+	agyCacheMu sync.RWMutex
+	agyCache   = make(map[string]agySessionCacheEntry)
+)
+
+func cloneSessionResult(r sessionResult) sessionResult {
+	cp := r
+	if r.dayCounts != nil {
+		cp.dayCounts = make(map[string]int, len(r.dayCounts))
+		for k, v := range r.dayCounts {
+			cp.dayCounts[k] = v
+		}
+	}
+	if r.modelCounts != nil {
+		cp.modelCounts = make(map[string]int64, len(r.modelCounts))
+		for k, v := range r.modelCounts {
+			cp.modelCounts[k] = v
+		}
+	}
+	if r.dayModels != nil {
+		cp.dayModels = make(map[string]map[string]int, len(r.dayModels))
+		for d, models := range r.dayModels {
+			mCopy := make(map[string]int, len(models))
+			for m, c := range models {
+				mCopy[m] = c
+			}
+			cp.dayModels[d] = mCopy
+		}
+	}
+	if len(r.warnings) > 0 {
+		cp.warnings = append([]string(nil), r.warnings...)
+	}
+	return cp
+}
+
 // LoadAgyData reads Google Antigravity session data in parallel using a bounded worker pool.
 func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	brainDir := ResolveAgyBrainDir(dataDir)
@@ -393,10 +436,37 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 
 	for _, task := range tasks {
 		t := task
+		logsDir := filepath.Join(t.sessionDir, ".system_generated", "logs")
+		transPath := filepath.Join(logsDir, "transcript.jsonl")
+		overPath := filepath.Join(logsDir, "overview.txt")
+
+		var transSize, transNano, overSize, overNano int64
+		if fi, err := os.Stat(transPath); err == nil {
+			transSize = fi.Size()
+			transNano = fi.ModTime().UnixNano()
+		}
+		if fi, err := os.Stat(overPath); err == nil {
+			overSize = fi.Size()
+			overNano = fi.ModTime().UnixNano()
+		}
+
+		agyCacheMu.RLock()
+		cached, ok := agyCache[t.sessionDir]
+		agyCacheMu.RUnlock()
+
+		if ok && cached.transSize == transSize && cached.transNano == transNano &&
+			cached.overSize == overSize && cached.overNano == overNano &&
+			cached.res.project == t.project {
+			if cached.res.steps > 0 || len(cached.res.warnings) > 0 {
+				results <- cloneSessionResult(cached.res)
+			}
+			continue
+		}
+
 		sem <- struct{}{}
 		wg.Add(1)
 
-		go func(sDir, proj string) {
+		go func(sDir, proj string, tSize, tNano, oSize, oNano int64) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -407,21 +477,29 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 				modelCounts: make(map[string]int64),
 			}
 
-			logsDir := filepath.Join(sDir, ".system_generated", "logs")
-
 			// 1. Process overview.txt (legacy) and transcript.jsonl (current).
 			// If overview exists, it supplies steps; then probe transcript.jsonl for models.
 			// In modern sessions, transcript.jsonl parses both in a single pass.
-			if countAgySteps(filepath.Join(logsDir, "overview.txt"), &res) == 0 {
-				countAgySteps(filepath.Join(logsDir, "transcript.jsonl"), &res)
+			if countAgySteps(overPath, &res) == 0 {
+				countAgySteps(transPath, &res)
 			} else {
-				probeAgyModels(filepath.Join(logsDir, "transcript.jsonl"), &res)
+				probeAgyModels(transPath, &res)
 			}
+
+			agyCacheMu.Lock()
+			agyCache[sDir] = agySessionCacheEntry{
+				transSize: tSize,
+				transNano: tNano,
+				overSize:  oSize,
+				overNano:  oNano,
+				res:       cloneSessionResult(res),
+			}
+			agyCacheMu.Unlock()
 
 			if res.steps > 0 || len(res.warnings) > 0 {
 				results <- res
 			}
-		}(t.sessionDir, t.project)
+		}(t.sessionDir, t.project, transSize, transNano, overSize, overNano)
 	}
 
 	wg.Wait()

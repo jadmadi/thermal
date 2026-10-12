@@ -2037,7 +2037,7 @@ func runLive(opts thermal.Options) {
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
 	model := tui.NewLiveModel(pollFn, rate, filter, colorful, !opts.Fresh)
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithFPS(10))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)
 		os.Exit(1)
