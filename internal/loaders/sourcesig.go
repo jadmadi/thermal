@@ -44,11 +44,11 @@ func GetToolSourceSig(t thermal.Tool, info ToolInfo, dbPathOverride string) Sour
 			sig.TotalSize += wfi.Size()
 			sig.MaxNano ^= wfi.ModTime().UnixNano()
 		}
-		if sfi, err := os.Stat(p + "-shm"); err == nil {
-			sig.FileCount++
-			sig.TotalSize += sfi.Size()
-			sig.MaxNano ^= sfi.ModTime().UnixNano()
-		}
+		// Notice: -shm (WAL shared memory index) is intentionally omitted here because
+		// read-only SQLite connections touch -shm lock headers on every query. Tracking
+		// -shm causes a self-invalidation feedback loop where thermal invalidates its
+		// own cache signature on every read tick. True database commits always mutate
+		// either the primary DB file or the -wal log.
 		return sig
 
 	default:
