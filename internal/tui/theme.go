@@ -50,9 +50,19 @@ func (p Palette) bar(value, maxVal int64, width int) string {
 	if maxVal <= 0 || width <= 0 {
 		return ""
 	}
+	if value <= 0 {
+		rest := strings.Repeat("·", width)
+		if p.Colorful {
+			return p.Dim.Render(rest)
+		}
+		return rest
+	}
 	filled := int(float64(value) / float64(maxVal) * float64(width))
 	if filled > width {
 		filled = width
+	}
+	if filled < 0 {
+		filled = 0
 	}
 	// Half a cell is the floor: a whole cell of accent at 0.4% would overstate
 	// the share, and the number is printed beside the bar anyway.
