@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
 * **loaders:** exclude sqlite shm files to prevent live monitor CPU thrashing ([8192294](https://github.com/jadmadi/thermal/commit/8192294))
+* **tui:** clamp projection stats bar and band bounds against negative values ([54a20bf](https://github.com/jadmadi/thermal/commit/54a20bf))
 
 ### Performance Improvements
 
