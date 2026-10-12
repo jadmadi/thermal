@@ -290,8 +290,24 @@ func projectionBlock(sv StatsView, width int, p Palette) string {
 	// the scale.
 	lo := int64(low / scale * float64(barW))
 	hi := int64(pr.High / scale * float64(barW))
-	if hi <= lo {
-		hi = lo + 1
+	if lo < 0 {
+		lo = 0
+	}
+	if lo > int64(barW) {
+		lo = int64(barW)
+	}
+	if hi < lo {
+		hi = lo
+	}
+	if hi > int64(barW) {
+		hi = int64(barW)
+	}
+	if hi <= lo && barW > 0 {
+		if hi < int64(barW) {
+			hi = lo + 1
+		} else if lo > 0 {
+			lo = hi - 1
+		}
 	}
 	bandBar := strings.Repeat(" ", int(lo)) +
 		p.Dim.Render(strings.Repeat("━", int(hi-lo))) +
