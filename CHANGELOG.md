@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/jadmadi/thermal/compare/v0.19.0...v0.20.0) (2026-10-12)
+
+
+### Features
+
+* **ci:** add fast-path bypass to pre-push gate for docs and metadata diffs ([4ab6ebb](https://github.com/jadmadi/thermal/commit/4ab6ebba3c68e025a4fc5e08ff175fc985f31200))
+
+
+### Bug Fixes
+
+* **loaders:** exclude sqlite shm files to prevent live monitor CPU thrashing ([dd41a46](https://github.com/jadmadi/thermal/commit/dd41a4626a0c9ace26607b185177f9daf5b6ce94))
+* **tui:** clamp projection stats bar and band bounds against negative values ([92b1f10](https://github.com/jadmadi/thermal/commit/92b1f100ef22c8590d2de19b63cd3ddf4dbaa277))
+
+
+### Performance Improvements
+
+* **loaders/agy:** add in-memory session cache and cap live monitor at 10 FPS ([0af717f](https://github.com/jadmadi/thermal/commit/0af717fbf3b28beba9e54cdb3ac2193388525472))
+
 ## [Unreleased]
 
 ### Bug Fixes
