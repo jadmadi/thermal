@@ -181,9 +181,6 @@ func zedSourceIdentity(canonicalPath string) (string, error) {
 	if wfi, err := os.Stat(canonicalPath + "-wal"); err == nil && wfi.Size() > 0 {
 		fmt.Fprintf(h, "wal:size:%d;mod:%d;", wfi.Size(), wfi.ModTime().UnixNano())
 	}
-	if sfi, err := os.Stat(canonicalPath + "-shm"); err == nil && sfi.Size() > 0 {
-		fmt.Fprintf(h, "shm:size:%d;mod:%d;", sfi.Size(), sfi.ModTime().UnixNano())
-	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
