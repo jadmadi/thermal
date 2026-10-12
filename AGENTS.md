@@ -98,6 +98,7 @@ thermal/
 ### A. `.gitignore` Path Rules
 * **IMPORTANT**: Never put bare binary names like `thermal` directly in `.gitignore`. Because `cmd/thermal/` and `internal/thermal/` share the name `thermal`, a bare `thermal` rule will silently ignore source files inside those directories (`e.g., cmd/thermal/upgrade.go`)!
 * **Rule**: Always use root-anchored paths for build artifacts: `/thermal`, `/dist/`, `*.exe`.
+* **Repository Asset & Build Hygiene**: Keep the repository root clean and professional. Place all screenshots, diagrams, and branding media inside `assets/` or `docs/pages/`. Never leave loose build binaries in the repository root; build to `/tmp` (e.g. `go build -o /tmp/thermal-test ./cmd/thermal`) or use `build.sh`. Archive temporary scratch files into `rm/` (`mkdir -p rm && mv <path> rm/`).
 
 ### B. GoReleaser Configuration (`.goreleaser.yml`)
 1. **Template Variables**: GoReleaser v2 strictly enforces `{{ .ShortCommit }}`. Never use `.Short_commit` (causes fatal build errors).
