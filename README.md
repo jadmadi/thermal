@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="thermal.webp" alt="Thermal Gopher Mascot" width="160" />
+  <img src="assets/thermal.webp" alt="Thermal Gopher Mascot" width="160" />
 </p>
 
 # Thermal
@@ -12,20 +12,22 @@
 [![Governance: Solo Authority](https://img.shields.io/badge/Governance-Solo_Authority-purple.svg)](GOVERNANCE.md)
 [![SLSA Level 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
-> Don't break the streak.
-
-GitHub-style contribution heatmap for AI coding tools.
-
-See your coding streaks, daily activity, and usage patterns rendered as a beautiful terminal heatmap. Default mode shows a **leaderboard** ranking all your installed tools.
-
-Unlike `git log`, which only shows committed code, thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed.
+> Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine for 15+ AI coding agents.
 
 ```bash
+# Automated install (Linux & macOS)
+curl -fsSL https://jadmadi.net/thermal/install.sh | sh
+
+# Homebrew (macOS & Linux)
+brew install jadmadi/tap/thermal
+
+# Go toolchain
 go install github.com/jadmadi/thermal/cmd/thermal@latest
-thermal
 ```
 
-![Thermal leaderboard](leaderboard.webp)
+Unlike `git log`, which only shows committed code, Thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed. All local, zero cloud telemetry, and under 10ms execution.
+
+![Thermal leaderboard](assets/leaderboard.webp)
 
 ## Supported Tools
 
@@ -53,9 +55,16 @@ Each tool also accepts short aliases: `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode
 
 ## Install
 
-With Go:
+### Quick Install
 
 ```bash
+# Automated installer (Linux & macOS)
+curl -fsSL https://jadmadi.net/thermal/install.sh | sh
+
+# Homebrew (macOS & Linux)
+brew install jadmadi/tap/thermal
+
+# Go toolchain
 go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
@@ -72,7 +81,7 @@ All official releases provide cryptographic build provenance conforming to **SLS
 slsa-verifier verify-artifact checksums.txt \
   --provenance-path checksums.txt.intoto.jsonl \
   --source-uri github.com/jadmadi/thermal \
-  --source-tag v0.6.0
+  --source-tag v0.20.0
 
 # Verify the downloaded archive against the verified checksums
 sha256sum --check --ignore-missing checksums.txt
@@ -681,11 +690,11 @@ Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hour
 
 ## Example: Single Tool
 
-![Devin heatmap](devin.webp)
-![MiMoCode heatmap](mimo.webp)
-![Codex heatmap](codex.webp)
-![command-code heatmap](cmd.webp)
-![codewhale heatmap](codewhale.webp)
+![Devin heatmap](assets/devin.webp)
+![MiMoCode heatmap](assets/mimo.webp)
+![Codex heatmap](assets/codex.webp)
+![command-code heatmap](assets/cmd.webp)
+![codewhale heatmap](assets/codewhale.webp)
 
 ```
   OpenCode activity  1.2B tokens / 8 weeks  ~/.local/share/opencode/opencode.db
@@ -706,7 +715,7 @@ Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hour
 ## How It Works
 
 <p align="center">
-  <img src="thermal2.webp" alt="Thermal Go Gopher Mascot with HUD" width="200" />
+  <img src="assets/thermal2.webp" alt="Thermal Go Gopher Mascot with HUD" width="200" />
 </p>
 
 Thermal reads usage data from installed AI coding tools:

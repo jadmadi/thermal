@@ -84,7 +84,7 @@ To maintain legal certainty across a mixed repository, the contents of `github.c
 
 1. **Software & CLI Source Code** (`cmd/`, `internal/`, `build.sh`): Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** for open-source community use, or under the **Commercial Enterprise License** for proprietary deployments.
 2. **Documentation & Guides** (`docs/`, `*.md`): Licensed under the **Creative Commons Attribution 4.0 International (CC-BY-4.0)** license. You may share and adapt documentation provided appropriate attribution is preserved.
-3. **Visual Branding, Screenshots & Logos** (`docs/pages/*.webp`, `docs/pages/og.png`, root `*.webp`, branding assets): **All Rights Reserved by Jad Madi**. Visual assets, screenshots, and logos represent proprietary branding and are excluded from open-source code and content licenses.
+3. **Visual Branding, Screenshots & Logos** (`assets/*.webp`, `docs/pages/*.webp`, `docs/pages/og.png`, branding assets): **All Rights Reserved by Jad Madi**. Visual assets, screenshots, and logos represent proprietary branding and are excluded from open-source code and content licenses.
 
 ---
 
