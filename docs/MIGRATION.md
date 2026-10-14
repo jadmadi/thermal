@@ -9,7 +9,8 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 ## Table of Contents
 - [Staged Deprecations (v0.14.0)](#staged-deprecations-v0140)
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
-  - [Deprecated: `nous` Tool Alias](#deprecated-nous-tool-alias)
+- [Upgrading to v0.20.1](#upgrading-to-v0201)
+  - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -89,6 +90,39 @@ thermal hermes weekly
 
 **Escape hatch**:
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
+
+## Upgrading to v0.20.1
+
+### Changed: Renamed `command-code` Canonical Display Name to `CMD`
+<a id="changed-rename-command-code-to-cmd"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn '"command-code"' .` or scripts parsing `.name` / `.toolTotals["command-code"]` from `thermal --json` or `thermal live --json`.
+- **Detection signal**: In `thermal --json`, the `.results[].name` field for the command-code tool is now `"CMD"` instead of `"command-code"`. In `thermal live`, the tool column displays `"CMD"` instead of truncated `"command-c…"`.
+
+**What changed and why**:
+Thermal previously used `"command-code"` as both the CLI tool identifier and its canonical display name. Because `"command-code"` is 12 characters long, terminal tables with constrained column widths (such as the 10-column tool field in `thermal live`) truncated the name with an ellipsis (`command-c…`). The canonical display name is now `"CMD"`, allowing it to fit without truncation across all views.
+
+**Before / After**:
+```bash
+# Before (Truncated tool name in live table)
+# TIME      TOOL               STEPS  MODEL         PROJECT         COST
+# 08:02:43  command-c…     +104 step  deepseek-v4…  —              $0.00
+
+# After (v0.20.1+)
+# TIME      TOOL               STEPS  MODEL         PROJECT         COST
+# 08:02:43  CMD            +104 step  deepseek-v4…  —              $0.00
+```
+
+**The fix**:
+If external tooling or scripts assert on `.name == "command-code"` in JSON payloads, update the match to check for `"CMD"` or use the stable tool identifier field `.tool == "command-code"` (which remains unchanged):
+```bash
+# Match by tool identifier rather than display name
+thermal --json | jq '.results[] | select(.tool == "command-code")'
+```
+
+**Escape hatch**:
+Both `command-code` and `cmd` CLI arguments continue to be accepted identically by all commands (`thermal cmd`, `thermal command-code`, `thermal live cmd`).
 
 ## Upgrading to v0.16.x
 

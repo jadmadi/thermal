@@ -73,7 +73,7 @@ func AllTools() map[thermal.Tool]ToolInfo {
 		},
 		thermal.ToolCommandCode: {
 			DataDir:    filepath.Join(home, ".commandcode"),
-			Name:       "command-code",
+			Name:       "CMD",
 			DataSubdir: "projects",
 			Loader:     LoadCommandCodeData,
 		},
@@ -396,7 +396,7 @@ func DetectTool(name string) thermal.Tool {
 			fmt.Fprintln(os.Stderr, "  codex                Codex CLI")
 			fmt.Fprintln(os.Stderr, "  devin                Devin")
 			fmt.Fprintln(os.Stderr, "  agy, antigravity     Agy (Antigravity)")
-			fmt.Fprintln(os.Stderr, "  command-code, cmd    command-code-ai")
+			fmt.Fprintln(os.Stderr, "  command-code, cmd    CMD (command-code)")
 			fmt.Fprintln(os.Stderr, "  codewhale, whale     codewhale")
 			fmt.Fprintln(os.Stderr, "  zcode, zc            ZCode")
 			fmt.Fprintln(os.Stderr, "  grok                 Grok CLI")
