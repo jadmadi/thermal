@@ -22,3 +22,11 @@ Then `go test -race ./...`, `go build -o /tmp/thermal-test ./cmd/thermal`, and `
 
 ## Live CPU follow-up
 The user reported high CPU at `thermal live --interval 100ms`. The evaluation now includes a narrow synthetic PTY/NDJSON reproduction (96.2%/130.5% of one core at 100ms). Extend the benchmark matrix with sustained 100ms/1s idle and active polling, but do not block the independent P1 `live-polling-cpu-budget` fix on this broader baseline. These CPU measurements do not verify the separate sub-10ms invocation claim.
+
+## Current evidence, 2026-10-14
+
+The earlier observations above are historical. Current source revision is
+`302501b17f96a26a13b7b5cbaf4e7654199f7d5c`. See the
+[evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md) and
+[current contract](remediation-2026-10-14.md). Reopening preserves prior commits and evidence;
+it does not imply that the earlier implementation never existed.

@@ -1,0 +1,44 @@
+=== RUN   TestPromiseReceiptClassification
+=== RUN   TestPromiseReceiptClassification/printf_'go_test_./...'/go_test_./...
+    promise_probe_test.go:11: kind=0 label=""
+=== RUN   TestPromiseReceiptClassification/false_&&_go_test_./..._||_true/
+    promise_probe_test.go:11: kind=1 label="go test (exit 0)"
+    promise_probe_test.go:11: want 0 got 1
+=== RUN   TestPromiseReceiptClassification/go_test_./.../The_command_exited_with_code_0
+    promise_probe_test.go:11: kind=2 label="go test (exit 1)"
+    promise_probe_test.go:11: want 1 got 2
+=== RUN   TestPromiseReceiptClassification/pytest/10_passed,_0_failed
+    promise_probe_test.go:11: kind=2 label="pytest (exit 1)"
+    promise_probe_test.go:11: want 1 got 2
+=== RUN   TestPromiseReceiptClassification/go_test_./.../ok_example/pkg
+    promise_probe_test.go:11: kind=1 label="go test (exit 0)"
+=== RUN   TestPromiseReceiptClassification/go_test_./.../
+    promise_probe_test.go:11: kind=0 label=""
+--- FAIL: TestPromiseReceiptClassification (0.00s)
+    --- PASS: TestPromiseReceiptClassification/printf_'go_test_./...'/go_test_./... (0.00s)
+    --- FAIL: TestPromiseReceiptClassification/false_&&_go_test_./..._||_true/ (0.00s)
+    --- FAIL: TestPromiseReceiptClassification/go_test_./.../The_command_exited_with_code_0 (0.00s)
+    --- FAIL: TestPromiseReceiptClassification/pytest/10_passed,_0_failed (0.00s)
+    --- PASS: TestPromiseReceiptClassification/go_test_./.../ok_example/pkg (0.00s)
+    --- PASS: TestPromiseReceiptClassification/go_test_./.../ (0.00s)
+=== RUN   TestPromiseReplayPartialAttribution
+    promise_probe_test.go:16: source total=1000 replay total=100 peak=1000
+    promise_probe_test.go:17: replay dropped 900 tokens
+--- FAIL: TestPromiseReplayPartialAttribution (0.00s)
+=== RUN   TestPromiseReplayUnclassified
+    promise_probe_test.go:22: source=1000 replay=0
+    promise_probe_test.go:23: unclassified tokens disappeared
+--- FAIL: TestPromiseReplayUnclassified (0.00s)
+=== RUN   TestPromiseReplayMissingPrice
+    promise_probe_test.go:28: plan={ID:not-in-catalog Name:not-in-catalog (API) Type:payg MonthlyCost:0 CostDelta:-60 CostDeltaPercent:-100 ThrottledDays:0 TotalDays:1 ThrottleRate:0 BurstThrottles:0 CapacityVerdict:PASS VerdictDetail:0% throttled (unmetered API) IsRecommended:true}
+    promise_probe_test.go:29: unpriced target recommended as free
+--- FAIL: TestPromiseReplayMissingPrice (0.00s)
+FAIL
+FAIL	github.com/jadmadi/thermal/internal/thermal	0.003s
+=== RUN   TestPromiseAuditCorruptDatabase
+    promise_probe_test.go:6: PASS: 1 local tool databases verified (mmap-ready)
+    promise_probe_test.go:6: plain text accepted as verified database
+--- FAIL: TestPromiseAuditCorruptDatabase (0.00s)
+FAIL
+FAIL	github.com/jadmadi/thermal/internal/audit	0.003s
+FAIL

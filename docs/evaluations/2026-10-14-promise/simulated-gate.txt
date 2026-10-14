@@ -1,0 +1,153 @@
+
+[1m[36m═════════════════════════════════════════════════════════════════════[0m
+[1m  THERMAL · Simulated User Testing Release Gate[0m
+[1m[36m═════════════════════════════════════════════════════════════════════[0m
+
+[1m1. Building thermal binary...[0m
+   [32m✔[0m Binary built at: /tmp/thermal-promise-gate
+
+[1m2. Provisioning hermetic mock fixture environment...[0m
+   [32m✔[0m Hermetic fixture environment ready at: /tmp/thermal-gate-home-FjIjgg
+
+[1m2. Core Leaderboard & Dashboards:[0m
+  [32m✔ [PASS][0m Leaderboard standard output
+  [32m✔ [PASS][0m Leaderboard sorted by tokens
+  [32m✔ [PASS][0m Leaderboard sorted by cost
+  [32m✔ [PASS][0m Leaderboard JSON export
+  [32m✔ [PASS][0m Agy single-tool dashboard
+  [32m✔ [PASS][0m Agy single-tool antigravity alias
+  [32m✔ [PASS][0m Agy single-tool JSON export
+
+[1m3. Reports (Daily, Weekly, Monthly):[0m
+  [32m✔ [PASS][0m Daily report with --last 7
+  [32m✔ [PASS][0m Daily report JSON export
+  [32m✔ [PASS][0m Weekly report with --chart
+  [32m✔ [PASS][0m Weekly report JSON export
+  [32m✔ [PASS][0m Monthly report
+  [32m✔ [PASS][0m Monthly report JSON export
+
+[1m4. Projects & Models Ranking:[0m
+  [32m✔ [PASS][0m Projects ranking
+  [32m✔ [PASS][0m Projects sorted by cost with --top 5
+  [32m✔ [PASS][0m Projects breakdown detail
+  [32m✔ [PASS][0m Projects JSON export
+  [32m✔ [PASS][0m Models ranking
+  [32m✔ [PASS][0m Models sorted by cost
+  [32m✔ [PASS][0m Models JSON export
+
+[1m5. Analytics (Mix, Stats, Trend):[0m
+  [32m✔ [PASS][0m Mix by tool
+  [32m✔ [PASS][0m Mix by model with daily grain
+  [32m✔ [PASS][0m Mix by cost metric
+  [32m✔ [PASS][0m Mix JSON export
+  [32m✔ [PASS][0m Stats dense FinOps grid (default)
+  [32m✔ [PASS][0m Stats distribution escape hatch
+  [32m✔ [PASS][0m Stats distribution escape hatch shorthand
+  [32m✔ [PASS][0m Stats cost metric
+  [32m✔ [PASS][0m Stats dense 9-box FinOps grid explicitly
+  [32m✔ [PASS][0m Stats dense FinOps JSON export
+  [32m✔ [PASS][0m Stats distribution JSON export
+  [32m✔ [PASS][0m Stats JSON export
+  [32m✔ [PASS][0m Trend fit & projection
+  [32m✔ [PASS][0m Trend cost metric
+  [32m✔ [PASS][0m Trend JSON export
+
+[1m6. Replay Simulation (Workloads vs Subscriptions & APIs):[0m
+  [32m✔ [PASS][0m Replay default multi-tier simulation
+  [32m✔ [PASS][0m Replay against Claude Pro subscription
+  [32m✔ [PASS][0m Replay against DeepSeek V3 API
+  [32m✔ [PASS][0m Replay compare all plans
+  [32m✔ [PASS][0m Replay JSON export
+
+[1m7. Token Yield & Verifiable Work Receipts:[0m
+  [32m✔ [PASS][0m Yield report standard output
+  [32m✔ [PASS][0m Yield report sorted by lines
+  [32m✔ [PASS][0m Yield report sorted by yield
+  [32m✔ [PASS][0m Yield report JSON export
+  [32m✔ [PASS][0m Receipt report standard output
+  [32m✔ [PASS][0m Receipt report sorted by verified
+  [32m✔ [PASS][0m Receipt report sorted by rate
+  [32m✔ [PASS][0m Receipt report JSON export
+
+[1m8. Local Setup Audit, Stateless URL Sharing & Embedded Web Dashboard:[0m
+  [32m✔ [PASS][0m Audit command standard output
+  [32m✔ [PASS][0m Audit command JSON export
+  [32m✔ [PASS][0m Share command standard output
+  [32m✔ [PASS][0m Share command JSON export
+  [32m✔ [PASS][0m Serve command JSON export
+
+[1m9. Info, Version, License & Changelog Commands:[0m
+  [32m✔ [PASS][0m Version output
+  [32m✔ [PASS][0m Help output
+  [32m✔ [PASS][0m License command text
+  [32m✔ [PASS][0m License flag text
+  [32m✔ [PASS][0m License JSON output
+  [32m✔ [PASS][0m Changelog command text
+  [32m✔ [PASS][0m Changelog top 1
+  [32m✔ [PASS][0m Changelog JSON output
+
+[1m10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):[0m
+  [32m✔ [PASS][0m Rejects --top on weekly report
+  [32m✔ [PASS][0m Rejects --by on replay
+  [32m✔ [PASS][0m Rejects --against on projects
+  [32m✔ [PASS][0m Rejects --chart on replay
+  [32m✔ [PASS][0m Rejects --chart on serve
+  [32m✔ [PASS][0m Rejects negative --last
+  [32m✔ [PASS][0m Rejects invalid --sort on yield
+  [32m✔ [PASS][0m Rejects invalid --sort on receipt
+  [32m✔ [PASS][0m Rejects --dense on daily report
+  [32m✔ [PASS][0m Rejects missing zed database
+
+[1m11. License & Attribution Integrity Checks:[0m
+   [32m✔ Passed:[0m LICENSE is AGPL-3.0
+   [32m✔ Passed:[0m DUAL-LICENSE.md, CONTRIBUTING.md, and NOTICES.md present
+   [32m✔ Passed:[0m Author attribution clean (Jad Madi)
+   [32m✔ Passed:[0m Commercial contact email clean (contact@jadmadi.net)
+   [32m✔ Passed:[0m License covenant metadata verified
+   [32m✔ Passed:[0m Governance health & CHAOSS absence factor verified
+
+[1m12. Deprecation Warning Audits (Stderr Warnings & Clean JSON Stdout):[0m
+   [32m✔ Passed:[0m --license emits deprecation warning to stderr
+   [32m✔ Passed:[0m --license --json stdout is clean, valid JSON
+   [32m✔ Passed:[0m nous tool alias emits deprecation warning to stderr
+
+[1m13. Release Communication & Changelog Integrity Checks:[0m
+   [32m✔ Passed:[0m release-please-config.json schema & changelog-sections verified
+   [32m✔ Passed:[0m CHANGELOG.md conforms to Keep a Changelog format
+
+[1m14. Distribution Coverage & Agent Discovery Checks:[0m
+   [32m✔ Passed:[0m docs/pages/install.sh verified in dry-run mode
+   [32m✔ Passed:[0m Machine & agent documentation (llms.txt, llms-full.txt) present
+   [32m✔ Passed:[0m docs/DISTRIBUTION.md showcase runbook verified
+   [32m✔ Passed:[0m .goreleaser.yml homebrew tap formula verified
+   [32m✔ Passed:[0m OpenSSF SLSA Level 3 build provenance workflow verified
+   [32m✔ Passed:[0m docs/DISTRIBUTION.md SLSA3 verification runbook verified
+
+[1m15. End-to-End Human User Persona Simulation Flows:[0m
+  [32m✔ [PASS][0m Persona: Developer daily standup flow
+  [32m✔ [PASS][0m Persona: Developer code yield review
+  [32m✔ [PASS][0m Persona: Developer verifiable test receipts
+  [32m✔ [PASS][0m Persona: FinOps dense 9-box activity audit
+  [32m✔ [PASS][0m Persona: FinOps subscription replay comparison
+  [32m✔ [PASS][0m Persona: FinOps project spend attribution
+  [32m✔ [PASS][0m Persona: System health and permissions audit
+  [32m✔ [PASS][0m Persona: Localhost web telemetry API export
+  [32m✔ [PASS][0m Persona: Stateless share card URL generation
+  [32m✔ [PASS][0m Persona: Live token burn non-interactive pipe
+  [32m✔ [PASS][0m Persona: Live token burn snapshot export
+
+[1m16. Semantic Parity & Release Gate Assertions:[0m
+  [32m✔ [PASS][0m Static/Web/Live token parity verified (759,700 tokens)
+  [32m✔ [PASS][0m Receipt evidence hierarchy & token coverage verified
+  [32m✔ [PASS][0m Localhost server started and responded healthy
+  [32m✔ [PASS][0m Live server /api/telemetry matches token count (759,700)
+  [32m✔ [PASS][0m Live server rejects untrusted Host authority with HTTP 403
+  [32m✔ [PASS][0m Live server /api/stream emits SSE event and handles client cancellation
+  [32m✔ [PASS][0m Live NDJSON streaming emits snapshot with bounded interval
+  [32m✔ [PASS][0m Sub-second delta cache hit verified (5ms)
+
+[1m[36m─────────────────────────────────────────────────────────────────────[0m
+[1mSimulated User Gate Summary:[0m [32m107 passed[0m, [31m0 failed[0m (out of 107 checks)
+[1m[36m─────────────────────────────────────────────────────────────────────[0m
+
+[32m[1m✔ RELEASE GATE PASSED:[0m All simulated user commands, formatting, semantics, and language verified.

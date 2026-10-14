@@ -11,3 +11,11 @@
   - `internal/audit/audit.go`
   - `internal/audit/audit_test.go`
   - `internal/render/audit.go`
+
+## Current evidence, 2026-10-14
+
+The earlier observations above are historical. Current source revision is
+`302501b17f96a26a13b7b5cbaf4e7654199f7d5c`. See the
+[evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md) and
+[current contract](remediation-2026-10-14.md). Reopening preserves prior commits and evidence;
+it does not imply that the earlier implementation never existed.

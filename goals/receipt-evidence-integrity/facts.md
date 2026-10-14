@@ -18,3 +18,11 @@ Preserve unrelated work. Source ingestion stays read-only; normalized token cate
 `go test -race ./internal/thermal -run 'Receipt|Evidence|Outcome'`
 
 Then `go test -race ./...`, `go build -o /tmp/thermal-test ./cmd/thermal`, and `./scripts/simulated_user_gate.sh`. Use an isolated synthetic home, tool-root overrides and cached pricing. New benchmark paths are deliverables, not commands already present at evaluation time.
+
+## Current evidence, 2026-10-14
+
+The earlier observations above are historical. Current source revision is
+`302501b17f96a26a13b7b5cbaf4e7654199f7d5c`. See the
+[evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md) and
+[current contract](remediation-2026-10-14.md). Reopening preserves prior commits and evidence;
+it does not imply that the earlier implementation never existed.

@@ -1,0 +1,14 @@
+{
+  "goal_slug": "receipt-evidence-integrity",
+  "reopened_at": "2026-10-14T06:01:37.073809324Z",
+  "reopened_by": "codex",
+  "reason": "2026-10-14 probes: skipped compound test verified; success output misclassified as failure",
+  "original_commit": "7a8ce91",
+  "resolved_at": "0001-01-01T00:00:00Z",
+  "active": true,
+  "tainted_goals": [
+    "hermetic-verification-gates",
+    "receipt-accounting-coverage"
+  ],
+  "reopen_epoch": 1
+}

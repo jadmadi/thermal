@@ -1,0 +1,7 @@
+package audit
+import("testing";"os";"path/filepath";"strings")
+func TestPromiseAuditCorruptDatabase(t *testing.T){
+ h:=t.TempDir();p:=filepath.Join(h,".codex","state_5.sqlite");os.MkdirAll(filepath.Dir(p),0755);os.WriteFile(p,[]byte("this is not sqlite"),0600)
+ r:=RunAuditWithOptions(t.TempDir(),h)
+ for _,f:=range r.ReadinessFindings{if f.Check=="Tool Databases" {t.Logf("%s: %s",f.Status,f.Message);if f.Status=="PASS"&&strings.Contains(f.Message,"verified"){t.Error("plain text accepted as verified database")}}}
+}

@@ -20,3 +20,10 @@
   - Wire `--against` and `--compare` flags.
   - Comprehensive unit tests for mathematical correctness and rate-limiting heuristics.
   - Verify complete build and test suite with `-race`.
+
+## Remediation, 2026-10-14
+
+- [ ] Implement the cards and stable acceptance IDs in [the remediation contract](remediation-2026-10-14.md).
+- [ ] Attach candidate-bound results and receive independent review under `tasks/plan.md`.
+
+Earlier checked steps describe historical work and do not certify these reopened cases.

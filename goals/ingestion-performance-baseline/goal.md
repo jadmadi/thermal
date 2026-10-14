@@ -8,7 +8,7 @@ Priority: **P2**. Created from the [2026-09-24 evaluation](../../docs/evaluation
 ## Dependencies & Execution Order
 - **Mode**: Independent (disjoint, parallelizable)
 - **Depends On**: none
-- **Sequence**: 68
+- **Sequence**: 105
 - **Shape**: ship
 - **Tier**: roadmap
 
@@ -30,3 +30,10 @@ Priority: **P2**. Created from the [2026-09-24 evaluation](../../docs/evaluation
 
 ## Scope Boundary
 Measurement only. Do not optimize all loaders at once or make unmeasured speed claims. scripts/benchmark.sh is a proposed deliverable, not an existing verified command.
+
+## Reopened acceptance, 2026-10-14
+
+Historical implementation and completed tasks remain preserved. New acceptance is pending.
+The [current remediation contract](remediation-2026-10-14.md) adds binding acceptance criteria;
+complete it as well as preserved prior criteria before claiming this goal delivered.
+See the [evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md).

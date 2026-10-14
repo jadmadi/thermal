@@ -1,0 +1,12 @@
+ok  	github.com/jadmadi/thermal/cmd/thermal	(cached)
+ok  	github.com/jadmadi/thermal/internal/audit	(cached)
+ok  	github.com/jadmadi/thermal/internal/changelog	(cached)
+ok  	github.com/jadmadi/thermal/internal/loaders	(cached)
+ok  	github.com/jadmadi/thermal/internal/pricing	(cached)
+ok  	github.com/jadmadi/thermal/internal/render	(cached)
+ok  	github.com/jadmadi/thermal/internal/server	1.538s
+ok  	github.com/jadmadi/thermal/internal/share	(cached)
+ok  	github.com/jadmadi/thermal/internal/theme	(cached)
+ok  	github.com/jadmadi/thermal/internal/thermal	94.573s
+ok  	github.com/jadmadi/thermal/internal/tui	182.055s
+?   	github.com/jadmadi/thermal/internal/version	[no test files]

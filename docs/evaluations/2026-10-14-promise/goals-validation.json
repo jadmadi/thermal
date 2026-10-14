@@ -1,0 +1,219 @@
+{
+  "version": "sila/goals-validate/v1",
+  "project_dir": "/mnt/Jad/github/lab/thermal-streak",
+  "valid": false,
+  "checked_goals": 84,
+  "errors_count": 3,
+  "warnings_count": 23,
+  "diagnostics": [
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "charting-analytics",
+      "path": "goals/charting-analytics/goal.md",
+      "message": "sequence #2 shared with html-docs-features-and-analytics, repo-alignment-and-security",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "charting-dep-spike",
+      "path": "goals/charting-dep-spike/goal.md",
+      "message": "sequence #1 shared with governance-foundations, tiered-precommit-fastpath",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "charting-flags-docs-release",
+      "path": "goals/charting-flags-docs-release/goal.md",
+      "message": "sequence #7 shared with version-migration-guide",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "cli-staged-deprecation-and-upgrade",
+      "path": "goals/cli-staged-deprecation-and-upgrade/goal.md",
+      "message": "sequence #8 shared with devin-model-attribution",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "TASK_STATE_INCONSISTENT",
+      "severity": "warning",
+      "goal_slug": "codex-incremental-rollout-cache",
+      "path": "goals/codex-incremental-rollout-cache/plan.md",
+      "message": "all tasks checked in plan.md but goal has no commit attribution; checked tasks alone do not certify implementation",
+      "remediation": "Commit implementation with git commit -m '... (goals/\u003cslug\u003e/goal.md)'"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "community-covenant-neutrality",
+      "path": "goals/community-covenant-neutrality/goal.md",
+      "message": "sequence #3 shared with tui-shell-overview",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "contributor-onboarding",
+      "path": "goals/contributor-onboarding/goal.md",
+      "message": "sequence #6 shared with tui-stats-view",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "devin-model-attribution",
+      "path": "goals/devin-model-attribution/goal.md",
+      "message": "sequence #8 shared with cli-staged-deprecation-and-upgrade",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "distribution-coverage-foundation",
+      "path": "goals/distribution-coverage-foundation/goal.md",
+      "message": "sequence #10 shared with unpriceable-token-sources",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "governance-foundations",
+      "path": "goals/governance-foundations/goal.md",
+      "message": "sequence #1 shared with charting-dep-spike, tiered-precommit-fastpath",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "TASK_STATE_INCONSISTENT",
+      "severity": "warning",
+      "goal_slug": "hermetic-verification-gates",
+      "path": "goals/hermetic-verification-gates/plan.md",
+      "message": "all tasks checked in plan.md but goal has no commit attribution; checked tasks alone do not certify implementation",
+      "remediation": "Commit implementation with git commit -m '... (goals/\u003cslug\u003e/goal.md)'"
+    },
+    {
+      "code": "MISSING_PREREQUISITE",
+      "severity": "error",
+      "goal_slug": "html-docs-features-and-analytics",
+      "path": "goals/html-docs-features-and-analytics/goal.md",
+      "message": "prerequisite \"html-docs-licensing-parity\" does not exist",
+      "remediation": "Scaffold prerequisite \"html-docs-licensing-parity\" or remove dependency"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "html-docs-features-and-analytics",
+      "path": "goals/html-docs-features-and-analytics/goal.md",
+      "message": "sequence #2 shared with charting-analytics, repo-alignment-and-security",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "MISSING_FILE",
+      "severity": "error",
+      "goal_slug": "mcp-server-card",
+      "path": "goals/mcp-server-card/facts.md",
+      "message": "missing required facts.md file",
+      "remediation": "Create facts.md describing background facts and invariants"
+    },
+    {
+      "code": "MISSING_FILE",
+      "severity": "error",
+      "goal_slug": "mcp-server-card",
+      "path": "goals/mcp-server-card/goal.md",
+      "message": "missing required goal.md file",
+      "remediation": "Create goal.md with metadata frontmatter or title"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "purge-legacy-mit-releases",
+      "path": "goals/purge-legacy-mit-releases/goal.md",
+      "message": "sequence #4 shared with tui-projects-view",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "TASK_STATE_INCONSISTENT",
+      "severity": "warning",
+      "goal_slug": "receipt-accounting-coverage",
+      "path": "goals/receipt-accounting-coverage/plan.md",
+      "message": "all tasks checked in plan.md but goal has no commit attribution; checked tasks alone do not certify implementation",
+      "remediation": "Commit implementation with git commit -m '... (goals/\u003cslug\u003e/goal.md)'"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "repo-alignment-and-security",
+      "path": "goals/repo-alignment-and-security/goal.md",
+      "message": "sequence #2 shared with charting-analytics, html-docs-features-and-analytics",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "tiered-precommit-fastpath",
+      "path": "goals/tiered-precommit-fastpath/goal.md",
+      "message": "sequence #1 shared with charting-dep-spike, governance-foundations",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "trust-ladder-and-succession",
+      "path": "goals/trust-ladder-and-succession/goal.md",
+      "message": "sequence #5 shared with tui-mix-models-views",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "tui-mix-models-views",
+      "path": "goals/tui-mix-models-views/goal.md",
+      "message": "sequence #5 shared with trust-ladder-and-succession",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "tui-projects-view",
+      "path": "goals/tui-projects-view/goal.md",
+      "message": "sequence #4 shared with purge-legacy-mit-releases",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "tui-shell-overview",
+      "path": "goals/tui-shell-overview/goal.md",
+      "message": "sequence #3 shared with community-covenant-neutrality",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "tui-stats-view",
+      "path": "goals/tui-stats-view/goal.md",
+      "message": "sequence #6 shared with contributor-onboarding",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "unpriceable-token-sources",
+      "path": "goals/unpriceable-token-sources/goal.md",
+      "message": "sequence #10 shared with distribution-coverage-foundation",
+      "remediation": "Assign unique sequence numbers"
+    },
+    {
+      "code": "SEQUENCE_COLLISION",
+      "severity": "warning",
+      "goal_slug": "version-migration-guide",
+      "path": "goals/version-migration-guide/goal.md",
+      "message": "sequence #7 shared with charting-flags-docs-release",
+      "remediation": "Assign unique sequence numbers"
+    }
+  ],
+  "summary": "checked 84 goal(s): 3 error(s), 23 warning(s)"
+}

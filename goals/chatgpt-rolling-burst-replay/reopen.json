@@ -1,0 +1,10 @@
+{
+  "goal_slug": "chatgpt-rolling-burst-replay",
+  "reopened_at": "2026-10-14T06:02:32.510717409Z",
+  "reopened_by": "codex",
+  "reason": "2026-10-14 source audit: SimulatePlan compares daily totals to rolling window limits without event timestamps",
+  "original_commit": "b0759e0",
+  "resolved_at": "0001-01-01T00:00:00Z",
+  "active": true,
+  "reopen_epoch": 1
+}

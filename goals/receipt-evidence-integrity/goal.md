@@ -8,7 +8,7 @@ Priority: **P1**. Created from the [2026-09-24 evaluation](../../docs/evaluation
 ## Dependencies & Execution Order
 - **Mode**: Independent (disjoint, parallelizable)
 - **Depends On**: none
-- **Sequence**: 61
+- **Sequence**: 100
 - **Shape**: ship
 - **Tier**: roadmap
 
@@ -29,3 +29,10 @@ Priority: **P1**. Created from the [2026-09-24 evaluation](../../docs/evaluation
 
 ## Scope Boundary
 Do not redesign spend aggregation or add additional harness adapters here. Those changes belong to receipt-accounting-coverage.
+
+## Reopened acceptance, 2026-10-14
+
+Historical implementation and completed tasks remain preserved. New acceptance is pending.
+The [current remediation contract](remediation-2026-10-14.md) adds binding acceptance criteria;
+complete it as well as preserved prior criteria before claiming this goal delivered.
+See the [evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md).

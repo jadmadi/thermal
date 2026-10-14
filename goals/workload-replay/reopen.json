@@ -1,0 +1,10 @@
+{
+  "goal_slug": "workload-replay",
+  "reopened_at": "2026-10-14T06:01:37.164620702Z",
+  "reopened_by": "codex",
+  "reason": "2026-10-14 probe: 1000 source tokens become 100 replay tokens with partial model attribution",
+  "original_commit": "1ca92ed",
+  "resolved_at": "0001-01-01T00:00:00Z",
+  "active": true,
+  "reopen_epoch": 1
+}

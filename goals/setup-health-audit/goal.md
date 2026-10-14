@@ -6,7 +6,7 @@ Implement non-destructive setup and context health diagnostic ('thermal audit').
 ## Dependencies & Execution Order
 - **Mode**: Independent (disjoint, parallelizable)
 - **Depends On**: none
-- **Sequence**: -
+- **Sequence**: 103
 - **Shape**: ship
 - **Tier**: roadmap
 
@@ -24,3 +24,10 @@ Implement non-destructive setup and context health diagnostic ('thermal audit').
 1. All requirements described in the goal and execution plan are implemented.
 2. All automated unit and integration tests pass cleanly with `-race` (`go test -race ./...` or stack equivalent).
 3. Zero architectural regressions; definitions of done satisfied.
+
+## Reopened acceptance, 2026-10-14
+
+Historical implementation and completed tasks remain preserved. New acceptance is pending.
+The [current remediation contract](remediation-2026-10-14.md) adds binding acceptance criteria;
+complete it as well as preserved prior criteria before claiming this goal delivered.
+See the [evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md).

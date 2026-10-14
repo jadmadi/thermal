@@ -1,0 +1,30 @@
+package thermal
+import "testing"
+func TestPromiseReceiptClassification(t *testing.T) {
+ for _, c := range []struct{cmd string; exit int; out string; want EvidenceKind}{
+ {"printf 'go test ./...'",0,"go test ./...",EvidenceUnknown},
+ {"false && go test ./... || true",0,"",EvidenceUnknown},
+ {"go test ./...",-1,"The command exited with code 0",EvidenceTestPass},
+ {"pytest",-1,"10 passed, 0 failed",EvidenceTestPass},
+ {"go test ./...",0,"ok\texample/pkg",EvidenceTestPass},
+ {"go test ./...",-1,"",EvidenceUnknown},
+ } {t.Run(c.cmd+"/"+c.out,func(t *testing.T){got,label,_:=ParseCommandEvidence(c.cmd,c.exit,c.out);t.Logf("kind=%d label=%q",got,label);if got!=c.want{t.Errorf("want %d got %d",c.want,got)}})}
+}
+func TestPromiseReplayPartialAttribution(t *testing.T){
+ d:=DailyRow{Day:"2026-10-14",Tokens:1000,Input:800,Output:200,Models:map[string]ModelTokens{"known":{Input:80,Output:20}}}
+ got,_,_:=BuildWorkloadSnapshot([]DailyRow{d},ReplayOptions{},nil)
+ t.Logf("source total=%d replay total=%d peak=%d",d.Tokens,got.TotalTokens,got.PeakDailyTokens)
+ if got.TotalTokens!=d.Tokens{t.Errorf("replay dropped %d tokens",d.Tokens-got.TotalTokens)}
+}
+func TestPromiseReplayUnclassified(t *testing.T){
+ d:=DailyRow{Day:"2026-10-14",Tokens:1000,Models:map[string]ModelTokens{"recorded-model":{Unclassified:1000}}}
+ got,_,_:=BuildWorkloadSnapshot([]DailyRow{d},ReplayOptions{},nil)
+ t.Logf("source=%d replay=%d",d.Tokens,got.TotalTokens)
+ if got.TotalTokens!=1000{t.Error("unclassified tokens disappeared")}
+}
+func TestPromiseReplayMissingPrice(t *testing.T){
+ d:=DailyRow{Day:"2026-10-14",Tokens:1000,Input:1000,Cost:2}
+ got:=AggregateReplay([]DailyRow{d},ReplayOptions{Since:"2026-10-14",Until:"2026-10-14",Against:"not-in-catalog"},nil)
+ t.Logf("plan=%+v",got.Plans[0])
+ if got.Plans[0].IsRecommended{t.Error("unpriced target recommended as free")}
+}

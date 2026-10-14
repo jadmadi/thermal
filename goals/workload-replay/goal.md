@@ -21,9 +21,11 @@ thermal replay --compare all --json
 ```
 
 ## Dependencies & Execution Order
-- **Mode**: Independent ⚡
+- **Mode**: Independent (disjoint, parallelizable)
 - **Depends On**: none
+- **Sequence**: 101
 - **Shape**: ship
+- **Tier**: roadmap
 
 ## Files to Touch
 - `cmd/thermal/main.go`: CLI command dispatch and flag registration (`--against`, `--compare`).
@@ -43,3 +45,10 @@ thermal replay --compare all --json
 4. Output displays an executive summary table comparing projected monthly cost, cost delta vs actual, and capacity verdict.
 5. Automated unit tests verify replay math, throttle calculations, and golden terminal rendering.
 6. Documentation updated (`README.md`, `AGENTS.md`, `cmd/thermal/main.go --help`, and HTML site).
+
+## Reopened acceptance, 2026-10-14
+
+Historical implementation and completed tasks remain preserved. New acceptance is pending.
+The [current remediation contract](remediation-2026-10-14.md) adds binding acceptance criteria;
+complete it as well as preserved prior criteria before claiming this goal delivered.
+See the [evaluation](../../docs/evaluations/2026-10-14-promise-vs-delivery.md).

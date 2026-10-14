@@ -1,0 +1,10 @@
+{
+  "goal_slug": "setup-health-audit",
+  "reopened_at": "2026-10-14T06:01:37.242576316Z",
+  "reopened_by": "codex",
+  "reason": "2026-10-14 probe: plain text state_5.sqlite reported PASS verified mmap-ready",
+  "original_commit": "8afd798",
+  "resolved_at": "0001-01-01T00:00:00Z",
+  "active": true,
+  "reopen_epoch": 1
+}

@@ -1,0 +1,13 @@
+{
+  "goal_slug": "ingestion-performance-baseline",
+  "reopened_at": "2026-10-14T06:01:37.324385975Z",
+  "reopened_by": "codex",
+  "reason": "2026-10-14 audit: nonzero-only fixture assertion, two-second CPU window, incomplete cold cache reset",
+  "original_commit": "e2a569f",
+  "resolved_at": "0001-01-01T00:00:00Z",
+  "active": true,
+  "tainted_goals": [
+    "codex-incremental-rollout-cache"
+  ],
+  "reopen_epoch": 1
+}

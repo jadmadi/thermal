@@ -1,0 +1,60 @@
+
+[1m[36m═════════════════════════════════════════════════════════════════════[0m
+[1m  THERMAL · Ingestion Performance & Latency Baseline[0m
+[1m[36m═════════════════════════════════════════════════════════════════════[0m
+
+[1m1. Hardware & System Environment:[0m
+   • CPU:      Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz (8 cores)
+   • Memory:   31Gi
+   • OS:       Linux 6.12.111+deb13-amd64
+   • Go:       go version go1.27.2 linux/amd64
+   • Git:      302501b
+
+[1m2. Building Thermal binary...[0m
+   [32m✔[0m Binary built at: /tmp/thermal-promise-bench
+
+[1m3. Provisioning Representative Workload Fixtures...[0m
+   [32m✔[0m Workload fixture generated with:
+     • Devin:     25 sessions, 500 message nodes (SQLite)
+     • Codex:     20 threads, 100 rollout log entries (SQLite + JSONL)
+     • OpenCode:  50 sessions (SQLite session_v2)
+     • Claude:    30 sessions (Multi-file JSONL)
+     • CodeWhale: 20 sessions (Multi-file JSON)
+
+[1m4. Validating Correctness on Fixtures...[0m
+   • Ingested Tools: 5
+   • Total Tokens:   1873500
+   [32m✔[0m Fixture data verified.
+
+[1m5. Measuring CLI Ingestion Latency...[0m
+   • [1mCold Ingestion:[0m    min=72ms, avg=73ms, p50=74ms, p95=76ms, max=76ms
+   • [1mWarm Ingestion:[0m    min=9ms, avg=10ms, p50=10ms, p95=16ms, max=16ms
+   • [1mChanged/Append:[0m    min=72ms, avg=73ms, p50=74ms, p95=75ms, max=75ms
+
+[1m6. Measuring Sustained Live Monitoring CPU Utilization...[0m
+   • Running live monitor at 100ms interval (2s sustained)...
+     → Wall time: 2.004s, CPU time: 0.02s (user: 0.004s, sys: 0.016s), CPU: 1.0%
+   • Running live monitor at 1s interval (2s sustained)...
+     → Wall time: 2.003s, CPU time: 0.013s (user: 0.007s, sys: 0.006s), CPU: 0.6%
+
+[1m7. Running Go Ingestion Microbenchmarks (internal/loaders)...[0m
+goos: linux
+goarch: amd64
+pkg: github.com/jadmadi/thermal/internal/loaders
+cpu: Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz
+BenchmarkDevin_Cold-8            	     152	   3963424 ns/op	  137993 B/op	    7891 allocs/op
+BenchmarkDevin_Warm-8            	     736	    801132 ns/op	   25815 B/op	     769 allocs/op
+BenchmarkDevin_AppendDelta-8     	     240	   2764773 ns/op	  110175 B/op	    5217 allocs/op
+BenchmarkCodex_Cold-8            	     482	   1250155 ns/op	 1488402 B/op	    2023 allocs/op
+BenchmarkCodex_Warm-8            	     884	    669551 ns/op	   58988 B/op	    1009 allocs/op
+BenchmarkOpenCode_Scan-8         	     355	   1637821 ns/op	   24077 B/op	     368 allocs/op
+BenchmarkClaude_Scan-8           	     747	   1167948 ns/op	 3379244 B/op	     819 allocs/op
+BenchmarkModelName_Canonical-8   	25238394	        22.39 ns/op	       0 B/op	       0 allocs/op
+BenchmarkModelName_Alias-8       	21162727	        28.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkModelName_Router-8      	 5333445	       110.7 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/jadmadi/thermal/internal/loaders	8.353s
+
+[1m[36m─────────────────────────────────────────────────────────────────────[0m
+[1m[32m✔ Baseline Measurements Complete![0m
+[1m[36m─────────────────────────────────────────────────────────────────────[0m
