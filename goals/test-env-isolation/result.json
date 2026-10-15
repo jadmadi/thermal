@@ -1,0 +1,58 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "Ambient tool-root overrides no longer change verification results. TestScanSessionReceipts and TestScanSessionReceipts_Codex clear CODEX_HOME so their temporary fixture home wins over a developer's or CI's override; TestLoadUserConfig_INI, TestLoadUserConfig_StructuredJSON, TestLoadUserConfig_FlatJSON, TestLoadUserConfig_EmptyWhenMissing and TestAllTools_ConfigOverrides clear THERMAL_CONFIG. TestLoadUserConfig_EnvOverride still exercises the override deliberately. No production code or assertion changed.",
+  "files": [
+    "internal/thermal/receipt_test.go",
+    "internal/loaders/config_test.go"
+  ],
+  "cases": [
+    {
+      "id": "Strictness",
+      "result": "pass",
+      "evidence": "Poisoned-environment sweep exits 0 for every package: env CODEX_HOME=/tmp/empty-tool-home GROK_HOME=... DSH_HOME=... HERMES_HOME=... ANTIGRAVITY_APP_DATA_DIR=... THERMAL_CONFIG=/tmp/empty-tool-home/none.config go test ./... -count=1 (all ok). A stronger data-filled CODEX_HOME (state_5.sqlite with one thread) also passes for internal/thermal and internal/loaders."
+    },
+    {
+      "id": "No-weakened-assertions",
+      "result": "pass",
+      "evidence": "Diff is 7 additive lines (t.Setenv calls only); no assertion, fixture, or production path changed. go test -race ./internal/thermal ./internal/loaders -run 'ScanSessionReceipts|LoadUserConfig|AllTools_ConfigOverrides' exits 0."
+    }
+  ],
+  "commands": [
+    {
+      "command": "env CODEX_HOME=/tmp/empty-tool-home GROK_HOME=/tmp/empty-tool-home DSH_HOME=/tmp/empty-tool-home HERMES_HOME=/tmp/empty-tool-home ANTIGRAVITY_APP_DATA_DIR=/tmp/empty-tool-home THERMAL_CONFIG=/tmp/empty-tool-home/none.config go test ./... -count=1",
+      "exit": 0,
+      "log": "every package ok (previously 5 failures across internal/thermal and internal/loaders)"
+    },
+    {
+      "command": "env CODEX_HOME=/tmp/poison-codex THERMAL_CONFIG=/tmp/nonexistent-thermal.config go test ./internal/thermal ./internal/loaders -count=1",
+      "exit": 0,
+      "log": "ok internal/thermal; ok internal/loaders (data-filled poisoned override)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "110 passed, 0 failed (out of 110 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "cd5600c",
+    "diff_sha256": "403bba27968a55181e11e852de70002ae37bc2675b6f175011ac3bbceef1738e"
+  },
+  "blockers": []
+}

@@ -1,5 +1,12 @@
 # Goal: Make transcript verification independent of ambient tool-root overrides
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_test-env-isolation_1792088896`
+
+
 ## Goal Description
 `TestScanSessionReceipts_Codex` fails whenever `CODEX_HOME` points at a real or empty tool store:
 

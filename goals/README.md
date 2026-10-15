@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 89
-- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 84 (1 verified 📜, 15 stale ⚠️, 68 unverified)
+- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 85 (2 verified 📜, 15 stale ⚠️, 68 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 367/391 completed (93%)
+- 📋 **Execution Tasks Progress**: 372/391 completed (95%)
 
 ---
 
@@ -40,7 +40,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#107)` | - | Reuse unchanged directory transcripts across invocations — Close the 1,000-file warm-latency gap measured in [`docs/PERFORMANCE.md`](../../... | `/goal goals/directory-scan-incremental-cache/goal.md` |
-| [`test-env-isolation`](test-env-isolation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#108)` | - | Make transcript verification independent of ambient tool-root overrides — `TestScanSessionReceipts_Codex` fails whenever `CODEX_HOME` points at a real or ... | `/goal goals/test-env-isolation/goal.md` |
 | [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#109)` | - | Resolve plan identifiers passed to replay --against — `thermal replay --against claude-pro` silently produces a pay-as-you-go row name... | `/goal goals/replay-against-plan-resolution/goal.md` |
 | [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#110)` | - | Align hosted documentation claims with the promises ledger — The hosted documentation page still carries the blanket promise: > …computing ... | `/goal goals/docs-page-claim-parity/goal.md` |
 | [`release-provenance-verification`](release-provenance-verification/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#111)` | - | Independently verify a released artifact's SLSA provenance — [`docs/PROMISES.md`](../../docs/PROMISES.md) records release provenance as **unv... | `/goal goals/release-provenance-verification/goal.md` |
@@ -72,6 +71,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `81901a8` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `0d42b32` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e2a569f` |
+| [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `cd5600c565e5cad966373629c09044df68101b3e` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
