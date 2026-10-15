@@ -55,3 +55,35 @@ func TestLookupPlan_PrefixAndCase(t *testing.T) {
 		}
 	}
 }
+
+func TestLookupPlanExact(t *testing.T) {
+	tests := []struct {
+		query  string
+		wantID string
+		wantOK bool
+	}{
+		{"claude-pro", "claude-pro", true},
+		{"CLAUDE-PRO", "claude-pro", true},
+		{"Claude Pro ($20)", "claude-pro", true},
+		{"  deepseek-api  ", "deepseek-api", true},
+		// Prefix lookups must not resolve: a model id that merely shares a
+		// plan prefix must stay a model target.
+		{"claude", "", false},
+		{"deepseek", "", false},
+		{"agy", "", false},
+		{"kimi", "", false},
+		{"claude-3-5-sonnet", "", false},
+		{"", "", false},
+		{"non-existent-plan", "", false},
+	}
+
+	for _, tt := range tests {
+		plan, ok := LookupPlanExact(tt.query)
+		if ok != tt.wantOK {
+			t.Errorf("LookupPlanExact(%q) ok = %v, want %v", tt.query, ok, tt.wantOK)
+		}
+		if ok && plan.ID != tt.wantID {
+			t.Errorf("LookupPlanExact(%q) ID = %q, want %q", tt.query, plan.ID, tt.wantID)
+		}
+	}
+}

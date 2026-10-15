@@ -449,6 +449,9 @@ thermal replay
 thermal replay --against deepseek-v3
 thermal replay --against claude-3-7-sonnet --since 2026-08-01
 
+# Built-in plan ids or names resolve to the plan itself (same row as --compare)
+thermal replay --against claude-pro
+
 # Compare custom plans or all available standard plans side-by-side
 thermal replay --compare all
 thermal replay --compare "claude-pro,claude-max,cursor-pro,deepseek-api"

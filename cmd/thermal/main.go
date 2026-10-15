@@ -1458,11 +1458,21 @@ func runReplayReport(opts thermal.Options) {
 		}
 	}
 
+	// A --against value that names a built-in plan resolves to that plan,
+	// exactly like --compare; anything else stays a model rate-card target.
+	against := opts.Against
+	if against != "" {
+		if plan, ok := pricing.LookupPlanExact(against); ok {
+			plans = append([]thermal.SubscriptionPlan{plan}, plans...)
+			against = ""
+		}
+	}
+
 	replayOpts := thermal.ReplayOptions{
 		Since:   opts.Since,
 		Until:   opts.Until,
 		Last:    opts.Last,
-		Against: opts.Against,
+		Against: against,
 		Compare: plans,
 	}
 	rep := thermal.AggregateReplay(set.days, replayOpts, pricer)

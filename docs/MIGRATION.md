@@ -15,6 +15,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Token-Boundary Receipt Evidence Classification](#changed-receipt-evidence-token-boundary)
   - [Changed: Workload Replay Volume Conservation and Price Coverage](#changed-replay-volume-and-price-coverage)
   - [Changed: Rolling-Window Capacity Verdicts from Daily Telemetry](#changed-replay-rolling-capacity-unknown)
+  - [Changed: `thermal replay --against` Resolves Built-In Plan Identifiers](#changed-replay-against-plan-resolution)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -221,6 +222,35 @@ Treat `UNKNOWN` as "cannot be assessed from daily telemetry": do not rank or rec
 
 **Escape hatch**:
 None. Daily rows cannot observe intraday bursts; exact five-hour simulation waits for a separate timestamp-coverage design. UNKNOWN rows remain visible with their daily figures so no capacity claim silently disappears.
+
+### Changed: `thermal replay --against` Resolves Built-In Plan Identifiers
+<a id="changed-replay-against-plan-resolution"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'replay.*--against' .` or scripts parsing `thermal replay --against <id> --json`.
+- **Detection signal**: `--against claude-pro` (or any built-in plan id or exact plan name) now renders the subscription plan row — `plans[0].id` is `claude-pro`, `type` is `"sub"`, `pricingStatus` is `"complete"` — instead of a pay-as-you-go `"claude-pro (API)"` row with `pricingStatus: "missing"`. Values that are not exact plan ids or names keep the model rate-card behavior unchanged.
+
+**What changed and why**:
+`--against` targeted model rate cards only, so naming a built-in plan produced an unpriced pseudo-model row with no hint that `--compare <plan>` was intended. A value that exactly matches a plan id or name (case-insensitive, no prefix matching) now resolves to that plan, making `--against claude-pro` and `--compare claude-pro` identical for that plan; model targeting is unchanged for every other value.
+
+**Before / After**:
+```bash
+# Before (v0.20.2-: the plan id became an unpriced model)
+thermal replay --against claude-pro --json
+# plans[0].id: "claude-pro" · name: "claude-pro (API)" · type: "payg" · pricingStatus: "missing"
+```
+
+```bash
+# After (v0.20.2+: the plan id resolves to the plan itself)
+thermal replay --against claude-pro --json
+# plans[0].id: "claude-pro" · name: "Claude Pro ($20)" · type: "sub" · pricingStatus: "complete"
+```
+
+**The fix**:
+If a script depended on `--against <plan>` producing an unpriced model row, switch to `--compare <plan>` for plan comparisons or use the target model's rate-card id with `--against`. Resolution is exact-only: `--against claude` remains a model lookup and never captures `claude-pro`.
+
+**Escape hatch**:
+None needed for plan ids; model targeting is unchanged for any value that is not an exact plan id or name.
 
 ## Upgrading to v0.16.x
 

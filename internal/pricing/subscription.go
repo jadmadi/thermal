@@ -158,3 +158,20 @@ func LookupPlan(key string) (thermal.SubscriptionPlan, bool) {
 	}
 	return thermal.SubscriptionPlan{}, false
 }
+
+// LookupPlanExact resolves a plan only by exact ID or exact name
+// (case-insensitive). Unlike LookupPlan it never prefix-matches, so a model id
+// that merely shares a prefix with a plan (for example "claude" against
+// "claude-pro") is not captured by accident.
+func LookupPlanExact(key string) (thermal.SubscriptionPlan, bool) {
+	norm := strings.ToLower(strings.TrimSpace(key))
+	if norm == "" {
+		return thermal.SubscriptionPlan{}, false
+	}
+	for _, p := range standardPlans {
+		if strings.ToLower(p.ID) == norm || strings.ToLower(p.Name) == norm {
+			return p, true
+		}
+	}
+	return thermal.SubscriptionPlan{}, false
+}

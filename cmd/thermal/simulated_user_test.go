@@ -290,6 +290,39 @@ func TestSimulatedUser_ReplaySimulation(t *testing.T) {
 		}
 	})
 
+	t.Run("replay against plan identifiers resolves to plans", func(t *testing.T) {
+		againstOut, stderr, code := runSim(t, "replay", "--against", "claude-pro", "--no-color")
+		if code != 0 {
+			t.Fatalf("replay --against claude-pro failed with code %d: %s", code, stderr)
+		}
+		if strings.Contains(againstOut, "claude-pro (API)") {
+			t.Errorf("plan identifier was captured as a model rate card:\n%s", againstOut)
+		}
+
+		compareOut, stderr, code := runSim(t, "replay", "--compare", "claude-pro", "--no-color")
+		if code != 0 {
+			t.Fatalf("replay --compare claude-pro failed with code %d: %s", code, stderr)
+		}
+		againstRow := planRowLine(againstOut, "Claude Pro ($20)")
+		compareRow := planRowLine(compareOut, "Claude Pro ($20)")
+		if againstRow == "" || compareRow == "" {
+			t.Fatalf("plan row missing (against=%q compare=%q)", againstRow, compareRow)
+		}
+		if againstRow != compareRow {
+			t.Errorf("--against row %q does not match --compare row %q", againstRow, compareRow)
+		}
+
+		// A value that is not an exact plan id or name stays a model lookup;
+		// a shared prefix must never resolve.
+		prefixOut, stderr, code := runSim(t, "replay", "--against", "claude", "--no-color")
+		if code != 0 {
+			t.Fatalf("replay --against claude failed with code %d: %s", code, stderr)
+		}
+		if !strings.Contains(prefixOut, "claude (API)") {
+			t.Errorf("expected claude (API) model row for a non-plan target:\n%s", prefixOut)
+		}
+	})
+
 	t.Run("replay JSON schema", func(t *testing.T) {
 		jsonOut, stderr, code := runSim(t, "replay", "--json", "--compare", "all")
 		if code != 0 {
@@ -349,6 +382,17 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+// planRowLine returns the first rendered table row containing name, trimmed of
+// trailing whitespace, so two runs can be compared row for row.
+func planRowLine(output, name string) string {
+	for _, line := range strings.Split(output, "\n") {
+		if strings.Contains(line, name) && strings.Contains(line, "│") {
+			return strings.TrimRight(line, " ")
+		}
+	}
+	return ""
 }
 
 // Helper: verifies no raw NaN, Inf, or weird formatting artifacts.
