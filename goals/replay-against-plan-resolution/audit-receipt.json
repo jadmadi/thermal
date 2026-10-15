@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "replay-against-plan-resolution",
+  "commit_sha": "de16cf9b700153c83d2b5a48bd1a1c4eca64736f",
+  "spec_hash": "2db74734a4f49f2d67e94713807f4fdaa2d905421fafa268edfb3fcbb1a0614e",
+  "sandbox_nonce": "c280efe8c9a52712",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "E1O2I0OTIbzD7GhMMPcskesDMSDeIMVcmco3PY9oUfg=",
+  "auditor_signature": "hC22WAyhU3djRpcknSzym2+OrufqHUvY1HO1ICpymSzDPkn8Fkdky2I/oo+bRYadu9LkgHFiLhWCzICylh6MAA==",
+  "certified_at": "2026-10-15T18:35:42.923235274Z"
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "thermal replay --against now resolves exact built-in plan ids or names to the plan itself (same row as --compare), instead of silently rendering an unpriced '<plan> (API)' payg row. Resolution uses the new pricing.LookupPlanExact (exact id/name, case-insensitive, never prefix matching), so --against claude stays a model rate-card lookup and is not captured by claude-pro. Model targeting is unchanged for every value that is not an exact plan id or name. A six-part migration entry and a README note document the change.",
+  "files": [
+    "internal/pricing/subscription.go",
+    "internal/pricing/subscription_test.go",
+    "cmd/thermal/main.go",
+    "cmd/thermal/simulated_user_test.go",
+    "docs/MIGRATION.md",
+    "README.md"
+  ],
+  "cases": [
+    {
+      "id": "Exact resolution",
+      "result": "pass",
+      "evidence": "TestLookupPlanExact: plan id, plan name ('Claude Pro ($20)'), case variants and whitespace resolve; 'claude', 'deepseek', 'agy', 'kimi', 'claude-3-5-sonnet' and '' do not (prefix never matches)."
+    },
+    {
+      "id": "CLI parity",
+      "result": "pass",
+      "evidence": "cmd/thermal subtest 'replay against plan identifiers resolves to plans' asserts the rendered row for --against claude-pro is byte-identical to --compare claude-pro, output contains no 'claude-pro (API)', and --against claude still renders 'claude (API)'. Manual run shows 'Claude Pro ($20) Sub $20.00 ... UNKNOWN (...)'."
+    },
+    {
+      "id": "Documentation",
+      "result": "pass",
+      "evidence": "docs/MIGRATION.md gained the six-part entry changed-replay-against-plan-resolution (heading, detection signal, rationale, before/after, fix, escape hatch) and is linked from the table of contents; README documents the plan-id resolution next to the --against examples."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test ./internal/pricing -run LookupPlan -count=1",
+      "exit": 0,
+      "log": "ok internal/pricing"
+    },
+    {
+      "command": "go test ./cmd/thermal -run ReplaySimulation -count=1",
+      "exit": 0,
+      "log": "ok cmd/thermal (default, targets, plan-resolution parity, JSON schema subtests)"
+    },
+    {
+      "command": "thermal replay --against claude-pro --no-color --offline (isolated fixture home)",
+      "exit": 0,
+      "log": "Claude Pro ($20) Sub $20.00 +$18.75 (+1500%) UNKNOWN (rolling-window capacity cannot be assessed from daily totals; intraday evidence unavailable)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "110 passed, 0 failed (out of 110 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "de16cf9",
+    "diff_sha256": "adb5d9bc7992e02638d779ead0191c782e54e267ba72b334b9551f02b90a195e"
+  },
+  "blockers": []
+}

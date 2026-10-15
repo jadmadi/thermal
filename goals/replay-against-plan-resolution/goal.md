@@ -1,5 +1,12 @@
 # Goal: Resolve plan identifiers passed to replay --against
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_replay-against-plan-resolution_1792089342`
+
+
 ## Goal Description
 `thermal replay --against claude-pro` silently produces a pay-as-you-go row named `claude-pro (API)` with `pricingStatus: missing` and `Unpriced`, because `--against` only resolves model rate cards while `claude-pro` is a built-in subscription plan. Users reasonably expect the plan they named; today they get an unpriced pseudo-model with no hint that `--compare claude-pro` was meant.
 
