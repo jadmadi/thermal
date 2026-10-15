@@ -1,5 +1,12 @@
 # Goal: Measure cold and warm CLI performance on representative fixtures
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_ingestion-performance-baseline_1792066084`
+
+
 ## Goal Description
 Establish reproducible end-to-end latency and allocation evidence for the documented cached invocation target.
 

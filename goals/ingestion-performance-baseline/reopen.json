@@ -4,8 +4,9 @@
   "reopened_by": "codex",
   "reason": "2026-10-14 audit: nonzero-only fixture assertion, two-second CPU window, incomplete cold cache reset",
   "original_commit": "e2a569f",
-  "resolved_at": "0001-01-01T00:00:00Z",
-  "active": true,
+  "resolved_commit": "4650810458b870d80112090f0f51adee993fc0fa",
+  "resolved_at": "2026-10-15T12:08:04.477465462Z",
+  "active": false,
   "tainted_goals": [
     "codex-incremental-rollout-cache"
   ],

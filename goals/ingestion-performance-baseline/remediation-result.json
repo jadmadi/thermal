@@ -1,0 +1,80 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "P1: scripts/benchmark (Go, module-internal) builds all fixtures and the CLI binary under temp dirs, validates the exact 1,873,500-token baseline across exactly five sources with per-source totals, asserts five delta cases (valid Devin/OpenCode appends, rewrite, truncate, delete), resets every thermal snapshot (not just Devin) while preserving pricing, isolates HOME plus every tool-root override and XDG path, and stops with a nonzero exit on fixture mismatch, subprocess failure, malformed NDJSON, early stream exit, or a source change that is never reflected. P2: the runner records 30 cold / 100 warm / 20 large-fixture monotonic samples with p50/p95, sustained 60s live-monitor runs at 100ms and 1s with CPU seconds/wall seconds, refresh lines, change events, NDJSON validity, source freshness, and SIGINT cancellation, plus per-machine verdicts; docs/PERFORMANCE.md publishes the raw samples, methods, verdicts, allocation separation, and a disclosed scale gap.",
+  "files": [
+    "scripts/benchmark/main.go",
+    "scripts/benchmark/main_test.go",
+    "scripts/benchmark/fixtures.go",
+    "scripts/benchmark/stream.go",
+    "scripts/benchmark/cpu_unix.go",
+    "scripts/benchmark/cpu_other.go",
+    "scripts/benchmark.sh",
+    "docs/PERFORMANCE.md",
+    "README.md"
+  ],
+  "cases": [
+    {
+      "id": "PERF-201",
+      "result": "pass",
+      "evidence": "TestValidateTotalsExactAndPerturbed rejects off-by-one per-source perturbations, unexpected extra sources, missing sources, and grand-total mismatches while accepting the exact baseline. TestRunThermalTotalsSubprocessHandling rejects nonzero exits and malformed output via a stub binary. `go test ./scripts/benchmark ./internal/loaders` exits 0. Exact baseline/delta checks passed in the live run (5/5 mutations exact)."
+    },
+    {
+      "id": "PERF-202",
+      "result": "pass",
+      "evidence": "Cold reset clears devin/, codex/, zed/ and other artifacts (TestResetThermalSnapshotsKeepsPricingCatalog); cold count 0 -> warm count >0 asserted during the run; fixture homes only, never user caches; no binary lands in the repo root (built under temp). `./scripts/benchmark.sh --out /tmp/thermal-bench-final` exited 0 after all correctness checks."
+    },
+    {
+      "id": "PERF-203",
+      "result": "pass",
+      "evidence": "Run at revision e2cdc72 (diff sha256 6000d420...) recorded raw cold/warm/large/Warm samples, stream measurements and verdicts in bench-report.json; docs/PERFORMANCE.md embeds the same samples, exact commands, fixture dimensions, and separate warm-latency/freshness/CPU verdicts with sample sizes. All evidence synthetic; TTY responsiveness explicitly not measured (NDJSON is not TTY evidence)."
+    },
+    {
+      "id": "PERF-204",
+      "result": "pass",
+      "evidence": "env -u NO_COLOR go test -race ./... exit 0 (including scripts/benchmark); go vet ./... exit 0; go build exit 0; gate 107/107 exit 0. No gate can PASS on bad fixture totals (runner exits nonzero) or a dead live process (early stream exit and unreflected appends fail with nonzero exit; covered by helper validation tests and rejection paths). A missed performance target (large-fixture warm p50 42.4ms) is disclosed as a scale gap, not a fake PASS."
+    }
+  ],
+  "commands": [
+    {
+      "command": "./scripts/benchmark.sh --out /tmp/thermal-bench-final",
+      "exit": 0,
+      "log": "baseline exact 1,873,500 across 5 sources; 5/5 deltas exact; cold p50 11.5ms/p95 13.8ms (n=30); warm p50 7.8ms/p95 9.1ms (n=100); large p50 42.4ms/p95 52.9ms (n=20); stream 100ms CPU 1.32% freshness 133ms cancel 1.1ms; stream 1s CPU 0.67% freshness 909ms cancel 1.1ms"
+    },
+    {
+      "command": "go test ./scripts/benchmark ./internal/loaders",
+      "exit": 0,
+      "log": "ok scripts/benchmark; ok internal/loaders"
+    },
+    {
+      "command": "go test ./internal/loaders -run '^$' -bench Benchmark -benchmem -benchtime 500ms",
+      "exit": 0,
+      "log": "ModelName helpers 0 B/op 0 allocs/op; whole-process loader benchmarks allocate (Devin warm 25,772 B/op, Codex warm 58,728 B/op)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok including scripts/benchmark; internal/thermal 74.781s; internal/tui 161.600s"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "107 passed, 0 failed (out of 107 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "4650810",
+    "diff_sha256": "d5dcf3a79e85587e06be4ca32b2018b42704aa2b0c453c7bae65ed09fb987082"
+  },
+  "blockers": []
+}
