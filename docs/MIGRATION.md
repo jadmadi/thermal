@@ -14,6 +14,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
   - [Changed: Token-Boundary Receipt Evidence Classification](#changed-receipt-evidence-token-boundary)
   - [Changed: Workload Replay Volume Conservation and Price Coverage](#changed-replay-volume-and-price-coverage)
+  - [Changed: Rolling-Window Capacity Verdicts from Daily Telemetry](#changed-replay-rolling-capacity-unknown)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -189,6 +190,37 @@ When parsing replay JSON, key on `pricingStatus` before trusting `monthlyCost` o
 
 **Escape hatch**:
 None. Volume conservation and price-coverage disclosure are correctness requirements; complete comparisons keep their existing numeric keys and values unchanged.
+
+### Changed: Rolling-Window Capacity Verdicts from Daily Telemetry
+<a id="changed-replay-rolling-capacity-unknown"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'capacityVerdict' .` or scripts consuming `thermal replay --json` and parsing the Capacity Verdict column.
+- **Detection signal**: subscription rows with a rolling-window limit and no daily-ceiling exceedance now report `"UNKNOWN"` instead of `"PASS"`; `burstThrottles` is always `0`; verdict details say `rolling spikes unasserted` (daily failures) or `intraday evidence unavailable` (UNKNOWN). Consumers matching only `PASS`/`DEGRADED`/`FAIL` see those plans fall through.
+
+**What changed and why**:
+A day's token sum is not a five-hour rolling peak, yet `SimulatePlan` compared daily totals against `RollingWindowLimit` and counted the exceedances as "burst" spikes. The same daily total could therefore become a fabricated burst count for a workload actually spread across the day, or a `PASS` that could not exclude a cross-midnight peak. Plans with a rolling-window limit are now reported as `UNKNOWN` unless a configured daily ceiling is exceeded, rolling spikes are never asserted from daily rows, and `UNKNOWN` rows are never recommended.
+
+**Before / After**:
+```bash
+# Before (v0.20.1: daily sum treated as a rolling peak)
+thermal replay --against chatgpt-plus --json
+# plans[0].capacityVerdict: "DEGRADED" · verdictDetail: "throttled 1/28 days (4%) · 1 burst limit spikes"
+```
+
+```bash
+# After (v0.20.2+: rolling capacity disclosed as unassessable from daily telemetry)
+thermal replay --against chatgpt-plus --json
+# plans[0].capacityVerdict: "UNKNOWN"
+# plans[0].verdictDetail: "rolling-window capacity cannot be assessed from daily totals; intraday evidence unavailable"
+# plans[0].burstThrottles: 0
+```
+
+**The fix**:
+Treat `UNKNOWN` as "cannot be assessed from daily telemetry": do not rank or recommend those rows (recommendation selection requires `PASS` with complete pricing), and for capacity comparisons in scripts prefer plans without rolling limits (`agy-pro`, `opencode-pro`, `kimi-k2`) or compare against the configured daily ceilings. A daily-ceiling exceedance still reports `DEGRADED`/`FAIL` with rolling spikes explicitly unasserted.
+
+**Escape hatch**:
+None. Daily rows cannot observe intraday bursts; exact five-hour simulation waits for a separate timestamp-coverage design. UNKNOWN rows remain visible with their daily figures so no capacity claim silently disappears.
 
 ## Upgrading to v0.16.x
 

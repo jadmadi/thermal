@@ -346,10 +346,9 @@ func TestAggregateReplay_AgainstModel(t *testing.T) {
 	}
 }
 
-func TestAggregateReplay_ChatGPTBurst(t *testing.T) {
-	// Day 1: 4M tokens, 2M reasoning -> effective burst = 2M + (2M * 3.0) = 8M tokens.
-	// This exceeds ChatGPT Plus 5M RollingWindowLimit!
-	// But it does not exceed ChatGPT Pro 40M RollingWindowLimit.
+func TestAggregateReplay_ChatGPTRollingCapacityUnknown(t *testing.T) {
+	// One day of 4M tokens with 2M reasoning. Daily totals cannot prove a
+	// rolling 5-hour peak, so neither plan can be throttled or cleared.
 	days := []DailyRow{
 		{
 			Day:       "2026-09-01",
@@ -401,22 +400,85 @@ func TestAggregateReplay_ChatGPTBurst(t *testing.T) {
 		t.Fatalf("expected 2 plans, got %d", len(rep.Plans))
 	}
 
-	plus := rep.Plans[0]
-	if plus.CapacityVerdict != "DEGRADED" && plus.CapacityVerdict != "FAIL" {
-		t.Errorf("expected ChatGPT Plus to be throttled due to burst limit, got %s", plus.CapacityVerdict)
+	for _, row := range rep.Plans {
+		if row.CapacityVerdict != "UNKNOWN" {
+			t.Errorf("%s: expected UNKNOWN without intraday evidence, got %s", row.ID, row.CapacityVerdict)
+		}
+		if row.BurstThrottles != 0 {
+			t.Errorf("%s: expected 0 burst throttles for unavailable evidence, got %d", row.ID, row.BurstThrottles)
+		}
+		if !strings.Contains(row.VerdictDetail, "intraday evidence") {
+			t.Errorf("%s: expected verdict detail to explain missing intraday evidence, got: %s", row.ID, row.VerdictDetail)
+		}
+		if row.IsRecommended {
+			t.Errorf("%s: UNKNOWN capacity must never be recommended", row.ID)
+		}
 	}
-	if plus.BurstThrottles != 1 {
-		t.Errorf("expected 1 burst throttle, got %d", plus.BurstThrottles)
+}
+
+func TestReplayDailyDataCannotProveRollingCapacity(t *testing.T) {
+	pricer := &mockReplayPricer{prices: map[string][4]float64{"m": {1, 1, 1, 1}}}
+	rollingPlan := SubscriptionPlan{
+		ID:                 "rolling-5m",
+		Name:               "Rolling 5M ($20)",
+		Type:               PlanTypeSubscription,
+		MonthlyFee:         20.0,
+		DailyTokenLimit:    100_000_000,
+		RollingWindowLimit: 5_000_000,
+		BurstMultiplier:    3.0,
+		DefaultModel:       "m",
 	}
-	if !strings.Contains(plus.VerdictDetail, "burst limit spikes") {
-		t.Errorf("expected verdict detail to mention burst limit spikes, got: %s", plus.VerdictDetail)
+	simulate := func(days []DailyRow) PlanReplayRow {
+		t.Helper()
+		rep := AggregateReplay(days, ReplayOptions{
+			Since:   "2026-09-01",
+			Until:   "2026-09-01",
+			Compare: []SubscriptionPlan{rollingPlan},
+			Now:     time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC),
+		}, pricer)
+		return rep.Plans[0]
 	}
 
-	pro := rep.Plans[1]
-	if pro.CapacityVerdict != "PASS" {
-		t.Errorf("expected ChatGPT Pro to pass, got %s", pro.CapacityVerdict)
+	// The same daily total can be one concentrated burst or a workload spread
+	// across the day. Daily rows cannot distinguish the two, so neither may be
+	// converted into an invented burst count.
+	concentrated := []DailyRow{{Day: "2026-09-01", Tokens: 4_000_000, Input: 2_000_000, Reasoning: 2_000_000}}
+	spread := []DailyRow{{Day: "2026-09-01", Tokens: 4_000_000, Input: 4_000_000}}
+	for name, days := range map[string][]DailyRow{"concentrated": concentrated, "spread": spread} {
+		row := simulate(days)
+		if row.CapacityVerdict != "UNKNOWN" {
+			t.Errorf("%s: expected UNKNOWN, got %s (%s)", name, row.CapacityVerdict, row.VerdictDetail)
+		}
+		if row.BurstThrottles != 0 {
+			t.Errorf("%s: expected no invented burst count, got %d", name, row.BurstThrottles)
+		}
 	}
-	if pro.BurstThrottles != 0 {
-		t.Errorf("expected 0 burst throttles for ChatGPT Pro, got %d", pro.BurstThrottles)
+
+	// A daily total below the rolling limit still cannot exclude a
+	// cross-midnight rolling peak.
+	below := simulate([]DailyRow{{Day: "2026-09-01", Tokens: 1_000_000, Input: 1_000_000}})
+	if below.CapacityVerdict != "UNKNOWN" {
+		t.Errorf("below-window daily total: expected UNKNOWN, got %s", below.CapacityVerdict)
+	}
+
+	// A daily-ceiling exceedance remains a daily failure, with rolling spikes
+	// left unasserted.
+	dailyPlan := rollingPlan
+	dailyPlan.DailyTokenLimit = 5_000_000
+	rep := AggregateReplay([]DailyRow{{Day: "2026-09-01", Tokens: 8_000_000, Input: 8_000_000}}, ReplayOptions{
+		Since:   "2026-09-01",
+		Until:   "2026-09-01",
+		Compare: []SubscriptionPlan{dailyPlan},
+		Now:     time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC),
+	}, pricer)
+	row := rep.Plans[0]
+	if row.CapacityVerdict != "FAIL" {
+		t.Errorf("daily ceiling exceeded: expected FAIL, got %s", row.CapacityVerdict)
+	}
+	if row.BurstThrottles != 0 {
+		t.Errorf("daily ceiling exceeded: expected no rolling burst assertion, got %d", row.BurstThrottles)
+	}
+	if !strings.Contains(row.VerdictDetail, "rolling spikes unasserted") {
+		t.Errorf("daily ceiling exceeded: expected unasserted rolling spikes note, got: %s", row.VerdictDetail)
 	}
 }

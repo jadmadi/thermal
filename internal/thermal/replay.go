@@ -234,7 +234,6 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays
 	} else {
 		row.MonthlyCost = plan.MonthlyFee
 		throttled := 0
-		burstThrottles := 0
 
 		multiplier := plan.BurstMultiplier
 		if multiplier <= 0 {
@@ -248,43 +247,39 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays
 				effectiveBurstTokens = (dayTokens - dayRow.Reasoning) + int64(float64(dayRow.Reasoning)*multiplier)
 			}
 
-			dayThrottled := false
+			// Only the plan's configured daily ceiling is assessable from daily
+			// rows. A day's sum is not a rolling-window peak: intraday timestamps
+			// are required to observe one, so rolling limits are never compared
+			// against a daily total and burst spikes stay unasserted.
 			if plan.DailyTokenLimit > 0 && effectiveBurstTokens > plan.DailyTokenLimit {
-				dayThrottled = true
-			}
-			if plan.RollingWindowLimit > 0 && effectiveBurstTokens > plan.RollingWindowLimit {
-				burstThrottles++
-				dayThrottled = true
-			}
-
-			if dayThrottled {
 				throttled++
 			}
 		}
 
 		row.ThrottledDays = throttled
-		row.BurstThrottles = burstThrottles
+		row.BurstThrottles = 0
 		if snap.ActiveDays > 0 {
 			row.ThrottleRate = float64(throttled) / float64(snap.ActiveDays)
 		}
 
-		if throttled == 0 {
+		rollingNote := ""
+		if plan.RollingWindowLimit > 0 {
+			rollingNote = " · rolling spikes unasserted"
+		}
+
+		switch {
+		case throttled == 0 && plan.RollingWindowLimit > 0:
+			row.CapacityVerdict = "UNKNOWN"
+			row.VerdictDetail = "rolling-window capacity cannot be assessed from daily totals; intraday evidence unavailable"
+		case throttled == 0:
 			row.CapacityVerdict = "PASS"
 			row.VerdictDetail = "0% throttled"
-		} else if row.ThrottleRate <= 0.20 {
+		case row.ThrottleRate <= 0.20:
 			row.CapacityVerdict = "DEGRADED"
-			if burstThrottles > 0 {
-				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%) · %d burst limit spikes", throttled, snap.ActiveDays, row.ThrottleRate*100, burstThrottles)
-			} else {
-				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
-			}
-		} else {
+			row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)%s", throttled, snap.ActiveDays, row.ThrottleRate*100, rollingNote)
+		default:
 			row.CapacityVerdict = "FAIL"
-			if burstThrottles > 0 {
-				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%) · %d burst limit spikes", throttled, snap.ActiveDays, row.ThrottleRate*100, burstThrottles)
-			} else {
-				row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)", throttled, snap.ActiveDays, row.ThrottleRate*100)
-			}
+			row.VerdictDetail = fmt.Sprintf("throttled %d/%d days (%.0f%%)%s", throttled, snap.ActiveDays, row.ThrottleRate*100, rollingNote)
 		}
 	}
 

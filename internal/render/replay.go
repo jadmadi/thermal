@@ -126,7 +126,7 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 			switch p.CapacityVerdict {
 			case "PASS":
 				verdictStyled = green(plainVerdict)
-			case "DEGRADED":
+			case "DEGRADED", "UNKNOWN":
 				verdictStyled = yellow(plainVerdict)
 			default:
 				verdictStyled = red(plainVerdict)

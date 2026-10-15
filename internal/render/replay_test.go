@@ -90,6 +90,57 @@ func TestRenderReplay_Empty(t *testing.T) {
 	}
 }
 
+func TestRenderReplayUnknownCapacity(t *testing.T) {
+	rep := thermal.ReplayReport{
+		Type: "replay",
+		Workload: thermal.WorkloadSnapshot{
+			ActiveDays:        3,
+			TotalDays:         30,
+			TotalTokens:       1_000_000,
+			CacheHitRate:      0.5,
+			MedianDailyTokens: 300_000,
+			P90DailyTokens:    400_000,
+			PeakDailyTokens:   500_000,
+			ActualSpend:       5.0,
+		},
+		Plans: []thermal.PlanReplayRow{
+			{
+				ID:               "chatgpt-plus",
+				Name:             "ChatGPT Plus ($20)",
+				Type:             "sub",
+				MonthlyCost:      20.0,
+				CostDelta:        15.0,
+				CostDeltaPercent: 300.0,
+				PricingStatus:    "complete",
+				CapacityVerdict:  "UNKNOWN",
+				VerdictDetail:    "rolling-window capacity cannot be assessed from daily totals; intraday evidence unavailable",
+			},
+		},
+	}
+
+	out := RenderReplay(rep, true)
+	if !strings.Contains(out, "UNKNOWN (rolling-window capacity cannot be assessed") {
+		t.Errorf("UNKNOWN verdict not visible in monochrome output: %s", out)
+	}
+	if !strings.Contains(out, "intraday evidence") {
+		t.Errorf("missing intraday evidence explanation: %s", out)
+	}
+	if strings.Contains(out, "★") {
+		t.Errorf("UNKNOWN capacity must not be recommended: %s", out)
+	}
+	if strings.Contains(out, "Recommendation:") {
+		t.Errorf("UNKNOWN-only report must not carry a recommendation block: %s", out)
+	}
+
+	// The color path keeps UNKNOWN visible and does not panic.
+	t.Setenv("CLICOLOR_FORCE", "1")
+	outColor := RenderReplay(rep, false)
+	if !strings.Contains(outColor, "UNKNOWN") {
+		t.Errorf("color output lost UNKNOWN verdict: %s", outColor)
+	}
+	t.Setenv("CLICOLOR_FORCE", "")
+}
+
 func TestRenderReplayIncompletePricing(t *testing.T) {
 	rep := thermal.ReplayReport{
 		Type: "replay",

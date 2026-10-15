@@ -282,9 +282,9 @@ func TestSimulatedUser_ReplaySimulation(t *testing.T) {
 			if code != 0 {
 				t.Fatalf("replay --against %s failed with code %d: %s", target, code, stderr)
 			}
-			// Verify verdict is one of PASS, DEGRADED, FAIL
-			if !strings.Contains(stdout, "PASS") && !strings.Contains(stdout, "DEGRADED") && !strings.Contains(stdout, "FAIL") {
-				t.Errorf("replay output missing valid verdict (PASS/DEGRADED/FAIL)")
+			// Verify verdict is one of PASS, DEGRADED, FAIL, or UNKNOWN
+			if !strings.Contains(stdout, "PASS") && !strings.Contains(stdout, "DEGRADED") && !strings.Contains(stdout, "FAIL") && !strings.Contains(stdout, "UNKNOWN") {
+				t.Errorf("replay output missing valid verdict (PASS/DEGRADED/FAIL/UNKNOWN)")
 			}
 			checkLanguageSanity(t, stdout)
 		}
@@ -312,7 +312,7 @@ func TestSimulatedUser_ReplaySimulation(t *testing.T) {
 		_ = json.Unmarshal(plansRaw, &plans)
 		for _, plan := range plans {
 			verdict, _ := plan["capacityVerdict"].(string)
-			if verdict != "PASS" && verdict != "DEGRADED" && verdict != "FAIL" {
+			if verdict != "PASS" && verdict != "DEGRADED" && verdict != "FAIL" && verdict != "UNKNOWN" {
 				t.Errorf("unexpected verdict %q in plan %v", verdict, plan["id"])
 			}
 			rate, _ := plan["throttleRate"].(float64)
