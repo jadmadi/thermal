@@ -171,6 +171,135 @@ func TestParseCommandEvidence(t *testing.T) {
 	}
 }
 
+func TestReceiptCompoundCommandNotVerified(t *testing.T) {
+	tests := []struct {
+		name string
+		cmd  string
+		exit int
+		out  string
+	}{
+		{name: "shell list", cmd: "false && go test ./... || true", exit: 0},
+		{name: "pipeline to true", cmd: "go test ./... | true", exit: 0},
+		{name: "semicolon list", cmd: "cd /repo; go test ./...", exit: 0},
+		{name: "command substitution", cmd: "go test $(go list ./...)", exit: 0},
+		{name: "quoted mention", cmd: "printf 'go test ./...'", exit: 0, out: "go test ./..."},
+		{name: "runner prefix", cmd: "go tester ./...", exit: 0},
+		{name: "empty command", cmd: "", exit: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kind, label, ok := ParseCommandEvidence(tt.cmd, tt.exit, tt.out)
+			if ok || kind != EvidenceUnknown || label != "" {
+				t.Fatalf("ParseCommandEvidence(%q, %d, %q) = (%v, %q, %v); want unknown evidence",
+					tt.cmd, tt.exit, tt.out, kind, label, ok)
+			}
+		})
+	}
+
+	// A result-only record with no matching invocation must never verify.
+	path := filepath.Join(t.TempDir(), "result_only.jsonl")
+	content := `{"type":"tool_result","tool_use_id":"unknown_call","content":"PASS\nok\texample/pkg","exit_code":0}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	r, ok := parseClaudeReceipt(path, nil)
+	if !ok {
+		t.Fatal("expected ok = true")
+	}
+	if r.Status == "VERIFIED" || r.Tier == Tier1Verified || r.TestsPassed != 0 {
+		t.Fatalf("result-only record produced %s / %s with TestsPassed=%d; must not be verified",
+			r.Status, r.Tier, r.TestsPassed)
+	}
+}
+
+func TestReceiptCompletedSummaryClassification(t *testing.T) {
+	tests := []struct {
+		name     string
+		cmd      string
+		exitCode int
+		output   string
+		wantKind EvidenceKind
+		wantOK   bool
+	}{
+		{
+			name:     "completed zero exit line",
+			cmd:      "go test ./...",
+			exitCode: -1,
+			output:   "The command exited with code 0",
+			wantKind: EvidenceTestPass,
+			wantOK:   true,
+		},
+		{
+			name:     "pytest clean summary",
+			cmd:      "pytest",
+			exitCode: -1,
+			output:   "10 passed, 0 failed",
+			wantKind: EvidenceTestPass,
+			wantOK:   true,
+		},
+		{
+			name:     "pytest failing summary",
+			cmd:      "pytest",
+			exitCode: -1,
+			output:   "1 passed, 2 failed in 0.5s",
+			wantKind: EvidenceTestFail,
+			wantOK:   true,
+		},
+		{
+			name:     "explicit nonzero exit wins",
+			cmd:      "go test ./...",
+			exitCode: 2,
+			output:   "PASS\nok\texample/pkg",
+			wantKind: EvidenceTestFail,
+			wantOK:   true,
+		},
+		{
+			name:     "missing result",
+			cmd:      "go test ./...",
+			exitCode: -1,
+			wantKind: EvidenceUnknown,
+			wantOK:   false,
+		},
+		{
+			name:     "zero failed alone proves nothing",
+			cmd:      "go test ./...",
+			exitCode: -1,
+			output:   "0 failed",
+			wantKind: EvidenceUnknown,
+			wantOK:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kind, _, ok := ParseCommandEvidence(tt.cmd, tt.exitCode, tt.output)
+			if ok != tt.wantOK || kind != tt.wantKind {
+				t.Fatalf("ParseCommandEvidence(%q, %d, %q) = (%v, %v); want (%v, %v)",
+					tt.cmd, tt.exitCode, tt.output, kind, ok, tt.wantKind, tt.wantOK)
+			}
+		})
+	}
+
+	// Synthetic Claude invocation/result pair: a completed zero-exit result line
+	// without a recorded exit_code field must classify as verified evidence
+	// through the adapter, not only through the helper.
+	path := filepath.Join(t.TempDir(), "claude_completed.jsonl")
+	content := `{"type":"assistant","timestamp":"2026-10-14T10:00:00Z","message":{"id":"m1","model":"claude-3-5-sonnet","usage":{"input_tokens":10,"output_tokens":5},"content":[{"type":"tool_use","id":"call_test","input":{"command":"go test ./..."}}]}}` + "\n" +
+		`{"type":"user","timestamp":"2026-10-14T10:00:05Z","message":{"content":[{"type":"tool_result","tool_use_id":"call_test","content":"The command exited with code 0"}]}}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	r, ok := parseClaudeReceipt(path, nil)
+	if !ok {
+		t.Fatal("expected ok = true")
+	}
+	if r.Status != "VERIFIED" || r.Tier != Tier1Verified {
+		t.Fatalf("completed summary fixture produced %s / %s; want VERIFIED / Tier1Verified", r.Status, r.Tier)
+	}
+	if r.TestsPassed != 1 {
+		t.Fatalf("expected TestsPassed == 1, got %d", r.TestsPassed)
+	}
+}
+
 func TestEvaluateSessionOutcome(t *testing.T) {
 	// Case 1: Verified (passing tests + git commit)
 	ev1 := []Evidence{

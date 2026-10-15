@@ -11,6 +11,8 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
+- [Upgrading to v0.20.2](#upgrading-to-v0202)
+  - [Changed: Token-Boundary Receipt Evidence Classification](#changed-receipt-evidence-token-boundary)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -123,6 +125,39 @@ thermal --json | jq '.results[] | select(.tool == "command-code")'
 
 **Escape hatch**:
 Both `command-code` and `cmd` CLI arguments continue to be accepted identically by all commands (`thermal cmd`, `thermal command-code`, `thermal live cmd`).
+
+## Upgrading to v0.20.2
+
+### Changed: Token-Boundary Receipt Evidence Classification
+<a id="changed-receipt-evidence-token-boundary"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal receipt' .` or automated consumers of `thermal receipt --json` that classify session outcomes from local agent transcripts.
+- **Detection signal**: Sessions whose only test evidence is a compound shell command (`cd repo && go test ./...`, `false && go test ./... || true`) now report `Tier 3 (UNVERIFIED)` or `Tier 2 (CLAIMED)` instead of `Tier 1 (VERIFIED)`; conversely, a single `go test ./...` invocation with no recorded exit code but a completed `The command exited with code 0` line or a clean pytest summary (`10 passed, 0 failed`) now reports `Tier 1 (VERIFIED)` instead of `Tier 3 (FAILED)`.
+
+**What changed and why**:
+Receipt evidence previously recognized runner names by substring presence anywhere in the command text, so a short-circuited mention like `false && go test ./... || true` inherited the outer exit status and certified a test that never ran. At the same time, generic failure words were matched before complete success lines, so a finished `The command exited with code 0` result or a clean pytest summary was misclassified as a failure. Evidence now requires one recognized invocation, matched on token boundaries, whose exit status is either observed directly or established by a complete result line; compound shell lists, pipelines, substitutions, and control operators remain unknown unless the source adapter records separate command/result pairs.
+
+**Before / After**:
+```bash
+# Before (v0.20.1: skipped compound test certified; completed success read as failure)
+thermal receipt --json
+# Output: { "sessionId": "s-skip", "status": "VERIFIED",   "tier": "Tier 1 (Verified)",   "testsPassed": 1 }
+#         { "sessionId": "s-done", "status": "FAILED",     "tier": "Tier 3 (Failed)",     "testsFailed": 1 }
+```
+
+```bash
+# After (v0.20.2+: single observed invocations only)
+thermal receipt --json
+# Output: { "sessionId": "s-skip", "status": "UNVERIFIED", "tier": "Tier 3 (Unverified)", "testsPassed": 0 }
+#         { "sessionId": "s-done", "status": "VERIFIED",   "tier": "Tier 1 (Verified)",   "testsPassed": 1 }
+```
+
+**The fix**:
+Run verification commands as single explicit invocations (`go test ./...` rather than `cd repo && go test ./...`) so the recorded exit status belongs to the test run itself, and prefer completed result lines or recorded exit codes over narrative text. When auditing receipts, filter on `"status": "VERIFIED"` in `thermal receipt --json` to review certified sessions.
+
+**Escape hatch**:
+None. Compound commands and unmatched result records remain visible as `Tier 2 (CLAIMED)` or `Tier 3 (UNVERIFIED)` rows, and no configuration restores exit-status inheritance across shell lists.
 
 ## Upgrading to v0.16.x
 

@@ -11,7 +11,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -160,136 +162,313 @@ func UnwrapCommand(cmd string) string {
 	return c
 }
 
+// hasShellComposition reports whether an unwrapped command string contains
+// unquoted shell operators that compose or substitute multiple invocations
+// (lists, pipelines, substitutions, background and grouping operators).
+// A compound command's process exit status cannot be attributed to a single
+// recognized invocation, so such commands stay unknown unless the source
+// adapter supplies separate command/result pairs.
+func hasShellComposition(cmd string) bool {
+	var quote rune
+	runes := []rune(cmd)
+	for i := 0; i < len(runes); i++ {
+		c := runes[i]
+		if quote != 0 {
+			if quote == '"' && c == '\\' {
+				i++
+				continue
+			}
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '\'', '"':
+			quote = c
+		case '\\':
+			i++
+		case '`', ';', '|', '(', ')', '\n':
+			return true
+		case '&':
+			if i > 0 && (runes[i-1] == '>' || runes[i-1] == '<') {
+				continue // redirection fd duplication: >&1, <&0
+			}
+			return true
+		case '$':
+			if i+1 < len(runes) && runes[i+1] == '(' {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isEnvAssignment reports whether a token is a leading shell variable
+// assignment (e.g. CGO_ENABLED=0) rather than the command itself.
+func isEnvAssignment(tok string) bool {
+	eq := strings.IndexByte(tok, '=')
+	if eq <= 0 {
+		return false
+	}
+	for i, r := range tok[:eq] {
+		switch {
+		case r == '_' || (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z'):
+		case r >= '0' && r <= '9':
+			if i == 0 {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// evidenceRunner identifies a single recognized verification invocation.
+type evidenceRunner struct {
+	name string
+	kind string // "test", "linter", "commit", "build"
+}
+
+// matchEvidenceRunner recognizes a single simple invocation by token boundary,
+// never by arbitrary substring presence. Commands are matched on their leading
+// executable token(s) only; "go tester" is not "go test".
+func matchEvidenceRunner(cmd string) (evidenceRunner, bool) {
+	tokens := strings.Fields(cmd)
+	i := 0
+	for i < len(tokens) && isEnvAssignment(tokens[i]) {
+		i++
+	}
+	if i >= len(tokens) {
+		return evidenceRunner{}, false
+	}
+	tokens = tokens[i:]
+
+	base := func(tok string) string { return strings.ToLower(filepath.Base(tok)) }
+	arg := func(idx int) string {
+		if idx < len(tokens) {
+			return strings.ToLower(tokens[idx])
+		}
+		return ""
+	}
+
+	switch first := base(tokens[0]); first {
+	case "go":
+		switch arg(1) {
+		case "test":
+			return evidenceRunner{"go test", "test"}, true
+		case "vet":
+			return evidenceRunner{"golangci-lint", "linter"}, true
+		case "build":
+			return evidenceRunner{"build", "build"}, true
+		}
+	case "cargo":
+		switch arg(1) {
+		case "test":
+			return evidenceRunner{"cargo test", "test"}, true
+		case "clippy", "check":
+			return evidenceRunner{"cargo clippy", "linter"}, true
+		case "build":
+			return evidenceRunner{"build", "build"}, true
+		}
+	case "pytest":
+		return evidenceRunner{"pytest", "test"}, true
+	case "python", "python3":
+		if arg(1) == "-m" && (arg(2) == "pytest" || arg(2) == "unittest") {
+			return evidenceRunner{"pytest", "test"}, true
+		}
+	case "npm", "pnpm", "yarn", "bun":
+		switch arg(1) {
+		case "test":
+			return evidenceRunner{"npm test", "test"}, true
+		case "t":
+			if first == "npm" {
+				return evidenceRunner{"npm test", "test"}, true
+			}
+		case "run":
+			switch arg(2) {
+			case "test":
+				return evidenceRunner{"npm test", "test"}, true
+			case "build":
+				return evidenceRunner{"build", "build"}, true
+			case "lint":
+				return evidenceRunner{"tsc", "linter"}, true
+			}
+		case "lint":
+			if first == "pnpm" || first == "yarn" {
+				return evidenceRunner{"tsc", "linter"}, true
+			}
+		}
+	case "jest", "vitest", "mocha":
+		return evidenceRunner{"npm test", "test"}, true
+	case "npx", "pnpx", "bunx":
+		switch base(arg(1)) {
+		case "jest", "vitest", "mocha":
+			return evidenceRunner{"npm test", "test"}, true
+		case "eslint":
+			return evidenceRunner{"eslint", "linter"}, true
+		case "tsc":
+			return evidenceRunner{"tsc", "linter"}, true
+		case "prettier":
+			if arg(2) == "--check" {
+				return evidenceRunner{"eslint", "linter"}, true
+			}
+		}
+	case "make":
+		if arg(1) == "test" {
+			return evidenceRunner{"make test", "test"}, true
+		}
+	case "ctest":
+		return evidenceRunner{"make test", "test"}, true
+	case "rspec":
+		return evidenceRunner{"rspec", "test"}, true
+	case "mvn", "mvnw", "gradle", "gradlew":
+		if arg(1) == "test" {
+			return evidenceRunner{"mvn test", "test"}, true
+		}
+	case "golangci-lint", "staticcheck", "revive":
+		return evidenceRunner{"golangci-lint", "linter"}, true
+	case "eslint", "biome":
+		return evidenceRunner{"eslint", "linter"}, true
+	case "prettier":
+		if arg(1) == "--check" {
+			return evidenceRunner{"eslint", "linter"}, true
+		}
+	case "ruff", "flake8", "mypy", "pyright":
+		return evidenceRunner{"ruff", "linter"}, true
+	case "tsc":
+		return evidenceRunner{"tsc", "linter"}, true
+	case "git":
+		switch arg(1) {
+		case "commit", "merge":
+			return evidenceRunner{"git commit", "commit"}, true
+		}
+	}
+	return evidenceRunner{}, false
+}
+
+var (
+	reReceiptExitLine   = regexp.MustCompile(`the command exited with code\s+([0-9]+)`)
+	reReceiptStatusLine = regexp.MustCompile(`exit status\s+([0-9]+)`)
+	reReceiptPassed     = regexp.MustCompile(`([0-9]+)\s+passed`)
+	reReceiptFailed     = regexp.MustCompile(`([0-9]+)\s+(?:failed|failing)`)
+	reReceiptErrors     = regexp.MustCompile(`([0-9]+)\s+errors?`)
+	reReceiptFailMarker = regexp.MustCompile(`(?m)^--- fail:`)
+	reReceiptFailLine   = regexp.MustCompile(`(?m)^fail(\s|$)`)
+	reReceiptPassLine   = regexp.MustCompile(`(?m)^pass\s*$`)
+	reReceiptOKLine     = regexp.MustCompile(`(?m)^ok[\t ]`)
+	reReceiptCargoOK    = regexp.MustCompile(`test result: ok\.`)
+	reReceiptVerboseOK  = regexp.MustCompile(`(?m)^--- pass:`)
+)
+
+// maxMatchedCount returns the largest captured count for a summary regex,
+// or zero when the output contains no matching count at all.
+func maxMatchedCount(re *regexp.Regexp, s string) int {
+	max := 0
+	for _, m := range re.FindAllStringSubmatch(s, -1) {
+		if n, err := strconv.Atoi(m[1]); err == nil && n > max {
+			max = n
+		}
+	}
+	return max
+}
+
+// hasContradictingFailureText reports whether a completed zero-exit run's
+// output also carries explicit structural failure text.
+func hasContradictingFailureText(outLower string) bool {
+	return strings.Contains(outLower, "--- fail:") ||
+		strings.Contains(outLower, "\nfail\t") ||
+		strings.Contains(outLower, "failures:")
+}
+
+// resolveUnobservedExit infers an exit status from a complete recognized
+// result line when the process exit status was not recorded, or -1 when the
+// output does not establish success or failure. Success lines are matched
+// before generic failure words; a bare "0 failed" proves neither outcome.
+func resolveUnobservedExit(outLower string) int {
+	if m := reReceiptExitLine.FindStringSubmatch(outLower); m != nil {
+		if n, err := strconv.Atoi(m[1]); err == nil {
+			return n
+		}
+	}
+	if m := reReceiptStatusLine.FindStringSubmatch(outLower); m != nil {
+		if n, err := strconv.Atoi(m[1]); err == nil {
+			return n
+		}
+	}
+
+	failed := maxMatchedCount(reReceiptFailed, outLower)
+	errors := maxMatchedCount(reReceiptErrors, outLower)
+	passed := maxMatchedCount(reReceiptPassed, outLower)
+	if failed > 0 || errors > 0 {
+		return 1
+	}
+
+	if reReceiptFailMarker.MatchString(outLower) || reReceiptFailLine.MatchString(outLower) ||
+		hasContradictingFailureText(outLower) || strings.Contains(outLower, "panic:") {
+		return 1
+	}
+	if passed > 0 {
+		return 0
+	}
+	if reReceiptOKLine.MatchString(outLower) || reReceiptPassLine.MatchString(outLower) ||
+		reReceiptCargoOK.MatchString(outLower) || reReceiptVerboseOK.MatchString(outLower) {
+		return 0
+	}
+	return -1
+}
+
 // ParseCommandEvidence inspects a command string, its exit code, and output snippet
 // to extract sanitized verification evidence without preserving sensitive paths or prompts.
+// Evidence requires a single recognized invocation observed to completion: compound shell
+// commands stay unknown, explicit nonzero exits win, and a missing exit is only resolved
+// by a complete recognized result line in the output.
 func ParseCommandEvidence(cmd string, exitCode int, output string) (EvidenceKind, string, bool) {
 	cmdClean := UnwrapCommand(cmd)
-	cmdLower := strings.ToLower(cmdClean)
-	outLower := strings.ToLower(output)
-
-	// Filter out non-execution or inspect-only commands
-	for _, pfx := range []string{"echo ", "echo\t", "cat ", "grep ", "rg ", "git log", "git show", "git diff", "git status"} {
-		if strings.HasPrefix(cmdLower, pfx) {
-			return EvidenceUnknown, "", false
-		}
-	}
-
-	// Resolve effective exit code if unspecified (< 0)
-	effCode := exitCode
-	if effCode < 0 {
-		hasFail := strings.Contains(outLower, "fail") ||
-			strings.Contains(outLower, "failed") ||
-			strings.Contains(outLower, "failure") ||
-			strings.Contains(outLower, "error:") ||
-			strings.Contains(outLower, "exit code 1") ||
-			strings.Contains(outLower, "the command exited with code") ||
-			strings.Contains(outLower, "exit status 1") ||
-			strings.Contains(outLower, "exit status 2") ||
-			strings.Contains(outLower, "panic:")
-
-		hasPass := strings.Contains(outLower, "the command exited with code 0") ||
-			strings.Contains(outLower, "exit code 0") ||
-			strings.Contains(outLower, "exit status 0") ||
-			strings.Contains(outLower, "ok\t") ||
-			strings.Contains(outLower, "pass\n") ||
-			strings.Contains(outLower, "\npass") ||
-			strings.Contains(outLower, "=== pass") ||
-			strings.Contains(outLower, "test result: ok.") ||
-			strings.Contains(outLower, "0 failed")
-
-		if hasFail {
-			effCode = 1
-		} else if hasPass {
-			effCode = 0
-		} else {
-			effCode = -1 // Cannot determine exit code; outcome not observed
-		}
-	} else if effCode == 0 {
-		// Even if exitCode == 0 was reported, check if test output clearly indicates failure
-		if strings.Contains(outLower, "--- fail:") || strings.Contains(outLower, "\nfail\t") || strings.Contains(outLower, "failures:") {
-			effCode = 1
-		}
-	}
-
-	if effCode < 0 {
+	if cmdClean == "" || hasShellComposition(cmdClean) {
 		return EvidenceUnknown, "", false
 	}
 
-	// 1. Test runner patterns
-	var testName string
-	switch {
-	case strings.HasPrefix(cmdLower, "go test") || strings.Contains(cmdLower, " go test"):
-		testName = "go test"
-	case strings.HasPrefix(cmdLower, "cargo test") || strings.Contains(cmdLower, " cargo test"):
-		testName = "cargo test"
-	case strings.HasPrefix(cmdLower, "pytest") || strings.Contains(cmdLower, " pytest") ||
-		strings.Contains(cmdLower, "python -m pytest") || strings.Contains(cmdLower, "python3 -m pytest") ||
-		strings.Contains(cmdLower, "python -m unittest"):
-		testName = "pytest"
-	case strings.HasPrefix(cmdLower, "npm test") || strings.HasPrefix(cmdLower, "npm t ") ||
-		strings.Contains(cmdLower, "pnpm test") || strings.Contains(cmdLower, "yarn test") ||
-		strings.Contains(cmdLower, "bun test") || strings.Contains(cmdLower, "jest") ||
-		strings.Contains(cmdLower, "vitest") || strings.Contains(cmdLower, "mocha"):
-		testName = "npm test"
-	case strings.HasPrefix(cmdLower, "make test") || strings.HasPrefix(cmdLower, "ctest"):
-		testName = "make test"
-	case strings.Contains(cmdLower, "rspec"):
-		testName = "rspec"
-	case strings.Contains(cmdLower, "mvn test") || strings.Contains(cmdLower, "gradle test"):
-		testName = "mvn test"
+	runner, ok := matchEvidenceRunner(cmdClean)
+	if !ok {
+		return EvidenceUnknown, "", false
 	}
 
-	if testName != "" {
+	outLower := strings.ToLower(output)
+	effCode := exitCode
+	if effCode < 0 {
+		effCode = resolveUnobservedExit(outLower)
+	}
+	if effCode < 0 {
+		return EvidenceUnknown, "", false
+	}
+	if effCode == 0 && hasContradictingFailureText(outLower) {
+		effCode = 1
+	}
+
+	switch runner.kind {
+	case "test":
 		if effCode == 0 {
-			return EvidenceTestPass, fmt.Sprintf("%s (exit 0)", testName), true
+			return EvidenceTestPass, fmt.Sprintf("%s (exit 0)", runner.name), true
 		}
-		return EvidenceTestFail, fmt.Sprintf("%s (exit %d)", testName, effCode), true
-	}
-
-	// 2. Linters & Checkers
-	var linterName string
-	switch {
-	case strings.Contains(cmdLower, "golangci-lint") || strings.Contains(cmdLower, "go vet") ||
-		strings.Contains(cmdLower, "staticcheck") || strings.Contains(cmdLower, "revive"):
-		linterName = "golangci-lint"
-	case strings.Contains(cmdLower, "eslint") || strings.Contains(cmdLower, "biome") ||
-		strings.Contains(cmdLower, "prettier --check"):
-		linterName = "eslint"
-	case strings.Contains(cmdLower, "ruff") || strings.Contains(cmdLower, "flake8") ||
-		strings.Contains(cmdLower, "mypy") || strings.Contains(cmdLower, "pyright"):
-		linterName = "ruff"
-	case strings.Contains(cmdLower, "cargo clippy") || strings.Contains(cmdLower, "cargo check"):
-		linterName = "cargo clippy"
-	case strings.Contains(cmdLower, "tsc") || strings.Contains(cmdLower, "npm run lint") ||
-		strings.Contains(cmdLower, "pnpm lint") || strings.Contains(cmdLower, "yarn lint"):
-		linterName = "tsc"
-	}
-
-	if linterName != "" {
+		return EvidenceTestFail, fmt.Sprintf("%s (exit %d)", runner.name, effCode), true
+	case "linter":
 		if effCode == 0 {
-			return EvidenceLinterPass, fmt.Sprintf("%s (exit 0)", linterName), true
+			return EvidenceLinterPass, fmt.Sprintf("%s (exit 0)", runner.name), true
 		}
-		return EvidenceLinterFail, fmt.Sprintf("%s (exit %d)", linterName, effCode), true
-	}
-
-	// 3. Git commit & merge creation (explicitly excluding git tag)
-	if !strings.Contains(cmdLower, "git tag") && (strings.HasPrefix(cmdLower, "git commit") ||
-		strings.Contains(cmdLower, " git commit") ||
-		strings.HasPrefix(cmdLower, "git merge") ||
-		strings.Contains(cmdLower, " git merge")) {
+		return EvidenceLinterFail, fmt.Sprintf("%s (exit %d)", runner.name, effCode), true
+	case "commit":
 		if effCode == 0 {
 			return EvidenceGitCommit, "git commit (exit 0)", true
 		}
-	}
-
-	// 4. Build commands
-	if strings.Contains(cmdLower, "go build") || strings.Contains(cmdLower, "cargo build") || strings.Contains(cmdLower, "npm run build") {
+		return EvidenceUnknown, "", false
+	case "build":
 		if effCode == 0 {
 			return EvidenceBuildPass, "build (exit 0)", true
 		}
 		return EvidenceBuildFail, fmt.Sprintf("build (exit %d)", effCode), true
 	}
-
 	return EvidenceUnknown, "", false
 }
 
@@ -1289,23 +1468,10 @@ func parseCodexRollout(path string, threadID string, tokensOverride int64, model
 									output = itCmd.Stdout + "\n" + itCmd.Stderr
 								}
 
-								// Check compound commands (e.g. split on "&&")
-								subCommands := []string{rawCmd}
-								if strings.Contains(rawCmd, "&&") {
-									for _, sub := range strings.Split(rawCmd, "&&") {
-										subTrimmed := strings.TrimSpace(sub)
-										if subTrimmed != "" {
-											subCommands = append(subCommands, subTrimmed)
-										}
-									}
-								}
-
-								for _, sc := range subCommands {
-									if kind, label, ok := ParseCommandEvidence(sc, exitCode, output); ok {
-										if !seenEvLabels[label] {
-											evList = append(evList, Evidence{Kind: kind, Label: label})
-											seenEvLabels[label] = true
-										}
+								if kind, label, ok := ParseCommandEvidence(rawCmd, exitCode, output); ok {
+									if !seenEvLabels[label] {
+										evList = append(evList, Evidence{Kind: kind, Label: label})
+										seenEvLabels[label] = true
 									}
 								}
 							}
