@@ -10,6 +10,8 @@
 # 5. Semantic consistency (token sums, rate ranges, verdicts)
 # 6. Language & terminology integrity (no typo duplicate words)
 # 7. Graceful validation errors on invalid flag combinations
+# 8. Semantic regression suites: receipt/replay/audit claim semantics with
+#    nonempty test-selection assertions
 #
 set -euo pipefail
 
@@ -89,6 +91,8 @@ for i in $(seq 1 10); do
 done
 
 # Isolate environment to hermetic GATE_HOME and neutral color settings
+ORIG_HOME="${HOME}"
+ORIG_GOCACHE="$(go env GOCACHE 2>/dev/null || true)"
 export HOME="${GATE_HOME}"
 export GROK_HOME="${GATE_HOME}/.grok"
 export DSH_HOME="${GATE_HOME}/.dsh"
@@ -110,6 +114,7 @@ cleanup() {
         wait "${SERVER_PID}" 2>/dev/null || true
     fi
     if [[ -n "${GATE_HOME:-}" && -d "${GATE_HOME}" ]]; then
+        chmod -R u+w "${GATE_HOME}" 2>/dev/null || true
         rm -rf "${GATE_HOME}"
     fi
 }
@@ -614,6 +619,57 @@ else
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+# 17. Semantic Regression Suites
+# Runs the named Go regression tests that encode the semantics behind public
+# claims: observed receipt evidence, conserved replay volume with price-coverage
+# labels, and honest audit wording. The minimum test counts are deliberate
+# tripwires: a renamed or deleted test fails the gate instead of the pattern
+# silently matching nothing.
+echo -e "\n${BOLD}17. Semantic Regression Suites (receipt / replay / audit):${RESET}"
+
+run_semantic_suite() {
+    local label="$1"
+    local min_tests="$2"
+    local pattern="$3"
+    shift 3
+    local targets=("$@")
+    local output exit_code
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+    # Run the Go suite in a neutral environment: the gate's fixture overrides
+    # (tool roots, color vars) must not leak into test processes that build
+    # their own temporary fixtures.
+    if output=$(cd "${ROOT_DIR}" && \
+        env -u CODEX_HOME -u GROK_HOME -u DSH_HOME -u HERMES_HOME -u OPENCODE_HOME \
+            -u AGY_HOME -u ZED_HOME -u ANTIGRAVITY_APP_DATA_DIR -u THERMAL_CONFIG \
+            -u NO_COLOR -u CLICOLOR_FORCE \
+            HOME="${ORIG_HOME}" GOCACHE="${ORIG_GOCACHE}" \
+            go test "${targets[@]}" -run "${pattern}" -count=1 -v 2>&1); then
+        exit_code=0
+    else
+        exit_code=$?
+    fi
+
+    local passed_count
+    passed_count=$(printf '%s\n' "${output}" | grep -c '^--- PASS' || true)
+
+    if [[ ${exit_code} -ne 0 ]]; then
+        echo -e "  ${RED}✖ [FAIL]${RESET} ${label}: go test exited ${exit_code}"
+        printf '%s\n' "${output}" | tail -6 | sed 's/^/      /' >&2
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    elif [[ ${passed_count} -lt ${min_tests} ]]; then
+        echo -e "  ${RED}✖ [FAIL]${RESET} ${label}: matched ${passed_count} passing tests, expected at least ${min_tests} (test renamed or removed?)"
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    else
+        echo -e "  ${GREEN}✔ [PASS]${RESET} ${label} (${passed_count} tests)"
+        PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    fi
+}
+
+run_semantic_suite "Receipt evidence semantics" 13 'Receipt|Evidence|Outcome' ./internal/thermal
+run_semantic_suite "Replay volume and pricing semantics" 11 'Replay' ./internal/thermal ./internal/render
+run_semantic_suite "Audit claim semantics" 10 'Audit' ./internal/audit ./internal/render
 
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"
 echo -e "${BOLD}Simulated User Gate Summary:${RESET} ${GREEN}${PASSED_CHECKS} passed${RESET}, ${RED}${FAILED_CHECKS} failed${RESET} (out of ${TOTAL_CHECKS} checks)"
