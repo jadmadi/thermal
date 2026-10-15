@@ -435,6 +435,7 @@ func TestAggregateReceipts(t *testing.T) {
 }
 
 func TestScanSessionReceipts(t *testing.T) {
+	t.Setenv("CODEX_HOME", "")
 	tmpDir, err := os.MkdirTemp("", "thermal-receipt-test-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
@@ -855,6 +856,7 @@ func TestScanCodexReceipts_ZeroLeakage(t *testing.T) {
 }
 
 func TestScanSessionReceipts_Codex(t *testing.T) {
+	t.Setenv("CODEX_HOME", "")
 	homeDir := t.TempDir()
 	codexDir := filepath.Join(homeDir, ".codex")
 	if err := os.MkdirAll(codexDir, 0755); err != nil {

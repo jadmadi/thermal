@@ -12,6 +12,7 @@ import (
 )
 
 func TestLoadUserConfig_INI(t *testing.T) {
+	t.Setenv("THERMAL_CONFIG", "")
 	fakeHome := t.TempDir()
 	cfgDir := filepath.Join(fakeHome, ".config", "thermal")
 	if err := os.MkdirAll(cfgDir, 0755); err != nil {
@@ -60,6 +61,7 @@ zed: /custom/zed/threads.db
 }
 
 func TestLoadUserConfig_StructuredJSON(t *testing.T) {
+	t.Setenv("THERMAL_CONFIG", "")
 	fakeHome := t.TempDir()
 	cfgDir := filepath.Join(fakeHome, ".config", "thermal")
 	if err := os.MkdirAll(cfgDir, 0755); err != nil {
@@ -96,6 +98,7 @@ func TestLoadUserConfig_StructuredJSON(t *testing.T) {
 }
 
 func TestLoadUserConfig_FlatJSON(t *testing.T) {
+	t.Setenv("THERMAL_CONFIG", "")
 	fakeHome := t.TempDir()
 	cfgDir := filepath.Join(fakeHome, ".config", "thermal")
 	if err := os.MkdirAll(cfgDir, 0755); err != nil {
@@ -140,6 +143,7 @@ func TestLoadUserConfig_EnvOverride(t *testing.T) {
 }
 
 func TestLoadUserConfig_EmptyWhenMissing(t *testing.T) {
+	t.Setenv("THERMAL_CONFIG", "")
 	fakeHome := t.TempDir()
 	overrides := LoadUserConfig(fakeHome)
 	if len(overrides) != 0 {
@@ -148,6 +152,7 @@ func TestLoadUserConfig_EmptyWhenMissing(t *testing.T) {
 }
 
 func TestAllTools_ConfigOverrides(t *testing.T) {
+	t.Setenv("THERMAL_CONFIG", "")
 	fakeHome := t.TempDir()
 	t.Setenv("HOME", fakeHome)
 	t.Setenv("USERPROFILE", fakeHome)
