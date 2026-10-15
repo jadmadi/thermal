@@ -24,6 +24,7 @@ untested semantics.
   [setup audit](../goals/setup-health-audit/remediation-result.json),
   [ingestion performance](../goals/ingestion-performance-baseline/remediation-result.json)
 - [Performance baseline report](PERFORMANCE.md) · [Migration guide](MIGRATION.md)
+- [Release provenance verification (v0.20.0)](evaluations/2026-10-15-release-provenance/commands.log)
 
 ---
 
@@ -179,14 +180,20 @@ provenance … generated via OpenSSF" (README).
 **Behavior:** the release workflow (`.github/workflows/release.yml`) generates checksums and
 OpenSSF in-toto provenance on `v*` tags.
 
-**Evidence:** workflow definition in-tree; the publication runbook in
-[DISTRIBUTION.md](DISTRIBUTION.md).
+**Evidence:** independently verified on 2026-10-15 against the published `v0.20.0` release:
+`slsa-verifier` (installed via `go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest`)
+verified `checksums.txt` against `checksums.txt.intoto.jsonl` — builder
+`slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.1.0`,
+source commit `3f5fa6d9c047dd093f32eaa21651f0c858cded5a` — and `sha256sum --check` verified the
+downloaded `thermal_0.20.0_linux_amd64.tar.gz`. Raw commands and outputs:
+[evaluations/2026-10-15-release-provenance/commands.log](evaluations/2026-10-15-release-provenance/commands.log).
 
-**Limits:** a workflow definition is not a verified artifact. In this audit no released
-artifact was downloaded and verified with `slsa-verifier`, so provenance is **unverified**
-here; the README now points to this ledger for that status.
+**Limits:** the verification covers the artifacts downloaded in that run (the Linux/amd64
+archive and the shared `checksums.txt`); the other platform archives share the same checksums
+file and provenance but were not individually downloaded. Releases published before this
+verification have not been re-checked.
 
-**Outcome: unverified** (workflow-defined, artifact-level verification pending).
+**Outcome: verified** for `v0.20.0` (artifact-level, reproducible).
 
 ## 10. Allocation claims
 

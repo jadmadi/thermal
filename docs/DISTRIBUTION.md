@@ -71,6 +71,8 @@ sha256sum --check --ignore-missing checksums.txt
 
 When verified, `slsa-verifier` confirms that the artifacts were built on GitHub Actions runners initiated from a release tag on `github.com/jadmadi/thermal` and have not been altered.
 
+An independent verification of the `v0.20.0` release (Linux/amd64 archive plus the shared `checksums.txt` provenance) with the exact commands above is recorded in [`evaluations/2026-10-15-release-provenance/commands.log`](evaluations/2026-10-15-release-provenance/commands.log).
+
 ---
 
 ## 3. Curated List PR Packages
