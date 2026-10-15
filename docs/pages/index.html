@@ -806,7 +806,7 @@ thermal version</code></pre>
       <div>
         <h3 style="margin-bottom:var(--s2);font-size:var(--step-0);font-weight:600">Built for Go, designed for developer streaks</h3>
         <p class="muted" style="font-size:var(--step--1)">
-          Thermal is a single static Go binary with zero CGO dependencies. It scans local SQLite databases and session transcripts in strictly read-only mode (<span class="mono">mode=ro</span>) with memory-mapped I/O, computing contribution heatmaps and token metrics across 15 AI coding tools in sub-10ms cached invocations.
+          Thermal is a single static Go binary with zero CGO dependencies. It scans local SQLite databases and session transcripts in strictly read-only mode (<span class="mono">mode=ro</span>) with memory-mapped I/O, computing contribution heatmaps and token metrics across 15 AI coding tools. Cached invocations meet the sub-10ms target on the baseline fixture (measured warm p50 7.8&nbsp;ms); the <a href="https://github.com/jadmadi/thermal/blob/main/docs/PERFORMANCE.md" rel="noopener noreferrer">performance report</a> discloses the scale limits at directory-scan workloads.
         </p>
       </div>
     </div>
@@ -1702,7 +1702,7 @@ thermal replay --last 30 --json             <u># machine-readable simulation rep
               <tr><td class="mono">thermal mix</td><td>Tool or model mix over time, with switching stats.</td></tr>
               <tr><td class="mono">thermal stats</td><td>Daily distribution: percentiles, weekday profile, token composition &amp; cache hit rate, outliers, histogram.</td></tr>
               <tr><td class="mono">thermal trend</td><td>Daily trend fit with a month-end projection.</td></tr>
-              <tr><td class="mono">thermal audit</td><td>Local setup &amp; context health: verify SQLite permissions, mmap, logs, and pricing cache.</td></tr>
+              <tr><td class="mono">thermal audit</td><td>Local setup &amp; context health: rule/MCP context tax, repository hygiene, tool database path readability (SQLite integrity and mmap are not checked), and cache writability.</td></tr>
               <tr><td class="mono">thermal share</td><td>Stateless zero-database URL sharing engine for streak and telemetry cards.</td></tr>
               <tr><td class="mono">thermal serve</td><td>Embedded local web dashboard served on localhost (127.0.0.1:8080) with zero telemetry.</td></tr>
               <tr><td class="mono">thermal license</td><td>Display software license, AGPL-3.0 terms, and commercial dual-licensing options.</td></tr>

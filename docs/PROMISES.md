@@ -207,3 +207,6 @@ process.
 wording change. A claim with no evidence command and no stated limit is a documentation bug.
 Claims whose verification depends on a released artifact (provenance, installers) stay
 **unverified** until an artifact is independently verified, and the README must say so.
+The hosted documentation under `docs/pages/` mirrors these qualified claims (performance,
+audit, and caching wording aligned after this ledger was introduced); the
+docs-page-claim-parity goal tracks that in lockstep with any future claim change.
