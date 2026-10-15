@@ -1,0 +1,54 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "Hosted documentation now matches docs/PROMISES.md. The sub-10ms sentence is scoped to the measured baseline fixture (warm p50 7.8ms) and links docs/PERFORMANCE.md for the disclosed 1,000-file scale limit; the thermal audit row describes rule/MCP context tax, repository hygiene, tool database path readability (SQLite integrity and mmap not checked) and cache writability; llms-full.txt no longer promises directory incremental caching that does not exist yet, and the unmeasured 'sub-second ingestion' wording is replaced with a pointer to the measured evidence. docs/PROMISES.md records that the hosted page mirrors the qualified claims.",
+  "files": [
+    "docs/pages/index.html",
+    "docs/pages/llms-full.txt",
+    "docs/PROMISES.md"
+  ],
+  "cases": [
+    {
+      "id": "Inventory",
+      "result": "pass",
+      "evidence": "grep -n 'sub-10ms|incremental caching|sub-second ingestion|verify SQLite permissions' docs/pages/index.html docs/pages/llms.txt docs/pages/llms-full.txt finds only the two new qualified sentences (both reference docs/PERFORMANCE.md); no blanket claim remains, and llms.txt carries no performance claim at all."
+    },
+    {
+      "id": "Gate and suite",
+      "result": "pass",
+      "evidence": "env -u NO_COLOR go test -race ./... exit 0; go vet ./... exit 0; go build exit 0; ./scripts/simulated_user_gate.sh exit 0 (110/110, including docs/pages/install.sh dry-run and llms.txt/llms-full.txt presence checks)."
+    }
+  ],
+  "commands": [
+    {
+      "command": "grep -n 'sub-10ms\\|incremental caching\\|sub-second ingestion\\|verify SQLite permissions' docs/pages/index.html docs/pages/llms.txt docs/pages/llms-full.txt",
+      "exit": 0,
+      "log": "only the two qualified sentences match; each links docs/PERFORMANCE.md"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "110 passed, 0 failed (install.sh dry-run and llms presence checks included)"
+    }
+  ],
+  "candidate": {
+    "head": "95321d8",
+    "diff_sha256": "affaa45c3313c2d21dcd61fe69b1f1a290a423539d084d408ae18788657eb3b8"
+  },
+  "blockers": []
+}

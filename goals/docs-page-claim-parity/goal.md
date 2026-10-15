@@ -1,5 +1,12 @@
 # Goal: Align hosted documentation claims with the promises ledger
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_docs-page-claim-parity_1792089651`
+
+
 ## Goal Description
 The hosted documentation page still carries the blanket promise:
 
