@@ -4,7 +4,8 @@
   "reopened_by": "codex",
   "reason": "2026-10-14 probe: plain text state_5.sqlite reported PASS verified mmap-ready",
   "original_commit": "8afd798",
-  "resolved_at": "0001-01-01T00:00:00Z",
-  "active": true,
+  "resolved_commit": "0d42b325ce5cd540ae821e80a32a8a2ab0635204",
+  "resolved_at": "2026-10-15T11:45:36.560637322Z",
+  "active": false,
   "reopen_epoch": 1
 }

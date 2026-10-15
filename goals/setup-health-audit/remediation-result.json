@@ -1,0 +1,66 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "The Tool Databases finding now measures filesystem readability only and explicitly states that SQLite integrity and mmap were not checked; no message claims a verified database or mmap readiness. Missing database paths emit an INFO finding that discloses nothing could be assessed, and unreadable paths keep a WARN with the same limit disclosure. The Delta Cache finding states writability factually instead of promising sub-10ms readiness and now surfaces a visible WARN when the cache directory cannot be created; probe files remain cleaned up and only Thermal's own cache is touched. README and project.jsonc no longer advertise mmap, transcript-ceiling, or pricing-cache checks. The historical probe was updated to the new narrow expectation while the original audit log is preserved.",
+  "files": [
+    "internal/audit/audit.go",
+    "internal/audit/audit_test.go",
+    "README.md",
+    "project.jsonc",
+    "docs/evaluations/2026-10-14-promise/audit_test.go.txt"
+  ],
+  "cases": [
+    {
+      "id": "AUD-201",
+      "result": "pass",
+      "evidence": "TestAuditDatabaseReadabilityClaim: plain text at state_5.sqlite is readable and may PASS only under the readability label; the message contains no 'verified'/'mmap-ready' wording and explicitly says SQLite integrity and mmap were not checked. Missing paths emit INFO 'not assessed'; an unreadable path (mode 0000) emits WARN with the same disclosure. The updated audit probe prints the narrow message and passes."
+    },
+    {
+      "id": "AUD-202",
+      "result": "pass",
+      "evidence": "TestAuditCacheFailureVisible: a regular file at ~/.cache/thermal causes a visible WARN ('could not be created') and leaves fixture bytes unchanged; a writable cache PASSes with a factual writability message (no 'sub-10ms' or 'ready' claims) and removes its .audit_probe_* file."
+    },
+    {
+      "id": "AUD-203",
+      "result": "pass",
+      "evidence": "go test -race ./internal/audit ./internal/render -run Audit exits 0; README audit paragraph and project.jsonc capability wording now describe readability-only checks with updated lastEdit."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test -race ./internal/audit ./internal/render -run Audit",
+      "exit": 0,
+      "log": "TestAuditRuleFiles, TestAuditCriticalRuleFile, TestAuditMCPServerSchema, TestAuditAgentReadiness_* , TestAuditDatabaseReadabilityClaim, TestAuditCacheFailureVisible, TestRenderAudit_NoColor all PASS"
+    },
+    {
+      "command": "go test -overlay <audit probe overlay> ./internal/audit -run TestPromise -v",
+      "exit": 0,
+      "log": "PASS: 1 local tool database file(s) readable (filesystem readability only; SQLite integrity and mmap were not checked)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok; internal/thermal 75.705s; internal/tui 164.821s"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "107 passed, 0 failed (out of 107 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "0d42b32",
+    "diff_sha256": "f304aec364a32b0b65eb7b00a7352638c3118518cd64077c1e4dd5c68bd122d8"
+  },
+  "blockers": []
+}

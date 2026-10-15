@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "setup-health-audit",
+  "commit_sha": "0d42b325ce5cd540ae821e80a32a8a2ab0635204",
+  "spec_hash": "7671847cd36c056bb00310d38221fbc716dc431274d2b92855d90cc4b692465c",
+  "sandbox_nonce": "0525a7a82711e3e5",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "fxrC4M+8qmY0vhz2sNLDNU5qsP0p2P1/1zsmPNzH0pk=",
+  "auditor_signature": "jVmJlcqRhswa853CAOFneYQkDTIjV9Ng4vdEPADs0fNcqz8iqnq5GpABLBR/k2nHAn7ssTt9SgP7+IL/eQXZAw==",
+  "certified_at": "2026-10-15T11:45:36.551342496Z"
+}

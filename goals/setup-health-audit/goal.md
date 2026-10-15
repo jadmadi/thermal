@@ -1,5 +1,12 @@
 # Goal: Read-Only Local Setup & Context Health Audit ('thermal audit')
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_setup-health-audit_1792064736`
+
+
 ## Goal Description
 Implement non-destructive setup and context health diagnostic ('thermal audit'). Scans local agent configurations to identify unused MCP servers (consuming system prompt context without tool calls), bloated rule files (CLAUDE.md, AGENTS.md, .cursorrules > 200 lines), and repetitive file re-read loops, outputting actionable advice without mutating user files.
 

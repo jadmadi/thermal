@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 84
-- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 2
-- 🟢 **Implemented**: 80 (1 verified 📜, 10 stale ⚠️, 69 unverified)
-- 🔁 **Reopened for Remediation**: 2
+- 🟢 **Implemented**: 81 (2 verified 📜, 10 stale ⚠️, 69 unverified)
+- 🔁 **Reopened for Remediation**: 1
 - 🎯 **By Tier**: 1 immediate (Tier 1), 83 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 359/367 completed (97%)
+- 📋 **Execution Tasks Progress**: 361/367 completed (98%)
 
 ---
 
@@ -41,10 +41,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`setup-health-audit`](setup-health-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#103)` | - | Read-Only Local Setup & Context Health Audit ('thermal audit') — Implement non-destructive setup and context health diagnostic ('thermal audit').... | `/goal goals/setup-health-audit/goal.md` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#105)` | - | Measure cold and warm CLI performance on representative fixtures — Establish reproducible end-to-end latency and allocation evidence for the docume... | `/goal goals/ingestion-performance-baseline/goal.md` |
 | [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#69)` | Prereqs: ingestion-performance-baseline | Avoid rescanning unchanged Codex rollout transcripts — Add bounded source-aware rollout caching with exact parity against full scans an... | `/goal goals/codex-incremental-rollout-cache/goal.md` |
-| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: setup-health-audit, ingestion-performance-baseline | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
+| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: ingestion-performance-baseline | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
 
 ---
 
@@ -71,6 +70,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `259d1e0` |
 | [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6713335` |
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `81901a8` |
+| [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `0d42b32` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
