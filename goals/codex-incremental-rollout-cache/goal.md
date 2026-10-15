@@ -1,5 +1,12 @@
 # Goal: Avoid rescanning unchanged Codex rollout transcripts
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_codex-incremental-rollout-cache_1792066986`
+
+
 ## Goal Description
 Add bounded source-aware rollout caching with exact parity against full scans and measured warm-run gains.
 

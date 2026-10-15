@@ -1,9 +1,9 @@
 {
   "version": "sila/audit-receipt/v1",
   "goal_slug": "setup-health-audit",
-  "commit_sha": "0d42b325ce5cd540ae821e80a32a8a2ab0635204",
-  "spec_hash": "7671847cd36c056bb00310d38221fbc716dc431274d2b92855d90cc4b692465c",
-  "sandbox_nonce": "0525a7a82711e3e5",
+  "commit_sha": "c610c97fc84bf0d0b18416a5c137f01b758757db",
+  "spec_hash": "9cb60a14d949b33ab6e68613454df3fe123a8f369dbe8785ab978e3ec295da58",
+  "sandbox_nonce": "4edf977588cb0134",
   "candidate_selection": "A",
   "blindfold_verified": true,
   "canary_passed": true,
@@ -12,7 +12,7 @@
   "probes_executed": 6,
   "probes_passed": 6,
   "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
-  "auditor_pub_key": "fxrC4M+8qmY0vhz2sNLDNU5qsP0p2P1/1zsmPNzH0pk=",
-  "auditor_signature": "jVmJlcqRhswa853CAOFneYQkDTIjV9Ng4vdEPADs0fNcqz8iqnq5GpABLBR/k2nHAn7ssTt9SgP7+IL/eQXZAw==",
-  "certified_at": "2026-10-15T11:45:36.551342496Z"
+  "auditor_pub_key": "39v72WO33nG8eGfiThNAgP3SAIqk+QHYHkxvf0B/oFQ=",
+  "auditor_signature": "IvzCrkn2694wRhAUWh/w1/bodyRKciHq/Vj/15Q9vWKRVDMDS3Z+s2OhtN4a/Ml4wkkbWKc92zWwHxFIcW93DA==",
+  "certified_at": "2026-10-15T12:23:02.776850054Z"
 }

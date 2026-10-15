@@ -4,9 +4,7 @@
 - **Registered By**: Pending Registration
 - **Spec Audited By**: Pending Spec Audit
 - **Implemented By**: Pending Implementation
-- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_ingestion-performance-baseline_1792066084`
-
-
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_ingestion-performance-baseline_1792066983`
 ## Goal Description
 Establish reproducible end-to-end latency and allocation evidence for the documented cached invocation target.
 

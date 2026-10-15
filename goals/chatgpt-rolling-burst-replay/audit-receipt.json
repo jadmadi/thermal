@@ -1,9 +1,9 @@
 {
   "version": "sila/audit-receipt/v1",
   "goal_slug": "chatgpt-rolling-burst-replay",
-  "commit_sha": "8c7402cb19c3564818b748313765acee3aed5f5b",
-  "spec_hash": "3020e90afce5b9e8a737ce60bb18d5d28df67fff44ec7e137d21b21d05fd50be",
-  "sandbox_nonce": "39ecd41dcc3c39a4",
+  "commit_sha": "c610c97fc84bf0d0b18416a5c137f01b758757db",
+  "spec_hash": "ccb8b225214b0d8c59392e0189cf16a9d8e382d0a7173b7705a43147899ccea1",
+  "sandbox_nonce": "8cf2a2cd1852e9a0",
   "candidate_selection": "A",
   "blindfold_verified": true,
   "canary_passed": true,
@@ -12,7 +12,7 @@
   "probes_executed": 6,
   "probes_passed": 6,
   "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
-  "auditor_pub_key": "ByvT9e+7wD0IrRF6s5wJDo7Wb6b4JeipvvMbx2fx4kk=",
-  "auditor_signature": "iX/WO7RWOHKQGaqXj2UDXb6pmJiYWpbaa6LgpojfMQSQgX//VEgaNJk1Mz1z6NcPgnMHdbGkViB+TvaRkPZgDQ==",
-  "certified_at": "2026-10-15T11:38:21.31440702Z"
+  "auditor_pub_key": "AV/srD5nJN+2AqscIoBo8rvqqr0dJksM212uf2WDD58=",
+  "auditor_signature": "uRd2WGXVRI6JGEtIWV9UYyH/KcK4zLVXhaD2R+s9I0TNlPcKNtk6PxLCoqC06OR7iiAfc21GDuTaozQjaZfDAg==",
+  "certified_at": "2026-10-15T12:23:01.908672275Z"
 }
