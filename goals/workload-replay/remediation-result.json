@@ -1,0 +1,69 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "R1: BuildWorkloadSnapshot now sums canonical in-window DailyRow.Tokens independently of model maps, exposes workload.unclassifiedTokens, trusts model categories only when they cover the day exactly, and treats inconsistent classification as unclassified instead of scaling bad data. PlanReplayRow gains pricingStatus (complete/partial/missing); incomplete rows keep zero placeholders with no delta or recommendation. R2: RenderReplay prints Unpriced / Partial estimate, discloses unclassified volume coverage, and adds a scenario-comparison note that replay cannot establish code quality or actual bills. Migration entry changed-replay-volume-and-price-coverage added.",
+  "files": [
+    "internal/thermal/replay.go",
+    "internal/thermal/types.go",
+    "internal/thermal/replay_test.go",
+    "internal/render/replay.go",
+    "internal/render/replay_test.go",
+    "docs/MIGRATION.md",
+    "README.md",
+    "project.jsonc"
+  ],
+  "cases": [
+    {
+      "id": "RPL-201",
+      "result": "pass",
+      "evidence": "TestReplayVolumeConservation: partial model coverage (100 of 1000) keeps total 1000 and peak 1000; complete 800/200 model day stays priced over all 1000; codewhale-shaped 1000 Unclassified tokens keep total 1000 with unclassified 1000; empty maps, activity-only exclusion, date exclusion and both overclassified shapes (components or models exceeding the canonical total) preserve the canonical total."
+    },
+    {
+      "id": "RPL-202",
+      "result": "pass",
+      "evidence": "TestReplayMissingPriceNotRecommended: nil pricer and unknown model rates produce pricingStatus missing with zero delta and no recommendation, and never claim savings; unclassified volume with a known rate is partial with no recommendation; complete priced control values are numerically unchanged. Audit probe TestPromiseReplayPartialAttribution/Unclassified/MissingPrice now pass (1000 = 1000; missing row not recommended)."
+    },
+    {
+      "id": "RPL-203",
+      "result": "pass",
+      "evidence": "TestRenderReplayIncompletePricing: missing rows render Unpriced with no numeric delta, partial rows render ~subtotal with Partial estimate, unclassified coverage prints 900 tok (90.0% of total), '$0.00' never appears, no star recommendation, scenario note present, color path keeps labels, and JSON carries pricingStatus/unclassifiedTokens with no isRecommended."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test -race ./internal/thermal ./internal/render -run Replay",
+      "exit": 0,
+      "log": "ok internal/thermal; ok internal/render"
+    },
+    {
+      "command": "go test -overlay <probe overlay> ./internal/thermal -run TestPromiseReplay",
+      "exit": 0,
+      "log": "TestPromiseReplayPartialAttribution: source total=1000 replay total=1000 peak=1000; TestPromiseReplayUnclassified: source=1000 replay=1000; TestPromiseReplayMissingPrice: PricingStatus:missing IsRecommended:false"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "ok cmd/thermal 7.618s; ok internal/thermal 73.828s; ok internal/tui 168.304s; every package ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "107 passed, 0 failed (out of 107 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "81901a8",
+    "diff_sha256": "64a7bff004abd79286fedec5844c02d07fa902aea58a2cddaa7a803e72accaee"
+  },
+  "blockers": []
+}

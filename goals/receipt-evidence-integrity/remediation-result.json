@@ -1,0 +1,64 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "ParseCommandEvidence now requires a single recognized invocation: runners are matched on token boundaries, compound shell lists/pipelines/substitutions/control operators stay unknown, explicit nonzero exits win, and an unrecorded exit is only resolved by a complete result line (standalone zero-exit line, clean pytest summary, go ok/PASS markers). A bare \"0 failed\" proves neither outcome. The Codex rollout adapter no longer splits compound commands, so no invocation inherits a shared exit status. Six-part migration entry added (docs/MIGRATION.md#changed-receipt-evidence-token-boundary).",
+  "files": [
+    "internal/thermal/receipt.go",
+    "internal/thermal/receipt_test.go",
+    "docs/MIGRATION.md"
+  ],
+  "cases": [
+    {
+      "id": "RCP-201",
+      "result": "pass",
+      "evidence": "TestReceiptCompoundCommandNotVerified: `false && go test ./... || true` (exit 0), `go test ./... | true`, `cd /repo; go test ./...`, `go test $(go list ./...)`, `printf 'go test ./...'`, `go tester ./...`, empty command, and a result-only Claude record all stay unknown; no verified test is produced."
+    },
+    {
+      "id": "RCP-202",
+      "result": "pass",
+      "evidence": "TestReceiptCompletedSummaryClassification: standalone `The command exited with code 0` -> pass; pytest `10 passed, 0 failed` -> pass; `1 passed, 2 failed` -> fail; explicit exit 2 with apparent pass text -> fail; missing result -> unknown; bare `0 failed` -> unknown."
+    },
+    {
+      "id": "RCP-203",
+      "result": "pass",
+      "evidence": "Added TestReceiptCompoundCommandNotVerified and TestReceiptCompletedSummaryClassification, including a synthetic Claude invocation/result fixture parsed through parseClaudeReceipt that reaches VERIFIED / Tier 1. Focused suite and the audit receipt probe (overlay) both exit 0."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test -race ./internal/thermal -run 'Receipt|Evidence|Outcome'",
+      "exit": 0,
+      "log": "ok github.com/jadmadi/thermal/internal/thermal"
+    },
+    {
+      "command": "go test -overlay <receipt probe overlay> ./internal/thermal -run TestPromiseReceiptClassification -v",
+      "exit": 0,
+      "log": "PASS: 6/6 subtests, including the three cases that failed on the audited candidate"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "ok cmd/thermal 2.424s; ok internal/thermal 74.411s; ok internal/tui 161.046s; every package ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "107 passed, 0 failed (out of 107 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "6713335",
+    "diff_sha256": "d0be8a04c0c016da7a04df5432fb30d71105ae7534ead35d47f1a93c4fbb02c7"
+  },
+  "blockers": []
+}
