@@ -13,6 +13,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
   - [Changed: Token-Boundary Receipt Evidence Classification](#changed-receipt-evidence-token-boundary)
+  - [Changed: Workload Replay Volume Conservation and Price Coverage](#changed-replay-volume-and-price-coverage)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -158,6 +159,36 @@ Run verification commands as single explicit invocations (`go test ./...` rather
 
 **Escape hatch**:
 None. Compound commands and unmatched result records remain visible as `Tier 2 (CLAIMED)` or `Tier 3 (UNVERIFIED)` rows, and no configuration restores exit-status inheritance across shell lists.
+
+### Changed: Workload Replay Volume Conservation and Price Coverage
+<a id="changed-replay-volume-and-price-coverage"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*replay' .` or automated parsers consuming `thermal replay --json`.
+- **Detection signal**: `workload.unclassifiedTokens` and `plans[].pricingStatus` appear in replay JSON; `workload.totalTokens` now equals the canonical in-window daily sum even when a day's model map covers only part of the volume; a target with no catalog rate reports `monthlyCost: 0` with `costDelta: 0` and no `isRecommended` flag instead of a −100% savings claim.
+
+**What changed and why**:
+Workload replay previously derived its volume from whichever model map happened to be present, so a partially attributed day could shrink the simulated workload (for example 1000 source tokens becoming 100) and unclassified model tokens could vanish entirely. It also treated a missing target rate as free, printing a full savings recommendation against a $0.00 comparison. Replay now always conserves canonical volume, discloses unclassified tokens, and labels each comparison's pricing completeness so an incomplete estimate can never read as a savings claim.
+
+**Before / After**:
+```bash
+# Before (v0.20.1: partial attribution dropped volume; missing rate became a $0 plan)
+thermal replay --against not-in-catalog --json
+# workload.totalTokens: 100 · plans[0].monthlyCost: 0 · costDeltaPercent: -100 · isRecommended: true
+```
+
+```bash
+# After (v0.20.2+: volume conserved; incomplete pricing labeled, never recommended)
+thermal replay --against not-in-catalog --json
+# workload.totalTokens: 1000 · workload.unclassifiedTokens: 900
+# plans[0].pricingStatus: "missing" · monthlyCost: 0 (numeric sentinel) · costDelta: 0 · isRecommended: absent
+```
+
+**The fix**:
+When parsing replay JSON, key on `pricingStatus` before trusting `monthlyCost` or `costDelta`: `complete` rows carry real comparisons, `partial` rows carry the known-category subtotal, and `missing` rows use zero only as a numeric sentinel (the terminal view prints `Unpriced` or `Partial estimate` instead of a dollar figure).
+
+**Escape hatch**:
+None. Volume conservation and price-coverage disclosure are correctness requirements; complete comparisons keep their existing numeric keys and values unchanged.
 
 ## Upgrading to v0.16.x
 

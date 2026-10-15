@@ -342,25 +342,30 @@ type ModelOptions struct {
 
 // WorkloadSnapshot captures the aggregate and distributional metrics of a
 // historical window for simulation against target plans or rate cards.
+// TotalTokens always sums canonical in-window DailyRow.Tokens; UnclassifiedTokens
+// counts the part of that volume whose token category the source never recorded.
 type WorkloadSnapshot struct {
-	ActiveDays        int     `json:"activeDays"`
-	TotalDays         int     `json:"totalDays"`
-	TotalTokens       int64   `json:"totalTokens"`
-	UncachedInput     int64   `json:"uncachedInput"`
-	Output            int64   `json:"output"`
-	Reasoning         int64   `json:"reasoning"`
-	CacheRead         int64   `json:"cacheRead"`
-	CacheWrite        int64   `json:"cacheWrite"`
-	CacheHitRate      float64 `json:"cacheHitRate"`
-	MedianDailyTokens int64   `json:"medianDailyTokens"`
-	P90DailyTokens    int64   `json:"p90DailyTokens"`
-	PeakDailyTokens   int64   `json:"peakDailyTokens"`
-	PeakDay           string  `json:"peakDay,omitempty"`
-	ActualSpend       float64 `json:"actualSpend"`
-	IsEstimatedSpend  bool    `json:"isEstimatedSpend,omitempty"`
+	ActiveDays         int     `json:"activeDays"`
+	TotalDays          int     `json:"totalDays"`
+	TotalTokens        int64   `json:"totalTokens"`
+	UncachedInput      int64   `json:"uncachedInput"`
+	Output             int64   `json:"output"`
+	Reasoning          int64   `json:"reasoning"`
+	CacheRead          int64   `json:"cacheRead"`
+	CacheWrite         int64   `json:"cacheWrite"`
+	UnclassifiedTokens int64   `json:"unclassifiedTokens"`
+	CacheHitRate       float64 `json:"cacheHitRate"`
+	MedianDailyTokens  int64   `json:"medianDailyTokens"`
+	P90DailyTokens     int64   `json:"p90DailyTokens"`
+	PeakDailyTokens    int64   `json:"peakDailyTokens"`
+	PeakDay            string  `json:"peakDay,omitempty"`
+	ActualSpend        float64 `json:"actualSpend"`
+	IsEstimatedSpend   bool    `json:"isEstimatedSpend,omitempty"`
 }
 
 // PlanReplayRow represents the simulation outcome for a single plan or model.
+// PricingStatus is "complete", "partial" (known subtotal only) or "missing"
+// (no target rate found); incomplete rows are placeholders without a savings claim.
 type PlanReplayRow struct {
 	ID               string  `json:"id"`
 	Name             string  `json:"name"`
@@ -374,6 +379,7 @@ type PlanReplayRow struct {
 	BurstThrottles   int     `json:"burstThrottles,omitempty"`
 	CapacityVerdict  string  `json:"capacityVerdict"` // "PASS", "DEGRADED", "FAIL"
 	VerdictDetail    string  `json:"verdictDetail"`
+	PricingStatus    string  `json:"pricingStatus"` // "complete", "partial", "missing"
 	IsRecommended    bool    `json:"isRecommended,omitempty"`
 }
 

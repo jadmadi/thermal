@@ -457,6 +457,8 @@ thermal replay --compare "claude-pro,claude-max,cursor-pro,deepseek-api"
 thermal replay --json
 ```
 
+Replay conserves the full recorded workload even when a day's model map covers only part of it, and discloses any volume that could not be attributed to a token category. Targets with no catalog rate are labeled `Unpriced` with no savings comparison, and partially attributed workloads show a `Partial estimate` with the known-category subtotal. Plan limits and rate cards are configured scenario assumptions — replay cannot establish code quality or actual provider bills.
+
 ```
   Thermal · replay · 30-day workload simulation
 
@@ -476,6 +478,9 @@ thermal replay --json
   Recommendation:
   • Your median daily volume (537.8M) and p90 burst (1.8B) exceed flat $20/mo rate limits on heavy days.
   • Switching to DeepSeek V3 (API) would cost ~$983.31/mo with 0% throttling, saving $4914.37/mo.
+
+  Replay is a scenario comparison against configured plan limits and rate-card assumptions, not
+  verified provider entitlements; it cannot establish code quality or actual provider bills.
 ```
 
 ### FinOps 9-Box Grid & Activity Taxonomy (`thermal stats`)

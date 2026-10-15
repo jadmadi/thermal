@@ -60,11 +60,22 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 		dim("· Cache hit rate:"), hitRatePercent,
 		dim("· Spend/mo:"), spendPrefix, w.ActualSpend,
 	))
-	sb.WriteString(fmt.Sprintf("  %s %s  %s %s  %s %s\n\n",
+	sb.WriteString(fmt.Sprintf("  %s %s  %s %s  %s %s\n",
 		dim("Daily volume: Median"), thermal.CompactNumber(w.MedianDailyTokens),
 		dim("· p90 burst"), thermal.CompactNumber(w.P90DailyTokens),
 		dim("· Peak"), thermal.CompactNumber(w.PeakDailyTokens),
 	))
+	if w.UnclassifiedTokens > 0 {
+		coverage := 100.0
+		if w.TotalTokens > 0 {
+			coverage = float64(w.UnclassifiedTokens) / float64(w.TotalTokens) * 100
+		}
+		sb.WriteString(fmt.Sprintf("  %s %s tok (%.1f%% of total)\n\n",
+			dim("Unclassified volume:"), thermal.CompactNumber(w.UnclassifiedTokens), coverage,
+		))
+	} else {
+		sb.WriteString("\n")
+	}
 
 	verdictColWidth := planVerdictWidth
 	for _, p := range rep.Plans {
@@ -99,6 +110,14 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 			deltaSign = "-"
 		}
 		deltaStr := fmt.Sprintf("%s$%.2f (%+.0f%%)", deltaSign, math.Abs(p.CostDelta), p.CostDeltaPercent)
+		switch p.PricingStatus {
+		case "missing":
+			costStr = "Unpriced"
+			deltaStr = "—"
+		case "partial":
+			costStr = fmt.Sprintf("~$%.2f", p.MonthlyCost)
+			deltaStr = "Partial estimate"
+		}
 
 		plainVerdict := fmt.Sprintf("%s (%s)", p.CapacityVerdict, p.VerdictDetail)
 		var verdictCell string
@@ -175,6 +194,13 @@ func RenderReplay(rep thermal.ReplayReport, noColor bool) string {
 				}
 			}
 		}
+	}
+
+	sb.WriteString("\n")
+	noteLimit := BoundedCardWidth(2)
+	note := "Replay is a scenario comparison against configured plan limits and rate-card assumptions, not verified provider entitlements; it cannot establish code quality or actual provider bills."
+	for _, wl := range WrapBullet("  ", note, noteLimit) {
+		sb.WriteString(dim(wl) + "\n")
 	}
 
 	sb.WriteString("\n")

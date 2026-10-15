@@ -17,15 +17,17 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 
 	byDay := make(map[string]DailyRow)
 	var (
-		uncachedInput int64
-		output        int64
-		reasoning     int64
-		cacheRead     int64
-		cacheWrite    int64
-		actualSpend   float64
-		isEstimated   bool
-		minDay        string
-		maxDay        string
+		uncachedInput      int64
+		output             int64
+		reasoning          int64
+		cacheRead          int64
+		cacheWrite         int64
+		unclassifiedTokens int64
+		totalTokens        int64
+		actualSpend        float64
+		isEstimated        bool
+		minDay             string
+		maxDay             string
 	)
 
 	for _, day := range days {
@@ -36,6 +38,8 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 		if isActivityOnly(day) {
 			continue
 		}
+
+		totalTokens += day.Tokens
 
 		cost, est := dayCost(day, pricer)
 		actualSpend += cost
@@ -68,23 +72,35 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 			maxDay = day.Day
 		}
 
-		if len(day.Models) > 0 {
+		// Category attribution: a day's model map is trusted only when its
+		// disjoint categories cover the canonical total exactly. Otherwise the
+		// canonical day categories are used, and any uncovered remainder is
+		// counted as unclassified rather than invented input.
+		modelsTotal := int64(0)
+		for _, m := range day.Models {
+			modelsTotal += m.Total()
+		}
+		dayTyped := day.Input + day.Output + day.Reasoning + day.Cache
+		switch {
+		case modelsTotal > 0 && modelsTotal == day.Tokens:
 			for _, m := range day.Models {
 				uncachedInput += m.Input
 				output += m.Output
 				reasoning += m.Reasoning
 				cacheRead += m.CacheRead
 				cacheWrite += m.CacheWrite
+				unclassifiedTokens += m.Unclassified
 			}
-		} else {
+		case modelsTotal > day.Tokens || dayTyped > day.Tokens:
+			// Inconsistent classification: preserve the canonical total and mark
+			// the entire day's categories unclassified instead of scaling bad data.
+			unclassifiedTokens += day.Tokens
+		default:
 			uncachedInput += day.Input
 			output += day.Output
 			reasoning += day.Reasoning
 			cacheRead += day.Cache
-			typedSum := day.Input + day.Output + day.Reasoning + day.Cache
-			if day.Tokens > typedSum {
-				uncachedInput += (day.Tokens - typedSum)
-			}
+			unclassifiedTokens += day.Tokens - dayTyped
 		}
 	}
 
@@ -117,7 +133,6 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 		p90Tokens = dailyValues[p90Idx]
 	}
 
-	totalTokens := uncachedInput + output + reasoning + cacheRead + cacheWrite
 	var hitRate float64
 	promptTotal := uncachedInput + cacheRead + cacheWrite
 	if promptTotal > 0 {
@@ -141,24 +156,41 @@ func BuildWorkloadSnapshot(days []DailyRow, opts ReplayOptions, pricer Pricer) (
 	}
 
 	snap := WorkloadSnapshot{
-		ActiveDays:        activeDays,
-		TotalDays:         calendarDays,
-		TotalTokens:       totalTokens,
-		UncachedInput:     uncachedInput,
-		Output:            output,
-		Reasoning:         reasoning,
-		CacheRead:         cacheRead,
-		CacheWrite:        cacheWrite,
-		CacheHitRate:      hitRate,
-		MedianDailyTokens: medianTokens,
-		P90DailyTokens:    p90Tokens,
-		PeakDailyTokens:   peakTokens,
-		PeakDay:           peakDay,
-		ActualSpend:       actualSpend,
-		IsEstimatedSpend:  isEstimated,
+		ActiveDays:         activeDays,
+		TotalDays:          calendarDays,
+		TotalTokens:        totalTokens,
+		UncachedInput:      uncachedInput,
+		Output:             output,
+		Reasoning:          reasoning,
+		CacheRead:          cacheRead,
+		CacheWrite:         cacheWrite,
+		UnclassifiedTokens: unclassifiedTokens,
+		CacheHitRate:       hitRate,
+		MedianDailyTokens:  medianTokens,
+		P90DailyTokens:     p90Tokens,
+		PeakDailyTokens:    peakTokens,
+		PeakDay:            peakDay,
+		ActualSpend:        actualSpend,
+		IsEstimatedSpend:   isEstimated,
 	}
 
 	return snap, byDay, calendarDays
+}
+
+// applyReplayCostComparison fills the cost delta only for complete price
+// comparisons. Partial and missing price rows keep zero placeholders and are
+// never eligible for a savings recommendation.
+func applyReplayCostComparison(row *PlanReplayRow, normActualSpend float64) {
+	if row.PricingStatus != "complete" {
+		row.CostDelta = 0
+		row.CostDeltaPercent = 0
+		row.IsRecommended = false
+		return
+	}
+	row.CostDelta = row.MonthlyCost - normActualSpend
+	if normActualSpend > 0 {
+		row.CostDeltaPercent = (row.CostDelta / normActualSpend) * 100
+	}
 }
 
 // SimulatePlan evaluates a subscription plan or API tier against a workload snapshot.
@@ -172,13 +204,15 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays
 	normActualSpend := snap.ActualSpend * normFactor
 
 	row := PlanReplayRow{
-		ID:        plan.ID,
-		Name:      plan.Name,
-		Type:      string(plan.Type),
-		TotalDays: snap.ActiveDays,
+		ID:            plan.ID,
+		Name:          plan.Name,
+		Type:          string(plan.Type),
+		TotalDays:     snap.ActiveDays,
+		PricingStatus: "complete",
 	}
 
 	if plan.Type == PlanTypePayAsYouGo {
+		row.PricingStatus = "missing"
 		var periodCost float64
 		if pricer != nil && plan.DefaultModel != "" {
 			inRate, outRate, cacheReadRate, cacheWriteRate, ok := pricer.LookupPrice(plan.DefaultModel)
@@ -187,6 +221,11 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays
 					float64(snap.Output+snap.Reasoning)*outRate +
 					float64(snap.CacheRead)*cacheReadRate +
 					float64(snap.CacheWrite)*cacheWriteRate) / 1e6
+				if snap.UnclassifiedTokens > 0 {
+					row.PricingStatus = "partial"
+				} else {
+					row.PricingStatus = "complete"
+				}
 			}
 		}
 		row.MonthlyCost = periodCost * normFactor
@@ -249,10 +288,7 @@ func SimulatePlan(snap WorkloadSnapshot, byDay map[string]DailyRow, calendarDays
 		}
 	}
 
-	row.CostDelta = row.MonthlyCost - normActualSpend
-	if normActualSpend > 0 {
-		row.CostDeltaPercent = (row.CostDelta / normActualSpend) * 100
-	}
+	applyReplayCostComparison(&row, normActualSpend)
 
 	return row
 }
@@ -272,6 +308,7 @@ func SimulateModel(snap WorkloadSnapshot, calendarDays int, modelID string, pric
 		TotalDays:       snap.ActiveDays,
 		CapacityVerdict: "PASS",
 		VerdictDetail:   "0% throttled (unmetered API)",
+		PricingStatus:   "missing",
 	}
 
 	var periodCost float64
@@ -282,13 +319,15 @@ func SimulateModel(snap WorkloadSnapshot, calendarDays int, modelID string, pric
 				float64(snap.Output+snap.Reasoning)*outRate +
 				float64(snap.CacheRead)*cacheReadRate +
 				float64(snap.CacheWrite)*cacheWriteRate) / 1e6
+			if snap.UnclassifiedTokens > 0 {
+				row.PricingStatus = "partial"
+			} else {
+				row.PricingStatus = "complete"
+			}
 		}
 	}
 	row.MonthlyCost = periodCost * normFactor
-	row.CostDelta = row.MonthlyCost - normActualSpend
-	if normActualSpend > 0 {
-		row.CostDeltaPercent = (row.CostDelta / normActualSpend) * 100
-	}
+	applyReplayCostComparison(&row, normActualSpend)
 	return row
 }
 
@@ -326,7 +365,7 @@ func AggregateReplay(days []DailyRow, opts ReplayOptions, pricer ReplayPricer) R
 	var minPassingCost = math.MaxFloat64
 
 	for i, p := range report.Plans {
-		if p.CapacityVerdict == "PASS" && p.MonthlyCost < minPassingCost {
+		if p.CapacityVerdict == "PASS" && p.PricingStatus == "complete" && p.MonthlyCost < minPassingCost {
 			minPassingCost = p.MonthlyCost
 			bestPlanIdx = i
 		}

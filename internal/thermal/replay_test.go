@@ -4,6 +4,7 @@
 package thermal
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,182 @@ func (m *mockReplayPricer) LookupPrice(model string) (input, output, cacheRead, 
 		return p[0], p[1], p[2], p[3], true
 	}
 	return 0, 0, 0, 0, false
+}
+
+func TestReplayVolumeConservation(t *testing.T) {
+	t.Run("partial model coverage", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 1000, Input: 800, Output: 200,
+			Models: map[string]ModelTokens{"known": {Input: 80, Output: 20}}}
+		snap, _, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 1000 {
+			t.Fatalf("TotalTokens = %d, want 1000", snap.TotalTokens)
+		}
+		if snap.PeakDailyTokens != 1000 {
+			t.Fatalf("PeakDailyTokens = %d, want 1000", snap.PeakDailyTokens)
+		}
+		if snap.UncachedInput != 800 || snap.Output != 200 || snap.UnclassifiedTokens != 0 {
+			t.Fatalf("categories = (%d in, %d out, %d unclassified); want (800, 200, 0)",
+				snap.UncachedInput, snap.Output, snap.UnclassifiedTokens)
+		}
+	})
+
+	t.Run("complete model coverage stays priced", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 1000, Input: 800, Output: 200,
+			Models: map[string]ModelTokens{"m": {Input: 800, Output: 200}}}
+		pricer := &mockReplayPricer{prices: map[string][4]float64{"m": {3.0, 15.0, 0.3, 3.75}}}
+		snap, _, calendarDays := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 1000 || snap.UncachedInput != 800 || snap.Output != 200 || snap.UnclassifiedTokens != 0 {
+			t.Fatalf("complete coverage categories mismatch: %+v", snap)
+		}
+		row := SimulateModel(snap, calendarDays, "m", pricer)
+		if row.PricingStatus != "complete" {
+			t.Fatalf("PricingStatus = %q, want complete", row.PricingStatus)
+		}
+		wantMonthly := ((800*3.0 + 200*15.0) / 1e6) * 30.0
+		if math.Abs(row.MonthlyCost-wantMonthly) > 1e-9 {
+			t.Fatalf("MonthlyCost = %f, want %f", row.MonthlyCost, wantMonthly)
+		}
+	})
+
+	t.Run("unclassified model tokens retained", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 1000,
+			Models: map[string]ModelTokens{"recorded-model": {Unclassified: 1000}}}
+		snap, _, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 1000 {
+			t.Fatalf("TotalTokens = %d, want 1000", snap.TotalTokens)
+		}
+		if snap.UnclassifiedTokens != 1000 {
+			t.Fatalf("UnclassifiedTokens = %d, want 1000", snap.UnclassifiedTokens)
+		}
+		if snap.UncachedInput != 0 || snap.Output != 0 || snap.CacheRead != 0 || snap.CacheWrite != 0 {
+			t.Fatalf("unclassified shape leaked into typed categories: %+v", snap)
+		}
+	})
+
+	t.Run("empty maps use canonical categories", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 500, Input: 300, Output: 200}
+		snap, _, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 500 || snap.UncachedInput != 300 || snap.Output != 200 || snap.UnclassifiedTokens != 0 {
+			t.Fatalf("canonical categories mismatch: %+v", snap)
+		}
+	})
+
+	t.Run("activity-only rows excluded", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 12, Turns: 12}
+		snap, byDay, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 0 || len(byDay) != 0 || snap.ActiveDays != 0 {
+			t.Fatalf("activity-only row counted as tokens: %+v", snap)
+		}
+	})
+
+	t.Run("date exclusion", func(t *testing.T) {
+		days := []DailyRow{
+			{Day: "2026-10-13", Tokens: 900, Input: 900},
+			{Day: "2026-10-14", Tokens: 1000, Input: 1000},
+		}
+		snap, _, _ := BuildWorkloadSnapshot(days, ReplayOptions{Since: "2026-10-14", Until: "2026-10-14"}, nil)
+		if snap.TotalTokens != 1000 || snap.PeakDailyTokens != 1000 {
+			t.Fatalf("date window not applied: %+v", snap)
+		}
+	})
+
+	t.Run("overclassified canonical input", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 100, Input: 150, Output: 75}
+		snap, _, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 100 {
+			t.Fatalf("TotalTokens = %d, want canonical 100", snap.TotalTokens)
+		}
+		if snap.UnclassifiedTokens != 100 || snap.UncachedInput != 0 || snap.Output != 0 {
+			t.Fatalf("inconsistent day was scaled instead of unclassified: %+v", snap)
+		}
+	})
+
+	t.Run("overclassified model input", func(t *testing.T) {
+		day := DailyRow{Day: "2026-10-14", Tokens: 100,
+			Models: map[string]ModelTokens{"m": {Input: 80, Output: 50}}}
+		snap, _, _ := BuildWorkloadSnapshot([]DailyRow{day}, ReplayOptions{}, nil)
+		if snap.TotalTokens != 100 {
+			t.Fatalf("TotalTokens = %d, want canonical 100", snap.TotalTokens)
+		}
+		if snap.UnclassifiedTokens != 100 || snap.UncachedInput != 0 || snap.Output != 0 {
+			t.Fatalf("inconsistent model day was scaled instead of unclassified: %+v", snap)
+		}
+	})
+}
+
+func TestReplayMissingPriceNotRecommended(t *testing.T) {
+	window := func(against string) ReplayOptions {
+		return ReplayOptions{Since: "2026-10-14", Until: "2026-10-14", Against: against}
+	}
+	day := DailyRow{Day: "2026-10-14", Tokens: 1000, Input: 1000, Cost: 2}
+
+	t.Run("nil pricer never recommends", func(t *testing.T) {
+		rep := AggregateReplay([]DailyRow{day}, window("not-in-catalog"), nil)
+		row := rep.Plans[0]
+		if row.PricingStatus != "missing" {
+			t.Fatalf("PricingStatus = %q, want missing", row.PricingStatus)
+		}
+		if row.IsRecommended {
+			t.Fatal("unpriced target recommended as free")
+		}
+		if row.CostDelta != 0 || row.CostDeltaPercent != 0 {
+			t.Fatalf("missing price row claims delta: %+v", row)
+		}
+		if strings.Contains(strings.ToLower(rep.Recommendation), "saving") {
+			t.Fatalf("missing price row claimed savings: %q", rep.Recommendation)
+		}
+	})
+
+	t.Run("unknown model price never recommends", func(t *testing.T) {
+		pricer := &mockReplayPricer{prices: map[string][4]float64{"known": {1, 1, 1, 1}}}
+		rep := AggregateReplay([]DailyRow{day}, window("unknown-model"), pricer)
+		row := rep.Plans[0]
+		if row.PricingStatus != "missing" || row.IsRecommended || row.CostDeltaPercent != 0 {
+			t.Fatalf("unknown model price produced a claim: %+v", row)
+		}
+	})
+
+	t.Run("partial unclassified volume is partial", func(t *testing.T) {
+		pricer := &mockReplayPricer{prices: map[string][4]float64{"known": {3.0, 15.0, 0.3, 3.75}}}
+		unclassifiedDay := DailyRow{Day: "2026-10-14", Tokens: 1000,
+			Models: map[string]ModelTokens{"known": {Unclassified: 1000}}}
+		rep := AggregateReplay([]DailyRow{unclassifiedDay}, window("known"), pricer)
+		row := rep.Plans[0]
+		if row.PricingStatus != "partial" {
+			t.Fatalf("PricingStatus = %q, want partial", row.PricingStatus)
+		}
+		if row.IsRecommended {
+			t.Fatal("partial pricing row recommended")
+		}
+		if row.CostDelta != 0 || row.CostDeltaPercent != 0 {
+			t.Fatalf("partial price row claims delta: %+v", row)
+		}
+	})
+
+	t.Run("complete priced control unchanged", func(t *testing.T) {
+		pricer := &mockReplayPricer{prices: map[string][4]float64{"known": {3.0, 15.0, 0.3, 3.75}}}
+		typedDay := DailyRow{Day: "2026-10-14", Tokens: 1000, Input: 800, Output: 200, Cost: 2}
+		rep := AggregateReplay([]DailyRow{typedDay}, window("known"), pricer)
+		row := rep.Plans[0]
+		if row.PricingStatus != "complete" {
+			t.Fatalf("PricingStatus = %q, want complete", row.PricingStatus)
+		}
+		wantMonthly := ((800*3.0 + 200*15.0) / 1e6) * 30.0
+		if math.Abs(row.MonthlyCost-wantMonthly) > 1e-9 {
+			t.Fatalf("MonthlyCost = %f, want %f", row.MonthlyCost, wantMonthly)
+		}
+		wantDelta := wantMonthly - 60.0
+		if math.Abs(row.CostDelta-wantDelta) > 1e-9 {
+			t.Fatalf("CostDelta = %f, want %f", row.CostDelta, wantDelta)
+		}
+		wantPercent := (wantDelta / 60.0) * 100
+		if math.Abs(row.CostDeltaPercent-wantPercent) > 1e-9 {
+			t.Fatalf("CostDeltaPercent = %f, want %f", row.CostDeltaPercent, wantPercent)
+		}
+		if !row.IsRecommended {
+			t.Fatal("complete priced control should remain recommendable")
+		}
+	})
 }
 
 func TestAggregateReplay_Basic(t *testing.T) {
