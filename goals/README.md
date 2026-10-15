@@ -27,11 +27,23 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 84
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- **Total Goals**: 89
+- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
 - 🟢 **Implemented**: 84 (1 verified 📜, 15 stale ⚠️, 68 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 83 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 367/367 completed (100%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 367/391 completed (93%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#107)` | - | Reuse unchanged directory transcripts across invocations — Close the 1,000-file warm-latency gap measured in [`docs/PERFORMANCE.md`](../../... | `/goal goals/directory-scan-incremental-cache/goal.md` |
+| [`test-env-isolation`](test-env-isolation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#108)` | - | Make transcript verification independent of ambient tool-root overrides — `TestScanSessionReceipts_Codex` fails whenever `CODEX_HOME` points at a real or ... | `/goal goals/test-env-isolation/goal.md` |
+| [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#109)` | - | Resolve plan identifiers passed to replay --against — `thermal replay --against claude-pro` silently produces a pay-as-you-go row name... | `/goal goals/replay-against-plan-resolution/goal.md` |
+| [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#110)` | - | Align hosted documentation claims with the promises ledger — The hosted documentation page still carries the blanket promise: > …computing ... | `/goal goals/docs-page-claim-parity/goal.md` |
+| [`release-provenance-verification`](release-provenance-verification/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#111)` | - | Independently verify a released artifact's SLSA provenance — [`docs/PROMISES.md`](../../docs/PROMISES.md) records release provenance as **unv... | `/goal goals/release-provenance-verification/goal.md` |
 
 ---
 
