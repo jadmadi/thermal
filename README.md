@@ -25,7 +25,7 @@ brew install jadmadi/tap/thermal
 go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
-Unlike `git log`, which only shows committed code, Thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed. All local, zero cloud telemetry, and under 10ms execution.
+Unlike `git log`, which only shows committed code, Thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed. All local, zero cloud telemetry, and sub-10ms cached execution on the baseline fixture — see [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for the measured limits at directory-scan scale.
 
 ![Thermal leaderboard](assets/leaderboard.webp)
 
