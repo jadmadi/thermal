@@ -1,5 +1,12 @@
 # Goal: Reuse unchanged directory transcripts across invocations
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_directory-scan-incremental-cache_1792091085`
+
+
 ## Goal Description
 Close the 1,000-file warm-latency gap measured in [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md): directory-backed sources (Claude, CodeWhale, Droid, command-code, and any future directory scanner) are re-walked and re-parsed on every invocation, so the warm p50 at 1,000 Claude files is **42.4ms** against the 10ms governance target, while SQLite-backed sources with delta caches stay far below it.
 

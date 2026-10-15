@@ -1,0 +1,74 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "DirScanCache (internal/loaders/dircache.go) snapshots directory-loader output keyed on the canonical root plus a per-file signature (relative path, size, nanosecond modification time) and is wired into LoadToolData for every directory scanner (Claude, codewhale, Droid, command-code, Agy, Grok, DeepSeek (DSH)). An untouched tree is served without re-reading file bodies; any add/remove/change forces a full rescan. Measured at revision 78b5d70: large-fixture warm p50 42.4ms -> 5.5ms (n=20, PASS within the 10ms budget), small-fixture warm p50 7.8ms -> 5.9ms (n=100), cold latency unchanged (11.6ms p50, cache reset per cold sample), and live freshness preserved (81ms at 100ms, 886ms at 1s). Tests cover append/rewrite/truncate/delete, corrupt cache, loader errors, warning round-trips, and cache-vs-full-scan deep equality; AGENTS.md rule 2.A.4 documents the cache and its stat-based boundary.",
+  "files": [
+    "internal/loaders/dircache.go",
+    "internal/loaders/dircache_test.go",
+    "internal/loaders/registry.go",
+    "AGENTS.md",
+    "docs/PERFORMANCE.md",
+    "docs/PROMISES.md",
+    "docs/pages/index.html",
+    "docs/pages/llms-full.txt"
+  ],
+  "cases": [
+    {
+      "id": "Reuse and parity",
+      "result": "pass",
+      "evidence": "TestDirScanCacheGenericWrapper proves the loader body is not re-run for an unchanged tree (call counter stays at 1) and that cached results deep-equal the first load including warnings. TestDirScanCacheClaudeIntegration verifies cached views equal a forced full scan after every mutation and that a cached read stays under 250ms on the test fixture."
+    },
+    {
+      "id": "Mutation matrix",
+      "result": "pass",
+      "evidence": "TestDirScanCacheClaudeIntegration walks append (+1500), rewrite, truncate, and delete with exact totals; TestDirectoryScanSignature covers add/rewrite/truncate/delete at the signature level and documents the same-size same-mtime boundary. Corrupt cache JSON and a failing loader both fall back to a full scan without poisoning the snapshot."
+    },
+    {
+      "id": "Measured improvement",
+      "result": "pass",
+      "evidence": "./scripts/benchmark.sh at 78b5d70 exited 0: baseline exact (1,873,500) and five delta cases exact before any timing; warm p50 5.9ms (n=100) and 5.5ms (n=20) both PASS vs the previous 7.8ms/42.4ms; live CPU 1.08%/0.46% with freshness 81ms/886ms and cancellation <=2ms."
+    },
+    {
+      "id": "Docs and invariants",
+      "result": "pass",
+      "evidence": "PERFORMANCE.md rebound to the new run with raw samples and the gap closed; PROMISES.md section 7 verified on both scales; AGENTS.md documents the cache; read-only ingestion untouched, cache files live under ~/.cache/thermal/<tool>/, no daemon or watcher added."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test -race ./internal/loaders -count=1",
+      "exit": 0,
+      "log": "ok internal/loaders"
+    },
+    {
+      "command": "./scripts/benchmark.sh --out /tmp/thermal-bench-dircache-final",
+      "exit": 0,
+      "log": "cold p50 11.6ms/p95 12.1ms (n=30); warm p50 5.9ms/p95 6.7ms (n=100); large warm p50 5.5ms/p95 5.8ms (n=20); streams 100ms CPU 1.08% freshness 81ms; 1s CPU 0.46% freshness 886ms"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "110 passed, 0 failed (out of 110 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "a8fa449",
+    "diff_sha256": "d81d251b5e929fc7bee0794ff9a9e64693be6888fa55783859bfa353c580de6b"
+  },
+  "blockers": []
+}

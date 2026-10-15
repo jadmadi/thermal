@@ -28,18 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 89
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 88 (5 verified 📜, 15 stale ⚠️, 68 unverified)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 89 (5 verified 📜, 16 stale ⚠️, 68 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 387/391 completed (98%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#107)` | - | Reuse unchanged directory transcripts across invocations — Close the 1,000-file warm-latency gap measured in [`docs/PERFORMANCE.md`](../../... | `/goal goals/directory-scan-incremental-cache/goal.md` |
+- 📋 **Execution Tasks Progress**: 391/391 completed (100%)
 
 ---
 
@@ -68,6 +60,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `81901a8` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `0d42b32` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e2a569f` |
+| [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `78b5d70` |
 | [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `cd5600c565e5cad966373629c09044df68101b3e` |
 | [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `de16cf9` |
 | [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `95321d8` |
