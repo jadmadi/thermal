@@ -10,13 +10,15 @@ Thermal operates under a **Sub-10ms Cached Invocation** architectural target cod
 
 | Field | Value |
 | :--- | :--- |
-| Source revision | `e2cdc72` (`e2cdc72080debb591869da26383bd70d19d7c168`) |
-| Working tree | dirty (pre-existing documentation edits only; diff sha256 `6000d420004d5a1e4ae7b30eccf4a54d0369bb148b178ed48b6dfb2e201f3a95`) |
+| Source revision | `78b5d70` (`78b5d70627f89245e751a828df8ebb31518d2879`) |
+| Working tree | dirty (pre-existing documentation edits only; diff sha256 `d46be152f87d7ab8d21900b1dbc902d287bec77e27f98064fa4146a3d537c984`) |
 | Toolchain | Go 1.27.2 (`linux/amd64`) |
 | CPU | Intel(R) Core(TM) i7-9700 CPU @ 3.00GHz (8 cores) |
 | OS | Linux (`linux/amd64`) |
-| Command | `./scripts/benchmark.sh --out /tmp/thermal-bench-final` |
+| Command | `./scripts/benchmark.sh --out /tmp/thermal-bench-dircache-final` |
 | Raw artifacts | `bench-report.json` and `bench-report.txt` written by the run (JSON mirrors this document) |
+
+This run measures the directory scan cache introduced in this revision (`DirScanCache`, `internal/loaders/dircache.go`). The previous published run at `e2cdc72` is the comparison point in §4 and §7; comparisons are only meaningful against matching hardware, fixture dimensions, and method.
 
 The benchmark binary and all fixtures are built under the operating system's temporary directory. No binary is written to the repository root, and no user data store is read or written: the run uses an isolated `HOME` plus every tool-root override (`GROK_HOME`, `DSH_HOME`, `HERMES_HOME`, `CODEX_HOME`) and XDG path the loaders consult.
 
@@ -26,17 +28,17 @@ The benchmark binary and all fixtures are built under the operating system's tem
 
 | Measurement | Result (this machine) | Budget | Verdict |
 | :--- | :--- | :--- | :--- |
-| **Warm cached CLI latency, small fixture (n=100)** | **p50 7.8ms · p95 9.1ms** | `<10ms` | **PASS** |
-| **Warm cached CLI latency, 1,000-file fixture (n=20)** | p50 42.4ms · p95 52.9ms | `<10ms` | **MISSED — disclosed scale gap** |
-| Cold ingestion (n=30, all snapshots reset) | p50 11.5ms · p95 13.8ms | none published | OBSERVED |
-| Live monitor CPU at 100ms (60s window) | 1.32% CPU (0.857s CPU / 65.0s process wall) | `<5%` (previously published on a 30-file fixture over 2s) | OBSERVED — not directly comparable |
-| Live monitor CPU at 1s (60s window) | 0.67% CPU (0.436s CPU / 65.0s process wall) | `<2%` (same caveat) | OBSERVED — not directly comparable |
-| Source freshness at 100ms | append reflected after 133ms | none published | OBSERVED |
-| Source freshness at 1s | append reflected after 909ms | none published | OBSERVED |
-| Cancellation latency (SIGINT) | 1.1ms both intervals | none published | OBSERVED |
-| Model-name helper allocations | 21.3 / 26.1 / 106.5 ns/op, **0 B/op, 0 allocs/op** | `0 allocs` | PASS (helpers only) |
+| **Warm cached CLI latency, small fixture (n=100)** | **p50 5.9ms · p95 6.7ms** | `<10ms` | **PASS** |
+| **Warm cached CLI latency, 1,000-file fixture (n=20)** | **p50 5.5ms · p95 5.8ms** | `<10ms` | **PASS** (was MISSED at 42.4ms before the directory scan cache) |
+| Cold ingestion (n=30, all snapshots reset) | p50 11.6ms · p95 12.1ms | none published | OBSERVED |
+| Live monitor CPU at 100ms (60s window) | 1.08% CPU (0.703s CPU / 65.0s process wall) | `<5%` (previously published on a 30-file fixture over 2s) | OBSERVED — not directly comparable |
+| Live monitor CPU at 1s (60s window) | 0.46% CPU (0.296s CPU / 65.0s process wall) | `<2%` (same caveat) | OBSERVED — not directly comparable |
+| Source freshness at 100ms | append reflected after 81ms | none published | OBSERVED |
+| Source freshness at 1s | append reflected after 886ms | none published | OBSERVED |
+| Cancellation latency (SIGINT) | 1.5ms / 0.9ms | none published | OBSERVED |
+| Model-name helper allocations | 21.1 / 29.4 / 106.7 ns/op, **0 B/op, 0 allocs/op** | `0 allocs` | PASS (helpers only) |
 
-The governance target holds for the five-source baseline fixture (73 workload files). At 1,000-file scale the warm p50 is ~5.4× the budget; that gap is measured, disclosed here, and left open — this measurement card does not change loaders to make the number pass.
+The governance target now holds on both fixture scales. The directory scan cache reuses an untouched tree from a per-file signature instead of re-reading file bodies, cutting the 1,000-file warm p50 from 42.4ms to 5.5ms without changing results (cache-vs-full-scan parity is a test, and freshness below shows live detection still works).
 
 ---
 
@@ -75,48 +77,48 @@ Used for the sustained live-monitor measurements and for warm-latency evidence a
 
 ## 4. End-to-End CLI Latency
 
-Method: each sample is a full `thermal --json --offline` subprocess with stdout sunk, timed with Go's monotonic clock. **Cold** removes every Thermal snapshot artifact in the fixture cache (`devin/`, `codex/`, `zed/`, snapshots) while preserving the cached pricing catalog — not just the Devin cache; the fixture home is the only cache location touched. **Warm** runs leave snapshots in place.
+Method: each sample is a full `thermal --json --offline` subprocess with stdout sunk, timed with Go's monotonic clock. **Cold** removes every Thermal snapshot artifact in the fixture cache (`devin/`, `codex/`, `zed/`, and every directory snapshot under `claude/`, `codewhale/`, `droid/`, `command-code/`, `agy/`, `grok/`, `dsh/`) while preserving the cached pricing catalog; the fixture home is the only cache location touched. **Warm** runs leave snapshots in place.
 
 ```
-Cold  n=30  min 10.8ms  mean 11.7ms  p50 11.5ms  p95 13.8ms  max 15.2ms
-Warm  n=100 min  6.7ms  mean  7.9ms  p50  7.8ms  p95  9.1ms  max 10.5ms
-Large n=20  min 39.1ms  mean 42.8ms  p50 42.4ms  p95 52.9ms  max 52.9ms
+Cold  n=30  min 10.9ms  mean 11.5ms  p50 11.6ms  p95 12.1ms  max 12.5ms
+Warm  n=100 min  5.6ms  mean  6.0ms  p50  5.9ms  p95  6.7ms  max  7.6ms
+Large n=20  min  5.1ms  mean  5.5ms  p50  5.5ms  p95  5.8ms  max  5.8ms
 ```
 
 Raw samples (milliseconds):
 
 ```text
-cold (30): 13.813 11.959 11.994 12.137 11.512 13.258 12.362 11.430 10.891 11.768
-           10.975 10.885 11.324 11.924 10.851 11.253 11.698 11.017 11.320 11.017
-           11.107 11.481 11.050 10.836 11.133 15.193 11.484 11.906 11.885 11.252
+cold (30): 11.414 11.093 11.454 11.217 11.102 11.602 11.638 10.860 11.272 11.692
+           11.091 11.456 11.136 11.606 11.507 11.203 12.148 12.483 11.962 11.782
+           11.815 11.635 11.627 11.537 11.741 11.559 11.328 11.726 11.648 11.292
 
-warm (100): 8.027 7.832 7.755 7.374 7.475 7.462 7.472 8.324 7.995 7.249
-            7.610 7.498 7.982 7.799 7.749 7.772 8.912 6.743 8.128 7.367
-            7.557 8.173 7.518 6.955 7.618 7.744 9.069 7.793 7.288 7.307
-            7.879 6.989 7.850 9.995 7.558 7.809 7.738 7.531 8.006 10.287
-            7.386 7.832 7.734 7.688 7.362 7.570 8.075 8.094 7.604 7.379
-            7.105 8.082 7.258 8.137 7.385 7.846 7.904 7.404 8.709 8.164
-            8.423 9.040 10.501 7.919 7.968 8.059 7.488 7.648 9.285 8.306
-            7.778 8.179 7.940 7.877 7.750 7.641 7.490 7.594 8.256 8.358
-            7.803 7.591 7.982 8.160 8.537 8.321 8.438 8.199 8.850 7.928
-            8.347 8.344 7.888 6.942 8.832 7.221 7.526 7.395 8.510 7.553
+warm (100): 5.902 5.706 5.803 5.656 5.650 5.713 5.600 5.858 5.854 5.815
+            5.642 5.865 6.175 6.225 5.742 5.857 5.730 6.188 5.842 5.581
+            6.062 6.024 6.011 6.628 5.588 6.680 6.652 6.122 6.391 5.684
+            6.015 5.696 5.690 5.862 6.195 5.996 5.719 5.759 5.631 6.399
+            6.622 6.333 5.783 6.446 6.897 6.247 7.575 6.226 6.142 6.687
+            6.353 5.884 6.248 6.043 5.616 5.877 5.793 6.236 6.137 6.138
+            6.011 5.728 6.103 5.763 5.766 5.731 6.012 5.707 5.940 5.865
+            5.616 6.190 5.922 5.907 6.153 6.620 5.943 6.667 6.205 6.489
+            5.943 6.001 5.999 6.140 6.122 5.906 6.040 5.614 5.781 5.851
+            5.655 5.637 5.955 6.180 6.111 5.889 5.936 5.934 5.791 5.968
 
-large n=20: 39.143 40.997 41.161 42.883 41.423 42.886 39.062 42.410 42.178 47.314
-            42.632 40.407 41.569 42.809 46.856 42.462 42.190 39.693 52.915 44.485
+large n=20: 5.684 5.570 5.346 5.676 5.400 5.192 5.299 5.253 5.483 5.617
+            5.589 5.609 5.362 5.759 5.407 5.549 5.308 5.556 5.479 5.133
 ```
 
-**Interpretation.** On the five-source fixture the warm p50 (7.8ms) meets the 10ms governance target and the cold p50 (11.5ms) is close to it. On the 1,000-file fixture the warm p50 (42.4ms) exceeds the target: directory-backed sources (Claude JSONL, CodeWhale JSON) are re-walked per invocation and have no incremental snapshot cache, while SQLite-backed sources (Devin, Codex) do. That is the disclosed scale gap, not a claim that the target is universally met or universally missed.
+**Interpretation.** The small fixture's warm p50 of 5.9ms and the 1,000-file fixture's 5.5ms both meet the 10ms governance target. For comparison, the `e2cdc72` run measured warm p50 7.8ms (small) and 42.4ms (large): the 1,000-file gap was dominated by re-walking and re-parsing directory sources on every invocation, and the directory scan cache removed it while keeping cold latency unchanged (the cache is reset before each cold sample, so cold still pays the full scan).
 
 ---
 
 ## 5. Sustained Live Monitor (NDJSON)
 
-Method: `thermal live --json --stream --interval <rate> --offline` against the 1,000-file fixture for a 5s warm-up plus a 60s measured window. One source file is appended a third of the way into the window (with a 137ms offset so the sample does not land on a poll-tick boundary); freshness is the time from that append until the change event line arrives. CPU is the child's user+system rusage over the process lifetime (warm-up included, disclosed). Termination is a deliberate SIGINT; a stream that exits on its own before cancellation, emits malformed NDJSON, or never reflects the appended source fails the run with a nonzero exit.
+Method: `thermal live --json --stream --interval <rate> --offline` against the 1,000-file fixture for a 5s warm-up plus a 60s measured window. One source file is appended a third of the way into the window (with a 137ms offset so the sample does not land on a poll-tick boundary); freshness is the time from that append until the change event line arrives, which also proves the directory cache does not mask source changes. CPU is the child's user+system rusage over the process lifetime (warm-up included, disclosed). Termination is a deliberate SIGINT; a stream that exits on its own before cancellation, emits malformed NDJSON, or never reflects the appended source fails the run with a nonzero exit.
 
 | Interval | Window | CPU | Change events | Invalid lines | Freshness | Cancellation |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 100ms | 60s | 0.857s = **1.32%** of one core | 1 | 0 | **133ms** | 1.1ms |
-| 1s | 60s | 0.436s = **0.67%** of one core | 1 | 0 | **909ms** | 1.1ms |
+| 100ms | 60s | 0.703s = **1.08%** of one core | 1 | 0 | **81ms** | 1.5ms |
+| 1s | 60s | 0.296s = **0.46%** of one core | 1 | 0 | **886ms** | 0.9ms |
 
 The stream emits the initial snapshot line and then one line per detected source change; the measured runs therefore recorded 2 NDJSON lines each (initial snapshot + the appended source's change event).
 
@@ -126,20 +128,20 @@ The stream emits the initial snapshot line and then one line per detected source
 
 ## 6. Allocations: whole process vs helpers
 
-The zero-allocation invariant applies to specific hot-path helpers, **not** to the whole CLI process. `go test ./internal/loaders -run '^$' -bench Benchmark -benchmem -benchtime 500ms` on the same machine:
+The zero-allocation invariant applies to specific hot-path helpers, **not** to the whole CLI process. `go test ./internal/loaders -run '^$' -bench Benchmark -benchmem -benchtime 500ms` on the same machine (these benchmarks call the loaders directly; the `DirScanCache` wrapper in `LoadToolData` is not part of them):
 
 | Benchmark | Iterations | ns/op | B/op | allocs/op | Note |
 | :--- | ---: | ---: | ---: | ---: | :--- |
-| `BenchmarkModelName_Canonical` | 28,116,436 | 21.33 | **0** | **0** | zero-allocation helper |
-| `BenchmarkModelName_Alias` | 23,090,486 | 26.08 | **0** | **0** | zero-allocation helper |
-| `BenchmarkModelName_Router` | 5,647,664 | 106.5 | **0** | **0** | zero-allocation helper |
-| `BenchmarkDevin_Cold` | 64 | 8,182,605 | 138,355 | 7,893 | whole-process loader work |
-| `BenchmarkDevin_Warm` | 769 | 870,425 | 25,772 | 769 | cache hit still allocates |
-| `BenchmarkDevin_AppendDelta` | 94 | 6,158,701 | 95,551 | 4,267 | incremental append |
-| `BenchmarkCodex_Cold` | 542 | 1,159,146 | 1,488,701 | 2,025 | SQLite + rollout JSONL |
-| `BenchmarkCodex_Warm` | 930 | 651,674 | 58,728 | 1,008 | rollout cache hit |
-| `BenchmarkOpenCode_Scan` | 385 | 1,502,478 | 24,058 | 368 | `session_v2` scan |
-| `BenchmarkClaude_Scan` | 706 | 834,156 | 3,376,845 | 812 | directory scan |
+| `BenchmarkModelName_Canonical` | 28,488,267 | 21.14 | **0** | **0** | zero-allocation helper |
+| `BenchmarkModelName_Alias` | 19,984,441 | 29.44 | **0** | **0** | zero-allocation helper |
+| `BenchmarkModelName_Router` | 5,549,145 | 106.7 | **0** | **0** | zero-allocation helper |
+| `BenchmarkDevin_Cold` | 82 | 7,035,564 | 137,947 | 7,892 | whole-process loader work |
+| `BenchmarkDevin_Warm` | 796 | 743,036 | 25,745 | 769 | cache hit still allocates |
+| `BenchmarkDevin_AppendDelta` | 100 | 5,811,322 | 96,218 | 4,306 | incremental append |
+| `BenchmarkCodex_Cold` | 580 | 1,067,603 | 1,489,010 | 2,024 | SQLite + rollout JSONL |
+| `BenchmarkCodex_Warm` | 968 | 615,275 | 58,904 | 1,009 | rollout cache hit |
+| `BenchmarkOpenCode_Scan` | 404 | 1,477,957 | 24,052 | 368 | `session_v2` scan |
+| `BenchmarkClaude_Scan` | 872 | 713,122 | 3,371,861 | 800 | directory scan |
 
 Whole-process invocations allocate (JSON decoding, token maps, rendering); the loaders' warm paths allocate tens of KB per scan, not zero. Any public claim of "zero allocations" must be read as scoped to the model-name helpers above.
 
@@ -147,11 +149,10 @@ Whole-process invocations allocate (JSON decoding, token maps, rendering); the l
 
 ## 7. Hotspot analysis and bounded follow-ups
 
-Follow-ups below are derived from the measured costs in this report. No loader change ships with this measurement card.
-
-1. **Directory-backed sources at scale (largest measured gap).** Claude/CodeWhale directory scans are re-walked on every invocation, which is the dominant cost at 1,000 files (large-fixture warm p50 42.4ms vs 7.8ms small fixture). A bounded follow-up worth designing is a fast directory modification check or an incremental scan cache for directory loaders, with the same read-only and exactness guarantees as the SQLite snapshot caches.
-2. **Unchanged-source re-use in the live collector.** At 100ms cadence the collector re-scans directory sources on its ~200ms budget; measured sustained CPU is 1.32% (100ms) vs 0.67% (1s) at 1,000-file scale. Any change here must preserve source freshness (measured 133ms / 909ms) and cancellation behavior.
-3. **Warm SQLite path allocations.** Cache-hit scans still allocate tens of KB (`BenchmarkDevin_Warm` 25,772 B/op); this is acceptable today and only worth revisiting against a measured regression.
+1. **Directory-backed sources at scale — resolved.** The `e2cdc72` run measured warm p50 42.4ms at 1,000 files; `DirScanCache` (`internal/loaders/dircache.go`, wired into `LoadToolData`) now reuses an untouched tree from a per-file signature (relative path, size, nanosecond mtime), measuring 5.5ms at the same scale. Boundary: a rewrite that preserves both byte size and the recorded modification time is not observable by a stat-based signature — the same contract the SQLite snapshot caches use.
+2. **Live collector re-scans.** With the cache in place, sustained CPU at 1,000 files is 1.08% (100ms) and 0.46% (1s), both improved from 1.32% / 0.67%; any further change must preserve the measured freshness (81ms / 886ms) and cancellation behavior.
+3. **Warm SQLite path allocations.** Cache-hit scans still allocate tens of KB (`BenchmarkDevin_Warm` 25,745 B/op); acceptable today and only worth revisiting against a measured regression.
+4. **OpenCode / MiMoCode incremental state tracking — open.** These loaders still scan their full `session_v2`/session tables per invocation (measured 1.48ms per scan on the fixture); no cross-invocation delta exists yet.
 
 ---
 

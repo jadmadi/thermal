@@ -143,16 +143,19 @@ is deferred until intraday timestamp coverage has its own design.
 sub-10ms target in [GOVERNANCE.md](../GOVERNANCE.md).
 
 **Behavior and evidence:** [PERFORMANCE.md](PERFORMANCE.md) publishes a full run at revision
-`e2cdc72`: warm p50 **7.8ms** / p95 9.1ms (n=100) on the five-source fixture — **within** the
-10ms target — and warm p50 **42.4ms** (n=20) at 1,000-file directory scale, which **exceeds**
-the target and is disclosed as a scale gap. `./scripts/benchmark.sh` reproduces the run and
+`78b5d70`: warm p50 **5.9ms** / p95 6.7ms (n=100) on the five-source fixture and warm p50
+**5.5ms** / p95 5.8ms (n=20) at 1,000-file directory scale — **within** the 10ms target on
+both scales. The earlier `e2cdc72` run had measured 42.4ms at directory scale and disclosed
+it as a scale gap; the directory scan cache closed that gap without changing results (freshness
+still measures 81ms/886ms in the live monitor). `./scripts/benchmark.sh` reproduces the run and
 fails nonzero on fixture mismatch, malformed output, or a dead live stream.
 
 **Limits:** one machine (i7-9700, Linux, Go 1.27.2), synthetic fixtures; not a universal
 latency guarantee. Live-monitor CPU and source freshness have their own per-machine verdicts
-in the same report. TTY responsiveness was not measured.
+in the same report. TTY responsiveness was not measured. The directory cache's stat-based
+signature cannot observe a rewrite that preserves both byte size and modification time.
 
-**Outcome: partial** — verified on the baseline fixture, disclosed gap at directory-scan scale.
+**Outcome: verified** on both fixture scales (per-machine, fixture-scoped).
 
 ## 8. Setup & context health audit (`thermal audit`)
 

@@ -16,7 +16,7 @@
    - `Input + Output + CacheRead + CacheWrite + Reasoning == Total`.
 4. **Canonical Model Normalization**: Model identifiers are normalized through `modelName()` before map indexing. Case differences across tools (`GLM-5.3-Flash` vs `glm-5.3-flash`) fold into a single canonical row.
 5. **Project Root Attribution**: Project paths are normalized through `thermal.ProjectKey`, resolving symlinks and collapsing subdirectories into their nearest git repository root.
-6. **Cached Invocations**: SQLite-backed sources reuse disk-backed delta snapshots under `~/.cache/thermal/`. Warm latency is measured against the sub-10ms governance target in `docs/PERFORMANCE.md` (warm p50 7.8 ms on the five-source fixture; 42.4 ms at 1,000-file directory scale, disclosed there); directory-scan caching is tracked as a follow-up goal.
+6. **Cached Invocations**: SQLite-backed sources reuse disk-backed delta snapshots, and every directory scanner (Claude, codewhale, Droid, command-code, Agy, Grok, DSH) reuses a per-file signature snapshot (`internal/loaders/dircache.go`) under `~/.cache/thermal/`. Measured warm latency against the sub-10ms governance target is published in `docs/PERFORMANCE.md` (warm p50 5.9 ms on the five-source fixture and 5.5 ms at 1,000-file directory scale).
 
 ---
 
