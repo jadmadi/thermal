@@ -445,7 +445,16 @@ func auditAgentReadiness(workDir, homeDir string, rep *AuditReport) {
 
 	// 3. Check Thermal Cache & Storage Writable
 	cacheDir := filepath.Join(homeDir, ".cache", "thermal")
-	if err := os.MkdirAll(cacheDir, 0755); err == nil {
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
+			Check:   "Delta Cache",
+			Target:  cacheDir,
+			Status:  "WARN",
+			Message: "Cache directory is missing and could not be created",
+			Advice:  "Fix permissions on ~/.cache/thermal to enable delta caching.",
+		})
+		rep.Score -= 10
+	} else {
 		testFile := filepath.Join(cacheDir, fmt.Sprintf(".audit_probe_%d", time.Now().UnixNano()))
 		if err := os.WriteFile(testFile, []byte("ok"), 0644); err == nil {
 			_ = os.Remove(testFile)
@@ -453,14 +462,14 @@ func auditAgentReadiness(workDir, homeDir string, rep *AuditReport) {
 				Check:   "Delta Cache",
 				Target:  cacheDir,
 				Status:  "PASS",
-				Message: "Cache directory writable (sub-10ms ready)",
+				Message: "Cache directory writable (probe file created and removed)",
 			})
 		} else {
 			rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
 				Check:   "Delta Cache",
 				Target:  cacheDir,
 				Status:  "WARN",
-				Message: "Cache directory is not writable",
+				Message: "Cache directory exists but is not writable",
 				Advice:  "Fix permissions on ~/.cache/thermal to enable delta caching.",
 			})
 			rep.Score -= 10
@@ -522,23 +531,33 @@ func checkToolDatabaseAccess(homeDir string, rep *AuditReport) {
 		}
 	}
 
-	if foundCount > 0 {
-		if readableCount == foundCount {
-			rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
-				Check:   "Tool Databases",
-				Status:  "PASS",
-				Message: fmt.Sprintf("%d local tool databases verified (mmap-ready)", readableCount),
-			})
-		} else {
-			rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
-				Check:   "Tool Databases",
-				Status:  "WARN",
-				Message: fmt.Sprintf("%d/%d databases readable (restricted)", readableCount, foundCount),
-				Advice:  "Ensure SQLite databases have read permissions for read-only telemetry ingestion.",
-			})
-			rep.Score -= 5
-		}
+	// This check measures filesystem readability only: it never opens a SQLite
+	// connection, so it cannot validate database integrity or mmap behavior.
+	if foundCount == 0 {
+		rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
+			Check:   "Tool Databases",
+			Status:  "INFO",
+			Message: "No local tool database files found; database access was not assessed",
+		})
+		return
 	}
+
+	if readableCount == foundCount {
+		rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
+			Check:   "Tool Databases",
+			Status:  "PASS",
+			Message: fmt.Sprintf("%d local tool database file(s) readable (filesystem readability only; SQLite integrity and mmap were not checked)", readableCount),
+		})
+		return
+	}
+
+	rep.ReadinessFindings = append(rep.ReadinessFindings, ReadinessFinding{
+		Check:   "Tool Databases",
+		Status:  "WARN",
+		Message: fmt.Sprintf("%d/%d local tool database files readable (%d unreadable); SQLite integrity and mmap were not checked", readableCount, foundCount, foundCount-readableCount),
+		Advice:  "Ensure SQLite databases have read permissions for read-only telemetry ingestion.",
+	})
+	rep.Score -= 5
 }
 
 func checkUserConfig(homeDir string, rep *AuditReport) {

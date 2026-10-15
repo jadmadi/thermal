@@ -250,3 +250,154 @@ func TestAuditAgentReadiness_EmptyAgentsMD(t *testing.T) {
 		t.Fatal("expected Repository Instructions finding for empty file")
 	}
 }
+
+func TestAuditDatabaseReadabilityClaim(t *testing.T) {
+	findToolDatabases := func(rep AuditReport) *ReadinessFinding {
+		t.Helper()
+		for i := range rep.ReadinessFindings {
+			if rep.ReadinessFindings[i].Check == "Tool Databases" {
+				return &rep.ReadinessFindings[i]
+			}
+		}
+		t.Fatal("missing Tool Databases finding")
+		return nil
+	}
+
+	t.Run("plain text database path", func(t *testing.T) {
+		workDir := t.TempDir()
+		homeDir := t.TempDir()
+		dbPath := filepath.Join(homeDir, ".codex", "state_5.sqlite")
+		if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(dbPath, []byte("this is not sqlite"), 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		rep := RunAuditWithOptions(workDir, homeDir)
+		finding := findToolDatabases(rep)
+
+		// A readable file can PASS, but only under the narrow readability label.
+		if finding.Status != "PASS" {
+			t.Fatalf("expected PASS under the readability label, got %s: %s", finding.Status, finding.Message)
+		}
+		lower := strings.ToLower(finding.Message)
+		for _, banned := range []string{"verified", "mmap-ready"} {
+			if strings.Contains(lower, banned) {
+				t.Errorf("plain text accepted as a %q database: %s", banned, finding.Message)
+			}
+		}
+		if !strings.Contains(lower, "readable") {
+			t.Errorf("message does not describe filesystem readability: %s", finding.Message)
+		}
+		if !strings.Contains(lower, "sqlite integrity") || !strings.Contains(lower, "mmap") || !strings.Contains(lower, "not checked") {
+			t.Errorf("message does not disclose that SQLite integrity and mmap were not checked: %s", finding.Message)
+		}
+	})
+
+	t.Run("missing paths disclose limits", func(t *testing.T) {
+		rep := RunAuditWithOptions(t.TempDir(), t.TempDir())
+		finding := findToolDatabases(rep)
+		if finding.Status != "INFO" {
+			t.Fatalf("expected INFO when no databases exist, got %s", finding.Status)
+		}
+		if !strings.Contains(finding.Message, "not assessed") {
+			t.Errorf("missing databases did not disclose the limit: %s", finding.Message)
+		}
+	})
+
+	t.Run("unreadable path discloses limits", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("permission bits are not enforced for root")
+		}
+		workDir := t.TempDir()
+		homeDir := t.TempDir()
+		dbPath := filepath.Join(homeDir, ".codex", "state_5.sqlite")
+		if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(dbPath, []byte("restricted"), 0000); err != nil {
+			t.Fatal(err)
+		}
+
+		rep := RunAuditWithOptions(workDir, homeDir)
+		finding := findToolDatabases(rep)
+		if finding.Status != "WARN" {
+			t.Fatalf("expected WARN for an unreadable database, got %s: %s", finding.Status, finding.Message)
+		}
+		if !strings.Contains(finding.Message, "not checked") {
+			t.Errorf("unreadable database did not disclose the limit: %s", finding.Message)
+		}
+	})
+}
+
+func TestAuditCacheFailureVisible(t *testing.T) {
+	findDeltaCache := func(rep AuditReport) *ReadinessFinding {
+		t.Helper()
+		for i := range rep.ReadinessFindings {
+			if rep.ReadinessFindings[i].Check == "Delta Cache" {
+				return &rep.ReadinessFindings[i]
+			}
+		}
+		t.Fatal("missing Delta Cache finding")
+		return nil
+	}
+
+	t.Run("file at cache location", func(t *testing.T) {
+		workDir := t.TempDir()
+		homeDir := t.TempDir()
+		cachePath := filepath.Join(homeDir, ".cache", "thermal")
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(cachePath, []byte("not a directory"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		rep := RunAuditWithOptions(workDir, homeDir)
+		finding := findDeltaCache(rep)
+		if finding.Status != "WARN" {
+			t.Fatalf("expected visible WARN when the cache path cannot be created, got %s: %s", finding.Status, finding.Message)
+		}
+		if !strings.Contains(finding.Message, "could not be created") {
+			t.Errorf("unexpected message: %s", finding.Message)
+		}
+
+		// The audit is read-only against user data: fixture bytes stay unchanged.
+		data, err := os.ReadFile(cachePath)
+		if err != nil || string(data) != "not a directory" {
+			t.Errorf("audit modified source fixture bytes (err=%v, data=%q)", err, string(data))
+		}
+	})
+
+	t.Run("writable cache says writable only", func(t *testing.T) {
+		workDir := t.TempDir()
+		homeDir := t.TempDir()
+
+		rep := RunAuditWithOptions(workDir, homeDir)
+		finding := findDeltaCache(rep)
+		if finding.Status != "PASS" {
+			t.Fatalf("expected PASS for a writable cache, got %s: %s", finding.Status, finding.Message)
+		}
+		lower := strings.ToLower(finding.Message)
+		if !strings.Contains(lower, "writable") {
+			t.Errorf("message does not state writability: %s", finding.Message)
+		}
+		for _, banned := range []string{"sub-10ms", "mmap-ready", "ready"} {
+			if strings.Contains(lower, banned) {
+				t.Errorf("cache message claims %q: %s", banned, finding.Message)
+			}
+		}
+
+		// Probe files are cleaned up after the audit.
+		entries, err := os.ReadDir(filepath.Join(homeDir, ".cache", "thermal"))
+		if err != nil {
+			t.Fatalf("cache directory missing after audit: %v", err)
+		}
+		for _, e := range entries {
+			if strings.HasPrefix(e.Name(), ".audit_probe_") {
+				t.Errorf("probe file not cleaned up: %s", e.Name())
+			}
+		}
+	})
+}

@@ -560,7 +560,7 @@ thermal opencode receipt --json
 ```
 
 ### `thermal audit`
-Non-destructive local setup and context health diagnostic. Verifies SQLite database permissions, 256MB memory mapping (mmap) status, transcript ceilings, and pricing cache integrity:
+Non-destructive local setup and context health diagnostic. Measures rule-file and MCP context tax, repository instruction hygiene, filesystem readability of local tool database paths (SQLite integrity and mmap are not checked), and a temporary writability probe inside Thermal's own cache directory — no agent data stores are touched:
 
 ```bash
 thermal audit
