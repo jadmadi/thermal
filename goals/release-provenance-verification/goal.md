@@ -1,5 +1,12 @@
 # Goal: Independently verify a released artifact's SLSA provenance
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_release-provenance-verification_1792090060`
+
+
 ## Goal Description
 [`docs/PROMISES.md`](../../docs/PROMISES.md) records release provenance as **unverified**: the release workflow and runbook exist in-tree, but no downloaded artifact has been checked with `slsa-verifier`. Close that gap by downloading a published release (`checksums.txt`, `checksums.txt.intoto.jsonl`, one platform archive), running the documented verification, and recording the exact commands, outputs, and exit codes — or, if the verification fails or the network is unavailable, recording a disclosed failure that keeps the claim unverified.
 

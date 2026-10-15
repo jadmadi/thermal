@@ -1,0 +1,65 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "The published v0.20.0 release was independently verified. slsa-verifier (v2 CLI, built from github.com/slsa-framework/slsa-verifier/v2) verified checksums.txt against checksums.txt.intoto.jsonl — builder slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.1.0 at source commit 3f5fa6d9c047dd093f32eaa21651f0c858cded5a — and sha256sum --check verified the downloaded thermal_0.20.0_linux_amd64.tar.gz. Raw commands, exit codes, verifier version, asset list, and the published checksums.txt are recorded in docs/evaluations/2026-10-15-release-provenance/commands.log. docs/PROMISES.md section 9 moves to verified with explicit artifact scope and limits; README and DISTRIBUTION.md link the verification log.",
+  "files": [
+    "docs/evaluations/2026-10-15-release-provenance/commands.log",
+    "docs/PROMISES.md",
+    "docs/DISTRIBUTION.md",
+    "README.md"
+  ],
+  "cases": [
+    {
+      "id": "Artifact verification",
+      "result": "pass",
+      "evidence": "slsa-verifier exit 0: 'Verified build using builder ...generator_generic_slsa3.yml@refs/tags/v2.1.0 at commit 3f5fa6d9c047dd093f32eaa21651f0c858cded5a' / 'Verifying artifact checksums.txt: PASSED' / 'PASSED: SLSA verification passed'. sha256sum --check exit 0: 'thermal_0.20.0_linux_amd64.tar.gz: OK'."
+    },
+    {
+      "id": "Ledger and wording",
+      "result": "pass",
+      "evidence": "PROMISES.md section 9 outcome is verified for v0.20.0 with builder, source commit, commands, artifact scope (Linux/amd64 archive + shared checksums.txt) and limits (other platform archives not individually downloaded; older releases not re-checked). README no longer claims provenance is unverified and links the log."
+    },
+    {
+      "id": "Scope discipline",
+      "result": "pass",
+      "evidence": "Verification-only: no workflow change, no tagging, no release creation, no publishing; downloads lived in a temporary directory and only text logs were committed."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest",
+      "exit": 0,
+      "log": "verifier installed; version output recorded in the evidence log"
+    },
+    {
+      "command": "curl -sSLO https://github.com/jadmadi/thermal/releases/download/v0.20.0/{checksums.txt,checksums.txt.intoto.jsonl,thermal_0.20.0_linux_amd64.tar.gz}",
+      "exit": 0,
+      "log": "600 B, 21,851 B, 6,025,624 B downloaded"
+    },
+    {
+      "command": "slsa-verifier verify-artifact checksums.txt --provenance-path checksums.txt.intoto.jsonl --source-uri github.com/jadmadi/thermal --source-tag v0.20.0",
+      "exit": 0,
+      "log": "PASSED: SLSA verification passed"
+    },
+    {
+      "command": "sha256sum --check --ignore-missing checksums.txt",
+      "exit": 0,
+      "log": "thermal_0.20.0_linux_amd64.tar.gz: OK"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok"
+    },
+    {
+      "command": "go vet ./... && go build -o /tmp/thermal-test ./cmd/thermal && ./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "vet silent; build silent; gate 110 passed, 0 failed"
+    }
+  ],
+  "candidate": {
+    "head": "5fd9958",
+    "diff_sha256": "2a7ed822745757749c42a26f225b54f7482be24aaeeb243532f8f66991509bff"
+  },
+  "blockers": []
+}

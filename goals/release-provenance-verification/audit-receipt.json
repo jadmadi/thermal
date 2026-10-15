@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "release-provenance-verification",
+  "commit_sha": "5fd995805bf06172d40cdcbf3c08c9cd420b9064",
+  "spec_hash": "622ab4981fb357f13084e5d98e129d5ee81bbf67ad17da365625b390dbcef9e2",
+  "sandbox_nonce": "2e79854463690f13",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "xlZSghAywlvj5UMjGlRTrGe5kxxHMYHeGcI7/pImS9w=",
+  "auditor_signature": "uFvitxKV7Jy4aUOHbmCIS2O25OyRj5bIlQm9hHI2gmpl7JaBpwanjWtOf0jwZHoxA6JMv68WOp7Fs0fBuicFBQ==",
+  "certified_at": "2026-10-15T18:47:40.976144286Z"
+}
