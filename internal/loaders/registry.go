@@ -375,13 +375,33 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			return ToolData{}, fmt.Errorf("data directory not found: %s", dir)
 		}
-		s, d, pr, err := info.Loader(dir)
-		s.Tool = info.Name
 		dataPath := filepath.Join(dir, info.DataSubdir)
 		if info.DataSubdir == "" {
 			dataPath = filepath.Join(dir, "history.jsonl")
 		}
-		return ToolData{Summary: s, Daily: d, Projects: pr, Path: dataPath}, err
+
+		// Directory-backed scans reuse a disk snapshot when the tree signature
+		// (per-file path, size, nanosecond modification time) is unchanged, so
+		// an untouched history never re-reads file bodies. A signature failure
+		// degrades to a full scan without caching.
+		canonicalRoot := CanonicalDatabasePath(dir)
+		if sig, sigErr := directoryScanSignature(canonicalRoot); sigErr == nil {
+			if cached, ok := loadDirScanCache(t, canonicalRoot, sig, dataPath); ok {
+				return cached, nil
+			}
+		}
+
+		s, d, pr, err := info.Loader(dir)
+		s.Tool = info.Name
+		data := ToolData{Summary: s, Daily: d, Projects: pr, Path: dataPath}
+		if err == nil {
+			// Re-signature after the scan so a snapshot is only stored when the
+			// tree did not change while it was being read.
+			if sig, sigErr := directoryScanSignature(canonicalRoot); sigErr == nil {
+				saveDirScanCache(t, canonicalRoot, sig, data)
+			}
+		}
+		return data, err
 	}
 }
 
