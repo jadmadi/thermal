@@ -1,0 +1,63 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "SimulatePlan no longer compares a day's token sum to RollingWindowLimit: rolling spikes stay unasserted and burstThrottles is always zero. When no configured daily ceiling is exceeded but a rolling limit exists, the plan reports capacityVerdict UNKNOWN with an explicit intraday-evidence explanation; daily-ceiling exceedances remain DEGRADED/FAIL with rolling spikes unasserted. UNKNOWN rows are never recommended and render in yellow without a savings claim. Test vocabulary in cmd/thermal/simulated_user_test.go was extended with UNKNOWN (disclosed adaptation: the new verdict is now documented in docs/MIGRATION.md and produced by the fixture workload). Migration entry changed-replay-rolling-capacity-unknown added.",
+  "files": [
+    "internal/thermal/replay.go",
+    "internal/thermal/replay_test.go",
+    "internal/render/replay.go",
+    "internal/render/replay_test.go",
+    "cmd/thermal/simulated_user_test.go",
+    "docs/MIGRATION.md",
+    "project.jsonc"
+  ],
+  "cases": [
+    {
+      "id": "CAP-201",
+      "result": "pass",
+      "evidence": "TestReplayDailyDataCannotProveRollingCapacity: concentrated (2M reasoning, 3x multiplier) and spread workloads with the same 4M daily total both produce UNKNOWN with zero invented burst count; a 1M day below the 5M rolling limit also remains UNKNOWN; an 8M day over a 5M daily ceiling remains FAIL with burstThrottles 0 and a 'rolling spikes unasserted' note. TestAggregateReplay_ChatGPTRollingCapacityUnknown covers ChatGPT Plus/Pro."
+    },
+    {
+      "id": "CAP-202",
+      "result": "pass",
+      "evidence": "TestRenderReplayUnknownCapacity: UNKNOWN is visible in monochrome and color output, the intraday-evidence explanation is printed, no star recommendation appears, and an UNKNOWN-only report carries no recommendation block. Manual CLI check: `thermal replay --compare chatgpt-plus,claude-pro,agy-pro` shows UNKNOWN rows for rolling plans and recommends only the PASS plan."
+    }
+  ],
+  "commands": [
+    {
+      "command": "go test -race ./internal/thermal ./internal/render -run Replay",
+      "exit": 0,
+      "log": "ok internal/thermal; ok internal/render"
+    },
+    {
+      "command": "go test -race ./cmd/thermal -run ReplaySimulation",
+      "exit": 0,
+      "log": "ok cmd/thermal 1.933s (default, targets, JSON schema subtests pass with UNKNOWN accepted)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok; cmd/thermal 2.906s; internal/thermal 74.792s; internal/tui 163.181s"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "107 passed, 0 failed (out of 107 checks)"
+    }
+  ],
+  "candidate": {
+    "head": "8c7402c",
+    "diff_sha256": "976ac7a5736fe81e3b9b23286a44b733e0e1da5eff378160eb5ee80ccebafffd"
+  },
+  "blockers": []
+}

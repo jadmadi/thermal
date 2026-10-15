@@ -1,5 +1,10 @@
 # Goal: ChatGPT Rolling 5-Hour Burst Capacity Replay
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_chatgpt-rolling-burst-replay_1792064301`
 ## Goal Description
 Enhance thermal replay to model dynamic 5-hour rolling message and token burst limits for Codex sessions evaluated against ChatGPT Plus and ChatGPT Pro subscription tiers, providing concrete capacity verdicts and upgrade rationale.
 

@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 84
-- 🟡 **Ready to Execute (Pending)**: 3 (2 independent ⚡, 1 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
 - ⛔ **Blocked on Prerequisites**: 2
-- 🟢 **Implemented**: 79 (0 verified 📜, 10 stale ⚠️, 69 unverified)
-- 🔁 **Reopened for Remediation**: 3
+- 🟢 **Implemented**: 80 (1 verified 📜, 10 stale ⚠️, 69 unverified)
+- 🔁 **Reopened for Remediation**: 2
 - 🎯 **By Tier**: 1 immediate (Tier 1), 83 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 357/367 completed (97%)
+- 📋 **Execution Tasks Progress**: 359/367 completed (97%)
 
 ---
 
@@ -43,9 +43,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#103)` | - | Read-Only Local Setup & Context Health Audit ('thermal audit') — Implement non-destructive setup and context health diagnostic ('thermal audit').... | `/goal goals/setup-health-audit/goal.md` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#105)` | - | Measure cold and warm CLI performance on representative fixtures — Establish reproducible end-to-end latency and allocation evidence for the docume... | `/goal goals/ingestion-performance-baseline/goal.md` |
-| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#102)` | Deps met: workload-replay | ChatGPT Rolling 5-Hour Burst Capacity Replay — Enhance thermal replay to model dynamic 5-hour rolling message and token burst l... | `/goal goals/chatgpt-rolling-burst-replay/goal.md` |
 | [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#69)` | Prereqs: ingestion-performance-baseline | Avoid rescanning unchanged Codex rollout transcripts — Add bounded source-aware rollout caching with exact parity against full scans an... | `/goal goals/codex-incremental-rollout-cache/goal.md` |
-| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: setup-health-audit, ingestion-performance-baseline, chatgpt-rolling-burst-replay | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
+| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: setup-health-audit, ingestion-performance-baseline | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
 
 ---
 
@@ -121,6 +120,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `dd3ab4f` |
 | [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `305f589` |
 | [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `d162bf1` |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `8c7402c` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |

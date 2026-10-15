@@ -4,7 +4,8 @@
   "reopened_by": "codex",
   "reason": "2026-10-14 source audit: SimulatePlan compares daily totals to rolling window limits without event timestamps",
   "original_commit": "b0759e0",
-  "resolved_at": "0001-01-01T00:00:00Z",
-  "active": true,
+  "resolved_commit": "8c7402cb19c3564818b748313765acee3aed5f5b",
+  "resolved_at": "2026-10-15T11:38:07.228802886Z",
+  "active": false,
   "reopen_epoch": 1
 }
