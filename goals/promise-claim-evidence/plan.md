@@ -21,9 +21,9 @@ Do not claim actual release verification from a workflow definition. Leave prove
 unless an actual artifact is independently verified; no release/publishing work in this card.
 Preserve existing README structure and user edits. No redesign or product expansion.
 
-- [ ] CLM-201: every strong README promise maps to concrete evidence or an explicit qualification;
+- [x] CLM-201: every strong README promise maps to concrete evidence or an explicit qualification;
   `docs/PROMISES.md` links all prerequisite receipts. No “all goals implemented” acceptance shortcut.
-- [ ] CLM-202: metadata descriptions match qualified claims; `lastEdit` updated. Independent reviewer
+- [x] CLM-202: metadata descriptions match qualified claims; `lastEdit` updated. Independent reviewer
   compares wording to behavior and signs off; this is a human review criterion, not a grep proof.
 
 ## Card C2: Semantic release gate
@@ -35,9 +35,9 @@ Gate runs the named receipt/replay/audit regression tests and fails if any fail.
 cannot yield false success. Reuse synthetic fixtures and preserve private data isolation.
 Performance evidence runs separately; a small cache timing check is not an end-to-end 10ms guarantee.
 
-- [ ] CLM-203: introduce a temporary known failing expectation in an isolated copy, prove the gate
+- [x] CLM-203: introduce a temporary known failing expectation in an isolated copy, prove the gate
   exits nonzero, restore it, and rerun green. Attach both commands/exits bound to their exact diffs.
-- [ ] CLM-204: common final checks from tasks/plan.md exit 0 on the final candidate; return
+- [x] CLM-204: common final checks from tasks/plan.md exit 0 on the final candidate; return
   ready_for_review, not self-approved. No remote push, release, or goal certification in planning.
 
 Stop and return blockers after two repeated failures; schema and reviewer in `tasks/plan.md`.

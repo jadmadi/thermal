@@ -28,18 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 84
-- 🟡 **Ready to Execute (Pending)**: 1 (0 independent ⚡, 1 unblocked 🔗)
-- 🟢 **Implemented**: 83 (2 verified 📜, 11 stale ⚠️, 70 unverified)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 84 (3 verified 📜, 11 stale ⚠️, 70 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 83 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 363/367 completed (98%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#106)` | Deps met: receipt-evidence-integrity, workload-replay, setup-health-audit, ingestion-performance-baseline, chatgpt-rolling-burst-replay | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
+- 📋 **Execution Tasks Progress**: 367/367 completed (100%)
 
 ---
 
@@ -123,6 +115,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
 | [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `1f71cd2` |
+| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Audit Receipt | `6eb991a390a1f2b40aecbfd1ceba481f3f59453b` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `be1e45f` |

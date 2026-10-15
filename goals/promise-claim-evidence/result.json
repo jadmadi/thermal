@@ -1,0 +1,70 @@
+{
+  "schema": "thermal/task-result/v1",
+  "status": "ready_for_review",
+  "summary": "C1: docs/PROMISES.md maps every strong public claim (local data safety, token/cost coverage, cross-surface totals, receipts, yield, replay, performance, audit, distribution/provenance, allocations) to exact wording, behavior, a reproducible evidence command or artifact, the revision, coverage limits, and a verified/partial/unverified outcome, and links all five prerequisite remediation results plus their signed audits. The README provenance claim is now explicitly workflow-defined and unverified against a downloaded artifact, and the performance claim points to published evidence; project.jsonc wording is aligned with refreshed lastEdit. C2: the simulated user gate adds three named semantic suites (receipt/replay/audit) with minimum test-count tripwires so a renamed or missing test cannot silently pass, runs them in a neutral environment isolated from fixture tool-root overrides, and keeps all 107 existing checks (now 110 total). CLM-203 was proven with an injected failing expectation in an isolated copy (gate exit 1, 109/110), restored, and rerun green (exit 0, 110/110).",
+  "files": [
+    "docs/PROMISES.md",
+    "README.md",
+    "project.jsonc",
+    "scripts/simulated_user_gate.sh"
+  ],
+  "cases": [
+    {
+      "id": "CLM-201",
+      "result": "pass",
+      "evidence": "docs/PROMISES.md covers every strong README/metadata promise with location, behavior, evidence, revision, limits and outcome; all 12 relative links resolve to existing files (prerequisite remediation-result.json and audit-receipt.json files included). Zero-allocation claims are scoped to measured helpers; yield is described as recorded diff volume per token; receipts as observed command outcomes with receipt sources listed separately from the ingestion registry; provenance stays unverified without an artifact check."
+    },
+    {
+      "id": "CLM-202",
+      "result": "pass",
+      "evidence": "project.jsonc feature/architecture wording now matches qualified claims (receipt sources named, delta caching without blanket sub-10ms wording, PERFORMANCE.md pointer) and lastEdit is refreshed to 26-10-15-15-11. Reviewer comparison of wording to behavior is the human sign-off step; the audit receipt records the independent review."
+    },
+    {
+      "id": "CLM-203",
+      "result": "pass",
+      "evidence": "Isolated copy of the tree at /tmp/thermal-gate-fail-proof with injected internal/thermal/zz_gate_proof_test.go (sha256 fa50606a61ec2b0cd53d548c81625eef8511fc05128ee553241e71b69e2c5624): gate exited 1 with 'Receipt evidence semantics: go test exited 1' and 109 passed / 1 failed out of 110. After removing the file, the same copy exited 0 with 110/110. Copy removed afterwards."
+    },
+    {
+      "id": "CLM-204",
+      "result": "pass",
+      "evidence": "env -u NO_COLOR go test -race ./... exit 0; go vet ./... exit 0; go build -o /tmp/thermal-test ./cmd/thermal exit 0; ./scripts/simulated_user_gate.sh exit 0 (110 passed, 0 failed) on candidate 6eb991a. Returned ready_for_review; no push, release, or self-certification performed."
+    }
+  ],
+  "commands": [
+    {
+      "command": "./scripts/simulated_user_gate.sh (isolated copy, injected failing test)",
+      "exit": 1,
+      "log": "17. Semantic Regression Suites: [FAIL] Receipt evidence semantics: go test exited 1 (temporary known failure for CLM-203); 109 passed / 1 failed out of 110"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh (isolated copy, restored)",
+      "exit": 0,
+      "log": "110 passed, 0 failed (out of 110 checks)"
+    },
+    {
+      "command": "env -u NO_COLOR go test -race ./...",
+      "exit": 0,
+      "log": "all packages ok including scripts/benchmark"
+    },
+    {
+      "command": "go vet ./...",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "go build -o /tmp/thermal-test ./cmd/thermal",
+      "exit": 0,
+      "log": "silent"
+    },
+    {
+      "command": "./scripts/simulated_user_gate.sh",
+      "exit": 0,
+      "log": "110 passed, 0 failed (107 existing checks plus 3 semantic suites)"
+    }
+  ],
+  "candidate": {
+    "head": "6eb991a",
+    "diff_sha256": "74a45dd62f48e02f02f030ba5a3ad517af07b7ddecbbfc8abe5159b22e5b4ac5"
+  },
+  "blockers": []
+}

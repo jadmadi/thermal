@@ -1,5 +1,12 @@
 # Goal: Tie public promises to reproducible acceptance evidence
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Session: `mcp-audit-goal` | Report: `receipt_promise-claim-evidence_1792066944`
+
+
 ## Goal Description
 Implement Tie public promises to reproducible acceptance evidence according to architectural invariants and done conditions.
 
