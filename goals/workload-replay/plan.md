@@ -23,7 +23,7 @@
 
 ## Remediation, 2026-10-14
 
-- [ ] Implement the cards and stable acceptance IDs in [the remediation contract](remediation-2026-10-14.md).
-- [ ] Attach candidate-bound results and receive independent review under `tasks/plan.md`.
+- [x] Implement the cards and stable acceptance IDs in [the remediation contract](remediation-2026-10-14.md).
+- [x] Attach candidate-bound results and receive independent review under `tasks/plan.md`.
 
 Earlier checked steps describe historical work and do not certify these reopened cases.

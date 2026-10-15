@@ -4,7 +4,8 @@
   "reopened_by": "codex",
   "reason": "2026-10-14 probe: 1000 source tokens become 100 replay tokens with partial model attribution",
   "original_commit": "1ca92ed",
-  "resolved_at": "0001-01-01T00:00:00Z",
-  "active": true,
+  "resolved_commit": "dfd87309f315df336b80a02c373a2fad62643bfc",
+  "resolved_at": "2026-10-15T11:27:10.378484668Z",
+  "active": false,
   "reopen_epoch": 1
 }

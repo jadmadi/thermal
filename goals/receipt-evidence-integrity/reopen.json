@@ -4,8 +4,9 @@
   "reopened_by": "codex",
   "reason": "2026-10-14 probes: skipped compound test verified; success output misclassified as failure",
   "original_commit": "7a8ce91",
-  "resolved_at": "0001-01-01T00:00:00Z",
-  "active": true,
+  "resolved_commit": "81901a82fa65cfe8dacdc0290de40870d3c65dce",
+  "resolved_at": "2026-10-15T11:24:32.600597541Z",
+  "active": false,
   "tainted_goals": [
     "hermetic-verification-gates",
     "receipt-accounting-coverage"

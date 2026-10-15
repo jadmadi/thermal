@@ -28,12 +28,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 84
-- 🟡 **Ready to Execute (Pending)**: 5 (4 independent ⚡, 1 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 4
-- 🟢 **Implemented**: 75 (0 verified 📜, 7 stale ⚠️, 68 unverified)
-- 🔁 **Reopened for Remediation**: 5
+- 🟡 **Ready to Execute (Pending)**: 3 (2 independent ⚡, 1 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 2
+- 🟢 **Implemented**: 79 (0 verified 📜, 10 stale ⚠️, 69 unverified)
+- 🔁 **Reopened for Remediation**: 3
 - 🎯 **By Tier**: 1 immediate (Tier 1), 83 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 353/367 completed (96%)
+- 📋 **Execution Tasks Progress**: 357/367 completed (97%)
 
 ---
 
@@ -41,15 +41,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#100)` | - | Require observed command results for verified receipts — Prevent missing, mixed or mismatched command outcomes from becoming verified wor... | `/goal goals/receipt-evidence-integrity/goal.md` |
-| [`workload-replay`](workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#101)` | - | Workload Replay Simulation (`thermal replay`) — Implement the `thermal replay` command to simulate historical developer workload... | `/goal goals/workload-replay/goal.md` |
 | [`setup-health-audit`](setup-health-audit/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#103)` | - | Read-Only Local Setup & Context Health Audit ('thermal audit') — Implement non-destructive setup and context health diagnostic ('thermal audit').... | `/goal goals/setup-health-audit/goal.md` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#105)` | - | Measure cold and warm CLI performance on representative fixtures — Establish reproducible end-to-end latency and allocation evidence for the docume... | `/goal goals/ingestion-performance-baseline/goal.md` |
-| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#62)` | Prereqs: receipt-evidence-integrity | Preserve recorded usage and disclose receipt coverage — Remove invented activity tokens and prevent partial transcript coverage from sil... | `/goal goals/receipt-accounting-coverage/goal.md` |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#67)` | Deps met: receipt-accounting-coverage, live-metric-parity, devin-cache-source-isolation, localhost-request-boundary, live-polling-cpu-budget | Make verification independent of host data and color settings — Use isolated fixtures and explicit color environments, and assert metric semanti... | `/goal goals/hermetic-verification-gates/goal.md` |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#102)` | Deps met: workload-replay | ChatGPT Rolling 5-Hour Burst Capacity Replay — Enhance thermal replay to model dynamic 5-hour rolling message and token burst l... | `/goal goals/chatgpt-rolling-burst-replay/goal.md` |
 | [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#69)` | Prereqs: ingestion-performance-baseline | Avoid rescanning unchanged Codex rollout transcripts — Add bounded source-aware rollout caching with exact parity against full scans an... | `/goal goals/codex-incremental-rollout-cache/goal.md` |
-| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#102)` | Prereqs: workload-replay | ChatGPT Rolling 5-Hour Burst Capacity Replay — Enhance thermal replay to model dynamic 5-hour rolling message and token burst l... | `/goal goals/chatgpt-rolling-burst-replay/goal.md` |
-| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: receipt-evidence-integrity, workload-replay, setup-health-audit, ingestion-performance-baseline, chatgpt-rolling-burst-replay | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
+| [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#106)` | Prereqs: setup-health-audit, ingestion-performance-baseline, chatgpt-rolling-burst-replay | Tie public promises to reproducible acceptance evidence — Implement Tie public promises to reproducible acceptance evidence according to a... | `/goal goals/promise-claim-evidence/goal.md` |
 
 ---
 
@@ -74,6 +70,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `56ec02b` |
 | [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `26a20ae` |
 | [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `259d1e0` |
+| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6713335` |
+| [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `81901a8` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
@@ -120,11 +118,13 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2842f1a` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `79bbd75` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `17b6b59` |
+| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `dd3ab4f` |
 | [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `305f589` |
 | [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `d162bf1` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `1f71cd2` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `be1e45f` |
