@@ -802,6 +802,21 @@ func TestSimulatedUser_LiveCommand(t *testing.T) {
 	if _, ok := res["sessionTokens"]; !ok {
 		t.Errorf("expected sessionTokens in JSON, got %v", res)
 	}
+	if session, ok := res["sessionTokens"].(float64); !ok || session != 0 {
+		t.Errorf("expected launch-relative sessionTokens 0, got %v", res["sessionTokens"])
+	}
+	if _, ok := res["carriedInTokens"]; !ok {
+		t.Errorf("expected carriedInTokens in JSON, got %v", res)
+	}
+	if _, ok := res["carriedInTurns"]; !ok {
+		t.Errorf("expected carriedInTurns in JSON, got %v", res)
+	}
+	if _, ok := res["carriedInCost"]; !ok {
+		t.Errorf("expected carriedInCost in JSON, got %v", res)
+	}
+	if _, ok := res["carriedInAt"]; !ok {
+		t.Errorf("expected carriedInAt in JSON, got %v", res)
+	}
 	if _, ok := res["todayTurns"]; !ok {
 		t.Errorf("expected todayTurns in JSON, got %v", res)
 	}

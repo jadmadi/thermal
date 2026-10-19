@@ -55,24 +55,24 @@ type LiveModel struct {
 	quitting     bool
 	showHelp     bool
 	startedAt    time.Time
+	lastPollAt   time.Time
+	lastEventAt  time.Time
+	pollErr      error
 	inFlight     bool
 	pollSeq      uint64
 	appliedSeq   uint64
 }
 
 // NewLiveModel constructs an initialized LiveModel.
-func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool, seedToday ...bool) LiveModel {
+func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool) LiveModel {
 	tracker := thermal.NewLiveTracker()
-	seed := true
-	if len(seedToday) > 0 {
-		seed = seedToday[0]
-	}
-	tracker.SetSeedToday(seed)
 	now := time.Now()
 
 	var initialSnap thermal.LiveSnapshot
 	var initialResults []thermal.ToolResult
 	var initialProjects []thermal.ProjectDay
+	lastPollAt := now
+	var pollErr error
 	if pollFn != nil {
 		results, projects, err := pollFn()
 		if err == nil {
@@ -80,6 +80,9 @@ func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string
 			initialSnap = snap
 			initialResults = results
 			initialProjects = projects
+		} else {
+			lastPollAt = time.Time{}
+			pollErr = err
 		}
 	}
 
@@ -95,6 +98,8 @@ func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string
 		width:        80,
 		height:       24,
 		startedAt:    now,
+		lastPollAt:   lastPollAt,
+		pollErr:      pollErr,
 	}
 }
 
@@ -146,11 +151,20 @@ func (m LiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.appliedSeq = msg.seq
-		if msg.err == nil && m.tracker != nil {
+		if msg.err != nil {
+			m.pollErr = msg.err
+			return m, nil
+		}
+		m.pollErr = nil
+		m.lastPollAt = msg.timestamp
+		if m.tracker != nil {
 			m.lastResults = msg.results
 			m.lastProjects = msg.projects
-			snap, _ := m.tracker.Poll(msg.results, msg.projects, msg.timestamp)
+			snap, newEvents := m.tracker.Poll(msg.results, msg.projects, msg.timestamp)
 			m.snapshot = snap
+			if len(newEvents) > 0 {
+				m.lastEventAt = msg.timestamp
+			}
 		}
 		return m, nil
 	}
@@ -255,20 +269,34 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 		headerTitle += fmt.Sprintf(" [%s]", m.filterTool)
 	}
 
-	currentTime := time.Now().Format("15:04:05")
+	now := time.Now()
+	currentTime := now.Format("15:04:05")
+	rateSec := fmt.Sprintf("%.1fs", m.pollRate.Seconds())
 	var statusIndicator string
-	if m.paused {
+	switch m.feedState(now) {
+	case "paused":
 		if colors {
 			statusIndicator = theme.Warning.SprintBold(true, "⏸ PAUSED") + " · " + theme.TextMuted.Sprint(true, currentTime)
 		} else {
 			statusIndicator = "⏸ PAUSED · " + currentTime
 		}
-	} else {
-		rateSec := fmt.Sprintf("%.1fs", m.pollRate.Seconds())
+	case "offline":
 		if colors {
-			statusIndicator = theme.Success.SprintBold(true, "● STREAMING") + " " + theme.TextMuted.Sprint(true, "("+rateSec+") · "+currentTime)
+			statusIndicator = theme.Error.SprintBold(true, "● OFFLINE") + " · " + theme.TextMuted.Sprint(true, currentTime)
 		} else {
-			statusIndicator = "● STREAMING (" + rateSec + ") · " + currentTime
+			statusIndicator = "● OFFLINE · " + currentTime
+		}
+	case "stale":
+		if colors {
+			statusIndicator = theme.Warning.SprintBold(true, "● STALE") + " · " + theme.TextMuted.Sprint(true, currentTime)
+		} else {
+			statusIndicator = "● STALE · " + currentTime
+		}
+	default:
+		if colors {
+			statusIndicator = theme.Success.SprintBold(true, "● LIVE") + " " + theme.TextMuted.Sprint(true, "("+rateSec+") · "+currentTime)
+		} else {
+			statusIndicator = "● LIVE (" + rateSec + ") · " + currentTime
 		}
 	}
 
@@ -323,29 +351,45 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	c1Title := theme.Primary.SprintBold(colors, "BURN VELOCITY")
 	c1L1 := fmt.Sprintf("Rate:     %s", formatRate(burnRate, m.snapshot.BurnTurnsPerMin, rateIsActivity, colW, colors))
 	c1L2 := fmt.Sprintf("Speed:    %s", formatSpeed(burnSpeed, m.snapshot.BurnTurnsPerSec, rateIsActivity, colW, colors))
-	c1L3 := fmt.Sprintf("Burn/Hr:  %s", formatCostHr(m.snapshot.BurnCostPerHr, colors))
+	c1L3 := fmt.Sprintf("Burn/hr now: %s", formatCostHr(m.snapshot.BurnCostPerHr, colors))
 
 	// Column 2: Today's Usage
 	c2Title := theme.Secondary.SprintBold(colors, "TODAY'S USAGE")
-	c2L1 := fmt.Sprintf("Volume:   %s", formatVolume(m.snapshot.TodayTokens, m.snapshot.TodayTurns, colW, isHybrid, colors))
+	c2L1 := fmt.Sprintf("Volume:   %s", formatVolume(m.snapshot.TodayTokens, m.snapshot.TodayTurns, colW, colors))
 	c2L2 := fmt.Sprintf("Cost:     %s", formatCost(m.snapshot.TodayCost, colors))
-	availW := colW - 10
-	if availW < 0 {
-		availW = 0
-	}
-	c2L3 := fmt.Sprintf("Turns:    %s", formatTurnsAndHit(m.snapshot.TodayTurns, m.snapshot.TodayCacheHit, availW, colors))
+	c2L3 := formatCacheHit(m.snapshot.TodayCacheHit, colW, colors)
 
 	// Column 3: Live Session
 	c3Title := theme.Accent.SprintBold(colors, "LIVE SESSION")
-	c3L1 := fmt.Sprintf("Burned:   %s", formatDelta(m.snapshot.SessionTokens, m.snapshot.SessionTurns, colW, isHybrid, colors))
+	sessionEmpty := m.snapshot.SessionTokens == 0 && m.snapshot.SessionTurns == 0 && m.snapshot.SessionCost == 0
+	sameAsToday := m.snapshot.TodayTokens == m.snapshot.SessionTokens &&
+		m.snapshot.TodayTurns == m.snapshot.SessionTurns &&
+		m.snapshot.TodayCost == m.snapshot.SessionCost &&
+		(m.snapshot.TodayTokens > 0 || m.snapshot.TodayTurns > 0 || m.snapshot.TodayCost > 0)
+	c3L1 := fmt.Sprintf("Burned:   %s", formatDelta(m.snapshot.SessionTokens, m.snapshot.SessionTurns, colW, colors))
 	c3L2 := fmt.Sprintf("Spend:    %s", formatCost(m.snapshot.SessionCost, colors))
 	c3L3 := fmt.Sprintf("State:    %s", formatIntensityBadge(intensity, colors))
+	if sessionEmpty {
+		c3L1 = "Since launch: 0 tok"
+		c3L2 = theme.TextMuted.Sprint(colors, "Spend:    ~$0.00")
+		c3L3 = "State:    " + formatIntensityBadge(intensity, colors)
+	}
+	if sameAsToday {
+		c3L1 = theme.TextMuted.Sprint(colors, "= Today's usage")
+		c3L2 = ""
+		c3L3 = ""
+	}
 
 	gridRows := []string{
 		join3(c1Title, c2Title, c3Title, colW),
 		join3(c1L1, c2L1, c3L1, colW),
 		join3(c1L2, c2L2, c3L2, colW),
 		join3(c1L3, c2L3, c3L3, colW),
+	}
+	carriedIn := formatCarriedIn(m.snapshot.CarriedInTokens, m.snapshot.CarriedInTurns, m.snapshot.CarriedInCost, colors)
+	todayRollups := formatTodayRollups(m.snapshot.TodayProjects, m.snapshot.TodayModels)
+	if height < 20 {
+		todayRollups = nil
 	}
 
 	// 3. Flame Intensity Gauge
@@ -390,7 +434,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	} else if isHybrid {
 		tickerLabel = "RECENT TOKEN & ACTIVITY BURSTS"
 	}
-	tickerHeader := formatTickerHeader(innerWidth, isActivity, isHybrid, colors)
+	tickerHeader := formatTickerHeader(innerWidth, colors)
 
 	// Available lines for events based on terminal height
 	showSparkline := height >= 16
@@ -398,6 +442,11 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	if !showSparkline {
 		fixedLines = 11
 	}
+	if carriedIn != "" {
+		fixedLines++
+	}
+	fixedLines++
+	fixedLines += len(todayRollups)
 	if height >= 18 {
 		fixedLines += 2
 	}
@@ -409,21 +458,38 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 		availEvents = 20
 	}
 
+	visible := make([]thermal.LiveEvent, 0, availEvents)
+	for _, ev := range m.snapshot.RecentEvents {
+		if ev.IsBaseline {
+			continue
+		}
+		visible = append(visible, ev)
+		if len(visible) >= availEvents {
+			break
+		}
+	}
+
 	var eventLines []string
-	if len(m.snapshot.RecentEvents) == 0 {
-		msg := "No new token bursts detected yet. Watching SQLite DBs & transcript logs..."
+	if len(visible) == 0 {
+		msg := "Idle: no new bursts in the last 60s"
+		if m.lastEventAt.IsZero() {
+			msg = "Idle: no events since launch"
+		}
 		if colors {
 			msg = theme.TextMuted.Sprint(true, msg)
 		}
 		eventLines = append(eventLines, padLine("  "+msg, innerWidth))
 	} else {
-		count := len(m.snapshot.RecentEvents)
-		if count > availEvents {
-			count = availEvents
+		tokValues := make([]int64, len(visible))
+		stepValues := make([]int64, len(visible))
+		for i, ev := range visible {
+			tokValues[i] = ev.Tokens
+			stepValues[i] = int64(ev.Turns)
 		}
-		for i := 0; i < count; i++ {
-			ev := m.snapshot.RecentEvents[i]
-			eventLines = append(eventLines, formatEventRow(ev, innerWidth, colors))
+		tokOutliers := thermal.MedianOutlierFlags(tokValues, 3.0, 3)
+		stepOutliers := thermal.MedianOutlierFlags(stepValues, 3.0, 3)
+		for i, ev := range visible {
+			eventLines = append(eventLines, formatEventRow(ev, tokOutliers[i], stepOutliers[i], now, innerWidth, colors))
 		}
 	}
 
@@ -440,6 +506,12 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	for _, gr := range gridRows {
 		sb.WriteString(border(" │ ") + padLine(gr, innerWidth) + border(" │\n"))
 	}
+	if carriedIn != "" {
+		sb.WriteString(border(" │ ") + padLine(carriedIn, innerWidth) + border(" │\n"))
+	}
+	for _, line := range todayRollups {
+		sb.WriteString(border(" │ ") + padLine(line, innerWidth) + border(" │\n"))
+	}
 	sb.WriteString(divider("FLAME INTENSITY") + "\n")
 	sb.WriteString(border(" │ ") + padLine(flameLine, innerWidth) + border(" │\n"))
 	if showSparkline {
@@ -448,6 +520,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	}
 	sb.WriteString(divider(tickerLabel) + "\n")
 	sb.WriteString(border(" │ ") + padLine(tickerHeader, innerWidth) + border(" │\n"))
+	sb.WriteString(border(" │ ") + padLine(m.formatLastEventLine(colors), innerWidth) + border(" │\n"))
 	for _, el := range eventLines {
 		sb.WriteString(border(" │ ") + padLine(el, innerWidth) + border(" │\n"))
 	}
@@ -490,10 +563,12 @@ func (m LiveModel) renderHelp() string {
 		"    Burn Velocity  Calculated over a rolling 60-second activity window",
 		"    Flame Meter    Visual burst intensity; decays naturally when idle",
 		"    Rolling 60s    Second-by-second activity sparkline across the past minute",
-		"    Event Ticker   Completed turn deltas with model, project, and cost",
+		"    Event Ticker   Separate TOKENS/STEPS columns with model, project, age, and cost",
+		"    Ticker Marks   * = older than 60s; ! = over 3x the visible median",
+		"    Costs          ~ = estimated; — = unpriced; $0.00 = recorded zero",
 		"",
 		theme.Secondary.SprintBold(colors, "  Headless & Status Bar Automation:"),
-		"    thermal live --fresh           Start live session counters from 0 instead of today",
+		"    thermal live --fresh           Accepted for compatibility; sessions always start at launch",
 		"    thermal live --json            Instant JSON snapshot of live metrics",
 		"    thermal live --json --stream   Stream continuous NDJSON live events",
 		"",
@@ -639,7 +714,7 @@ func formatCostHr(costHr float64, colors bool) string {
 	return fmt.Sprintf("~$%.2f/hr", costHr)
 }
 
-func formatVolume(tokens int64, turns int, colW int, isHybrid bool, colors bool) string {
+func formatVolume(tokens int64, turns int, colW int, colors bool) string {
 	if tokens <= 0 && turns > 0 {
 		str := fmt.Sprintf("%s step", thermal.CompactNumber(int64(turns)))
 		return theme.Secondary.SprintBold(colors, str)
@@ -647,7 +722,7 @@ func formatVolume(tokens int64, turns int, colW int, isHybrid bool, colors bool)
 	if tokens <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok")
 	}
-	if isHybrid && turns > 0 {
+	if turns > 0 {
 		full := fmt.Sprintf("%s tok · %s step", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
 		if colW <= 0 || ansi.StringWidth("Volume:   "+full) <= colW {
 			return theme.Secondary.SprintBold(colors, full)
@@ -661,7 +736,7 @@ func formatVolume(tokens int64, turns int, colW int, isHybrid bool, colors bool)
 	return theme.Secondary.SprintBold(colors, str)
 }
 
-func formatDelta(tokens int64, turns int, colW int, isHybrid bool, colors bool) string {
+func formatDelta(tokens int64, turns int, colW int, colors bool) string {
 	if tokens <= 0 && turns > 0 {
 		str := fmt.Sprintf("+%s step", thermal.CompactNumber(int64(turns)))
 		return theme.Accent.SprintBold(colors, str)
@@ -669,7 +744,7 @@ func formatDelta(tokens int64, turns int, colW int, isHybrid bool, colors bool) 
 	if tokens <= 0 {
 		return theme.TextMuted.Sprint(colors, "+0 tok")
 	}
-	if isHybrid && turns > 0 {
+	if turns > 0 {
 		full := fmt.Sprintf("+%s tok · +%s step", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
 		if colW <= 0 || ansi.StringWidth("Burned:   "+full) <= colW {
 			return theme.Accent.SprintBold(colors, full)
@@ -681,6 +756,90 @@ func formatDelta(tokens int64, turns int, colW int, isHybrid bool, colors bool) 
 	}
 	str := fmt.Sprintf("+%s tok", thermal.CompactNumber(tokens))
 	return theme.Accent.SprintBold(colors, str)
+}
+
+func (m LiveModel) feedState(now time.Time) string {
+	if m.paused {
+		return "paused"
+	}
+	if m.pollErr != nil || m.lastPollAt.IsZero() {
+		return "offline"
+	}
+	threshold := 3 * m.pollRate
+	if threshold < 5*time.Second {
+		threshold = 5 * time.Second
+	}
+	if now.Sub(m.lastPollAt) > threshold {
+		return "stale"
+	}
+	return "live"
+}
+
+func formatAge(d time.Duration) string {
+	if d < time.Second {
+		return "0s"
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	}
+	return fmt.Sprintf("%dh", int(d.Hours()))
+}
+
+func (m LiveModel) formatLastEventLine(colors bool) string {
+	if m.lastEventAt.IsZero() {
+		return theme.TextMuted.Sprint(colors, "  Last event: none · * >60s · ! >3x")
+	}
+	age := time.Since(m.lastEventAt)
+	label := "  Last event: " + formatAge(age) + " ago · * >60s · ! >3x"
+	if age > 60*time.Second {
+		return theme.Warning.Sprint(colors, label)
+	}
+	return theme.TextMuted.Sprint(colors, label)
+}
+
+func formatRollupCost(r thermal.LiveRollup) string {
+	return formatLiveCostPlain(thermal.LiveEvent{Cost: r.Cost, CostKind: r.CostKind})
+}
+
+func formatTodayRollups(projects, models []thermal.LiveRollup) []string {
+	var lines []string
+	if len(projects) > 0 {
+		parts := make([]string, 0, 2)
+		for i, p := range projects {
+			if i >= 2 {
+				break
+			}
+			parts = append(parts, p.Name+" "+formatRollupCost(p))
+		}
+		lines = append(lines, "  Today by project: "+strings.Join(parts, " · "))
+	}
+	if len(models) > 0 {
+		top := models[0]
+		lines = append(lines, "  Top model: "+top.Name+" "+formatRollupCost(top))
+	}
+	return lines
+}
+
+func formatCarriedIn(tokens int64, turns int, cost float64, colors bool) string {
+	var parts []string
+	if tokens > 0 {
+		parts = append(parts, thermal.CompactNumber(tokens)+" tok")
+	}
+	if turns > 0 {
+		parts = append(parts, thermal.CompactNumber(int64(turns))+" step")
+	}
+	if cost > 0 {
+		parts = append(parts, formatCost(cost, colors))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	label := theme.TextMuted.Sprint(colors, "Carried in: ")
+	suffix := theme.TextMuted.Sprint(colors, " (baseline)")
+	return label + strings.Join(parts, " · ") + suffix
 }
 
 func formatCost(c float64, colors bool) string {
@@ -696,46 +855,23 @@ func formatCost(c float64, colors bool) string {
 	return fmt.Sprintf("~$%.2f", c)
 }
 
-func formatTurnsAndHit(turns int, hit float64, availWidth int, colors bool) string {
-	var full string
-	if hit > 0 {
-		full = fmt.Sprintf("%d turns (%.0f%% hit)", turns, hit)
-	} else {
-		full = fmt.Sprintf("%d turns", turns)
+func formatCacheHit(hit float64, availWidth int, colors bool) string {
+	if hit <= 0 {
+		return theme.TextMuted.Sprint(colors, "Cache hit: —")
 	}
+	full := fmt.Sprintf("Cache hit: %.0f%%", hit)
 	if availWidth <= 0 || ansi.StringWidth(full) <= availWidth {
 		return full
 	}
-
-	cTurns := thermal.CompactNumber(int64(turns))
-	var compact string
-	if hit > 0 {
-		compact = fmt.Sprintf("%s (%.0f%% hit)", cTurns, hit)
-	} else {
-		compact = fmt.Sprintf("%s turns", cTurns)
-	}
+	compact := fmt.Sprintf("%.0f%% cache", hit)
 	if ansi.StringWidth(compact) <= availWidth {
 		return compact
 	}
-
-	if hit > 0 {
-		miniHit := fmt.Sprintf("%s (%.0f%%)", cTurns, hit)
-		if ansi.StringWidth(miniHit) <= availWidth {
-			return miniHit
-		}
+	mini := fmt.Sprintf("CH %.0f%%", hit)
+	if ansi.StringWidth(mini) <= availWidth {
+		return mini
 	}
-
-	minimal := fmt.Sprintf("%d turns", turns)
-	if ansi.StringWidth(minimal) <= availWidth {
-		return minimal
-	}
-
-	u := fmt.Sprintf("%s turns", cTurns)
-	if ansi.StringWidth(u) <= availWidth {
-		return u
-	}
-
-	return cTurns
+	return fmt.Sprintf("%.0f%%", hit)
 }
 
 func gaugeWidth(innerWidth int) int {
@@ -765,7 +901,13 @@ func formatIntensityBadge(intensity float64, colors bool) string {
 func formatFlameLine(intensity float64, model string, innerWidth int, colors bool) string {
 	barW := gaugeWidth(innerWidth)
 
-	barStr, pct := thermal.FlameBar(intensity, barW)
+	var barStr string
+	var pct int
+	if intensity <= 0 {
+		barStr = strings.Repeat("·", barW)
+	} else {
+		barStr, pct = thermal.FlameBar(intensity, barW)
+	}
 	pctStr := fmt.Sprintf("%3d%%", pct)
 	state := formatIntensityBadge(intensity, colors)
 
@@ -837,6 +979,19 @@ func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity b
 	sparkW := gaugeWidth(innerWidth)
 
 	spark := thermal.Sparkline(buckets, 59, sparkW)
+	allZero := true
+	for _, b := range buckets {
+		if b != 0 {
+			allZero = false
+			break
+		}
+	}
+	if allZero {
+		spark = strings.Repeat("·", sparkW)
+		if peakStr == "" {
+			peakStr = "  no activity (60s)"
+		}
+	}
 	sparkStyled := spark
 	if colors {
 		sparkStyled = theme.Cyan.Sprint(true, spark)
@@ -864,60 +1019,133 @@ func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity b
 	return line
 }
 
-func calcColWidths(innerWidth int) (timeW, toolW, tokW, modW, projW, costW int) {
-	timeW = 8
-	toolW = 10
-	tokW = 12
-	costW = 9
-	// Fixed spacing across six columns:
-	// 2 (indent) + 8 (time) + 2 (gap) + 10 (tool) + 2 (gap) + 12 (tokens) + 2 (gap) + 2 (gap) + 9 (cost) + 2 (gap) = 51 cells
-	remaining := innerWidth - 51
-	if remaining < 18 {
-		remaining = 18
-	}
-	modW = remaining * 55 / 100
-	if modW < 12 {
-		modW = 12
-	}
-	projW = remaining - modW
-	if projW < 8 {
-		projW = 8
-	}
-	return
+type tickerLayout struct {
+	timeW, ageW, toolW, tokW, stepW, modelW, projectW, costW int
+	showModel, showProject                                   bool
+	compact                                                  bool
 }
 
-func formatTickerHeader(innerWidth int, isActivity bool, isHybrid bool, colors bool) string {
-	timeW, toolW, tokW, modW, projW, costW := calcColWidths(innerWidth)
+func calcColWidths(innerWidth int) tickerLayout {
+	l := tickerLayout{
+		timeW: 8,
+		ageW:  4,
+		toolW: 10,
+		tokW:  10,
+		stepW: 8,
+		costW: 10,
+	}
+	// Fixed columns: indent 2 + time 8 + age 4 + tool 10 + tokens 10 +
+	// steps 8 + cost 10 + five 2-cell gaps = 62 cells.
+	remaining := innerWidth - 62
+	if remaining >= 24 {
+		l.showModel = true
+		l.showProject = true
+		available := remaining - 4 // two optional-column gaps
+		l.modelW = available * 55 / 100
+		if l.modelW < 12 {
+			l.modelW = 12
+		}
+		l.projectW = available - l.modelW
+		if l.projectW < 8 {
+			l.projectW = 8
+		}
+	} else if remaining >= 14 {
+		l.showModel = true
+		l.modelW = remaining - 2 // optional-column gap
+		if l.modelW < 12 {
+			l.modelW = 12
+		}
+	}
+	l.compact = innerWidth < 90
+	return l
+}
 
-	tokLabel := "TOKENS"
-	if isActivity {
-		tokLabel = "STEPS"
-	} else if isHybrid {
-		tokLabel = "TOK/STEP"
+func formatTickerHeader(innerWidth int, colors bool) string {
+	l := calcColWidths(innerWidth)
+	tokLabel, stepLabel := "TOKENS", "STEPS"
+	if l.compact {
+		tokLabel, stepLabel = "TOK", "STEP"
 	}
 
-	hdr := "  " +
-		padCell("TIME", timeW, false) + "  " +
-		padCell("TOOL", toolW, false) + "  " +
-		padCell(tokLabel, tokW, true) + "  " +
-		padCell("MODEL", modW, false) + "  " +
-		padCell("PROJECT", projW, false) + "  " +
-		padCell("COST", costW, true)
+	parts := []string{
+		padCell("TIME", l.timeW, false),
+		padCell("AGE", l.ageW, false),
+		padCell("TOOL", l.toolW, false),
+		padCell(tokLabel, l.tokW, true),
+		padCell(stepLabel, l.stepW, true),
+	}
+	if l.showModel {
+		parts = append(parts, padCell("MODEL", l.modelW, false))
+	}
+	if l.showProject {
+		parts = append(parts, padCell("PROJECT", l.projectW, false))
+	}
+	parts = append(parts, padCell("COST", l.costW, true))
 
+	hdr := "  " + strings.Join(parts, "  ")
 	if colors {
 		return theme.TextMuted.Sprint(true, hdr)
 	}
 	return hdr
 }
 
-func formatEventRow(ev thermal.LiveEvent, innerWidth int, colors bool) string {
-	timeW, toolW, tokW, modW, projW, costW := calcColWidths(innerWidth)
+func formatLiveCostPlain(ev thermal.LiveEvent) string {
+	if ev.CostKind == thermal.LiveCostUnpriced {
+		return "—"
+	}
+	if ev.Cost <= 0 {
+		if ev.CostKind == thermal.LiveCostRecorded || (ev.CostKind == "" && !ev.IsEstimated) {
+			return "$0.00"
+		}
+		return "—"
+	}
+	prefix := ""
+	if ev.CostKind == thermal.LiveCostEstimated || (ev.CostKind == "" && ev.IsEstimated) {
+		prefix = "~"
+	}
+	if ev.Cost < 0.00005 {
+		return prefix + "<$0.0001"
+	}
+	if ev.Cost < 0.01 {
+		return fmt.Sprintf("%s$%.4f", prefix, ev.Cost)
+	}
+	if ev.Cost >= 1000 {
+		return fmt.Sprintf("%s$%.0f", prefix, ev.Cost)
+	}
+	return fmt.Sprintf("%s$%.2f", prefix, ev.Cost)
+}
+
+func formatEventRow(ev thermal.LiveEvent, tokOutlier, stepOutlier bool, now time.Time, innerWidth int, colors bool) string {
+	l := calcColWidths(innerWidth)
 
 	timeStr := ev.Timestamp.Format("15:04:05")
+	age := now.Sub(ev.Timestamp)
+	if age < 0 {
+		age = 0
+	}
+	stale := age > 60*time.Second
+	ageStr := formatAge(age)
+	if stale {
+		ageStr += "*"
+	}
+
 	toolStr := ev.Tool
-	tokStr := fmt.Sprintf("+%s tok", thermal.CompactNumber(ev.Tokens))
-	if ev.Tokens == 0 && ev.Turns > 0 {
-		tokStr = fmt.Sprintf("+%s step", thermal.CompactNumber(int64(ev.Turns)))
+	if toolStr == "" {
+		toolStr = "—"
+	}
+	tokStr := "—"
+	if ev.Tokens > 0 {
+		tokStr = "+" + thermal.CompactNumber(ev.Tokens)
+		if tokOutlier {
+			tokStr += "!"
+		}
+	}
+	stepStr := "—"
+	if ev.Turns > 0 {
+		stepStr = "+" + thermal.CompactNumber(int64(ev.Turns))
+		if stepOutlier {
+			stepStr += "!"
+		}
 	}
 	modStr := loaders.CanonicalModelName(cleanModelName(ev.Model))
 	if modStr == "" {
@@ -927,25 +1155,54 @@ func formatEventRow(ev thermal.LiveEvent, innerWidth int, colors bool) string {
 	if projStr == "" {
 		projStr = "—"
 	}
-	costStr := formatCost(ev.Cost, false)
+	costStr := formatLiveCostPlain(ev)
 
-	// Pad plain strings to exact visual cell widths FIRST
-	timeCell := padCell(timeStr, timeW, false)
-	toolCell := padCell(toolStr, toolW, false)
-	tokCell := padCell(tokStr, tokW, true)
-	modCell := padCell(modStr, modW, false)
-	projCell := padCell(projStr, projW, false)
-	costCell := padCell(costStr, costW, true)
+	timeCell := padCell(timeStr, l.timeW, false)
+	ageCell := padCell(ageStr, l.ageW, false)
+	toolCell := padCell(toolStr, l.toolW, false)
+	tokCell := padCell(tokStr, l.tokW, true)
+	stepCell := padCell(stepStr, l.stepW, true)
+	modCell := padCell(modStr, l.modelW, false)
+	projCell := padCell(projStr, l.projectW, false)
+	costCell := padCell(costStr, l.costW, true)
 
-	// Apply colors to the padded cells
 	if colors {
-		timeCell = theme.TextMuted.Sprint(true, timeCell)
-		toolCell = theme.Secondary.Sprint(true, toolCell)
-		tokCell = theme.Primary.SprintBold(true, tokCell)
-		modCell = theme.DarkStep12.Sprint(true, modCell)
-		projCell = theme.Accent.Sprint(true, projCell)
-		costCell = theme.TextMuted.Sprint(true, costCell)
+		if stale {
+			timeCell = theme.TextMuted.Sprint(true, timeCell)
+			ageCell = theme.TextMuted.Sprint(true, ageCell)
+			toolCell = theme.TextMuted.Sprint(true, toolCell)
+			tokCell = theme.TextMuted.Sprint(true, tokCell)
+			stepCell = theme.TextMuted.Sprint(true, stepCell)
+			modCell = theme.TextMuted.Sprint(true, modCell)
+			projCell = theme.TextMuted.Sprint(true, projCell)
+			costCell = theme.TextMuted.Sprint(true, costCell)
+		} else {
+			timeCell = theme.TextMuted.Sprint(true, timeCell)
+			ageCell = theme.TextMuted.Sprint(true, ageCell)
+			toolCell = theme.Secondary.Sprint(true, toolCell)
+			if tokOutlier {
+				tokCell = theme.Warning.SprintBold(true, tokCell)
+			} else {
+				tokCell = theme.Primary.SprintBold(true, tokCell)
+			}
+			if stepOutlier {
+				stepCell = theme.Warning.SprintBold(true, stepCell)
+			} else {
+				stepCell = theme.Accent.Sprint(true, stepCell)
+			}
+			modCell = theme.DarkStep12.Sprint(true, modCell)
+			projCell = theme.Accent.Sprint(true, projCell)
+			costCell = theme.TextMuted.Sprint(true, costCell)
+		}
 	}
 
-	return "  " + timeCell + "  " + toolCell + "  " + tokCell + "  " + modCell + "  " + projCell + "  " + costCell
+	parts := []string{timeCell, ageCell, toolCell, tokCell, stepCell}
+	if l.showModel {
+		parts = append(parts, modCell)
+	}
+	if l.showProject {
+		parts = append(parts, projCell)
+	}
+	parts = append(parts, costCell)
+	return "  " + strings.Join(parts, "  ")
 }

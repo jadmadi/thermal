@@ -11,16 +11,36 @@ import (
 	"time"
 )
 
+// LiveCostKind classifies how a live event's cost was obtained.
+type LiveCostKind string
+
+const (
+	LiveCostRecorded  LiveCostKind = "recorded"
+	LiveCostEstimated LiveCostKind = "estimated"
+	LiveCostUnpriced  LiveCostKind = "unpriced"
+)
+
 // LiveEvent represents a single real-time token burn event captured during monitoring.
 type LiveEvent struct {
-	Timestamp   time.Time `json:"timestamp"`
-	Tool        string    `json:"tool"`
-	Tokens      int64     `json:"tokens"`
-	Turns       int       `json:"turns,omitempty"`
-	Model       string    `json:"model,omitempty"`
-	Project     string    `json:"project,omitempty"`
-	Cost        float64   `json:"cost"`
-	IsEstimated bool      `json:"isEstimated,omitempty"`
+	Timestamp   time.Time    `json:"timestamp"`
+	Tool        string       `json:"tool"`
+	Tokens      int64        `json:"tokens"`
+	Turns       int          `json:"turns,omitempty"`
+	Model       string       `json:"model,omitempty"`
+	Project     string       `json:"project,omitempty"`
+	Cost        float64      `json:"cost"`
+	CostKind    LiveCostKind `json:"costKind,omitempty"`
+	IsEstimated bool         `json:"isEstimated,omitempty"`
+	IsBaseline  bool         `json:"isBaseline,omitempty"`
+}
+
+// LiveRollup is a today-scoped project or model aggregate for the idle view.
+type LiveRollup struct {
+	Name     string       `json:"name"`
+	Tokens   int64        `json:"tokens"`
+	Turns    int          `json:"turns,omitempty"`
+	Cost     float64      `json:"cost"`
+	CostKind LiveCostKind `json:"costKind,omitempty"`
 }
 
 // LiveSnapshot is the instantaneous state of live token burn, velocity, and recent events.
@@ -30,9 +50,15 @@ type LiveSnapshot struct {
 	TodayCost         float64          `json:"todayCost"`
 	TodayTurns        int              `json:"todayTurns"`
 	TodayCacheHit     float64          `json:"todayCacheHit"`
+	CarriedInTokens   int64            `json:"carriedInTokens"`
+	CarriedInTurns    int              `json:"carriedInTurns"`
+	CarriedInCost     float64          `json:"carriedInCost"`
+	CarriedInAt       time.Time        `json:"carriedInAt"`
 	SessionTokens     int64            `json:"sessionTokens"`
 	SessionCost       float64          `json:"sessionCost"`
 	SessionTurns      int              `json:"sessionTurns"`
+	UnpricedTokens    int64            `json:"unpricedTokens"`
+	UnpricedEvents    int              `json:"unpricedEvents"`
 	BurnTokensPerMin  float64          `json:"burnTokensPerMin"`
 	BurnTokensPerSec  float64          `json:"burnTokensPerSec"`
 	BurnCostPerHr     float64          `json:"burnCostPerHr"`
@@ -42,6 +68,8 @@ type LiveSnapshot struct {
 	ActivityIntensity float64          `json:"activityIntensity,omitempty"` // 0.0 to 1.0 (turn/step flame)
 	ActiveModel       string           `json:"activeModel,omitempty"`
 	ActiveProject     string           `json:"activeProject,omitempty"`
+	TodayProjects     []LiveRollup     `json:"todayProjects,omitempty"`
+	TodayModels       []LiveRollup     `json:"todayModels,omitempty"`
 	RecentEvents      []LiveEvent      `json:"recentEvents"`
 	RollingTokens     [60]int64        `json:"rollingTokens"` // 60 seconds rolling buckets
 	PeakRollingTok    int64            `json:"peakRollingTok"`
@@ -54,7 +82,6 @@ type LiveSnapshot struct {
 type LiveTracker struct {
 	mu                sync.Mutex
 	initialized       bool
-	seedToday         bool
 	todayDay          string
 	pricer            Pricer
 	noEstimate        bool
@@ -64,9 +91,17 @@ type LiveTracker struct {
 	prevModels        map[string]map[string]int64
 	prevProjTokens    map[string]int64 // tool\x00project -> tokens seen
 	prevProjTurns     map[string]int   // tool\x00project -> turns seen
+	carriedInTokens   int64
+	carriedInTurns    int
+	carriedInCost     float64
+	carriedInAt       time.Time
 	sessionTokens     int64
 	sessionCost       float64
 	sessionTurns      int
+	unpricedTokens    int64
+	unpricedEvents    int
+	todayProjects     []LiveRollup
+	todayModels       []LiveRollup
 	burnBuckets       [60]int64 // rolling 60 seconds of tokens
 	turnBuckets       [60]int   // rolling 60 seconds of turns
 	bucketIndex       int
@@ -114,13 +149,6 @@ func (lt *LiveTracker) SetNoEstimate(noEst bool) {
 	lt.noEstimate = noEst
 }
 
-// SetSeedToday controls whether session counters initialize seeded with today's accumulated totals.
-func (lt *LiveTracker) SetSeedToday(seed bool) {
-	lt.mu.Lock()
-	defer lt.mu.Unlock()
-	lt.seedToday = seed
-}
-
 // ResetSession zeroes session-accumulated tokens and costs without affecting lifetime baselines.
 func (lt *LiveTracker) ResetSession() {
 	lt.mu.Lock()
@@ -128,6 +156,8 @@ func (lt *LiveTracker) ResetSession() {
 	lt.sessionTokens = 0
 	lt.sessionCost = 0
 	lt.sessionTurns = 0
+	lt.unpricedTokens = 0
+	lt.unpricedEvents = 0
 }
 
 func toolTotalTurns(res ToolResult) int {
@@ -141,6 +171,108 @@ func toolTotalTurns(res ToolResult) int {
 	return tot
 }
 
+func addRollupCost(r *LiveRollup, cost float64, estimated bool, tokenBearing bool) {
+	r.Cost += cost
+	if cost > 0 && estimated {
+		r.CostKind = LiveCostEstimated
+	} else if cost > 0 && r.CostKind != LiveCostEstimated {
+		r.CostKind = LiveCostRecorded
+	}
+	if r.CostKind == "" && tokenBearing {
+		r.CostKind = LiveCostUnpriced
+	}
+}
+
+func sortedLiveRollups(m map[string]*LiveRollup, limit int) []LiveRollup {
+	out := make([]LiveRollup, 0, len(m))
+	for _, r := range m {
+		out = append(out, *r)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Cost != out[j].Cost {
+			return out[i].Cost > out[j].Cost
+		}
+		if out[i].Tokens != out[j].Tokens {
+			return out[i].Tokens > out[j].Tokens
+		}
+		return out[i].Name < out[j].Name
+	})
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
+func buildTodayRollups(results []ToolResult, projDays []ProjectDay, todayDay string, projSlugs map[string]string, pricer Pricer) ([]LiveRollup, []LiveRollup) {
+	projects := make(map[string]*LiveRollup)
+	for _, pd := range projDays {
+		if pd.Day != todayDay {
+			continue
+		}
+		slug := projSlugs[pd.Project]
+		if slug == "" {
+			slug = ProjectSlug(pd.Project)
+		}
+		if slug == "" {
+			continue
+		}
+		r := projects[slug]
+		if r == nil {
+			r = &LiveRollup{Name: slug}
+			projects[slug] = r
+		}
+		r.Tokens += pd.Tokens
+		r.Turns += pd.Turns
+		cost, estimated := dayCost(DailyRow{
+			Day:       pd.Day,
+			Tokens:    pd.Tokens,
+			Input:     pd.Input,
+			Output:    pd.Output,
+			Reasoning: pd.Reasoning,
+			Cache:     pd.CacheRead + pd.CacheWrite,
+			Cost:      pd.Cost,
+			Models:    pd.Models,
+		}, pricer)
+		addRollupCost(r, cost, estimated, pd.Tokens > 0)
+	}
+
+	models := make(map[string]*LiveRollup)
+	for _, res := range results {
+		for _, day := range res.Daily {
+			if day.Day != todayDay {
+				continue
+			}
+			for name, mt := range day.Models {
+				tokens := mt.Total()
+				if tokens == 0 {
+					continue
+				}
+				r := models[name]
+				if r == nil {
+					r = &LiveRollup{Name: name}
+					models[name] = r
+				}
+				r.Tokens += tokens
+				if pricer != nil {
+					cost, missing := pricer.PriceDay(DailyRow{
+						Tokens: tokens,
+						Models: map[string]ModelTokens{name: mt},
+					})
+					if cost > 0 {
+						addRollupCost(r, cost, true, true)
+					} else if len(missing) > 0 || cost == 0 {
+						addRollupCost(r, 0, false, true)
+					}
+				} else {
+					addRollupCost(r, 0, false, true)
+				}
+			}
+		}
+	}
+
+	return sortedLiveRollups(projects, 3), sortedLiveRollups(models, 3)
+}
+
 // Poll advances the time window, checks for tool token deltas, and returns an updated snapshot.
 func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now time.Time) (LiveSnapshot, []LiveEvent) {
 	lt.mu.Lock()
@@ -150,12 +282,15 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		now = time.Now()
 	}
 
+	wasInitialized := lt.initialized
+	dayChanged := false
 	currentDay := LocalDay(now)
 	if lt.todayDay != "" && currentDay != lt.todayDay {
 		// Midnight transition: day boundary crossed
 		lt.todayDay = currentDay
 		lt.activeProject = ""
 		lt.activeModel = ""
+		dayChanged = true
 	} else if lt.todayDay == "" {
 		lt.todayDay = currentDay
 	}
@@ -249,6 +384,15 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 	promptTotal := todayIn + todayCacheRead + todayCacheWrite
 	if promptTotal > 0 {
 		cacheHit = float64(todayCacheRead) / float64(promptTotal) * 100.0
+	}
+
+	// Capture the opening balance once at launch and again on a local-day
+	// rollover. It is display history, never a live delta.
+	if !lt.initialized || dayChanged {
+		lt.carriedInTokens = todayTok
+		lt.carriedInTurns = todayTurns
+		lt.carriedInCost = todayCost
+		lt.carriedInAt = now
 	}
 
 	// 3. Delta detection
@@ -367,113 +511,6 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 			}
 		}
 
-		if lt.seedToday {
-			lt.sessionTokens = todayTok
-			lt.sessionTurns = todayTurns
-			lt.sessionCost = todayCost
-			if todayTok > 0 {
-				lt.flameIntensity = 0.3
-			}
-			if todayTurns > 0 {
-				lt.activityIntensity = 0.3
-			}
-
-			// Seed baseline events for today's active tools so the event ticker is populated
-			for _, res := range results {
-				var dayTok int64
-				var dayTurns int
-				var dCost float64
-				var toolModel string
-				var toolProj string
-
-				for _, d := range res.Daily {
-					if d.Day == lt.todayDay {
-						dayTurns += d.Turns
-						if !isActivityTool(res.Tool) && !isActivityOnly(d) {
-							dayTok += d.Tokens
-							c, _ := dayCost(d, effectivePricer)
-							dCost += c
-						}
-						if toolModel == "" && len(d.Models) > 0 {
-							var maxM int64
-							for m, mt := range d.Models {
-								if mt.Total() > maxM {
-									maxM = mt.Total()
-									toolModel = m
-								}
-							}
-						}
-					}
-				}
-				if toolModel == "" {
-					var maxM int64
-					for m, c := range res.Summary.ModelBreakdown {
-						if c > maxM {
-							maxM = c
-							toolModel = m
-						}
-					}
-				}
-				if toolModel == "" && len(res.Daily) > 0 {
-					for i := len(res.Daily) - 1; i >= 0; i-- {
-						d := res.Daily[i]
-						if len(d.Models) > 0 {
-							var maxM int64
-							for m, mt := range d.Models {
-								if mt.Total() > maxM {
-									maxM = mt.Total()
-									toolModel = m
-								}
-							}
-							if toolModel != "" {
-								break
-							}
-						}
-					}
-				}
-				for _, pd := range projDays {
-					if pd.Tool == res.Name && pd.Day == lt.todayDay {
-						slug := projSlugs[pd.Project]
-						if slug == "" {
-							slug = ProjectSlug(pd.Project)
-						}
-						toolProj = slug
-						break
-					}
-				}
-				if toolProj == "" {
-					var latestDay string
-					for _, pd := range projDays {
-						if pd.Tool == res.Name && pd.Day > latestDay {
-							latestDay = pd.Day
-							slug := projSlugs[pd.Project]
-							if slug == "" {
-								slug = ProjectSlug(pd.Project)
-							}
-							toolProj = slug
-						}
-					}
-				}
-
-				if dayTok > 0 || dayTurns > 0 {
-					isEst := !lt.noEstimate && res.Summary.Cost == 0 && dCost > 0
-					ev := LiveEvent{
-						Timestamp:   now,
-						Tool:        res.Name,
-						Tokens:      dayTok,
-						Turns:       dayTurns,
-						Model:       toolModel,
-						Project:     toolProj,
-						Cost:        dCost,
-						IsEstimated: isEst,
-					}
-					lt.events = append(lt.events, ev)
-				}
-			}
-			if len(lt.events) > lt.maxEvents {
-				lt.events = lt.events[:lt.maxEvents]
-			}
-		}
 		lt.initialized = true
 	} else {
 		for _, res := range results {
@@ -740,6 +777,12 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 				}
 
 				isEst := !lt.noEstimate && res.Summary.Cost == 0 && res.EstimatedCost > 0
+				costKind := LiveCostUnpriced
+				if res.Summary.Cost > 0 {
+					costKind = LiveCostRecorded
+				} else if isEst {
+					costKind = LiveCostEstimated
+				}
 
 				// If specific project deltas were identified, emit events for each active project
 				if len(pDeltas) > 0 {
@@ -772,7 +815,8 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 							Model:       bestModel,
 							Project:     pd.slug,
 							Cost:        costShare,
-							IsEstimated: isEst,
+							CostKind:    costKind,
+							IsEstimated: costKind == LiveCostEstimated,
 						}
 						newEvents = append(newEvents, ev)
 						lt.events = append([]LiveEvent{ev}, lt.events...)
@@ -806,7 +850,8 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 							Model:       bestModel,
 							Project:     "",
 							Cost:        remCost,
-							IsEstimated: isEst,
+							CostKind:    costKind,
+							IsEstimated: costKind == LiveCostEstimated,
 						}
 						newEvents = append(newEvents, ev)
 						lt.events = append([]LiveEvent{ev}, lt.events...)
@@ -824,13 +869,19 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 						Model:       bestModel,
 						Project:     "",
 						Cost:        deltaCost,
-						IsEstimated: isEst,
+						CostKind:    costKind,
+						IsEstimated: costKind == LiveCostEstimated,
 					}
 					newEvents = append(newEvents, ev)
 					lt.events = append([]LiveEvent{ev}, lt.events...)
 					if len(lt.events) > lt.maxEvents {
 						lt.events = lt.events[:lt.maxEvents]
 					}
+				}
+
+				if costKind == LiveCostUnpriced && deltaTok > 0 {
+					lt.unpricedTokens += deltaTok
+					lt.unpricedEvents++
 				}
 
 				lt.sessionTokens += deltaTok
@@ -878,6 +929,10 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		}
 	}
 
+	if !wasInitialized || dayChanged || len(newEvents) > 0 {
+		lt.todayProjects, lt.todayModels = buildTodayRollups(results, projDays, lt.todayDay, projSlugs, effectivePricer)
+	}
+
 	// 4. Calculate rolling 60s burn velocity (tokens and turns)
 	var sumRolling, peakRolling int64
 	for _, b := range lt.burnBuckets {
@@ -917,9 +972,15 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		TodayCost:         todayCost,
 		TodayTurns:        todayTurns,
 		TodayCacheHit:     cacheHit,
+		CarriedInTokens:   lt.carriedInTokens,
+		CarriedInTurns:    lt.carriedInTurns,
+		CarriedInCost:     lt.carriedInCost,
+		CarriedInAt:       lt.carriedInAt,
 		SessionTokens:     lt.sessionTokens,
 		SessionCost:       lt.sessionCost,
 		SessionTurns:      lt.sessionTurns,
+		UnpricedTokens:    lt.unpricedTokens,
+		UnpricedEvents:    lt.unpricedEvents,
 		BurnTokensPerMin:  burnPerMin,
 		BurnTokensPerSec:  burnPerSec,
 		BurnCostPerHr:     burnCostHr,
@@ -929,6 +990,8 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		ActivityIntensity: lt.activityIntensity,
 		ActiveModel:       lt.activeModel,
 		ActiveProject:     lt.activeProject,
+		TodayProjects:     lt.todayProjects,
+		TodayModels:       lt.todayModels,
 		RecentEvents:      append([]LiveEvent{}, lt.events...),
 		RollingTokens:     lt.burnBuckets,
 		PeakRollingTok:    peakRolling,
@@ -938,6 +1001,43 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 	}
 
 	return snap, newEvents
+}
+
+// MedianOutlierFlags marks values strictly greater than factor times the median
+// of the positive values. It returns no flags until minSamples positive values
+// exist, so a two-row ticker never labels one row as anomalous.
+func MedianOutlierFlags(values []int64, factor float64, minSamples int) []bool {
+	flags := make([]bool, len(values))
+	if factor <= 0 || minSamples <= 0 {
+		return flags
+	}
+	positives := make([]int64, 0, len(values))
+	for _, v := range values {
+		if v > 0 {
+			positives = append(positives, v)
+		}
+	}
+	if len(positives) < minSamples {
+		return flags
+	}
+	sort.Slice(positives, func(i, j int) bool { return positives[i] < positives[j] })
+	n := len(positives)
+	var median float64
+	if n%2 == 1 {
+		median = float64(positives[n/2])
+	} else {
+		median = float64(positives[n/2-1]+positives[n/2]) / 2
+	}
+	if median <= 0 {
+		return flags
+	}
+	threshold := factor * median
+	for i, v := range values {
+		if v > 0 && float64(v) > threshold {
+			flags[i] = true
+		}
+	}
+	return flags
 }
 
 // Sparkline60 renders an adaptive UTF-8 sparkline string from 60 seconds rolling tokens.

@@ -419,20 +419,23 @@ func TestLiveModel_PauseStopsCollection(t *testing.T) {
 	}
 }
 
-func TestLiveModel_SeedTodayAndActivityUnits(t *testing.T) {
-	// 1. Default NewLiveModel seeds today's usage into session counters
+func TestLiveModel_LaunchRelativeSessionAndActivityUnits(t *testing.T) {
+	// 1. Default NewLiveModel records today's usage as carried-in, not as session activity.
 	mSeeded := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false)
-	if mSeeded.snapshot.SessionTokens != 40_000 {
-		t.Errorf("expected sessionTokens seeded with 40_000, got %d", mSeeded.snapshot.SessionTokens)
+	if mSeeded.snapshot.SessionTokens != 0 {
+		t.Errorf("expected sessionTokens 0 at launch, got %d", mSeeded.snapshot.SessionTokens)
+	}
+	if mSeeded.snapshot.CarriedInTokens != 40_000 {
+		t.Errorf("expected carriedInTokens 40_000, got %d", mSeeded.snapshot.CarriedInTokens)
+	}
+	if mSeeded.snapshot.CarriedInTurns != 5 {
+		t.Errorf("expected carriedInTurns 5, got %d", mSeeded.snapshot.CarriedInTurns)
+	}
+	if !strings.Contains(mSeeded.View().Content, "Carried in: 40.0K tok") {
+		t.Errorf("expected carried-in line, got:\n%s", mSeeded.View().Content)
 	}
 
-	// 2. NewLiveModel with seedToday=false (fresh mode) starts from 0
-	mFresh := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false, false)
-	if mFresh.snapshot.SessionTokens != 0 {
-		t.Errorf("expected fresh sessionTokens 0, got %d", mFresh.snapshot.SessionTokens)
-	}
-
-	// 3. Activity tool (e.g. Agy) displays step units across all KPI widgets
+	// 2. Activity tool (e.g. Agy) displays step units across all KPI widgets
 	actPoll := func() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
 		return []thermal.ToolResult{
 			{
@@ -462,16 +465,25 @@ func TestLiveModel_SeedTodayAndActivityUnits(t *testing.T) {
 	if mAct.snapshot.TodayTurns != 150 {
 		t.Errorf("expected todayTurns 150, got %d", mAct.snapshot.TodayTurns)
 	}
-	if mAct.snapshot.SessionTurns != 150 {
-		t.Errorf("expected sessionTurns 150, got %d", mAct.snapshot.SessionTurns)
+	if mAct.snapshot.SessionTurns != 0 {
+		t.Errorf("expected sessionTurns 0 at launch, got %d", mAct.snapshot.SessionTurns)
+	}
+	if mAct.snapshot.CarriedInTurns != 150 {
+		t.Errorf("expected carriedInTurns 150, got %d", mAct.snapshot.CarriedInTurns)
 	}
 
 	view := mAct.View().Content
 	if !strings.Contains(view, "150 step") {
 		t.Errorf("expected view to contain '150 step' for Volume, got:\n%s", view)
 	}
-	if !strings.Contains(view, "+150 step") {
-		t.Errorf("expected view to contain '+150 step' for Burned, got:\n%s", view)
+	if !strings.Contains(view, "Carried in: 150 step") {
+		t.Errorf("expected view to contain carried-in steps, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Since launch: 0 tok") {
+		t.Errorf("expected explicit empty session state, got:\n%s", view)
+	}
+	if strings.Contains(view, "+150 step") {
+		t.Errorf("expected no seeded session delta, got:\n%s", view)
 	}
 	if !strings.Contains(view, "step/min") {
 		t.Errorf("expected view to contain 'step/min' for Rate, got:\n%s", view)
@@ -529,14 +541,116 @@ func TestLiveModel_HybridTokenAndActivity(t *testing.T) {
 	if !strings.Contains(view, "6.2M tok · 4.0K step") {
 		t.Errorf("expected view to contain hybrid volume '6.2M tok · 4.0K step', got:\n%s", view)
 	}
-	if !strings.Contains(view, "+6.2M tok · +4.0K step") {
-		t.Errorf("expected view to contain hybrid burned '+6.2M tok · +4.0K step', got:\n%s", view)
+	if !strings.Contains(view, "Since launch: 0 tok") {
+		t.Errorf("expected view to contain explicit empty session state, got:\n%s", view)
 	}
-	if !strings.Contains(view, "RECENT TOKEN & ACTIVITY BURSTS") {
-		t.Errorf("expected view to contain 'RECENT TOKEN & ACTIVITY BURSTS', got:\n%s", view)
+	if strings.Contains(view, "+6.2M tok · +4.0K step") {
+		t.Errorf("expected no seeded hybrid session delta, got:\n%s", view)
 	}
-	if !strings.Contains(view, "TOK/STEP") {
-		t.Errorf("expected view to contain 'TOK/STEP', got:\n%s", view)
+	if !strings.Contains(view, "Carried in: 6.2M tok · 4.0K step") {
+		t.Errorf("expected carried-in hybrid volume, got:\n%s", view)
+	}
+	if !strings.Contains(view, "RECENT TOKEN BURSTS") {
+		t.Errorf("expected an empty token ticker, got:\n%s", view)
+	}
+	if !strings.Contains(view, "TOKENS") {
+		t.Errorf("expected token ticker header, got:\n%s", view)
+	}
+}
+
+func TestLiveModel_FeedStateIndependentOfActivity(t *testing.T) {
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false)
+	m.width = 100
+	m.height = 30
+
+	view := m.View().Content
+	if !strings.Contains(view, "● LIVE") {
+		t.Errorf("expected healthy feed indicator, got:\n%s", view)
+	}
+	if !strings.Contains(view, "IDLE") {
+		t.Errorf("expected activity state IDLE alongside LIVE, got:\n%s", view)
+	}
+
+	m.lastPollAt = time.Now().Add(-10 * time.Second)
+	view = m.View().Content
+	if !strings.Contains(view, "● STALE") {
+		t.Errorf("expected stale feed indicator, got:\n%s", view)
+	}
+
+	m.pollErr = fmt.Errorf("collector unavailable")
+	view = m.View().Content
+	if !strings.Contains(view, "● OFFLINE") {
+		t.Errorf("expected offline feed indicator, got:\n%s", view)
+	}
+}
+
+func TestLiveModel_IdleGlyphs(t *testing.T) {
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false)
+	m.width = 100
+	m.height = 30
+
+	view := m.View().Content
+	if !strings.Contains(view, "no activity (60s)") {
+		t.Errorf("expected idle sparkline caption, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Flame: [·") {
+		t.Errorf("expected dotted idle flame, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Spark: [·") {
+		t.Errorf("expected dotted idle sparkline, got:\n%s", view)
+	}
+}
+
+func TestLiveModel_LastEventAge(t *testing.T) {
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "opencode", false)
+	m.width = 100
+	m.height = 30
+	m.lastEventAt = time.Now().Add(-2 * time.Minute)
+
+	view := m.View().Content
+	if !strings.Contains(view, "Last event: 2m ago") {
+		t.Errorf("expected last-event age, got:\n%s", view)
+	}
+}
+
+func TestLiveModel_TodayRollups(t *testing.T) {
+	m := NewLiveModel(nil, time.Second, "", false)
+	m.width = 120
+	m.height = 40
+	m.snapshot.TodayProjects = []thermal.LiveRollup{
+		{Name: "thermal-streak", Cost: 4.43, CostKind: thermal.LiveCostEstimated},
+		{Name: "scripts", Cost: 0.46, CostKind: thermal.LiveCostEstimated},
+	}
+	m.snapshot.TodayModels = []thermal.LiveRollup{
+		{Name: "deepseek-v4.1-flash", Cost: 4.43, CostKind: thermal.LiveCostEstimated},
+	}
+
+	view := m.View().Content
+	if !strings.Contains(view, "Today by project: thermal-streak ~$4.43 · scripts ~$0.46") {
+		t.Errorf("expected project cost rollup, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Top model: deepseek-v4.1-flash ~$4.43") {
+		t.Errorf("expected top model rollup, got:\n%s", view)
+	}
+}
+
+func TestLiveModel_NoDuplicateSessionPanel(t *testing.T) {
+	m := NewLiveModel(nil, time.Second, "", false)
+	m.width = 80
+	m.height = 24
+	m.snapshot.TodayTokens = 1_000
+	m.snapshot.TodayTurns = 10
+	m.snapshot.TodayCost = 0.50
+	m.snapshot.SessionTokens = 1_000
+	m.snapshot.SessionTurns = 10
+	m.snapshot.SessionCost = 0.50
+
+	view := m.View().Content
+	if !strings.Contains(view, "= Today's usage") {
+		t.Errorf("expected session panel to defer to Today, got:\n%s", view)
+	}
+	if strings.Contains(view, "Burned:") {
+		t.Errorf("expected no duplicated session values, got:\n%s", view)
 	}
 }
 
@@ -587,24 +701,21 @@ func TestLiveTUI_FormatSpeed_ZeroMuted(t *testing.T) {
 	}
 }
 
-func TestLiveTUI_FormatTurnsAndHit_Responsive(t *testing.T) {
-	colW := 24
-	availW := colW - len("Turns:    ") // 14
-	formatted := formatTurnsAndHit(6642, 86.0, availW, false)
-	want := "6.6K (86% hit)"
-	if formatted != want {
-		t.Errorf("formatTurnsAndHit(6642, 86.0, 14, false) = %q, want %q", formatted, want)
+func TestLiveTUI_FormatCacheHit_Responsive(t *testing.T) {
+	formatted := formatCacheHit(86.0, 24, false)
+	if formatted != "Cache hit: 86%" {
+		t.Errorf("formatCacheHit(86, 24, false) = %q", formatted)
 	}
 
-	line := padCell("Turns:    "+formatted, colW, false)
+	line := padCell(formatted, 24, false)
 	if strings.Contains(line, "…") {
-		t.Errorf("padCell clipped with ellipsis in colW=24: %q", line)
+		t.Errorf("padCell clipped cache hit in colW=24: %q", line)
 	}
-	if ansi.StringWidth(line) != colW {
-		t.Errorf("expected cell width %d, got %d for %q", colW, ansi.StringWidth(line), line)
+	if ansi.StringWidth(line) != 24 {
+		t.Errorf("expected cell width 24, got %d for %q", ansi.StringWidth(line), line)
 	}
 
-	// Verify inside full LiveModel view at 80x24
+	// Verify inside the full LiveModel view at 80x24.
 	m := NewLiveModel(mockLivePollFunc(1), time.Second, "", false)
 	m.width = 80
 	m.height = 24
@@ -612,38 +723,106 @@ func TestLiveTUI_FormatTurnsAndHit_Responsive(t *testing.T) {
 	m.snapshot.TodayCacheHit = 86.0
 
 	view := m.View().Content
-	for _, l := range strings.Split(view, "\n") {
-		if strings.Contains(l, "Turns:") {
-			if strings.Contains(l, "Turns:    6642 turns (86% h…") {
-				t.Fatalf("found truncated turns string in view line: %s", l)
-			}
-			if strings.Contains(l, "…") && strings.Contains(l, "hit") {
-				t.Fatalf("turns and hit clipped with ellipsis: %s", l)
-			}
+	if !strings.Contains(view, "Cache hit: 86%") {
+		t.Errorf("expected cache-hit label in view, got:\n%s", view)
+	}
+	if strings.Contains(view, "Turns:") {
+		t.Errorf("expected redundant Turns line removed, got:\n%s", view)
+	}
+}
+
+func TestLiveTUI_FormatCacheHit_NoAmbiguousHit(t *testing.T) {
+	for _, width := range []int{8, 10, 12, 14, 24} {
+		formatted := formatCacheHit(86.0, width, false)
+		lower := strings.ToLower(formatted)
+		if strings.Contains(lower, "hit") && !strings.Contains(lower, "cache") {
+			t.Errorf("width %d: bare hit in %q", width, formatted)
+		}
+		if ansi.StringWidth(formatted) > width && !strings.Contains(formatted, "…") {
+			t.Errorf("width %d: %q overflows", width, formatted)
+		}
+	}
+	if got := formatCacheHit(0, 24, false); got != "Cache hit: —" {
+		t.Errorf("expected cache-hit placeholder, got %q", got)
+	}
+}
+
+func TestLiveTUI_TickerColumnsAndCost(t *testing.T) {
+	now := time.Now()
+	ev := thermal.LiveEvent{
+		Timestamp: now,
+		Tool:      "CMD",
+		Tokens:    1_000,
+		Turns:     2,
+		Model:     "model",
+		Project:   "project",
+		Cost:      0.0042,
+		CostKind:  thermal.LiveCostEstimated,
+	}
+	row := formatEventRow(ev, false, false, now, 116, false)
+	if !strings.Contains(row, "+1.0K") || !strings.Contains(row, "+2") {
+		t.Errorf("expected separate token/step deltas, got %q", row)
+	}
+	if strings.Contains(row, "tok") || strings.Contains(row, "step") {
+		t.Errorf("numeric cells must not carry units, got %q", row)
+	}
+	if !strings.Contains(row, "~$0.0042") {
+		t.Errorf("expected sub-cent estimate, got %q", row)
+	}
+
+	header := formatTickerHeader(116, false)
+	if !strings.Contains(header, "TOKENS") || !strings.Contains(header, "STEPS") {
+		t.Errorf("expected separate token and step headers, got %q", header)
+	}
+	if strings.Contains(header, "TOK/STEP") {
+		t.Errorf("mixed unit header still present: %q", header)
+	}
+	narrow := formatTickerHeader(76, false)
+	if !strings.Contains(narrow, "TOK") || !strings.Contains(narrow, "STEP") {
+		t.Errorf("expected narrow separate headers, got %q", narrow)
+	}
+}
+
+func TestLiveTUI_TickerWidths(t *testing.T) {
+	now := time.Now()
+	ev := thermal.LiveEvent{
+		Timestamp: now,
+		Tool:      "CMD",
+		Tokens:    651_400_000,
+		Turns:     13_302,
+		Model:     "deepseek-v4.1-flash",
+		Project:   "thermal-streak",
+		Cost:      4.43,
+		CostKind:  thermal.LiveCostEstimated,
+	}
+	for _, inner := range []int{70, 72, 76, 85, 86, 92, 96, 112, 116} {
+		header := formatTickerHeader(inner, false)
+		if w := ansi.StringWidth(header); w > inner {
+			t.Errorf("inner %d: header width %d overflows: %q", inner, w, header)
+		}
+		row := formatEventRow(ev, true, false, now, inner, false)
+		if w := ansi.StringWidth(row); w > inner {
+			t.Errorf("inner %d: row width %d overflows: %q", inner, w, row)
 		}
 	}
 }
 
-func TestLiveTUI_FormatTurnsAndHit_NoEllipsisOverflow(t *testing.T) {
-	colW := 24
-	availW := colW - len("Turns:    ") // 14
-
-	testTurnCounts := []int{
-		1, 10, 99, 100, 500, 999, 1000, 1500, 6642, 9999,
-		10000, 50000, 99999, 100000, 500000, 999999,
-		1000000, 5000000, 10000000,
+func TestLiveTUI_TickerCostAndAge(t *testing.T) {
+	now := time.Now()
+	unpriced := formatEventRow(thermal.LiveEvent{Timestamp: now, Tool: "Agy", Turns: 3, CostKind: thermal.LiveCostUnpriced}, false, false, now, 116, false)
+	if !strings.Contains(unpriced, "—") {
+		t.Errorf("expected unpriced placeholder, got %q", unpriced)
 	}
-
-	for _, turns := range testTurnCounts {
-		formatted := formatTurnsAndHit(turns, 86.0, availW, false)
-		cell := padCell("Turns:    "+formatted, colW, false)
-		if strings.Contains(cell, "…") {
-			t.Errorf("turns %d: cell clipped with ellipsis: %q (formatted: %q)", turns, cell, formatted)
-		}
-		sw := ansi.StringWidth("Turns:    " + formatted)
-		if sw > colW {
-			t.Errorf("turns %d: width %d > colW %d (formatted: %q)", turns, sw, colW, formatted)
-		}
+	zero := formatEventRow(thermal.LiveEvent{Timestamp: now, Tool: "CMD", Tokens: 1, Cost: 0, CostKind: thermal.LiveCostRecorded}, false, false, now, 116, false)
+	if !strings.Contains(zero, "$0.00") {
+		t.Errorf("expected recorded zero, got %q", zero)
+	}
+	stale := formatEventRow(thermal.LiveEvent{Timestamp: now.Add(-2 * time.Minute), Tool: "CMD", Tokens: 400}, true, false, now, 116, false)
+	if !strings.Contains(stale, "+400!") {
+		t.Errorf("expected outlier marker, got %q", stale)
+	}
+	if !strings.Contains(stale, "2m*") {
+		t.Errorf("expected stale age marker, got %q", stale)
 	}
 }
 
@@ -674,23 +853,5 @@ func TestLiveTUI_GaugeBracketWidthAlignment(t *testing.T) {
 				t.Errorf("width %d: flame bracket visual width %d != spark bracket visual width %d", w, flameGaugeW, sparkGaugeW)
 			}
 		})
-	}
-}
-
-func TestLiveTUI_FormatTurnsAndHit_MiniHitPriority(t *testing.T) {
-	// When available width is 12 (tight viewport where "6.6K (86% hit)" with 14 chars does not fit),
-	// formatTurnsAndHit must prioritize "6.6K (86%)" (10 chars) over "6642 turns" (10 chars)
-	// to preserve the critical cache hit rate telemetry.
-	formatted := formatTurnsAndHit(6642, 86.0, 12, false)
-	want := "6.6K (86%)"
-	if formatted != want {
-		t.Errorf("formatTurnsAndHit(6642, 86.0, 12, false) = %q, want %q", formatted, want)
-	}
-
-	// When hit is 0, it falls back to exact turns
-	noHit := formatTurnsAndHit(6642, 0.0, 12, false)
-	wantNoHit := "6642 turns"
-	if noHit != wantNoHit {
-		t.Errorf("formatTurnsAndHit(6642, 0.0, 12, false) = %q, want %q", noHit, wantNoHit)
 	}
 }

@@ -104,7 +104,7 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Stream, "stream", false, "Stream continuous NDJSON live events (live verb)")
 	flag.BoolVar(&opts.Stream, "follow", false, "Stream continuous NDJSON live events (live verb shorthand)")
 	flag.BoolVar(&opts.Stream, "f", false, "Stream continuous NDJSON live events (live verb shorthand)")
-	flag.BoolVar(&opts.Fresh, "fresh", false, "Start live session counters from 0 instead of today's total")
+	flag.BoolVar(&opts.Fresh, "fresh", false, "Bypass cached statusline data; live sessions always start at launch")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
 	flag.StringVar(&opts.Format, "format", "text", "Output format: text, json, md, or markdown")
@@ -2004,7 +2004,6 @@ func runLive(opts thermal.Options) {
 
 	if opts.JSON {
 		tracker := thermal.NewLiveTrackerWithPricer(pricer, opts.NoEstimate)
-		tracker.SetSeedToday(!opts.Fresh)
 		results, projects, err := pollFn()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
@@ -2072,7 +2071,7 @@ func runLive(opts thermal.Options) {
 	}
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
-	model := tui.NewLiveModel(pollFn, rate, filter, colorful, !opts.Fresh)
+	model := tui.NewLiveModel(pollFn, rate, filter, colorful)
 	p := tea.NewProgram(model, tea.WithFPS(10))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)

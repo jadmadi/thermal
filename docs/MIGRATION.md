@@ -505,6 +505,66 @@ To inspect raw step counts for activity-only tools, use `thermal agy daily` or i
 
 ---
 
+### Changed: Live Session Starts at Launch and History Is Carried In
+<a id="changed-live-baseline-separation"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'sessionTokens\|todayTokens\|thermal live' .` or consumers of `thermal live --json` and `thermal live --json --stream`.
+- **Detection signal**: On startup, `sessionTokens` is 0 instead of equal to `todayTokens`; `recentEvents` no longer contains a synthetic row whose tokens equal the day total; the snapshot now includes `carriedInTokens`, `carriedInTurns`, `carriedInCost`, and `carriedInAt`. `--fresh` is still accepted but no longer changes live session seeding.
+
+**What changed and why**:
+The first live poll used to copy the current day's persisted totals into `sessionTokens`, `sessionTurns`, and `sessionCost`, set a warm flame, and emit one event per tool at the current clock. That made the opening history read look like a live burst, duplicated Today and Session, and inflated rate/flame aggregates. The first poll now records that opening balance as `carriedIn*`, leaves session counters at zero, and emits no burst events; later polls increment session only from observed deltas. `--fresh` remains valid for statusline cache bypass and live compatibility but no longer selects seeded live counters.
+
+**Before / After**:
+```bash
+# Before (startup copied today's 651.4M into Session and emitted a 651.4M burst)
+thermal live --json
+# {"todayTokens":651400000,"sessionTokens":651400000,"recentEvents":[{"tokens":651400000,...}]}
+
+# After (opening balance is carried in; Session starts at zero)
+thermal live --json
+# {"todayTokens":651400000,"carriedInTokens":651400000,"sessionTokens":0,"recentEvents":[]}
+```
+
+**The fix**:
+Consume `carriedIn*` for the opening balance and `session*` for launch-relative deltas. Do not treat a startup `recentEvents` row as live activity; the TUI renders a `Carried in:` line instead. If a script needs the full local-day total, continue to use `todayTokens`, `todayCost`, and `todayTurns`.
+
+**Escape hatch**:
+For persisted daily totals independent of live tracking, use `thermal daily`, `thermal stats`, or the `today*` fields. To force a fresh process baseline, restart `thermal live`; `ResetSession` (`[c]`) only clears observed session counters and preserves the carried-in line.
+
+---
+
+### Changed: Live Ticker Units, Cost Status, and Day Rollups
+<a id="changed-live-ticker-units"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'TOK/STEP\|recentEvents\|costKind\|todayProjects' .` or consumers of `thermal live --json`.
+- **Detection signal**: ticker headers now expose `TOKENS` and `STEPS` separately plus `AGE`; `TOK/STEP` is gone. Event JSON includes `costKind` (`recorded`, `estimated`, `unpriced`) and snapshots include `unpricedTokens`, `unpricedEvents`, `todayProjects`, and `todayModels`. The KPI grid says `Cache hit:` and no longer prints a redundant `Turns:` line.
+
+**What changed and why**:
+The old `TOK/STEP` cell mixed token and step units, so rows could not be compared, and cost values collapsed to `<$0.01` or `$0.00`, conflating tiny spend, free, and unpriced sources. The live view now uses separate numeric columns, an explicit cost status with four decimals below one cent, `—` for unpriced, and `~` only for estimates. It also adds age/outlier markers and today project/model cost rollups so an idle screen still answers where the money went.
+
+**Before / After**:
+```text
+# Before
+TOK/STEP       COST
++651.4M tok    ~$4.43
++11.5K step    $0.00
+
+# After
+TOKENS    STEPS    AGE    COST
++651.4M   —        29s    ~$4.43
+—         +11.5K   29s    —
+```
+
+**The fix**:
+Read `tokens` and `turns` as separate fields; use `costKind` to format `recorded` as `$`, `estimated` as `~`, and `unpriced` as `—`. Use `todayProjects` and `todayModels` for the idle decision view instead of re-deriving costs from ticker rows.
+
+**Escape hatch**:
+For the old combined display, derive your own string from `tokens`/`turns`. For raw persisted totals, use `thermal daily`, `thermal projects`, or `thermal models`.
+
+---
+
 ### Changed: Web Telemetry Parity and Filtering Options
 <a id="changed-web-telemetry-parity"></a>
 

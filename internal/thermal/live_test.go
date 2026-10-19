@@ -10,6 +10,21 @@ import (
 	"time"
 )
 
+func TestMedianOutlierFlags(t *testing.T) {
+	flags := MedianOutlierFlags([]int64{1, 1, 1, 4}, 3.0, 3)
+	if len(flags) != 4 || flags[0] || flags[1] || flags[2] || !flags[3] {
+		t.Fatalf("expected only the 4x value flagged, got %v", flags)
+	}
+	for _, tc := range [][]int64{{1, 4}, {0, 0, 0, 9}, {1, 2, 3, 4}} {
+		got := MedianOutlierFlags(tc, 3.0, 3)
+		for i, flagged := range got {
+			if flagged && tc[i] != 9 {
+				t.Errorf("unexpected flag for %v at %d: %v", tc, i, got)
+			}
+		}
+	}
+}
+
 func TestLiveTracker_InitialBaseline(t *testing.T) {
 	lt := NewLiveTracker()
 	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
@@ -43,6 +58,33 @@ func TestLiveTracker_InitialBaseline(t *testing.T) {
 	}
 	if snap.SessionTokens != 0 {
 		t.Errorf("expected sessionTokens 0, got %d", snap.SessionTokens)
+	}
+	if snap.CarriedInTokens != 1_000_000 {
+		t.Errorf("expected carriedInTokens 1M, got %d", snap.CarriedInTokens)
+	}
+	if snap.CarriedInTurns != 50 {
+		t.Errorf("expected carriedInTurns 50, got %d", snap.CarriedInTurns)
+	}
+	if math.Abs(snap.CarriedInCost-1.25) > 0.001 {
+		t.Errorf("expected carriedInCost 1.25, got %f", snap.CarriedInCost)
+	}
+	if !snap.CarriedInAt.Equal(now) {
+		t.Errorf("expected carriedInAt %v, got %v", now, snap.CarriedInAt)
+	}
+	if snap.SessionTurns != 0 || snap.SessionCost != 0 {
+		t.Errorf("expected zero session turns/cost, got %d/%f", snap.SessionTurns, snap.SessionCost)
+	}
+	if snap.BurnTokensPerMin != 0 || snap.BurnTokensPerSec != 0 || snap.BurnTurnsPerMin != 0 {
+		t.Errorf("expected zero burn on baseline, got %f/%f/%f", snap.BurnTokensPerMin, snap.BurnTokensPerSec, snap.BurnTurnsPerMin)
+	}
+	if snap.FlameIntensity != 0 || snap.ActivityIntensity != 0 {
+		t.Errorf("expected zero flame on baseline, got %f/%f", snap.FlameIntensity, snap.ActivityIntensity)
+	}
+	if snap.PeakRollingTok != 0 || snap.PeakRollingTurn != 0 {
+		t.Errorf("expected zero peak on baseline, got %d/%d", snap.PeakRollingTok, snap.PeakRollingTurn)
+	}
+	if len(snap.RecentEvents) != 0 {
+		t.Errorf("expected no baseline events, got %d", len(snap.RecentEvents))
 	}
 }
 
@@ -727,9 +769,57 @@ func TestLiveTracker_PricingAndNoEstimate(t *testing.T) {
 	}
 }
 
-func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
+func TestLiveTracker_TodayRollups(t *testing.T) {
+	lt := NewLiveTrackerWithPricer(&testLivePricer{}, false)
+	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	results := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 1_000, Cost: 0.50, Models: map[string]ModelTokens{"model-a": {Output: 1_000}}},
+			},
+		},
+		{
+			Tool: ToolCommandCode,
+			Name: "CMD",
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 2_000, Models: map[string]ModelTokens{"model-b": {Output: 2_000}}},
+			},
+		},
+	}
+	projDays := []ProjectDay{
+		{Project: "/home/user/thermal-streak", Tool: "OpenCode", Day: "2026-09-24", Tokens: 1_000, Cost: 0.50, Models: map[string]ModelTokens{"model-a": {Output: 1_000}}},
+		{Project: "/home/user/thermal-streak", Tool: "CMD", Day: "2026-09-24", Tokens: 2_000, Models: map[string]ModelTokens{"model-b": {Output: 2_000}}},
+		{Project: "/home/user/scripts", Tool: "OpenCode", Day: "2026-09-24", Tokens: 500, Models: map[string]ModelTokens{"model-c": {Output: 500}}},
+	}
+	snap, _ := lt.Poll(results, projDays, now)
+
+	if len(snap.TodayProjects) != 2 {
+		t.Fatalf("expected 2 project rollups, got %d: %+v", len(snap.TodayProjects), snap.TodayProjects)
+	}
+	if snap.TodayProjects[0].Name != "thermal-streak" {
+		t.Errorf("expected thermal-streak first, got %+v", snap.TodayProjects)
+	}
+	if math.Abs(snap.TodayProjects[0].Cost-2.50) > 0.001 {
+		t.Errorf("expected thermal-streak cost 2.50, got %+v", snap.TodayProjects[0])
+	}
+	if snap.TodayProjects[0].CostKind != LiveCostEstimated {
+		t.Errorf("expected estimated mixed cost, got %+v", snap.TodayProjects[0])
+	}
+	if snap.TodayProjects[1].Name != "scripts" {
+		t.Errorf("expected scripts second, got %+v", snap.TodayProjects)
+	}
+	if len(snap.TodayModels) == 0 || snap.TodayModels[0].Name != "model-b" {
+		t.Errorf("expected model-b as top model, got %+v", snap.TodayModels)
+	}
+	if math.Abs(snap.TodayModels[0].Cost-2.0) > 0.001 {
+		t.Errorf("expected model-b cost 2.0, got %+v", snap.TodayModels[0])
+	}
+}
+
+func TestLiveTracker_LaunchRelativeSession(t *testing.T) {
 	lt := NewLiveTracker()
-	lt.SetSeedToday(true)
 	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
 
 	res := []ToolResult{
@@ -750,7 +840,7 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 		},
 	}
 
-	// 1. First poll with seedToday should initialize session counters to today's totals
+	// 1. The first poll records carried-in history, not a live delta.
 	snap, events := lt.Poll(res, nil, now)
 	if len(events) != 0 {
 		t.Fatalf("expected 0 new delta events on first poll, got %d", len(events))
@@ -758,26 +848,23 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 	if snap.TodayTokens != 1_000_000 {
 		t.Errorf("expected todayTokens 1M, got %d", snap.TodayTokens)
 	}
-	if snap.SessionTokens != 1_000_000 {
-		t.Errorf("expected sessionTokens seeded with 1M, got %d", snap.SessionTokens)
+	if snap.SessionTokens != 0 || snap.SessionTurns != 0 || snap.SessionCost != 0 {
+		t.Errorf("expected zero session counters, got tokens=%d turns=%d cost=%f", snap.SessionTokens, snap.SessionTurns, snap.SessionCost)
 	}
-	if snap.SessionTurns != 50 {
-		t.Errorf("expected sessionTurns seeded with 50, got %d", snap.SessionTurns)
+	if snap.CarriedInTokens != 1_000_000 || snap.CarriedInTurns != 50 {
+		t.Errorf("expected carried-in 1M/50, got %d/%d", snap.CarriedInTokens, snap.CarriedInTurns)
 	}
-	if snap.SessionCost != 1.25 {
-		t.Errorf("expected sessionCost seeded with 1.25, got %f", snap.SessionCost)
+	if math.Abs(snap.CarriedInCost-1.25) > 0.001 {
+		t.Errorf("expected carried-in cost 1.25, got %f", snap.CarriedInCost)
 	}
-	if snap.FlameIntensity <= 0 {
-		t.Errorf("expected warm flameIntensity > 0 on seedToday, got %f", snap.FlameIntensity)
+	if snap.BurnTokensPerMin != 0 || snap.PeakRollingTok != 0 || snap.FlameIntensity != 0 {
+		t.Errorf("expected zero rate/peak/flame on baseline, got %f/%d/%f", snap.BurnTokensPerMin, snap.PeakRollingTok, snap.FlameIntensity)
 	}
-	if len(snap.RecentEvents) != 1 {
-		t.Fatalf("expected 1 baseline event in RecentEvents, got %d", len(snap.RecentEvents))
-	}
-	if snap.RecentEvents[0].Tokens != 1_000_000 {
-		t.Errorf("expected baseline event tokens 1M, got %d", snap.RecentEvents[0].Tokens)
+	if len(snap.RecentEvents) != 0 {
+		t.Errorf("expected no baseline events, got %d", len(snap.RecentEvents))
 	}
 
-	// 2. Second poll: +25,000 tokens and +1 turn
+	// 2. Only observed deltas increment the session.
 	t2 := now.Add(2 * time.Second)
 	res2 := []ToolResult{
 		{
@@ -800,32 +887,34 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 	if len(events2) != 1 {
 		t.Fatalf("expected 1 delta event, got %d", len(events2))
 	}
-	if snap2.SessionTokens != 1_025_000 {
-		t.Errorf("expected sessionTokens incremented to 1_025_000, got %d", snap2.SessionTokens)
+	if events2[0].Tokens != 25_000 || events2[0].Turns != 1 {
+		t.Errorf("expected +25K tok/+1 turn event, got %d/%d", events2[0].Tokens, events2[0].Turns)
 	}
-	if snap2.SessionTurns != 51 {
-		t.Errorf("expected sessionTurns incremented to 51, got %d", snap2.SessionTurns)
+	if snap2.SessionTokens != 25_000 || snap2.SessionTurns != 1 {
+		t.Errorf("expected session 25K/1, got %d/%d", snap2.SessionTokens, snap2.SessionTurns)
 	}
-	if math.Abs(snap2.SessionCost-1.30) > 0.001 {
-		t.Errorf("expected sessionCost 1.30, got %f", snap2.SessionCost)
+	if math.Abs(snap2.SessionCost-0.05) > 0.001 {
+		t.Errorf("expected session cost 0.05, got %f", snap2.SessionCost)
+	}
+	if snap2.CarriedInTokens != 1_000_000 {
+		t.Errorf("expected carried-in to remain 1M, got %d", snap2.CarriedInTokens)
+	}
+	if snap2.TodayTokens != 1_025_000 {
+		t.Errorf("expected todayTokens 1.025M, got %d", snap2.TodayTokens)
 	}
 
-	// 3. ResetSession should clear session counters back to 0
+	// 3. ResetSession clears only the launch-relative counters.
 	lt.ResetSession()
 	snapReset, _ := lt.Poll(res2, nil, t2.Add(time.Second))
-	if snapReset.SessionTokens != 0 {
-		t.Errorf("expected sessionTokens 0 after reset, got %d", snapReset.SessionTokens)
+	if snapReset.SessionTokens != 0 || snapReset.SessionTurns != 0 || snapReset.SessionCost != 0 {
+		t.Errorf("expected zero session counters after reset, got %d/%d/%f", snapReset.SessionTokens, snapReset.SessionTurns, snapReset.SessionCost)
 	}
-	if snapReset.SessionTurns != 0 {
-		t.Errorf("expected sessionTurns 0 after reset, got %d", snapReset.SessionTurns)
-	}
-	if snapReset.SessionCost != 0 {
-		t.Errorf("expected sessionCost 0 after reset, got %f", snapReset.SessionCost)
+	if snapReset.CarriedInTokens != 1_000_000 {
+		t.Errorf("expected carried-in to survive reset, got %d", snapReset.CarriedInTokens)
 	}
 
-	// 4. Activity-only tool tracking (e.g. Agy)
+	// 4. Activity-only tools also carry in without warming the session.
 	ltAct := NewLiveTracker()
-	ltAct.SetSeedToday(true)
 	actRes1 := []ToolResult{
 		{
 			Tool: ToolAgy,
@@ -839,21 +928,20 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 			},
 		},
 	}
-	actSnap1, _ := ltAct.Poll(actRes1, nil, now)
-	if actSnap1.SessionTokens != 0 {
-		t.Errorf("expected sessionTokens 0 for activity tool, got %d", actSnap1.SessionTokens)
+	actSnap1, actEvents1 := ltAct.Poll(actRes1, nil, now)
+	if len(actEvents1) != 0 {
+		t.Fatalf("expected no activity baseline events, got %d", len(actEvents1))
 	}
-	if actSnap1.SessionTurns != 300 {
-		t.Errorf("expected sessionTurns 300 for activity tool, got %d", actSnap1.SessionTurns)
+	if actSnap1.SessionTurns != 0 {
+		t.Errorf("expected session turns 0 for activity baseline, got %d", actSnap1.SessionTurns)
 	}
-	if actSnap1.ActivityIntensity <= 0 {
-		t.Errorf("expected warm activityIntensity > 0 for activity tool on seedToday")
+	if actSnap1.CarriedInTurns != 300 {
+		t.Errorf("expected carried-in turns 300, got %d", actSnap1.CarriedInTurns)
 	}
-	if actSnap1.FlameIntensity != 0 {
-		t.Errorf("expected flameIntensity 0 for activity tool, got %f", actSnap1.FlameIntensity)
+	if actSnap1.ActivityIntensity != 0 || actSnap1.FlameIntensity != 0 {
+		t.Errorf("expected zero activity/token flame on baseline, got %f/%f", actSnap1.ActivityIntensity, actSnap1.FlameIntensity)
 	}
 
-	// Delta turns for activity tool
 	actRes2 := []ToolResult{
 		{
 			Tool: ToolAgy,
@@ -874,8 +962,8 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 	if actEvents2[0].Turns != 10 || actEvents2[0].Tokens != 0 {
 		t.Errorf("expected delta event 10 turns and 0 tokens, got turns=%d tok=%d", actEvents2[0].Turns, actEvents2[0].Tokens)
 	}
-	if actSnap2.SessionTurns != 310 {
-		t.Errorf("expected sessionTurns 310, got %d", actSnap2.SessionTurns)
+	if actSnap2.SessionTurns != 10 {
+		t.Errorf("expected session turns 10, got %d", actSnap2.SessionTurns)
 	}
 	if actSnap2.BurnTurnsPerMin <= 0 {
 		t.Errorf("expected BurnTurnsPerMin > 0 for activity turns, got %f", actSnap2.BurnTurnsPerMin)
@@ -888,6 +976,44 @@ func TestLiveTracker_SeedTodayBaselineAndDelta(t *testing.T) {
 	}
 	if actSnap2.FlameIntensity != 0 {
 		t.Errorf("expected flameIntensity 0 after activity turn delta, got %f", actSnap2.FlameIntensity)
+	}
+}
+
+func TestLiveTracker_MidnightCarriedIn(t *testing.T) {
+	lt := NewLiveTracker()
+	t1 := time.Date(2026, 9, 24, 23, 59, 0, 0, time.UTC)
+	res := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 10_000_000,
+				Sessions:       500,
+				Cost:           12.50,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-09-24", Tokens: 1_000_000, Turns: 50, Cost: 1.25},
+			},
+		},
+	}
+	snap1, _ := lt.Poll(res, nil, t1)
+	if snap1.CarriedInTokens != 1_000_000 {
+		t.Fatalf("expected first-day carried-in 1M, got %d", snap1.CarriedInTokens)
+	}
+
+	t2 := time.Date(2026, 9, 25, 0, 1, 0, 0, time.UTC)
+	snap2, events2 := lt.Poll(res, nil, t2)
+	if len(events2) != 0 {
+		t.Errorf("expected no events on midnight rollover without deltas, got %d", len(events2))
+	}
+	if snap2.CarriedInTokens != 0 || snap2.CarriedInTurns != 0 || snap2.CarriedInCost != 0 {
+		t.Errorf("expected zero new-day carried-in, got %d/%d/%f", snap2.CarriedInTokens, snap2.CarriedInTurns, snap2.CarriedInCost)
+	}
+	if !snap2.CarriedInAt.Equal(t2) {
+		t.Errorf("expected carried-in timestamp %v, got %v", t2, snap2.CarriedInAt)
+	}
+	if snap2.SessionTokens != 0 || snap2.SessionTurns != 0 {
+		t.Errorf("expected session to remain zero, got %d/%d", snap2.SessionTokens, snap2.SessionTurns)
 	}
 }
 
