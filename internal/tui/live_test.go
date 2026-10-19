@@ -207,8 +207,8 @@ func TestLiveModel_BorderAlignmentAcrossWidths(t *testing.T) {
 			})
 
 			view := m.View().Content
-			if !strings.Contains(view, "gemini-3.8-flash") {
-				t.Errorf("expected view to contain canonical model gemini-3.8-flash")
+			if calcColWidths(w-8).showModel && !strings.Contains(view, "gemini-3.8-flash") {
+				t.Errorf("expected view to contain canonical model gemini-3.8-flash at width %d", w)
 			}
 			lines := strings.Split(view, "\n")
 
@@ -690,6 +690,31 @@ func TestLiveTUI_FormatSpeed_Fractional(t *testing.T) {
 	}
 }
 
+func TestLiveTUI_FlameCeilingCaption(t *testing.T) {
+	m := NewLiveModel(nil, time.Second, "", false)
+	m.width = 100
+	m.height = 30
+	m.snapshot.FlameIntensity = 3_400_000.0 / 9_000_000.0
+	m.snapshot.FlameMetric = "tokens"
+	m.snapshot.FlameCeiling = 9_000_000
+
+	view := m.View().Content
+	if !strings.Contains(view, "38% of 9.0M tok/m") {
+		t.Errorf("expected token ceiling caption, got:\n%s", view)
+	}
+	if !strings.Contains(view, "WARM") {
+		t.Errorf("expected WARM state, got:\n%s", view)
+	}
+
+	m.snapshot.FlameIntensity = 23.0 / 60.0
+	m.snapshot.FlameMetric = "steps"
+	m.snapshot.FlameCeiling = 60
+	view = m.View().Content
+	if !strings.Contains(view, "38% of 60 step/m") {
+		t.Errorf("expected step ceiling caption, got:\n%s", view)
+	}
+}
+
 func TestLiveTUI_BucketLabels(t *testing.T) {
 	m := NewLiveModel(nil, time.Second, "", false)
 	m.width = 100
@@ -866,7 +891,7 @@ func TestLiveTUI_GaugeBracketWidthAlignment(t *testing.T) {
 	for _, w := range widths {
 		t.Run(fmt.Sprintf("Width_%d", w), func(t *testing.T) {
 			innerWidth := w - 4
-			flameLine := formatFlameLine(0.5, "claude-3-5-sonnet", innerWidth, false)
+			flameLine := formatFlameLine(0.5, "tokens", thermal.DefaultFlameCeilingTokens, "claude-3-5-sonnet", innerWidth, false)
 			sparkLine := formatSparkLine([60]int64{}, 1000, innerWidth, false, false)
 
 			flameOpen := strings.Index(flameLine, "[")

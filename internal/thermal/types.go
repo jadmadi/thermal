@@ -28,42 +28,44 @@ const (
 )
 
 type Options struct {
-	Tool          string
-	DBPath        string
-	Weeks         int
-	JSON          bool
-	Format        string // "text", "json", "md", "markdown"
-	NoColor       bool
-	Verbose       bool
-	Report        string // "", "daily", "weekly", "monthly", "projects"
-	Since         string // YYYY-MM-DD or YYYYMMDD
-	Until         string
-	Last          int
-	Order         string // "asc" or "desc", default "desc"
-	Breakdown     bool
-	Chart         bool          // print bar rows under report tables
-	StartOfWeek   string        // sunday..saturday, default sunday
-	Offline       bool          // never fetch pricing, use cache only
-	NoEstimate    bool          // report stored cost only, skip pricing
-	NoUpdateCheck bool          // disable daily automatic update check
-	Sort          string        // tokens, cost, days, recent; default tokens
-	Top           int           // project rows to print, 0 means all
-	Metric        string        // tokens or cost; analytics verbs
-	By            string        // tool or model; mix verb
-	Grain         string        // day, week, month; mix verb
-	Against       string        // target model for replay simulation
-	Compare       string        // comma-separated plans/models for replay comparison
-	Dense         bool          // high-density 9-box FinOps grid view (default for stats)
-	Distribution  bool          // token/cost distribution histogram view (stats)
-	Port          int           // port for embedded web server (serve verb, default 8080)
-	Host          string        // host for embedded web server (serve verb, default 127.0.0.1)
-	Open          bool          // open browser automatically on serve
-	NoOpen        bool          // disable automatic browser opening on serve
-	Interval      time.Duration // polling interval for live monitor (live verb, default 1s)
-	Stream        bool          // stream continuous NDJSON live events (live verb)
-	Fresh         bool          // start live session counters from 0 instead of seeding from today
-	Nerd          bool          // use Nerd Font glyphs in statusline
-	Plain         bool          // plain text output without glyphs or icons
+	Tool            string
+	DBPath          string
+	Weeks           int
+	JSON            bool
+	Format          string // "text", "json", "md", "markdown"
+	NoColor         bool
+	Verbose         bool
+	Report          string // "", "daily", "weekly", "monthly", "projects"
+	Since           string // YYYY-MM-DD or YYYYMMDD
+	Until           string
+	Last            int
+	Order           string // "asc" or "desc", default "desc"
+	Breakdown       bool
+	Chart           bool          // print bar rows under report tables
+	StartOfWeek     string        // sunday..saturday, default sunday
+	Offline         bool          // never fetch pricing, use cache only
+	NoEstimate      bool          // report stored cost only, skip pricing
+	NoUpdateCheck   bool          // disable daily automatic update check
+	Sort            string        // tokens, cost, days, recent; default tokens
+	Top             int           // project rows to print, 0 means all
+	Metric          string        // tokens or cost; analytics verbs
+	By              string        // tool or model; mix verb
+	Grain           string        // day, week, month; mix verb
+	Against         string        // target model for replay simulation
+	Compare         string        // comma-separated plans/models for replay comparison
+	Dense           bool          // high-density 9-box FinOps grid view (default for stats)
+	Distribution    bool          // token/cost distribution histogram view (stats)
+	Port            int           // port for embedded web server (serve verb, default 8080)
+	Host            string        // host for embedded web server (serve verb, default 127.0.0.1)
+	Open            bool          // open browser automatically on serve
+	NoOpen          bool          // disable automatic browser opening on serve
+	Interval        time.Duration // polling interval for live monitor (live verb, default 1s)
+	Stream          bool          // stream continuous NDJSON live events (live verb)
+	Fresh           bool          // bypass cached statusline data; live sessions always start at launch
+	FlameCeiling    float64       // live flame ceiling in active metric units per minute
+	FlameCeilingSet bool          // whether FlameCeiling was explicitly set
+	Nerd            bool          // use Nerd Font glyphs in statusline
+	Plain           bool          // plain text output without glyphs or icons
 }
 
 type Summary struct {

@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+const (
+	DefaultFlameCeilingTokens = 9_000_000
+	DefaultFlameCeilingSteps  = 60
+)
+
 // LiveCostKind classifies how a live event's cost was obtained.
 type LiveCostKind string
 
@@ -45,75 +50,75 @@ type LiveRollup struct {
 
 // LiveSnapshot is the instantaneous state of live token burn, velocity, and recent events.
 type LiveSnapshot struct {
-	Timestamp         time.Time        `json:"timestamp"`
-	TodayTokens       int64            `json:"todayTokens"`
-	TodayCost         float64          `json:"todayCost"`
-	TodayTurns        int              `json:"todayTurns"`
-	TodayCacheHit     float64          `json:"todayCacheHit"`
-	CarriedInTokens   int64            `json:"carriedInTokens"`
-	CarriedInTurns    int              `json:"carriedInTurns"`
-	CarriedInCost     float64          `json:"carriedInCost"`
-	CarriedInAt       time.Time        `json:"carriedInAt"`
-	SessionTokens     int64            `json:"sessionTokens"`
-	SessionCost       float64          `json:"sessionCost"`
-	SessionTurns      int              `json:"sessionTurns"`
-	UnpricedTokens    int64            `json:"unpricedTokens"`
-	UnpricedEvents    int              `json:"unpricedEvents"`
-	BurnTokensPerMin  float64          `json:"burnTokensPerMin"`
-	BurnTokensPerSec  float64          `json:"burnTokensPerSec"`
-	BurnCostPerHr     float64          `json:"burnCostPerHr"`
-	FlameIntensity    float64          `json:"flameIntensity"` // 0.0 to 1.0 (token flame)
-	BurnTurnsPerMin   float64          `json:"burnTurnsPerMin,omitempty"`
-	BurnTurnsPerSec   float64          `json:"burnTurnsPerSec,omitempty"`
-	ActivityIntensity float64          `json:"activityIntensity,omitempty"` // 0.0 to 1.0 (turn/step flame)
-	ActiveModel       string           `json:"activeModel,omitempty"`
-	ActiveProject     string           `json:"activeProject,omitempty"`
-	TodayProjects     []LiveRollup     `json:"todayProjects,omitempty"`
-	TodayModels       []LiveRollup     `json:"todayModels,omitempty"`
-	RecentEvents      []LiveEvent      `json:"recentEvents"`
-	RollingTokens     [60]int64        `json:"rollingTokens"` // one-second buckets
-	PeakTokensPerSec  int64            `json:"peakTokensPerSec"`
-	RollingTurns      [60]int          `json:"rollingTurns,omitempty"` // one-second buckets
-	PeakStepsPerSec   int              `json:"peakStepsPerSec"`
-	BucketSeconds     int              `json:"bucketSeconds"`
-	WindowSeconds     int              `json:"windowSeconds"`
-	ToolTotals        map[string]int64 `json:"toolTotals"`
+	Timestamp        time.Time        `json:"timestamp"`
+	TodayTokens      int64            `json:"todayTokens"`
+	TodayCost        float64          `json:"todayCost"`
+	TodayTurns       int              `json:"todayTurns"`
+	TodayCacheHit    float64          `json:"todayCacheHit"`
+	CarriedInTokens  int64            `json:"carriedInTokens"`
+	CarriedInTurns   int              `json:"carriedInTurns"`
+	CarriedInCost    float64          `json:"carriedInCost"`
+	CarriedInAt      time.Time        `json:"carriedInAt"`
+	SessionTokens    int64            `json:"sessionTokens"`
+	SessionCost      float64          `json:"sessionCost"`
+	SessionTurns     int              `json:"sessionTurns"`
+	UnpricedTokens   int64            `json:"unpricedTokens"`
+	UnpricedEvents   int              `json:"unpricedEvents"`
+	BurnTokensPerMin float64          `json:"burnTokensPerMin"`
+	BurnTokensPerSec float64          `json:"burnTokensPerSec"`
+	BurnCostPerHr    float64          `json:"burnCostPerHr"`
+	FlameIntensity   float64          `json:"flameIntensity"` // 0.0 to 1.0 of FlameCeiling
+	FlameMetric      string           `json:"flameMetric"`    // tokens or steps
+	FlameCeiling     float64          `json:"flameCeiling"`
+	BurnTurnsPerMin  float64          `json:"burnTurnsPerMin,omitempty"`
+	BurnTurnsPerSec  float64          `json:"burnTurnsPerSec,omitempty"`
+	ActiveModel      string           `json:"activeModel,omitempty"`
+	ActiveProject    string           `json:"activeProject,omitempty"`
+	TodayProjects    []LiveRollup     `json:"todayProjects,omitempty"`
+	TodayModels      []LiveRollup     `json:"todayModels,omitempty"`
+	RecentEvents     []LiveEvent      `json:"recentEvents"`
+	RollingTokens    [60]int64        `json:"rollingTokens"` // one-second buckets
+	PeakTokensPerSec int64            `json:"peakTokensPerSec"`
+	RollingTurns     [60]int          `json:"rollingTurns,omitempty"` // one-second buckets
+	PeakStepsPerSec  int              `json:"peakStepsPerSec"`
+	BucketSeconds    int              `json:"bucketSeconds"`
+	WindowSeconds    int              `json:"windowSeconds"`
+	ToolTotals       map[string]int64 `json:"toolTotals"`
 }
 
 // LiveTracker tracks incremental tool token deltas, rolling burn velocity, and flame intensity.
 type LiveTracker struct {
-	mu                sync.Mutex
-	initialized       bool
-	todayDay          string
-	pricer            Pricer
-	noEstimate        bool
-	prevTotals        map[string]int64   // tool -> lifetime tokens seen
-	prevTurns         map[string]int     // tool -> lifetime turns seen
-	prevCosts         map[string]float64 // tool -> lifetime costs seen
-	prevModels        map[string]map[string]int64
-	prevProjTokens    map[string]int64 // tool\x00project -> tokens seen
-	prevProjTurns     map[string]int   // tool\x00project -> turns seen
-	carriedInTokens   int64
-	carriedInTurns    int
-	carriedInCost     float64
-	carriedInAt       time.Time
-	sessionTokens     int64
-	sessionCost       float64
-	sessionTurns      int
-	unpricedTokens    int64
-	unpricedEvents    int
-	todayProjects     []LiveRollup
-	todayModels       []LiveRollup
-	burnBuckets       [60]int64 // rolling 60 seconds of tokens
-	turnBuckets       [60]int   // rolling 60 seconds of turns
-	bucketIndex       int
-	lastBucketTime    time.Time
-	flameIntensity    float64
-	activityIntensity float64
-	activeModel       string
-	activeProject     string
-	events            []LiveEvent
-	maxEvents         int
+	mu              sync.Mutex
+	initialized     bool
+	todayDay        string
+	pricer          Pricer
+	noEstimate      bool
+	prevTotals      map[string]int64   // tool -> lifetime tokens seen
+	prevTurns       map[string]int     // tool -> lifetime turns seen
+	prevCosts       map[string]float64 // tool -> lifetime costs seen
+	prevModels      map[string]map[string]int64
+	prevProjTokens  map[string]int64 // tool\x00project -> tokens seen
+	prevProjTurns   map[string]int   // tool\x00project -> turns seen
+	carriedInTokens int64
+	carriedInTurns  int
+	carriedInCost   float64
+	carriedInAt     time.Time
+	sessionTokens   int64
+	sessionCost     float64
+	sessionTurns    int
+	unpricedTokens  int64
+	unpricedEvents  int
+	todayProjects   []LiveRollup
+	todayModels     []LiveRollup
+	burnBuckets     [60]int64 // rolling 60 seconds of tokens
+	turnBuckets     [60]int   // rolling 60 seconds of turns
+	bucketIndex     int
+	lastBucketTime  time.Time
+	flameCeiling    float64
+	activeModel     string
+	activeProject   string
+	events          []LiveEvent
+	maxEvents       int
 }
 
 // NewLiveTracker creates a tracker configured to track live token burn events.
@@ -149,6 +154,14 @@ func (lt *LiveTracker) SetNoEstimate(noEst bool) {
 	lt.mu.Lock()
 	defer lt.mu.Unlock()
 	lt.noEstimate = noEst
+}
+
+// SetFlameCeiling sets the flame ceiling in the active metric's units per
+// minute. A non-positive value keeps the metric-specific default.
+func (lt *LiveTracker) SetFlameCeiling(ceiling float64) {
+	lt.mu.Lock()
+	defer lt.mu.Unlock()
+	lt.flameCeiling = ceiling
 }
 
 // ResetSession zeroes session-accumulated tokens and costs without affecting lifetime baselines.
@@ -345,14 +358,6 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 				lt.bucketIndex = (lt.bucketIndex + 1) % 60
 				lt.burnBuckets[lt.bucketIndex] = 0
 				lt.turnBuckets[lt.bucketIndex] = 0
-				lt.flameIntensity *= 0.85
-				lt.activityIntensity *= 0.85
-			}
-			if lt.flameIntensity < 0.02 {
-				lt.flameIntensity = 0
-			}
-			if lt.activityIntensity < 0.02 {
-				lt.activityIntensity = 0
 			}
 			if rawSteps > 60 {
 				lt.lastBucketTime = now
@@ -932,12 +937,6 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 				lt.sessionTurns += deltaTurns
 
 				lt.addRollingDelta(deltaTok, deltaTurns, elapsed)
-				if deltaTok > 0 {
-					lt.flameIntensity = math.Min(1.0, lt.flameIntensity+0.5)
-				}
-				if deltaTurns > 0 {
-					lt.activityIntensity = math.Min(1.0, lt.activityIntensity+0.4)
-				}
 				if bestModel != "" {
 					lt.activeModel = bestModel
 				}
@@ -1008,40 +1007,61 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		burnCostHr = (burnPerMin * 60.0 / 1_000_000.0) * 3.50
 	}
 
+	flameMetric := "tokens"
+	flameRate := burnPerMin
+	flameCeiling := float64(DefaultFlameCeilingTokens)
+	if burnPerMin <= 0 && turnPerMin > 0 {
+		flameMetric = "steps"
+		flameRate = turnPerMin
+		flameCeiling = DefaultFlameCeilingSteps
+	} else if burnPerMin <= 0 && turnPerMin <= 0 && todayTok == 0 && todayTurns > 0 {
+		flameMetric = "steps"
+		flameRate = 0
+		flameCeiling = DefaultFlameCeilingSteps
+	}
+	if lt.flameCeiling > 0 {
+		flameCeiling = lt.flameCeiling
+	}
+	flameIntensity := 0.0
+	if flameCeiling > 0 {
+		flameIntensity = math.Min(1.0, flameRate/flameCeiling)
+	}
+
 	snap := LiveSnapshot{
-		Timestamp:         now,
-		TodayTokens:       todayTok,
-		TodayCost:         todayCost,
-		TodayTurns:        todayTurns,
-		TodayCacheHit:     cacheHit,
-		CarriedInTokens:   lt.carriedInTokens,
-		CarriedInTurns:    lt.carriedInTurns,
-		CarriedInCost:     lt.carriedInCost,
-		CarriedInAt:       lt.carriedInAt,
-		SessionTokens:     lt.sessionTokens,
-		SessionCost:       lt.sessionCost,
-		SessionTurns:      lt.sessionTurns,
-		UnpricedTokens:    lt.unpricedTokens,
-		UnpricedEvents:    lt.unpricedEvents,
-		BurnTokensPerMin:  burnPerMin,
-		BurnTokensPerSec:  burnPerSec,
-		BurnCostPerHr:     burnCostHr,
-		FlameIntensity:    lt.flameIntensity,
-		BurnTurnsPerMin:   turnPerMin,
-		BurnTurnsPerSec:   turnPerSec,
-		ActivityIntensity: lt.activityIntensity,
-		ActiveModel:       lt.activeModel,
-		ActiveProject:     lt.activeProject,
-		TodayProjects:     lt.todayProjects,
-		TodayModels:       lt.todayModels,
-		RecentEvents:      append([]LiveEvent{}, lt.events...),
-		RollingTokens:     lt.burnBuckets,
-		PeakTokensPerSec:  peakRolling,
-		RollingTurns:      lt.turnBuckets,
-		PeakStepsPerSec:   peakTurns,
-		BucketSeconds:     1,
-		WindowSeconds:     60,
-		ToolTotals:        toolTotals,
+		Timestamp:        now,
+		TodayTokens:      todayTok,
+		TodayCost:        todayCost,
+		TodayTurns:       todayTurns,
+		TodayCacheHit:    cacheHit,
+		CarriedInTokens:  lt.carriedInTokens,
+		CarriedInTurns:   lt.carriedInTurns,
+		CarriedInCost:    lt.carriedInCost,
+		CarriedInAt:      lt.carriedInAt,
+		SessionTokens:    lt.sessionTokens,
+		SessionCost:      lt.sessionCost,
+		SessionTurns:     lt.sessionTurns,
+		UnpricedTokens:   lt.unpricedTokens,
+		UnpricedEvents:   lt.unpricedEvents,
+		BurnTokensPerMin: burnPerMin,
+		BurnTokensPerSec: burnPerSec,
+		BurnCostPerHr:    burnCostHr,
+		FlameIntensity:   flameIntensity,
+		FlameMetric:      flameMetric,
+		FlameCeiling:     flameCeiling,
+		BurnTurnsPerMin:  turnPerMin,
+		BurnTurnsPerSec:  turnPerSec,
+		ActiveModel:      lt.activeModel,
+		ActiveProject:    lt.activeProject,
+		TodayProjects:    lt.todayProjects,
+		TodayModels:      lt.todayModels,
+		RecentEvents:     append([]LiveEvent{}, lt.events...),
+		RollingTokens:    lt.burnBuckets,
+		PeakTokensPerSec: peakRolling,
+		RollingTurns:     lt.turnBuckets,
+		PeakStepsPerSec:  peakTurns,
+		BucketSeconds:    1,
+		WindowSeconds:    60,
+		ToolTotals:       toolTotals,
 	}
 
 	return snap, newEvents

@@ -77,8 +77,11 @@ func TestLiveTracker_InitialBaseline(t *testing.T) {
 	if snap.BurnTokensPerMin != 0 || snap.BurnTokensPerSec != 0 || snap.BurnTurnsPerMin != 0 {
 		t.Errorf("expected zero burn on baseline, got %f/%f/%f", snap.BurnTokensPerMin, snap.BurnTokensPerSec, snap.BurnTurnsPerMin)
 	}
-	if snap.FlameIntensity != 0 || snap.ActivityIntensity != 0 {
-		t.Errorf("expected zero flame on baseline, got %f/%f", snap.FlameIntensity, snap.ActivityIntensity)
+	if snap.FlameIntensity != 0 {
+		t.Errorf("expected zero flame on baseline, got %f", snap.FlameIntensity)
+	}
+	if snap.FlameMetric != "tokens" || snap.FlameCeiling != DefaultFlameCeilingTokens {
+		t.Errorf("expected token flame ceiling, got %q/%f", snap.FlameMetric, snap.FlameCeiling)
 	}
 	if snap.PeakTokensPerSec != 0 || snap.PeakStepsPerSec != 0 {
 		t.Errorf("expected zero peak on baseline, got %d/%d", snap.PeakTokensPerSec, snap.PeakStepsPerSec)
@@ -162,7 +165,7 @@ func TestLiveTracker_DeltaDetection(t *testing.T) {
 	}
 }
 
-func TestLiveTracker_FlameDecayAndReset(t *testing.T) {
+func TestLiveTracker_FlameWindowExpiry(t *testing.T) {
 	lt := NewLiveTracker()
 	t1 := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
 
@@ -186,18 +189,21 @@ func TestLiveTracker_FlameDecayAndReset(t *testing.T) {
 		t.Fatalf("expected non-zero flame intensity on burst")
 	}
 
-	// 5 seconds idle
-	t3 := t2.Add(5 * time.Second)
+	// The rate window expires naturally after 60 seconds of no activity.
+	t3 := t2.Add(61 * time.Second)
 	snap3, _ := lt.Poll(res, nil, t3)
-	if snap3.FlameIntensity >= initialFlame {
-		t.Errorf("expected flame to decay, got %f >= %f", snap3.FlameIntensity, initialFlame)
+	if snap3.FlameIntensity != 0 {
+		t.Errorf("expected flame to expire with the 60s window, got %f", snap3.FlameIntensity)
 	}
 
-	// Reset Session
+	// Reset Session clears counters without reintroducing flame.
 	lt.ResetSession()
 	snap4, _ := lt.Poll(res, nil, t3.Add(1*time.Second))
 	if snap4.SessionTokens != 0 {
 		t.Errorf("expected sessionTokens 0 after reset, got %d", snap4.SessionTokens)
+	}
+	if snap4.FlameIntensity != 0 {
+		t.Errorf("expected flame to remain zero after reset, got %f", snap4.FlameIntensity)
 	}
 }
 
@@ -483,8 +489,14 @@ func TestLiveTracker_ActivityOnlyNoTokenBurn(t *testing.T) {
 	if snap2.BurnTokensPerMin != 0 {
 		t.Errorf("expected BurnTokensPerMin 0 for activity-only tool, got %f", snap2.BurnTokensPerMin)
 	}
-	if snap2.FlameIntensity != 0 {
-		t.Errorf("expected FlameIntensity 0, got %f", snap2.FlameIntensity)
+	if snap2.FlameMetric != "steps" {
+		t.Errorf("expected step flame metric, got %q", snap2.FlameMetric)
+	}
+	if snap2.FlameCeiling != DefaultFlameCeilingSteps {
+		t.Errorf("expected step flame ceiling %d, got %f", DefaultFlameCeilingSteps, snap2.FlameCeiling)
+	}
+	if snap2.FlameIntensity <= 0 {
+		t.Errorf("expected step flame intensity > 0, got %f", snap2.FlameIntensity)
 	}
 	// An activity event may be generated for turn tracking, but with 0 tokens
 	if len(events2) > 0 && events2[0].Tokens != 0 {
@@ -766,6 +778,54 @@ func TestLiveTracker_PricingAndNoEstimate(t *testing.T) {
 	snapNoEst, _ := ltNoEst.Poll(res, nil, t1)
 	if snapNoEst.TodayCost != 0.0 {
 		t.Errorf("expected todayCost 0.0 under no-estimate, got %f", snapNoEst.TodayCost)
+	}
+}
+
+func TestLiveTracker_FlameScale(t *testing.T) {
+	run := func(t *testing.T, lt *LiveTracker, firstTurns, secondTurns int, secondTokens int64) LiveSnapshot {
+		t.Helper()
+		t0 := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+		first := []ToolResult{{
+			Tool:    ToolOpenCode,
+			Name:    "OpenCode",
+			Summary: Summary{LifetimeTokens: 1_000_000},
+			Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_000_000, Turns: firstTurns}},
+		}}
+		lt.Poll(first, nil, t0)
+		second := []ToolResult{{
+			Tool:    ToolOpenCode,
+			Name:    "OpenCode",
+			Summary: Summary{LifetimeTokens: 1_000_000 + secondTokens},
+			Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_000_000 + secondTokens, Turns: secondTurns}},
+		}}
+		snap, _ := lt.Poll(second, nil, t0.Add(60*time.Second))
+		return snap
+	}
+
+	tokenSnap := run(t, NewLiveTracker(), 50, 50, 3_400_000)
+	if tokenSnap.FlameMetric != "tokens" || tokenSnap.FlameCeiling != DefaultFlameCeilingTokens {
+		t.Fatalf("expected token flame, got %q/%f", tokenSnap.FlameMetric, tokenSnap.FlameCeiling)
+	}
+	if math.Abs(tokenSnap.FlameIntensity-(3_400_000.0/DefaultFlameCeilingTokens)) > 0.001 {
+		t.Errorf("expected 3.4M/9M intensity, got %f", tokenSnap.FlameIntensity)
+	}
+
+	stepSnap := run(t, NewLiveTracker(), 0, 23, 0)
+	if stepSnap.FlameMetric != "steps" || stepSnap.FlameCeiling != DefaultFlameCeilingSteps {
+		t.Fatalf("expected step flame, got %q/%f", stepSnap.FlameMetric, stepSnap.FlameCeiling)
+	}
+	if math.Abs(stepSnap.FlameIntensity-(23.0/DefaultFlameCeilingSteps)) > 0.001 {
+		t.Errorf("expected 23/60 intensity, got %f", stepSnap.FlameIntensity)
+	}
+
+	custom := NewLiveTracker()
+	custom.SetFlameCeiling(4_500_000)
+	customSnap := run(t, custom, 50, 50, 3_400_000)
+	if customSnap.FlameCeiling != 4_500_000 {
+		t.Fatalf("expected custom ceiling 4.5M, got %f", customSnap.FlameCeiling)
+	}
+	if math.Abs(customSnap.FlameIntensity-(3_400_000.0/4_500_000)) > 0.001 {
+		t.Errorf("expected 3.4M/4.5M intensity, got %f", customSnap.FlameIntensity)
 	}
 }
 
@@ -1069,8 +1129,11 @@ func TestLiveTracker_LaunchRelativeSession(t *testing.T) {
 	if actSnap1.CarriedInTurns != 300 {
 		t.Errorf("expected carried-in turns 300, got %d", actSnap1.CarriedInTurns)
 	}
-	if actSnap1.ActivityIntensity != 0 || actSnap1.FlameIntensity != 0 {
-		t.Errorf("expected zero activity/token flame on baseline, got %f/%f", actSnap1.ActivityIntensity, actSnap1.FlameIntensity)
+	if actSnap1.FlameIntensity != 0 {
+		t.Errorf("expected zero flame on activity baseline, got %f", actSnap1.FlameIntensity)
+	}
+	if actSnap1.FlameMetric != "steps" || actSnap1.FlameCeiling != DefaultFlameCeilingSteps {
+		t.Errorf("expected step flame ceiling, got %q/%f", actSnap1.FlameMetric, actSnap1.FlameCeiling)
 	}
 
 	actRes2 := []ToolResult{
@@ -1102,11 +1165,11 @@ func TestLiveTracker_LaunchRelativeSession(t *testing.T) {
 	if actSnap2.BurnTokensPerMin != 0 {
 		t.Errorf("expected BurnTokensPerMin 0 for activity turns, got %f", actSnap2.BurnTokensPerMin)
 	}
-	if actSnap2.ActivityIntensity <= 0 {
-		t.Errorf("expected activityIntensity > 0 after activity turn delta, got %f", actSnap2.ActivityIntensity)
+	if actSnap2.FlameIntensity <= 0 {
+		t.Errorf("expected step flame intensity > 0 after activity delta, got %f", actSnap2.FlameIntensity)
 	}
-	if actSnap2.FlameIntensity != 0 {
-		t.Errorf("expected flameIntensity 0 after activity turn delta, got %f", actSnap2.FlameIntensity)
+	if actSnap2.FlameMetric != "steps" {
+		t.Errorf("expected step flame metric, got %q", actSnap2.FlameMetric)
 	}
 }
 

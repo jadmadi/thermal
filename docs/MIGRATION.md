@@ -596,6 +596,35 @@ For poll-sized deltas, read `recentEvents[].tokens` and `recentEvents[].turns`. 
 
 ---
 
+### Changed: Live Flame Ceiling and Metric
+<a id="changed-live-flame-ceiling"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'activityIntensity\|flameIntensity\|flame-ceiling' .` or consumers of `thermal live --json`.
+- **Detection signal**: `activityIntensity` is removed. `flameIntensity` is now `rate / flameCeiling` for one metric, and snapshots include `flameMetric` (`tokens` or `steps`) and `flameCeiling`. `--flame-ceiling` is available on `thermal live`.
+
+**What changed and why**:
+The old flame added 0.5 per token poll and 0.4 per turn poll, decayed by 0.85 per second, and the TUI took the larger of the two values. That mixed token and step events and made 23 step/min look hotter than 3.4M tok/min. Flame now uses one metric at a time: tokens when token burn exists, otherwise steps. Intensity is `60-second rate / ceiling`, with defaults of 9,000,000 tok/min and 60 step/min, and the state thresholds remain 60% BURNING, 20% WARM, and 2% COOLING. The ceiling is configurable with `--flame-ceiling=N`, where `N` is a positive number in the active metric's units and accepts `K`, `M`, and `B` suffixes.
+
+**Before / After**:
+```text
+# Before: event-count flame, mixed metrics
+Flame: [██████████░░░░]  72%  BURNING   # 23 step/min
+Flame: [█████░░░░░░░░░]  37%  WARM      # 3.4M tok/min
+
+# After: rate / ceiling, one metric
+Flame: [█████░░░░░░░░░]  38% of 60 step/m  WARM
+Flame: [█████░░░░░░░░░]  38% of 9.0M tok/m WARM
+```
+
+**The fix**:
+Read `flameMetric` and `flameCeiling` to interpret `flameIntensity`; do not read `activityIntensity`. To change the scale, pass `--flame-ceiling=9M` or `--flame-ceiling=60`; the value applies to the active metric and is reflected in both the TUI and JSON.
+
+**Escape hatch**:
+For raw rates independent of the gauge, use `burnTokensPerMin`, `burnTokensPerSec`, `burnTurnsPerMin`, and `burnTurnsPerSec`. The flame is a presentation ratio and does not change token or cost totals.
+
+---
+
 ### Changed: Web Telemetry Parity and Filtering Options
 <a id="changed-web-telemetry-parity"></a>
 

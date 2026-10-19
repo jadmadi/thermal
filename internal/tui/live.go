@@ -64,8 +64,11 @@ type LiveModel struct {
 }
 
 // NewLiveModel constructs an initialized LiveModel.
-func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool) LiveModel {
+func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string, colorful bool, flameCeiling ...float64) LiveModel {
 	tracker := thermal.NewLiveTracker()
+	if len(flameCeiling) > 0 {
+		tracker.SetFlameCeiling(flameCeiling[0])
+	}
 	now := time.Now()
 
 	var initialSnap thermal.LiveSnapshot
@@ -334,7 +337,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 
 	burnRate := m.snapshot.BurnTokensPerMin
 	burnSpeed := m.snapshot.BurnTokensPerSec
-	intensity := math.Max(m.snapshot.FlameIntensity, m.snapshot.ActivityIntensity)
+	intensity := m.snapshot.FlameIntensity
 	rateIsActivity := isActivity
 
 	if !isActivity && m.snapshot.BurnTokensPerMin <= 0 && m.snapshot.BurnTurnsPerMin > 0 {
@@ -393,7 +396,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	}
 
 	// 3. Flame Intensity Gauge
-	flameLine := formatFlameLine(intensity, m.snapshot.ActiveModel, innerWidth, colors)
+	flameLine := formatFlameLine(intensity, m.snapshot.FlameMetric, m.snapshot.FlameCeiling, m.snapshot.ActiveModel, innerWidth, colors)
 
 	// 4. Rolling 60s Sparkline
 	hasTokenSpark := m.snapshot.PeakTokensPerSec > 0
@@ -561,7 +564,7 @@ func (m LiveModel) renderHelp() string {
 		"",
 		theme.Secondary.SprintBold(colors, "  Real-Time Metrics & Indicators:"),
 		"    Burn Velocity  Calculated over a rolling 60-second activity window",
-		"    Flame Meter    Visual burst intensity; decays naturally when idle",
+		"    Flame Meter    Rate / ceiling; tokens default 9M/min, steps default 60/min",
 		"    Rolling 60s    Second-by-second activity sparkline across the past minute",
 		"    Event Ticker   Separate TOKENS/STEPS columns with model, project, age, and cost",
 		"    Ticker Marks   * = older than 60s; ! = over 3x the visible median",
@@ -896,7 +899,7 @@ func formatIntensityBadge(intensity float64, colors bool) string {
 	}
 }
 
-func formatFlameLine(intensity float64, model string, innerWidth int, colors bool) string {
+func formatFlameLine(intensity float64, metric string, ceiling float64, model string, innerWidth int, colors bool) string {
 	barW := gaugeWidth(innerWidth)
 
 	var barStr string
@@ -935,7 +938,11 @@ func formatFlameLine(intensity float64, model string, innerWidth int, colors boo
 		barStyled = "[" + barStr + "]"
 	}
 
-	prefix := fmt.Sprintf("  Flame: %s %s  %s", barStyled, pctStr, state)
+	ceilingStr := thermal.CompactNumber(int64(math.Round(ceiling))) + " tok/m"
+	if metric == "steps" {
+		ceilingStr = fmt.Sprintf("%.0f step/m", ceiling)
+	}
+	prefix := fmt.Sprintf("  Flame: %s %s of %s  %s", barStyled, pctStr, ceilingStr, state)
 	prefixWidth := ansi.StringWidth(prefix)
 
 	modClean := loaders.CanonicalModelName(cleanModelName(model))

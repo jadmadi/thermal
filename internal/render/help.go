@@ -189,6 +189,7 @@ func RenderHelp(noColor bool) string {
 			Items: []HelpItem{
 				{Name: "--tool <name>", Desc: "Filter to a single tool (default: all)"},
 				{Name: "--interval <dur>", Desc: "Polling interval for live monitor (default: 1s)"},
+				{Name: "--flame-ceiling <N>", Desc: "Live flame ceiling in active units per minute (e.g. 9M or 60)"},
 				{Name: "--since <date>", Desc: "Start date filter (YYYY-MM-DD or YYYYMMDD)"},
 				{Name: "--until <date>", Desc: "End date filter (YYYY-MM-DD or YYYYMMDD)"},
 				{Name: "--last <N>", Desc: "Limit to last N days, weeks, or months"},
@@ -229,7 +230,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--host <host>", Desc: "Host for embedded web server (web/serve, default: 127.0.0.1)"},
 				{Name: "--open", Desc: "Open browser automatically on web/serve"},
 				{Name: "--offline", Desc: "Use cached models.dev pricing catalog without network"},
-				{Name: "--fresh", Desc: "Start live session counters from 0 instead of today's total"},
+				{Name: "--fresh", Desc: "Bypass cached statusline data; live sessions always start at launch"},
 				{Name: "--stream, -f", Desc: "Stream continuous NDJSON live events (live verb)"},
 				{Name: "--json", Desc: "Output structured JSON (never launches TUI or web)"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},

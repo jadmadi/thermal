@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/signal"
 	"strconv"
@@ -101,6 +102,8 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
 	flag.BoolVar(&opts.NoUpdateCheck, "no-update-check", false, "Disable daily automatic update check")
 	flag.DurationVar(&opts.Interval, "interval", time.Second, "Polling interval for live monitor (default: 1s)")
+	var flameCeilingRaw string
+	flag.StringVar(&flameCeilingRaw, "flame-ceiling", "", "Live flame ceiling in active units per minute (e.g. 9M or 60)")
 	flag.BoolVar(&opts.Stream, "stream", false, "Stream continuous NDJSON live events (live verb)")
 	flag.BoolVar(&opts.Stream, "follow", false, "Stream continuous NDJSON live events (live verb shorthand)")
 	flag.BoolVar(&opts.Stream, "f", false, "Stream continuous NDJSON live events (live verb shorthand)")
@@ -134,6 +137,8 @@ func parseArgs() thermal.Options {
 			denseVal = opts.Dense
 		case "metric":
 			metricExplicit = true
+		case "flame-ceiling":
+			opts.FlameCeilingSet = true
 		}
 	})
 
@@ -287,6 +292,14 @@ func parseArgs() thermal.Options {
 					opts.Interval = time.Duration(sec * float64(time.Second))
 				}
 			}
+		case "--flame-ceiling":
+			v, ok := takeValue()
+			if !ok {
+				fmt.Fprintln(os.Stderr, "thermal: --flame-ceiling requires a value")
+				os.Exit(1)
+			}
+			flameCeilingRaw = v
+			opts.FlameCeilingSet = true
 		case "--stream", "--follow", "-f":
 			opts.Stream = true
 		case "--fresh", "-fresh", "--zero":
@@ -300,6 +313,16 @@ func parseArgs() thermal.Options {
 		case "--plain":
 			opts.Plain = true
 		}
+	}
+
+	if flameCeilingRaw != "" {
+		v, err := parseCompactFloat(flameCeilingRaw)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "thermal: invalid --flame-ceiling %q: %v\n", flameCeilingRaw, err)
+			os.Exit(1)
+		}
+		opts.FlameCeiling = v
+		opts.FlameCeilingSet = true
 	}
 
 	opts.Format = strings.ToLower(strings.TrimSpace(opts.Format))
@@ -377,6 +400,34 @@ func isNegativeNumber(s string) bool {
 	return true
 }
 
+func parseCompactFloat(raw string) (float64, error) {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return 0, fmt.Errorf("value is empty")
+	}
+	multiplier := 1.0
+	switch s[len(s)-1] {
+	case 'k', 'K':
+		multiplier = 1e3
+		s = s[:len(s)-1]
+	case 'm', 'M':
+		multiplier = 1e6
+		s = s[:len(s)-1]
+	case 'b', 'B':
+		multiplier = 1e9
+		s = s[:len(s)-1]
+	}
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return 0, err
+	}
+	v *= multiplier
+	if math.IsNaN(v) || math.IsInf(v, 0) || v <= 0 {
+		return 0, fmt.Errorf("must be a positive finite number")
+	}
+	return v, nil
+}
+
 // validateReportFlags rejects report options that would otherwise be silently
 // ignored, and checks the values themselves. Sort defaults depend on the
 // command: the leaderboard ranks by streak, projects and models by tokens.
@@ -440,6 +491,9 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 	if opts.Fresh && opts.Report != "live" && opts.Tool != "live" && opts.Report != "statusline" && opts.Report != "prompt" && opts.Report != "status" && opts.Tool != "statusline" && opts.Tool != "prompt" && opts.Tool != "status" {
 		return fmt.Errorf("--fresh only applies to the live and statusline commands")
+	}
+	if opts.FlameCeilingSet && opts.Report != "live" && opts.Tool != "live" {
+		return fmt.Errorf("--flame-ceiling only applies to the live command")
 	}
 
 	if opts.Report == "" {
@@ -2004,6 +2058,9 @@ func runLive(opts thermal.Options) {
 
 	if opts.JSON {
 		tracker := thermal.NewLiveTrackerWithPricer(pricer, opts.NoEstimate)
+		if opts.FlameCeiling > 0 {
+			tracker.SetFlameCeiling(opts.FlameCeiling)
+		}
 		results, projects, err := pollFn()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
@@ -2071,7 +2128,7 @@ func runLive(opts thermal.Options) {
 	}
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
-	model := tui.NewLiveModel(pollFn, rate, filter, colorful)
+	model := tui.NewLiveModel(pollFn, rate, filter, colorful, opts.FlameCeiling)
 	p := tea.NewProgram(model, tea.WithFPS(10))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)

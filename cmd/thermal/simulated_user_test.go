@@ -851,3 +851,47 @@ func TestSimulatedUser_LiveCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestSimulatedUser_FlameCeilingFlag(t *testing.T) {
+	out, stderr, code := runSim(t, "live", "--json", "--flame-ceiling=9M")
+	if code != 0 {
+		t.Fatalf("expected --flame-ceiling=9M to succeed, got %d. stderr: %s", code, stderr)
+	}
+	var res map[string]any
+	if err := json.Unmarshal([]byte(out), &res); err != nil {
+		t.Fatalf("parse flame-ceiling JSON: %v. stdout: %s", err, out)
+	}
+	if ceiling, ok := res["flameCeiling"].(float64); !ok || ceiling != 9_000_000 {
+		t.Errorf("expected flameCeiling 9M, got %v", res["flameCeiling"])
+	}
+	if _, ok := res["flameMetric"]; !ok {
+		t.Errorf("expected flameMetric in JSON, got %v", res)
+	}
+
+	// The standard flag parser path before the positional verb also works.
+	out, stderr, code = runSim(t, "--flame-ceiling=4.5M", "live", "--json")
+	if code != 0 {
+		t.Fatalf("expected pre-verb --flame-ceiling to succeed, got %d. stderr: %s", code, stderr)
+	}
+	if err := json.Unmarshal([]byte(out), &res); err != nil {
+		t.Fatalf("parse pre-verb flame-ceiling JSON: %v", err)
+	}
+	if ceiling, ok := res["flameCeiling"].(float64); !ok || ceiling != 4_500_000 {
+		t.Errorf("expected flameCeiling 4.5M, got %v", res["flameCeiling"])
+	}
+
+	for _, args := range [][]string{
+		{"live", "--json", "--flame-ceiling=0"},
+		{"live", "--json", "--flame-ceiling=abc"},
+		{"live", "--json", "--flame-ceiling"},
+		{"daily", "--flame-ceiling=9M"},
+	} {
+		_, stderr, code := runSim(t, args...)
+		if code == 0 {
+			t.Errorf("expected non-zero exit for %v", args)
+		}
+		if stderr == "" {
+			t.Errorf("expected stderr diagnostic for %v", args)
+		}
+	}
+}
