@@ -1,5 +1,12 @@
 # Task: Fix live tracker idle baseline collapse (live-tracker-phantom-bursts)
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_live-tracker-phantom-bursts_1792417582`
+
+
 ## Context
 - Goal: Prevent `LiveTracker.Poll` from clobbering cumulative project baselines to single-day slices on idle ticks.
 - Why: Idle ticks overwrite cumulative project baselines with today-only counts; subsequent single-step updates emit entire lifetime project totals as phantom bursts.
