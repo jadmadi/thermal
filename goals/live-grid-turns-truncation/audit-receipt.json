@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "live-grid-turns-truncation",
+  "commit_sha": "70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc",
+  "spec_hash": "fac5a4e5ad8e031c7eead73740ed4ebb61ab7fafd76c41f00339c656b40fcc0d",
+  "sandbox_nonce": "b9fc9f037fae6587",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "yGpbt6ueBVitqLjimZYmBnWuj5FdtP1YVjXH61Sok+w=",
+  "auditor_signature": "VWyKUhvepekWYPL8lSUKv2FAKpQUQoK8lsjPILyhcOzw4WqvG1WJARYhlYTDDVeFJfLrFIfcl50itdu/UJnQCw==",
+  "certified_at": "2026-10-19T13:46:34Z"
+}

@@ -28,22 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 94
-- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 89 (15 verified 📜, 6 stale ⚠️, 68 unverified)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 94 (19 verified 📜, 7 stale ⚠️, 68 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 93 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 391/411 completed (95%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Fix turns text truncation and align gauge brackets in live monitor grid (live-grid-turns-truncation) | `/goal goals/live-grid-turns-truncation/goal.md` |
-| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Preserve fractional sub-1.0 speeds in live monitor (live-speed-fractional-display) | `/goal goals/live-speed-fractional-display/goal.md` |
-| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Clamp project activity deltas to tool-level totals (live-tracker-delta-clamping) | `/goal goals/live-tracker-delta-clamping/goal.md` |
-| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Preserve cumulative project baselines across midnight transitions (live-tracker-midnight-drift) | `/goal goals/live-tracker-midnight-drift/goal.md` |
-| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Fix live tracker idle baseline collapse (live-tracker-phantom-bursts) | `/goal goals/live-tracker-phantom-bursts/goal.md` |
+- 📋 **Execution Tasks Progress**: 411/411 completed (100%)
 
 ---
 
@@ -96,6 +84,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ad2d523` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f375fdf` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `98772b5` |
+| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9f08e2d` |
+| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e3b825b` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c4fffb` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7350bf` |

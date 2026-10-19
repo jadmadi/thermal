@@ -1,5 +1,12 @@
 # Task: Fix turns text truncation and align gauge brackets in live monitor grid (live-grid-turns-truncation)
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_live-grid-turns-truncation_1792417594`
+
+
 ## Context
 - Goal: Prevent `Turns: X turns (Y% hit)` metric from clipping with ellipsis on standard 80-column terminals and harmonize gauge bracket widths.
 - Why: 30-character turn strings overflow 24-character grid cells (`6642 turns (86% h…`), and unaligned flame and sparkline brackets create visual raggedness.
