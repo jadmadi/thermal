@@ -1,5 +1,12 @@
 # Task: Clamp project activity deltas to tool-level totals (live-tracker-delta-clamping)
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_live-tracker-delta-clamping_1792417591`
+
+
 ## Context
 - Goal: Ensure individual project token and turn deltas in `LiveTracker.Poll` cannot exceed tool-level `deltaTok` and `deltaTurns`.
 - Why: Baseline desynchronization or race conditions can cause project diffs to exceed tool-level deltas; without clamping, massive project numbers leak into `RecentEvents`.
