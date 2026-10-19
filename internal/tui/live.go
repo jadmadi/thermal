@@ -329,7 +329,11 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	c2Title := theme.Secondary.SprintBold(colors, "TODAY'S USAGE")
 	c2L1 := fmt.Sprintf("Volume:   %s", formatVolume(m.snapshot.TodayTokens, m.snapshot.TodayTurns, colW, isHybrid, colors))
 	c2L2 := fmt.Sprintf("Cost:     %s", formatCost(m.snapshot.TodayCost, colors))
-	c2L3 := fmt.Sprintf("Turns:    %s", formatTurnsAndHit(m.snapshot.TodayTurns, m.snapshot.TodayCacheHit, colors))
+	availW := colW - 10
+	if availW < 0 {
+		availW = 0
+	}
+	c2L3 := fmt.Sprintf("Turns:    %s", formatTurnsAndHit(m.snapshot.TodayTurns, m.snapshot.TodayCacheHit, availW, colors))
 
 	// Column 3: Live Session
 	c3Title := theme.Accent.SprintBold(colors, "LIVE SESSION")
@@ -588,16 +592,39 @@ func formatSpeed(tokSpeed, turnSpeed float64, isActivity bool, colW int, colors 
 		if turnSpeed <= 0 {
 			return theme.TextMuted.Sprint(colors, "0 step/s")
 		}
+		if turnSpeed < 1.0 {
+			return fmt.Sprintf("%.1f step/s", turnSpeed)
+		}
+		if colW >= 24 && turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed) {
+			return fmt.Sprintf("%.1f step/s", turnSpeed)
+		}
 		return fmt.Sprintf("%s step/s", thermal.CompactNumber(int64(turnSpeed)))
 	}
 	if tokSpeed <= 0 && turnSpeed <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/s")
 	}
 	if tokSpeed > 0 && turnSpeed > 0 && colW >= 24 {
-		return fmt.Sprintf("%s · %s step/s", thermal.CompactNumber(int64(tokSpeed)), thermal.CompactNumber(int64(turnSpeed)))
+		tokStr := thermal.CompactNumber(int64(tokSpeed))
+		if tokSpeed < 1.0 || (tokSpeed < 10.0 && tokSpeed != math.Trunc(tokSpeed)) {
+			tokStr = fmt.Sprintf("%.1f", tokSpeed)
+		}
+		turnStr := thermal.CompactNumber(int64(turnSpeed))
+		if turnSpeed < 1.0 || (turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed)) {
+			turnStr = fmt.Sprintf("%.1f", turnSpeed)
+		}
+		return fmt.Sprintf("%s · %s step/s", tokStr, turnStr)
 	}
 	if tokSpeed <= 0 {
+		if turnSpeed > 0 {
+			if turnSpeed < 1.0 || (colW >= 24 && turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed)) {
+				return fmt.Sprintf("%.1f step/s", turnSpeed)
+			}
+			return fmt.Sprintf("%s step/s", thermal.CompactNumber(int64(turnSpeed)))
+		}
 		return theme.TextMuted.Sprint(colors, "0 tok/s")
+	}
+	if tokSpeed < 1.0 || (colW >= 24 && tokSpeed < 10.0 && tokSpeed != math.Trunc(tokSpeed)) {
+		return fmt.Sprintf("%.1f tok/s", tokSpeed)
 	}
 	return fmt.Sprintf("%s tok/s", thermal.CompactNumber(int64(tokSpeed)))
 }
@@ -669,12 +696,57 @@ func formatCost(c float64, colors bool) string {
 	return fmt.Sprintf("~$%.2f", c)
 }
 
-func formatTurnsAndHit(turns int, hit float64, colors bool) string {
-	tStr := fmt.Sprintf("%d turns", turns)
+func formatTurnsAndHit(turns int, hit float64, availWidth int, colors bool) string {
+	var full string
 	if hit > 0 {
-		return fmt.Sprintf("%s (%.0f%% hit)", tStr, hit)
+		full = fmt.Sprintf("%d turns (%.0f%% hit)", turns, hit)
+	} else {
+		full = fmt.Sprintf("%d turns", turns)
 	}
-	return tStr
+	if availWidth <= 0 || ansi.StringWidth(full) <= availWidth {
+		return full
+	}
+
+	cTurns := thermal.CompactNumber(int64(turns))
+	var compact string
+	if hit > 0 {
+		compact = fmt.Sprintf("%s (%.0f%% hit)", cTurns, hit)
+	} else {
+		compact = fmt.Sprintf("%s turns", cTurns)
+	}
+	if ansi.StringWidth(compact) <= availWidth {
+		return compact
+	}
+
+	if hit > 0 {
+		miniHit := fmt.Sprintf("%s (%.0f%%)", cTurns, hit)
+		if ansi.StringWidth(miniHit) <= availWidth {
+			return miniHit
+		}
+	}
+
+	minimal := fmt.Sprintf("%d turns", turns)
+	if ansi.StringWidth(minimal) <= availWidth {
+		return minimal
+	}
+
+	u := fmt.Sprintf("%s turns", cTurns)
+	if ansi.StringWidth(u) <= availWidth {
+		return u
+	}
+
+	return cTurns
+}
+
+func gaugeWidth(innerWidth int) int {
+	w := innerWidth / 4
+	if w > 32 {
+		w = 32
+	}
+	if w < 16 {
+		w = 16
+	}
+	return w
 }
 
 func formatIntensityBadge(intensity float64, colors bool) string {
@@ -691,13 +763,7 @@ func formatIntensityBadge(intensity float64, colors bool) string {
 }
 
 func formatFlameLine(intensity float64, model string, innerWidth int, colors bool) string {
-	barW := innerWidth / 4
-	if barW > 32 {
-		barW = 32
-	}
-	if barW < 16 {
-		barW = 16
-	}
+	barW := gaugeWidth(innerWidth)
 
 	barStr, pct := thermal.FlameBar(intensity, barW)
 	pctStr := fmt.Sprintf("%3d%%", pct)
@@ -768,15 +834,9 @@ func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity b
 		}
 	}
 
-	availForSpark := innerWidth - len(prefix) - len(suffix) - ansi.StringWidth(peakStr) - 2
-	if availForSpark > 60 {
-		availForSpark = 60
-	}
-	if availForSpark < 20 {
-		availForSpark = 20
-	}
+	sparkW := gaugeWidth(innerWidth)
 
-	spark := thermal.Sparkline(buckets, 59, availForSpark)
+	spark := thermal.Sparkline(buckets, 59, sparkW)
 	sparkStyled := spark
 	if colors {
 		sparkStyled = theme.Cyan.Sprint(true, spark)

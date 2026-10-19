@@ -560,3 +560,137 @@ func TestLiveModel_CompactViewport(t *testing.T) {
 		t.Errorf("expected sparkline to be omitted at height 14, got:\n%s", view)
 	}
 }
+
+func TestLiveTUI_FormatSpeed_Fractional(t *testing.T) {
+	got := formatSpeed(0, 0.667, true, 24, false)
+	want := "0.7 step/s"
+	if got != want {
+		t.Errorf("formatSpeed(0, 0.667, true, 24, false) = %q, want %q", got, want)
+	}
+
+	gotTok := formatSpeed(0.5, 0, false, 24, false)
+	wantTok := "0.5 tok/s"
+	if gotTok != wantTok {
+		t.Errorf("formatSpeed(0.5, 0, false, 24, false) = %q, want %q", gotTok, wantTok)
+	}
+}
+
+func TestLiveTUI_FormatSpeed_ZeroMuted(t *testing.T) {
+	gotAct := formatSpeed(0, 0.0, true, 24, false)
+	if gotAct != "0 step/s" {
+		t.Errorf("expected '0 step/s', got %q", gotAct)
+	}
+
+	gotTok := formatSpeed(0.0, 0.0, false, 24, false)
+	if gotTok != "0 tok/s" {
+		t.Errorf("expected '0 tok/s', got %q", gotTok)
+	}
+}
+
+func TestLiveTUI_FormatTurnsAndHit_Responsive(t *testing.T) {
+	colW := 24
+	availW := colW - len("Turns:    ") // 14
+	formatted := formatTurnsAndHit(6642, 86.0, availW, false)
+	want := "6.6K (86% hit)"
+	if formatted != want {
+		t.Errorf("formatTurnsAndHit(6642, 86.0, 14, false) = %q, want %q", formatted, want)
+	}
+
+	line := padCell("Turns:    "+formatted, colW, false)
+	if strings.Contains(line, "…") {
+		t.Errorf("padCell clipped with ellipsis in colW=24: %q", line)
+	}
+	if ansi.StringWidth(line) != colW {
+		t.Errorf("expected cell width %d, got %d for %q", colW, ansi.StringWidth(line), line)
+	}
+
+	// Verify inside full LiveModel view at 80x24
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "", false)
+	m.width = 80
+	m.height = 24
+	m.snapshot.TodayTurns = 6642
+	m.snapshot.TodayCacheHit = 86.0
+
+	view := m.View().Content
+	for _, l := range strings.Split(view, "\n") {
+		if strings.Contains(l, "Turns:") {
+			if strings.Contains(l, "Turns:    6642 turns (86% h…") {
+				t.Fatalf("found truncated turns string in view line: %s", l)
+			}
+			if strings.Contains(l, "…") && strings.Contains(l, "hit") {
+				t.Fatalf("turns and hit clipped with ellipsis: %s", l)
+			}
+		}
+	}
+}
+
+func TestLiveTUI_FormatTurnsAndHit_NoEllipsisOverflow(t *testing.T) {
+	colW := 24
+	availW := colW - len("Turns:    ") // 14
+
+	testTurnCounts := []int{
+		1, 10, 99, 100, 500, 999, 1000, 1500, 6642, 9999,
+		10000, 50000, 99999, 100000, 500000, 999999,
+		1000000, 5000000, 10000000,
+	}
+
+	for _, turns := range testTurnCounts {
+		formatted := formatTurnsAndHit(turns, 86.0, availW, false)
+		cell := padCell("Turns:    "+formatted, colW, false)
+		if strings.Contains(cell, "…") {
+			t.Errorf("turns %d: cell clipped with ellipsis: %q (formatted: %q)", turns, cell, formatted)
+		}
+		sw := ansi.StringWidth("Turns:    " + formatted)
+		if sw > colW {
+			t.Errorf("turns %d: width %d > colW %d (formatted: %q)", turns, sw, colW, formatted)
+		}
+	}
+}
+
+func TestLiveTUI_GaugeBracketWidthAlignment(t *testing.T) {
+	widths := []int{80, 100, 120, 160}
+
+	for _, w := range widths {
+		t.Run(fmt.Sprintf("Width_%d", w), func(t *testing.T) {
+			innerWidth := w - 4
+			flameLine := formatFlameLine(0.5, "claude-3-5-sonnet", innerWidth, false)
+			sparkLine := formatSparkLine([60]int64{}, 1000, innerWidth, false, false)
+
+			flameOpen := strings.Index(flameLine, "[")
+			sparkOpen := strings.Index(sparkLine, "[")
+			if ansi.StringWidth(flameLine[:flameOpen]) != ansi.StringWidth(sparkLine[:sparkOpen]) {
+				t.Errorf("width %d: flame open pos [%d] != spark open pos [%d]", w, ansi.StringWidth(flameLine[:flameOpen]), ansi.StringWidth(sparkLine[:sparkOpen]))
+			}
+
+			flameClose := strings.Index(flameLine, "]")
+			sparkClose := strings.Index(sparkLine, "]")
+
+			flameInner := flameLine[flameOpen+1 : flameClose]
+			sparkInner := sparkLine[sparkOpen+1 : sparkClose]
+
+			flameGaugeW := ansi.StringWidth(flameInner)
+			sparkGaugeW := ansi.StringWidth(sparkInner)
+			if flameGaugeW != sparkGaugeW {
+				t.Errorf("width %d: flame bracket visual width %d != spark bracket visual width %d", w, flameGaugeW, sparkGaugeW)
+			}
+		})
+	}
+}
+
+func TestLiveTUI_FormatTurnsAndHit_MiniHitPriority(t *testing.T) {
+	// When available width is 12 (tight viewport where "6.6K (86% hit)" with 14 chars does not fit),
+	// formatTurnsAndHit must prioritize "6.6K (86%)" (10 chars) over "6642 turns" (10 chars)
+	// to preserve the critical cache hit rate telemetry.
+	formatted := formatTurnsAndHit(6642, 86.0, 12, false)
+	want := "6.6K (86%)"
+	if formatted != want {
+		t.Errorf("formatTurnsAndHit(6642, 86.0, 12, false) = %q, want %q", formatted, want)
+	}
+
+	// When hit is 0, it falls back to exact turns
+	noHit := formatTurnsAndHit(6642, 0.0, 12, false)
+	wantNoHit := "6642 turns"
+	if noHit != wantNoHit {
+		t.Errorf("formatTurnsAndHit(6642, 0.0, 12, false) = %q, want %q", noHit, wantNoHit)
+	}
+}
