@@ -10,7 +10,7 @@
 # 5. Semantic consistency (token sums, rate ranges, verdicts)
 # 6. Language & terminology integrity (no typo duplicate words)
 # 7. Graceful validation errors on invalid flag combinations
-# 8. Semantic regression suites: receipt/audit claim semantics with
+# 8. Semantic regression suites: audit claim semantics with
 #    nonempty test-selection assertions
 #
 set -euo pipefail
@@ -250,15 +250,11 @@ run_check "Trend JSON export" 0 json "${BIN_PATH}" trend --json
 echo -e "\n${BOLD}6. Retired Replay Command:${RESET}"
 run_check "Replay command retired" 1 error "${BIN_PATH}" replay
 
-echo -e "\n${BOLD}7. Token Yield & Verifiable Work Receipts:${RESET}"
+echo -e "\n${BOLD}7. Token Yield:${RESET}"
 run_check "Yield report standard output" 0 text "${BIN_PATH}" yield --no-color
 run_check "Yield report sorted by lines" 0 text "${BIN_PATH}" yield --sort lines --no-color
 run_check "Yield report sorted by yield" 0 text "${BIN_PATH}" yield --sort yield --no-color
 run_check "Yield report JSON export" 0 json "${BIN_PATH}" yield --json
-run_check "Receipt report standard output" 0 text "${BIN_PATH}" receipt --no-color
-run_check "Receipt report sorted by verified" 0 text "${BIN_PATH}" receipt --sort verified --no-color
-run_check "Receipt report sorted by rate" 0 text "${BIN_PATH}" receipt --sort rate --no-color
-run_check "Receipt report JSON export" 0 json "${BIN_PATH}" receipt --json
 
 echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
 run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
@@ -280,7 +276,6 @@ echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messag
 run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
-run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
@@ -469,7 +464,6 @@ echo -e "\n${BOLD}15. End-to-End Human User Persona Simulation Flows:${RESET}"
 # Persona 1: Daily Developer Standup flow
 run_check "Persona: Developer daily standup flow" 0 text "${BIN_PATH}" daily --last 3 --no-color
 run_check "Persona: Developer code yield review" 0 text "${BIN_PATH}" yield --sort yield --no-color
-run_check "Persona: Developer verifiable test receipts" 0 text "${BIN_PATH}" receipt --sort rate --no-color
 
 # Persona 2: FinOps & Engineering Director flow
 run_check "Persona: FinOps daily distribution audit" 0 text "${BIN_PATH}" stats --no-color
@@ -493,22 +487,6 @@ if [[ "$TOTAL_STATIC" -eq 759700 && "$TOTAL_LIVE" -eq 759700 ]]; then
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
 else
     echo -e "  ${RED}✖ [FAIL]${RESET} Token parity mismatch: static=${TOTAL_STATIC}, live=${TOTAL_LIVE} (expected 759700)"
-    FAILED_CHECKS=$((FAILED_CHECKS + 1))
-fi
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-
-# 2. Receipt Evidence Hierarchy & Partial Coverage
-RECEIPT_JSON=$("${BIN_PATH}" receipt --json --offline)
-TOTAL_RECEIPTS=$(echo "$RECEIPT_JSON" | jq '.summary.totalReceipts // 0')
-RECEIPT_TOKENS=$(echo "$RECEIPT_JSON" | jq '.summary.totalTokens // 0')
-CLAUDE_TIER=$(echo "$RECEIPT_JSON" | jq -r '.receipts[] | select(.tool=="Claude") | .tier')
-CODEWHALE_TIER=$(echo "$RECEIPT_JSON" | jq -r '.receipts[] | select(.tool=="codewhale") | .tier')
-
-if [[ "$TOTAL_RECEIPTS" -ge 2 && "$RECEIPT_TOKENS" -eq 759700 && "$CLAUDE_TIER" == *"Tier 3"* && "$CODEWHALE_TIER" == *"Tier 2"* ]]; then
-    echo -e "  ${GREEN}✔ [PASS]${RESET} Receipt evidence hierarchy & token coverage verified"
-    PASSED_CHECKS=$((PASSED_CHECKS + 1))
-else
-    echo -e "  ${RED}✖ [FAIL]${RESET} Receipt semantic validation failed: totalReceipts=${TOTAL_RECEIPTS}, tokens=${RECEIPT_TOKENS}, claudeTier=${CLAUDE_TIER}, codewhaleTier=${CODEWHALE_TIER}"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
@@ -540,11 +518,10 @@ TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 # 17. Semantic Regression Suites
 # Runs the named Go regression tests that encode the semantics behind public
-# claims: observed receipt evidence with tiered outcome confidence
-# labels, and honest audit wording. The minimum test counts are deliberate
+# claims: honest audit wording. The minimum test counts are deliberate
 # tripwires: a renamed or deleted test fails the gate instead of the pattern
 # silently matching nothing.
-echo -e "\n${BOLD}17. Semantic Regression Suites (receipt / audit):${RESET}"
+echo -e "\n${BOLD}17. Semantic Regression Suites (audit):${RESET}"
 
 run_semantic_suite() {
     local label="$1"
@@ -585,7 +562,6 @@ run_semantic_suite() {
     fi
 }
 
-run_semantic_suite "Receipt evidence semantics" 13 'Receipt|Evidence|Outcome' ./internal/thermal
 run_semantic_suite "Audit claim semantics" 10 'Audit' ./internal/audit ./internal/render
 
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"

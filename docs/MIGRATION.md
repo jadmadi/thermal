@@ -1139,3 +1139,33 @@ Use `thermal monthly` for period volume and `thermal models` for model-level tok
 
 **Escape hatch**:
 Combine `thermal daily --json` or `thermal monthly --json` with your own subscription limits and rate cards outside the CLI.
+
+---
+
+### Removed: Transcript Command Receipts
+<a id="removed-work-receipts"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal receipt\|internal/thermal/receipt\|internal/render/receipt' .`.
+- **Detection signal**: `thermal receipt` and tool-prefixed forms such as `thermal opencode receipt` exit 1 with a retirement notice. `internal/thermal/receipt.go` and `internal/render/receipt.go` no longer exist, and `thermal receipt --json` no longer emits a receipt payload. Codex token ingestion is unchanged.
+
+**What changed and why**:
+Scraping shell commands inside AI tool call blocks across many transcript formats was fragile, slow, and duplicated native test runners and CI gates without providing verifiable token accounting. The same session tokens remain available through the normal loaders and static reports. Removing the receipt engine also removes its tiered confidence claims, which could not be independently verified.
+
+**Before / After**:
+```bash
+# Before
+thermal receipt --sort verified
+thermal opencode receipt --json
+
+# After: exits 1 with migration guidance
+thermal receipt
+# thermal: transcript command receipt auditing has been retired.
+# Verify test outcomes using native test runners: go test, pytest, cargo test
+```
+
+**The fix**:
+Run tests and linters through their native tools or CI. Use `thermal daily`, `thermal projects`, or `thermal models` for token and cost accounting.
+
+**Escape hatch**:
+Export token and project data with `--json` and join it to CI results outside the CLI.

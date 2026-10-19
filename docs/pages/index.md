@@ -75,9 +75,6 @@ thermal trend --chart
 # Code generation token yield and net line efficiency
 thermal yield --sort lines
 
-# Verifiable work outcome proofs (test passes, linter runs)
-thermal receipt --sort verified
-
 # Local setup and context health diagnostic
 thermal audit
 
@@ -146,15 +143,11 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Evaluates code generation productivity from git diffs and patches.
 - Calculates Token Yield (tokens burned per net line of code added) with efficiency classification ratings (`[HIGH]`, `[BALANCED]`, `[VERBOSE]`, `[EXPLORATORY]`).
 
-### 7. Verifiable Work Receipts (`thermal receipt`)
-- Parses tool-level test execution (`go test`, `pytest`, `cargo test`, `npm test`) and linter proofs (`golangci-lint`, `eslint`, `ruff`).
-- Provides 3-tier confidence classification (`Tier 1 Verified`, `Tier 2 Claimed`, `Tier 3 Failed`) with zero prompt or privacy leakage.
-
-### 8. Distribution Analytics (`thermal stats`)
+### 7. Distribution Analytics (`thermal stats`)
 - Daily volume/cost distribution, percentiles, weekday profile, token composition, and outlier days.
 - Text and `--json` output for scripts and agent workflows.
 
-### 9. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
+### 8. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
 - `thermal audit` inspects local SQLite permissions, 256MB mmap status, and pricing cache integrity.
 - `thermal share` encodes streak and telemetry metadata into compact, zero-database stateless share URLs.
 

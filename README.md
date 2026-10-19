@@ -12,7 +12,7 @@
 [![Governance: Solo Authority](https://img.shields.io/badge/Governance-Solo_Authority-purple.svg)](GOVERNANCE.md)
 [![SLSA Level 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
-> Multi-agent terminal heatmap, token FinOps, live burn monitor, and verifiable work receipt engine for 15 AI coding agents.
+> Multi-agent terminal heatmap, token FinOps, and live burn monitor for 15 AI coding agents.
 
 ```bash
 # Automated install (Linux & macOS)
@@ -47,7 +47,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 
 1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
 2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
-3. **Insight — answers counting cannot.** `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add distribution analytics, share drift, and regression forecasts.
+3. **Insight — answers counting cannot.** `thermal yield` measures tokens per net line; `stats`, `mix`, and `trend` add distribution analytics, share drift, and regression forecasts.
 4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
 
 **The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
@@ -482,33 +482,6 @@ thermal yield --last 30 --json
    3.  Devin / swe-1-7               1.8B        14,500         3,200         +11,300           159.3 tok/l   [VERBOSE]
 ```
 
-### `thermal receipt`
-Inspects recorded agent tool runs to detect verifiable outcomes (test passes, linter runs, git commits) with zero privacy leaks:
-
-```bash
-# Verifiable work outcomes across sessions
-thermal receipt
-
-# Sort by verified tests count or verification rate
-thermal receipt --sort verified
-thermal receipt --sort rate
-
-# Single tool receipts with JSON export
-thermal opencode receipt --json
-```
-
-```
-  Thermal · verifiable work receipts
-
-  Verification Rate: 84.6% · Verified Volume: 14.8B tok (78.3%) · Spend Efficiency: $0.14 / verified task
-
-  #    Session / Tool               Date        Tokens       Cost  Outcomes Verified                Status
-  ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1.  opencode-2026-09-22    2026-09-22        128.4M      $0.12  go test -race ./... (PASS)       [VERIFIED]
-   2.  claude-2026-09-21      2026-09-21         45.2M      $0.35  pytest tests/ (PASS)             [VERIFIED]
-   3.  codex-2026-09-20       2026-09-20         92.1M      $0.85  golangci-lint run (PASS)         [VERIFIED]
-```
-
 ### `thermal audit`
 Non-destructive local setup and context health diagnostic. Measures rule-file and MCP context tax, repository instruction hygiene, filesystem readability of local tool database paths (SQLite integrity and mmap are not checked), and a temporary writability probe inside Thermal's own cache directory — no agent data stores are touched:
 
@@ -526,7 +499,7 @@ thermal share --json
 ```
 
 ### `thermal live`
-Real-time token burn monitor and burst velocity gauge. Watches local databases and session transcripts with sub-second responsiveness, displaying instantaneous burn rate (`tok/min`, `tok/sec`, `spend/hr`), dynamic flame intensity meter, 60-second rolling activity sparkline, and completed turn event ticker:
+Real-time token burn monitor with launch-relative session baselines, carried-in history, one-second Peak/Rate buckets, a metric-specific flame gauge, a 60-second sparkline, and a cost-aware ticker with burst rollup, age/outlier marks, and time/cost sorting:
 
 ```bash
 # Launch interactive real-time monitor

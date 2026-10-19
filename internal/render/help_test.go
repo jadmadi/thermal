@@ -44,7 +44,7 @@ func TestRenderHelp_NoColor(t *testing.T) {
 	// Verify key commands are listed
 	commands := []string{
 		"daily", "weekly", "monthly", "projects", "models",
-		"mix", "stats", "trend", "yield", "receipt",
+		"mix", "stats", "trend", "yield",
 		"share", "audit", "changelog", "upgrade", "version", "license",
 	}
 

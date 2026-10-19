@@ -402,8 +402,8 @@ func validateReportFlags(opts thermal.Options) error {
 		return fmt.Errorf("--format must be text, json, md, or markdown")
 	}
 	if opts.Format == "md" || opts.Format == "markdown" {
-		if opts.Report != "receipt" && opts.Report != "yield" {
-			return fmt.Errorf("--format %s only applies to the receipt and yield commands", opts.Format)
+		if opts.Report != "yield" {
+			return fmt.Errorf("--format %s only applies to the yield command", opts.Format)
 		}
 	}
 
@@ -516,18 +516,6 @@ func validateReportFlags(opts thermal.Options) error {
 		default:
 			return fmt.Errorf("--sort must be tokens, lines, or yield for the yield command")
 		}
-	case "receipt":
-		if opts.Breakdown || opts.Chart {
-			return fmt.Errorf("--breakdown and --chart do not apply to the receipt command")
-		}
-		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
-			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
-		}
-		switch sortKey {
-		case "", "tokens", "verified", "cost", "rate":
-		default:
-			return fmt.Errorf("--sort must be tokens, verified, cost, or rate for the receipt command")
-		}
 	case "projects":
 		switch sortKey {
 		case "", "tokens", "cost", "days", "recent":
@@ -616,6 +604,8 @@ func main() {
 		os.Exit(1)
 	case "replay":
 		retireReplayCommand()
+	case "receipt":
+		retireReceiptCommand()
 	case "yield":
 		opts.Tool = "all"
 		opts.Report = "yield"
@@ -683,7 +673,7 @@ func main() {
 		case "yield":
 			runYieldReport(opts)
 		case "receipt":
-			runReceiptReport(opts)
+			retireReceiptCommand()
 		case "audit":
 			runAudit(opts)
 		case "changelog":
@@ -1512,95 +1502,6 @@ func runYieldReport(opts thermal.Options) {
 	fmt.Print(render.RenderYield(rep, opts.Top, opts.NoColor))
 }
 
-// runReceiptReport links agent token spend to concrete verification outcomes.
-func runReceiptReport(opts thermal.Options) {
-	receiptOpts := thermal.ReceiptOptions{
-		Since: opts.Since,
-		Until: opts.Until,
-		Last:  opts.Last,
-		Sort:  opts.Sort,
-		Top:   opts.Top,
-	}
-
-	targetTool := opts.Tool
-	if targetTool == "receipt" {
-		targetTool = "all"
-	}
-	if t, ok := loaders.ResolveTool(targetTool); ok {
-		targetTool = string(t)
-	}
-	opts.Tool = targetTool
-
-	home := thermal.HomeDir()
-	pricer := newPricer(opts)
-
-	// Scan real session transcripts from local tool stores
-	receipts := thermal.ScanSessionReceipts(home, targetTool, pricer)
-
-	// Track which tools are covered by transcript scanning
-	coveredTools := make(map[string]bool)
-	for _, r := range receipts {
-		tKey := strings.ToLower(r.Tool)
-		if t, ok := loaders.ResolveTool(r.Tool); ok {
-			tKey = string(t)
-		}
-		coveredTools[tKey] = true
-	}
-
-	// Merge uncovered tools from daily usage as aggregate-only UNVERIFIED coverage
-	set := loadUsage(opts)
-	for _, res := range set.results {
-		tKey := strings.ToLower(res.Name)
-		if t, ok := loaders.ResolveTool(res.Name); ok {
-			tKey = string(t)
-		}
-		if coveredTools[tKey] {
-			continue // Already covered by transcript scanning
-		}
-		for _, day := range res.Daily {
-			if day.Turns == 0 && day.Tokens == 0 {
-				continue
-			}
-			tokens := day.Tokens
-			if thermal.IsActivityOnly(day) {
-				tokens = 0
-			}
-			receipts = append(receipts, thermal.WorkReceipt{
-				SessionID:       fmt.Sprintf("%s-%s", tKey, day.Day),
-				Tool:            res.Name,
-				Day:             day.Day,
-				Tokens:          tokens,
-				Cost:            day.Cost,
-				Tier:            thermal.Tier3Unverified,
-				Status:          "UNVERIFIED",
-				EvidenceSummary: []string{"aggregate-only"},
-			})
-		}
-	}
-
-	rep := thermal.AggregateReceipts(receipts, receiptOpts)
-	rep.Tool = targetTool
-
-	if opts.JSON {
-		type jsonReceiptReport struct {
-			thermal.ReceiptReport
-			GeneratedAt string `json:"generatedAt"`
-		}
-		writeReportJSON(jsonReceiptReport{
-			ReceiptReport: rep,
-			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
-		})
-		return
-	}
-
-	if opts.Format == "md" || opts.Format == "markdown" {
-		fmt.Print(render.RenderReceiptMarkdown(rep, opts.Top))
-		return
-	}
-
-	fmt.Print(render.RenderReceipt(rep, opts.Top, opts.NoColor))
-}
-
 func retireWebCommand() {
 	fmt.Fprintln(os.Stderr, "thermal: embedded web server has been retired to preserve terminal-native focus.")
 	fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
@@ -1610,6 +1511,12 @@ func retireWebCommand() {
 func retireReplayCommand() {
 	fmt.Fprintln(os.Stderr, "thermal: subscription replay simulation has been retired.")
 	fmt.Fprintln(os.Stderr, "  For monthly volume and model pricing: thermal monthly, thermal models")
+	os.Exit(1)
+}
+
+func retireReceiptCommand() {
+	fmt.Fprintln(os.Stderr, "thermal: transcript command receipt auditing has been retired.")
+	fmt.Fprintln(os.Stderr, "  Verify test outcomes using native test runners: go test, pytest, cargo test")
 	os.Exit(1)
 }
 
