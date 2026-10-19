@@ -1,5 +1,12 @@
 # Task: Preserve cumulative project baselines across midnight transitions (live-tracker-midnight-drift)
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_live-tracker-midnight-drift_1792417587`
+
+
 ## Context
 - Goal: Prevent midnight day boundary transitions in `LiveTracker.Poll` from resetting cumulative project baselines to current-day only counts.
 - Why: Day boundary crossing wipes `lt.prevProjTokens` and `lt.prevProjTurns` to `pd.Day == currentDay`; subsequent turns after midnight re-emit pre-midnight lifetime project totals as new bursts.
