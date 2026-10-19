@@ -43,7 +43,7 @@ func TestRenderHelp_NoColor(t *testing.T) {
 
 	// Verify key commands are listed
 	commands := []string{
-		"dashboard", "daily", "weekly", "monthly", "projects", "models",
+		"daily", "weekly", "monthly", "projects", "models",
 		"mix", "stats", "trend", "replay", "yield", "receipt",
 		"share", "web", "serve", "audit", "changelog", "upgrade", "version", "license",
 	}
@@ -74,12 +74,6 @@ func TestRenderHelp_Alignment(t *testing.T) {
 	lines := strings.Split(out, "\n")
 
 	for _, l := range lines {
-		if strings.HasPrefix(l, "    dashboard") {
-			idx := strings.Index(l, "Interactive")
-			if idx != 19 {
-				t.Errorf("expected 'Interactive' to start at col 19, got %d in line: %q", idx, l)
-			}
-		}
 		if strings.HasPrefix(l, "    --tool <name>") {
 			idx := strings.Index(l, "Filter")
 			if idx != 27 {

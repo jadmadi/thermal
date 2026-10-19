@@ -53,8 +53,6 @@ type Options struct {
 	Grain           string        // day, week, month; mix verb
 	Against         string        // target model for replay simulation
 	Compare         string        // comma-separated plans/models for replay comparison
-	Dense           bool          // high-density 9-box FinOps grid view (default for stats)
-	Distribution    bool          // token/cost distribution histogram view (stats)
 	Port            int           // port for embedded web server (serve verb, default 8080)
 	Host            string        // host for embedded web server (serve verb, default 127.0.0.1)
 	Open            bool          // open browser automatically on serve

@@ -48,7 +48,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
 2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
 3. **Insight — answers counting cannot.** `thermal replay` tests a real workload against subscription ceilings and API cards; `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add the 9-box FinOps grid, activity taxonomy, share drift, and regression forecasts.
-4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the Bubble Tea TUI (`thermal dashboard`), the localhost web app (`thermal serve`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and a test asserts every TUI total equals the matching static command.
+4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), the localhost web app (`thermal serve`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
 
 **The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
 
@@ -249,39 +249,20 @@ caption names the scale. A chart draws its first twelve rows and says how many
 it left out, because a bar chart with eighty rows is a second copy of the table
 rather than a chart. `--chart` never changes `--json` output.
 
-## The dashboard
+## The live monitor
 
-`thermal dashboard` opens the same numbers as an interactive screen: Overview,
-Projects, Mix, Models and Stats, aggregated from one load of the data.
+`thermal live` is the interactive terminal surface: a real-time token burn
+monitor with carried-in baselines, one-second Peak/Rate buckets, a metric-specific
+flame gauge, a 60-second sparkline, and a ticker with cost status, age,
+outlier marks, burst rollup, and time/cost sorting.
 
 ```bash
-thermal dashboard
+thermal live
 ```
 
-| Key | Does |
-|---------|------------------------------------------|
-| `q` | quit |
-| `1`-`5` | jump to a view |
-| `tab` | next view |
-| `j` / `k` | move down and up |
-| `g` / `G` | first and last row |
-| `s` | cycle sort |
-| `t` | toggle tokens and cost |
-| `r` | cycle range: 30d, 90d, 1y, all |
-| `f` | cycle the tool filter (Projects) |
-| `v` | mix by tool or model (Mix) |
-| `l` | histogram scale (Stats) |
-| `enter` | open a project detail |
-| `esc` | back |
-| `?` | help |
-
-Every view total equals the matching report command for the same window, and a
-test asserts that rather than leaving it to inspection. A piped stdout is told
-to use the static commands instead, and `--json` never opens a terminal UI.
-
-Cost is estimated for the tools that record none, and the estimated share is
-labelled wherever it appears. Day granularity limits switching analysis: a
-change that happens twice in one day shows as one switch.
+Static commands remain the scriptable surface: `thermal`, `daily`, `weekly`,
+`monthly`, `projects`, `models`, `mix`, `stats`, and `trend`. See
+[`thermal live`](#thermal-live) for flags and JSON/NDJSON output.
 
 ## Projects
 
@@ -368,12 +349,13 @@ Cost in this view is always an estimate from models.dev list prices, because rec
 Beyond tabular period reports, Thermal provides three analytical lenses into agent usage:
 
 ### `thermal stats`
-High-density 9-box FinOps grid and activity taxonomy by default. Interactive TUI with live period switching (`[`/`]`, `1`..`6`, `Today`, `7D`, `30D`, `Month`, `6M`, `Lifetime`) and project filtering (`p`). For the classical volume distribution histogram and percentiles, pass `--distribution` (or `--dist`):
+Daily distribution, percentiles, weekday profile, token composition, and
+outliers. Text output is the distribution report; `--json` exports the same
+numbers.
 
 ```bash
-thermal stats                          # interactive 9-box FinOps grid (default)
-thermal stats --distribution           # daily volume distribution histogram
-thermal stats --dist --metric cost     # daily spend distribution
+thermal stats                          # daily volume distribution
+thermal stats --metric cost            # daily spend distribution
 thermal opencode stats                 # single tool stats
 ```
 
@@ -521,30 +503,6 @@ Replay conserves the full recorded workload even when a day's model map covers o
 
   Replay is a scenario comparison against configured plan limits and rate-card assumptions, not
   verified provider entitlements; it cannot establish code quality or actual provider bills.
-```
-
-### FinOps 9-Box Grid & Activity Taxonomy (`thermal stats`)
-High-density 9-box FinOps grid view and activity taxonomy decomposition. Categorizes workload into Coding, Debugging, Testing, and Exploration, while tracking prompt cache efficiency, financial savings, and MCP tool overhead. Features live reactive period switching (`Today`, `7 Days`, `30 Days`, `This Month`, `6 Months`, `Lifetime`) and project filtering (`[p]`):
-
-```bash
-# Interactive responsive 9-box Bubble Tea TUI with live period switching
-thermal stats
-
-# Non-TTY or monochrome output
-thermal stats --no-color
-
-# Machine-readable JSON export
-thermal stats --json
-```
-
-```
-  Thermal · FinOps 9-Box Grid & Activity Taxonomy
-  ───────────────────────────────────────────────────────────────────────────
-  Activity Taxonomy              Prompt Cache Efficiency       MCP & Tool Overhead
-  Coding:       64.2% (14.2B)    Cache Read:   95.8% (21.1B)   Total Tool Calls: 4,812
-  Debugging:    21.5% ( 4.8B)    Cache Write:   1.2% (264M)    Shell Execution:  68.4%
-  Testing:       9.1% ( 2.0B)    Uncached:      3.0% (660M)    File Operations:  24.1%
-  Exploration:   5.2% ( 1.1B)    Saved Spend:  ~$3,412.50      Context Fetch:     7.5%
 ```
 
 ### `thermal yield`

@@ -89,10 +89,6 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Compare, "compare", "", "Plans to compare in replay: comma-separated or all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
-	flag.BoolVar(&opts.Dense, "dense", false, "High-density 9-box FinOps grid view (default for stats)")
-	flag.BoolVar(&opts.Distribution, "distribution", false, "Show distribution histogram instead of dense grid (stats)")
-	flag.BoolVar(&opts.Distribution, "dist", false, "Show distribution histogram instead of dense grid (stats shorthand)")
-	flag.BoolVar(&opts.Distribution, "sparse", false, "Show distribution histogram instead of dense grid (stats shorthand)")
 	flag.IntVar(&opts.Port, "port", 8080, "Port for embedded web server (default: 8080)")
 	flag.StringVar(&opts.Host, "host", "127.0.0.1", "Host for embedded web server (default: 127.0.0.1)")
 	flag.BoolVar(&opts.Open, "open", false, "Open browser automatically on serve")
@@ -126,18 +122,8 @@ func parseArgs() thermal.Options {
 		opts.Tool = "license"
 	}
 
-	var denseExplicit bool
-	var denseVal bool
-	var metricExplicit bool
-
 	flag.Visit(func(f *flag.Flag) {
-		switch f.Name {
-		case "dense":
-			denseExplicit = true
-			denseVal = opts.Dense
-		case "metric":
-			metricExplicit = true
-		case "flame-ceiling":
+		if f.Name == "flame-ceiling" {
 			opts.FlameCeilingSet = true
 		}
 	})
@@ -185,16 +171,10 @@ func parseArgs() thermal.Options {
 			opts.Breakdown = true
 		case "--chart":
 			opts.Chart = true
-		case "--dense":
-			denseExplicit = true
-			if hasInline {
-				opts.Dense = inline == "true" || inline == "1"
-			} else {
-				opts.Dense = true
-			}
-			denseVal = opts.Dense
-		case "--distribution", "--dist", "--sparse":
-			opts.Distribution = true
+		case "--dense", "--distribution", "--dist", "--sparse":
+			fmt.Fprintln(os.Stderr, "thermal: the dense FinOps grid and distribution aliases have been retired.")
+			fmt.Fprintln(os.Stderr, "  thermal stats now prints the distribution report; use thermal live for real-time monitoring.")
+			os.Exit(1)
 		case "--offline":
 			opts.Offline = true
 		case "--no-estimate":
@@ -260,7 +240,6 @@ func parseArgs() thermal.Options {
 				}
 			}
 		case "--metric":
-			metricExplicit = true
 			if v, ok := takeValue(); ok {
 				opts.Metric = v
 			}
@@ -350,14 +329,6 @@ func parseArgs() thermal.Options {
 			if len(positionals) > 1 && isReportWord(positionals[1]) {
 				opts.Report = strings.ToLower(positionals[1])
 			}
-		}
-	}
-
-	if opts.Report == "stats" {
-		if opts.Distribution || (denseExplicit && !denseVal) || (metricExplicit && !denseExplicit) {
-			opts.Dense = false
-		} else {
-			opts.Dense = true
 		}
 	}
 
@@ -483,12 +454,6 @@ func validateReportFlags(opts thermal.Options) error {
 		}
 	}
 
-	if opts.Dense && opts.Report != "stats" {
-		return fmt.Errorf("--dense only applies to the stats command")
-	}
-	if opts.Distribution && opts.Report != "stats" {
-		return fmt.Errorf("--distribution only applies to the stats command")
-	}
 	if opts.Fresh && opts.Report != "live" && opts.Tool != "live" && opts.Report != "statusline" && opts.Report != "prompt" && opts.Report != "status" && opts.Tool != "statusline" && opts.Tool != "prompt" && opts.Tool != "status" {
 		return fmt.Errorf("--fresh only applies to the live and statusline commands")
 	}
@@ -736,7 +701,10 @@ func main() {
 	case "upgrade":
 		os.Exit(runUpgrade())
 	case "dashboard":
-		os.Exit(runDashboard(opts))
+		fmt.Fprintln(os.Stderr, "thermal: the interactive dashboard has been retired in favor of 'thermal live' and static report commands.")
+		fmt.Fprintln(os.Stderr, "  Interactive monitoring: thermal live")
+		fmt.Fprintln(os.Stderr, "  Historical breakdown:   thermal, thermal projects, thermal stats")
+		os.Exit(1)
 	case "yield":
 		opts.Tool = "all"
 		opts.Report = "yield"
@@ -1219,53 +1187,6 @@ func reportWidth() int {
 	return 100
 }
 
-// runDashboard launches the interactive dashboard. Two guards keep scripts and
-// pipes safe: a non-TTY stdout is told to use the static commands, and --json
-// never opens a terminal UI.
-func runDashboard(opts thermal.Options) int {
-	if opts.JSON {
-		fmt.Fprintln(os.Stderr, "thermal: --json does not apply to the dashboard; use a report command, for example: thermal weekly --json")
-		return 1
-	}
-	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
-		fmt.Println("thermal dashboard is interactive and needs a terminal.")
-		fmt.Println("For scripts and pipes use the static commands:")
-		fmt.Println()
-		fmt.Println("  thermal                  leaderboard across every tool")
-		fmt.Println("  thermal weekly           weekly tokens and cost")
-		fmt.Println("  thermal projects         tokens and cost per repository")
-		fmt.Println("  thermal models           tokens and estimated cost per model")
-		fmt.Println("  thermal weekly --json    the same numbers, machine readable")
-		return 0
-	}
-
-	adapter := tui.LoadTools(newPricer(opts))
-	if note := tui.LoadNote(adapter); note != "" && adapter.Latest == "" {
-		fmt.Fprintf(os.Stderr, "thermal: %s\n", note)
-		return 1
-	}
-
-	initialTab := 0
-	switch strings.ToLower(opts.Report) {
-	case "projects", "2":
-		initialTab = 1
-	case "mix", "3":
-		initialTab = 2
-	case "models", "4":
-		initialTab = 3
-	case "stats", "finops", "5":
-		initialTab = 4
-	}
-
-	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
-	p := tea.NewProgram(tui.NewWithTab(adapter, colorful, initialTab))
-	if _, err := p.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: dashboard failed: %v\n", err)
-		return 1
-	}
-	return 0
-}
-
 // runProjectReport ranks projects by token usage across tools and time.
 func runProjectReport(opts thermal.Options) {
 	set := loadUsage(opts)
@@ -1380,37 +1301,10 @@ func runMixReport(opts thermal.Options) {
 	fmt.Print(render.RenderMix(rep, opts.NoColor))
 }
 
-// runStatsReport summarises the daily distribution of tokens or cost,
-// or renders the high-density 9-box FinOps grid if --dense is requested.
+// runStatsReport summarises the daily distribution of tokens or cost.
 func runStatsReport(opts thermal.Options) {
 	set := loadUsage(opts)
 	pricer := newPricer(opts)
-
-	if opts.Dense {
-		yieldOpts := thermal.YieldOptions{
-			Since: opts.Since,
-			Until: opts.Until,
-			Last:  opts.Last,
-		}
-		yieldRep := thermal.AggregateYield(set.results, set.projects, yieldOpts)
-		grid := thermal.ComputeFinOpsGrid(set.days, set.results, set.projects, yieldRep, pricer)
-
-		if opts.JSON {
-			type jsonDenseReport struct {
-				thermal.FinOpsGridPayload
-				GeneratedAt string `json:"generatedAt"`
-			}
-			writeReportJSON(jsonDenseReport{
-				FinOpsGridPayload: grid,
-				GeneratedAt:       time.Now().UTC().Format(time.RFC3339),
-			})
-			return
-		}
-
-		colorful := !opts.NoColor && render.IsTerminal() && os.Getenv("NO_COLOR") == ""
-		fmt.Print(tui.RenderDenseFinOps(grid, reportWidth(), colorful))
-		return
-	}
 
 	statsOpts := thermal.StatsOptions{
 		Since:  opts.Since,

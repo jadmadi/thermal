@@ -1047,3 +1047,36 @@ thermal daily --last 7
 
 **Escape hatch**:
 None. Strict flag validation protects against deceptive metrics and silent misconfiguration.
+
+---
+
+### Removed: Interactive Dashboard and Dense FinOps Grid
+<a id="removed-dashboard-tui"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal dashboard\|stats --dense\|--distribution\|internal/tui/dense' .`.
+- **Detection signal**: `thermal dashboard` exits 1 with a migration notice. `--dense`, `--distribution`, `--dist`, and `--sparse` exit 1 with a retirement notice. `internal/tui` now contains only the live monitor files, and `thermal stats` prints the distribution report.
+
+**What changed and why**:
+The five-tab `thermal dashboard` duplicated static report commands, and its 9-box dense grid depended on the yield, receipt, and replay surfaces that are being retired. Maintaining a parallel TUI added substantial complexity without unique data. `thermal live` remains the only interactive terminal monitor, while static commands remain the scriptable and JSON-friendly surface.
+
+**Before / After**:
+```bash
+# Before
+thermal dashboard
+thermal stats --dense
+thermal stats --distribution
+
+# After: exits 1 with migration guidance
+thermal dashboard
+# thermal: the interactive dashboard has been retired...
+# Use: thermal live, thermal, thermal projects, thermal stats
+
+thermal stats
+```
+
+**The fix**:
+Use `thermal live` for real-time monitoring and static commands (`thermal`, `daily`, `weekly`, `monthly`, `projects`, `models`, `mix`, `stats`, `trend`) for historical queries. `thermal stats` itself now prints the distribution report.
+
+**Escape hatch**:
+For machine-readable data, use the static commands with `--json`. For live streaming, use `thermal live --json --stream`.

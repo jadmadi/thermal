@@ -245,13 +245,8 @@ run_check "Mix by tool" 0 text "${BIN_PATH}" mix --no-color
 run_check "Mix by model with daily grain" 0 text "${BIN_PATH}" mix --by model --grain day --no-color
 run_check "Mix by cost metric" 0 text "${BIN_PATH}" mix --metric cost --no-color
 run_check "Mix JSON export" 0 json "${BIN_PATH}" mix --json
-run_check "Stats dense FinOps grid (default)" 0 text "${BIN_PATH}" stats --no-color
-run_check "Stats distribution escape hatch" 0 text "${BIN_PATH}" stats --distribution --no-color
-run_check "Stats distribution escape hatch shorthand" 0 text "${BIN_PATH}" stats --dist --no-color
+run_check "Stats distribution report" 0 text "${BIN_PATH}" stats --no-color
 run_check "Stats cost metric" 0 text "${BIN_PATH}" stats --metric cost --no-color
-run_check "Stats dense 9-box FinOps grid explicitly" 0 text "${BIN_PATH}" stats --dense --no-color
-run_check "Stats dense FinOps JSON export" 0 json "${BIN_PATH}" stats --dense --json
-run_check "Stats distribution JSON export" 0 json "${BIN_PATH}" stats --distribution --json
 run_check "Stats JSON export" 0 json "${BIN_PATH}" stats --json
 run_check "Trend fit & projection" 0 text "${BIN_PATH}" trend --no-color
 run_check "Trend cost metric" 0 text "${BIN_PATH}" trend --metric cost --no-color
@@ -300,7 +295,6 @@ run_check "Rejects --chart on serve" 1 error "${BIN_PATH}" serve --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
-run_check "Rejects --dense on daily report" 1 error "${BIN_PATH}" daily --dense
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
@@ -492,7 +486,7 @@ run_check "Persona: Developer code yield review" 0 text "${BIN_PATH}" yield --so
 run_check "Persona: Developer verifiable test receipts" 0 text "${BIN_PATH}" receipt --sort rate --no-color
 
 # Persona 2: FinOps & Engineering Director flow
-run_check "Persona: FinOps dense 9-box activity audit" 0 text "${BIN_PATH}" stats --dense --no-color
+run_check "Persona: FinOps daily distribution audit" 0 text "${BIN_PATH}" stats --no-color
 run_check "Persona: FinOps subscription replay comparison" 0 text "${BIN_PATH}" replay --compare all --no-color
 run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" projects --sort cost --top 3 --no-color
 

@@ -28,7 +28,6 @@ thermal [options] [tool] [report]
 ```
 
 ### Supported Report Commands
-- `dashboard`: Interactive fullscreen terminal UI (requires TTY).
 - `daily`: Daily token and cost breakdown.
 - `weekly`: Weekly aggregated tokens, costs, and activity.
 - `monthly`: Calendar-month rollups.

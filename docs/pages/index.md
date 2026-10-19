@@ -58,8 +58,8 @@ thermal claude
 thermal devin
 thermal codex
 
-# Multi-view interactive Terminal User Interface (TUI)
-thermal dashboard
+# Real-time terminal live monitor
+thermal live
 
 # Breakdown usage by project and repository
 thermal projects
@@ -70,7 +70,6 @@ thermal models
 # Analytics, workload mix, and trend charts
 thermal mix --chart
 thermal stats --chart
-thermal stats --dense
 thermal trend --chart
 
 # Replay historical workload against subscription caps
@@ -141,9 +140,9 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Replays recorded daily token distributions against commercial subscription ceilings (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro).
 - Outputs capacity status (`PASS`, `DEGRADED`, `FAIL`, or `UNKNOWN` when a rolling-window limit cannot be assessed from daily telemetry) and monthly cost deltas.
 
-### 4. Interactive TUI Dashboard (`thermal dashboard`)
-- Fullscreen Bubble Tea terminal interface with keyboard navigation.
-- Views include Leaderboard, Projects, Models, Mix, and Trends.
+### 4. Real-Time Live Monitor (`thermal live`)
+- Bubble Tea terminal monitor with carried-in baselines, one-second Peak/Rate buckets, a metric-specific flame gauge, and a 60-second sparkline.
+- Cost-aware ticker with burst rollup, age/outlier marks, time/cost sorting, and `--json`/NDJSON output.
 
 ### 5. Zero Telemetry & Privacy Invariant
 - 100% local operation: scans local databases and logs in strictly read-only mode (`mode=ro`).
@@ -162,9 +161,9 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Parses tool-level test execution (`go test`, `pytest`, `cargo test`, `npm test`) and linter proofs (`golangci-lint`, `eslint`, `ruff`).
 - Provides 3-tier confidence classification (`Tier 1 Verified`, `Tier 2 Claimed`, `Tier 3 Failed`) with zero prompt or privacy leakage.
 
-### 9. High-Density FinOps Grid (`thermal stats --dense`)
-- Responsive 9-box Bubble Tea / Lip Gloss terminal grid.
-- Decomposes agent activity across Coding, Debugging, Testing, and Exploration, while tracking prompt cache savings and MCP tool overhead.
+### 9. Distribution Analytics (`thermal stats`)
+- Daily volume/cost distribution, percentiles, weekday profile, token composition, and outlier days.
+- Text and `--json` output for scripts and agent workflows.
 
 ### 10. Embedded Local Web Dashboard (`thermal serve`)
 - Embedded single-page web application served on localhost (`127.0.0.1:8080`) with assets compiled directly into the binary via `go:embed`.

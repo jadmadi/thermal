@@ -57,7 +57,6 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 - `thermal stats`: Daily percentile distribution, weekday seasonality, and outliers.
 - `thermal trend`: Daily linear trend fit with month-end token projection.
 - `thermal replay`: Historical simulation against subscription tiers (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro) and API rate cards.
-- `thermal dashboard`: Fullscreen interactive Bubble Tea terminal user interface.
 - `thermal upgrade`: Self-update binary in place to the latest GitHub release.
 - `thermal license`: AGPLv3 terms, Community Reciprocity Covenant, the $30/developer/year Commercial Use License, and Enterprise & OEM terms.
 
