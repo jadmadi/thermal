@@ -16,7 +16,7 @@ Terminal heatmap, streaks, tokens, and cost for 15 AI coding tools. Thermal read
 
 | Edition | Price | Scope |
 | :--- | :--- | :--- |
-| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI, TUI, and local web dashboard |
+| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI and live monitor |
 | **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
 | **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
 
@@ -87,9 +87,6 @@ thermal audit
 
 # Stateless zero-database streak share card
 thermal share
-
-# Embedded local web dashboard
-thermal serve --open
 
 # Self-update binary in place
 thermal upgrade
@@ -165,11 +162,7 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Daily volume/cost distribution, percentiles, weekday profile, token composition, and outlier days.
 - Text and `--json` output for scripts and agent workflows.
 
-### 10. Embedded Local Web Dashboard (`thermal serve`)
-- Embedded single-page web application served on localhost (`127.0.0.1:8080`) with assets compiled directly into the binary via `go:embed`.
-- Exposes read-only JSON telemetry APIs under strict Content-Security-Policy headers with zero cloud tracking.
-
-### 11. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
+### 10. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
 - `thermal audit` inspects local SQLite permissions, 256MB mmap status, and pricing cache integrity.
 - `thermal share` encodes streak and telemetry metadata into compact, zero-database stateless share URLs.
 

@@ -100,7 +100,6 @@ func RenderHelp(noColor bool) string {
 				{Name: "live", Desc: "Real-time token burn monitor with velocity, flame & sparkline"},
 				{Name: "statusline", Desc: "Instant shell statusline and prompt helper (<3ms, alias: prompt)"},
 				{Name: "share", Desc: "Generate a stateless, private URL card for your streak"},
-				{Name: "web", Desc: "Embedded localhost web dashboard & live telemetry (alias: serve)"},
 			},
 		},
 		{
@@ -223,13 +222,10 @@ func RenderHelp(noColor bool) string {
 			Title: "Global & Engine Options:",
 			Items: []HelpItem{
 				{Name: "--db <path>", Desc: "Override database/data directory path"},
-				{Name: "--port <port>", Desc: "Port for embedded web server (web/serve, default: 8080)"},
-				{Name: "--host <host>", Desc: "Host for embedded web server (web/serve, default: 127.0.0.1)"},
-				{Name: "--open", Desc: "Open browser automatically on web/serve"},
 				{Name: "--offline", Desc: "Use cached models.dev pricing catalog without network"},
 				{Name: "--fresh", Desc: "Bypass cached statusline data; live sessions always start at launch"},
 				{Name: "--stream, -f", Desc: "Stream continuous NDJSON live events (live verb)"},
-				{Name: "--json", Desc: "Output structured JSON (never launches TUI or web)"},
+				{Name: "--json", Desc: "Output structured JSON (never launches a terminal UI)"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},
 				{Name: "--verbose, -v", Desc: "Output diagnostic warnings to stderr"},
 				{Name: "-h, --help", Desc: "Show this help manual"},

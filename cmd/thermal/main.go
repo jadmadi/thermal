@@ -27,7 +27,6 @@ import (
 	"github.com/jadmadi/thermal/internal/loaders"
 	"github.com/jadmadi/thermal/internal/pricing"
 	"github.com/jadmadi/thermal/internal/render"
-	"github.com/jadmadi/thermal/internal/server"
 	"github.com/jadmadi/thermal/internal/share"
 	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -89,10 +88,6 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Compare, "compare", "", "Plans to compare in replay: comma-separated or all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
-	flag.IntVar(&opts.Port, "port", 8080, "Port for embedded web server (default: 8080)")
-	flag.StringVar(&opts.Host, "host", "127.0.0.1", "Host for embedded web server (default: 127.0.0.1)")
-	flag.BoolVar(&opts.Open, "open", false, "Open browser automatically on serve")
-	flag.BoolVar(&opts.NoOpen, "no-open", false, "Do not open browser automatically on serve")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
 	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
@@ -109,7 +104,7 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Format, "format", "text", "Output format: text, json, md, or markdown")
 	flag.BoolVar(&opts.Nerd, "nerd", false, "Use Nerd Font glyphs in statusline")
 	flag.BoolVar(&opts.Plain, "plain", false, "Plain text output without glyphs or icons")
-	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of dashboard")
+	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of the terminal UI")
 	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
 	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
 	flag.BoolVar(&opts.Verbose, "v", false, "Enable verbose warning diagnostics on stderr (shorthand)")
@@ -181,20 +176,10 @@ func parseArgs() thermal.Options {
 			opts.NoEstimate = true
 		case "--verbose", "-v", "-d":
 			opts.Verbose = true
-		case "--port":
-			if v, ok := takeValue(); ok {
-				if n, err := strconv.Atoi(v); err == nil {
-					opts.Port = n
-				}
-			}
-		case "--host":
-			if v, ok := takeValue(); ok {
-				opts.Host = v
-			}
-		case "--open":
-			opts.Open = true
-		case "--no-open":
-			opts.NoOpen = true
+		case "--port", "--host", "--open", "--no-open":
+			fmt.Fprintln(os.Stderr, "thermal: the embedded web server has been retired; web flags are no longer supported.")
+			fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
+			os.Exit(1)
 		case "--no-update-check":
 			opts.NoUpdateCheck = true
 		case "--weeks":
@@ -540,30 +525,6 @@ func validateReportFlags(opts thermal.Options) error {
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the changelog command")
 		}
-	case "web", "serve":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
-		if opts.Breakdown || opts.Chart {
-			return fmt.Errorf("--breakdown and --chart do not apply to the web command")
-		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top only applies to the projects and models commands")
-		}
-		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
-			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
-		}
-		if sortKey != "" {
-			return fmt.Errorf("--sort does not apply to the web command")
-		}
-		if opts.Stream {
-			return fmt.Errorf("--stream only applies to the live command")
-		}
-		if opts.Tool != "" && opts.Tool != "all" && opts.Tool != "auto" {
-			if _, ok := loaders.ResolveTool(opts.Tool); !ok {
-				return fmt.Errorf("unknown tool: %s", opts.Tool)
-			}
-		}
 	case "replay":
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the replay command")
@@ -735,8 +696,7 @@ func main() {
 		runShare(opts)
 		return
 	case "web", "serve":
-		runServe(opts)
-		return
+		retireWebCommand()
 	case "license", "--license":
 		runLicense(opts)
 		return
@@ -788,7 +748,7 @@ func main() {
 		case "share":
 			runShare(opts)
 		case "web", "serve":
-			runServe(opts)
+			retireWebCommand()
 		default:
 			runReport(opts)
 		}
@@ -1775,37 +1735,10 @@ func runReceiptReport(opts thermal.Options) {
 	fmt.Print(render.RenderReceipt(rep, opts.Top, opts.NoColor))
 }
 
-// runServe starts the embedded local web dashboard and telemetry API server.
-func runServe(opts thermal.Options) {
-	srvOpts := server.Options{
-		Host:        opts.Host,
-		Port:        opts.Port,
-		Tool:        opts.Tool,
-		Since:       opts.Since,
-		Until:       opts.Until,
-		Last:        opts.Last,
-		NoEstimate:  opts.NoEstimate,
-		Offline:     opts.Offline,
-		StartOfWeek: opts.StartOfWeek,
-		DBPath:      opts.DBPath,
-		Verbose:     opts.Verbose,
-	}
-	if opts.JSON {
-		data, err := server.CollectTelemetry(srvOpts)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
-			os.Exit(1)
-		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		_ = enc.Encode(data)
-		return
-	}
-	open := opts.Open || (!opts.NoOpen && render.IsTerminal())
-	if err := server.StartServerWithOptions(srvOpts, open); err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
-		os.Exit(1)
-	}
+func retireWebCommand() {
+	fmt.Fprintln(os.Stderr, "thermal: embedded web server has been retired to preserve terminal-native focus.")
+	fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
+	os.Exit(1)
 }
 
 type liveSourceSig = loaders.SourceSig

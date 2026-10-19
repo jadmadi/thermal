@@ -107,12 +107,7 @@ export CLICOLOR_FORCE=""
 
 echo -e "   ${GREEN}✔${RESET} Hermetic fixture environment ready at: ${GATE_HOME}\n"
 
-SERVER_PID=""
 cleanup() {
-    if [[ -n "${SERVER_PID:-}" ]]; then
-        kill "${SERVER_PID}" 2>/dev/null || true
-        wait "${SERVER_PID}" 2>/dev/null || true
-    fi
     if [[ -n "${GATE_HOME:-}" && -d "${GATE_HOME}" ]]; then
         chmod -R u+w "${GATE_HOME}" 2>/dev/null || true
         rm -rf "${GATE_HOME}"
@@ -269,12 +264,11 @@ run_check "Receipt report sorted by verified" 0 text "${BIN_PATH}" receipt --sor
 run_check "Receipt report sorted by rate" 0 text "${BIN_PATH}" receipt --sort rate --no-color
 run_check "Receipt report JSON export" 0 json "${BIN_PATH}" receipt --json
 
-echo -e "\n${BOLD}8. Local Setup Audit, Stateless URL Sharing & Embedded Web Dashboard:${RESET}"
+echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
 run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
 run_check "Audit command JSON export" 0 json "${BIN_PATH}" audit --json
 run_check "Share command standard output" 0 text "${BIN_PATH}" share --no-color
 run_check "Share command JSON export" 0 json "${BIN_PATH}" share --json
-run_check "Serve command JSON export" 0 json "${BIN_PATH}" serve --json
 
 echo -e "\n${BOLD}9. Info, Version, License & Changelog Commands:${RESET}"
 run_check "Version output" 0 text "${BIN_PATH}" version
@@ -291,7 +285,6 @@ run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects --by on replay" 1 error "${BIN_PATH}" replay --by model
 run_check "Rejects --against on projects" 1 error "${BIN_PATH}" projects --against claude-pro
 run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
-run_check "Rejects --chart on serve" 1 error "${BIN_PATH}" serve --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
@@ -492,23 +485,21 @@ run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" proje
 
 # Persona 3: Security & Local Infrastructure flow
 run_check "Persona: System health and permissions audit" 0 text "${BIN_PATH}" audit --no-color
-run_check "Persona: Localhost web telemetry API export" 0 json "${BIN_PATH}" serve --json
 run_check "Persona: Stateless share card URL generation" 0 text "${BIN_PATH}" share --no-color
 run_check "Persona: Live token burn non-interactive pipe" 0 text "${BIN_PATH}" live
 run_check "Persona: Live token burn snapshot export" 0 json "${BIN_PATH}" live --json
 
 echo -e "\n${BOLD}16. Semantic Parity & Release Gate Assertions:${RESET}"
 
-# 1. Static / Web / Live Token Parity Check
+# 1. Static / Live Token Parity Check
 TOTAL_STATIC=$("${BIN_PATH}" --json --offline | jq '[.results[] | select((.tool // .Tool) != "agy" and (.tool // .Tool) != "command-code" and (.tool // .Tool) != "droid" and (.tool // .Tool) != "muse") | ((.summary // .Summary).lifetimeTokens // 0)] | add // 0')
-TOTAL_SERVE=$("${BIN_PATH}" serve --json --offline | jq '.totalTokens // 0')
 TOTAL_LIVE=$("${BIN_PATH}" live --json --offline | jq '.todayTokens // 0')
 
-if [[ "$TOTAL_STATIC" -eq 759700 && "$TOTAL_SERVE" -eq 759700 && "$TOTAL_LIVE" -eq 759700 ]]; then
-    echo -e "  ${GREEN}✔ [PASS]${RESET} Static/Web/Live token parity verified (759,700 tokens)"
+if [[ "$TOTAL_STATIC" -eq 759700 && "$TOTAL_LIVE" -eq 759700 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Static/Live token parity verified (759,700 tokens)"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
 else
-    echo -e "  ${RED}✖ [FAIL]${RESET} Token parity mismatch: static=${TOTAL_STATIC}, serve=${TOTAL_SERVE}, live=${TOTAL_LIVE} (expected 759700)"
+    echo -e "  ${RED}✖ [FAIL]${RESET} Token parity mismatch: static=${TOTAL_STATIC}, live=${TOTAL_LIVE} (expected 759700)"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
@@ -529,67 +520,7 @@ else
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
-# 3. Real Server Loopback Lifecycle, Host Guard & SSE Cancellation
-SERVER_PORT=8977
-"${BIN_PATH}" serve --port "${SERVER_PORT}" --host 127.0.0.1 --offline --no-open >/dev/null 2>&1 &
-SERVER_PID=$!
-
-READY=0
-for i in {1..30}; do
-    if curl -s "http://127.0.0.1:${SERVER_PORT}/api/health" | grep -q '"status":"ok"'; then
-        READY=1
-        break
-    fi
-    sleep 0.1
-done
-
-if [[ "$READY" -ne 1 ]]; then
-    echo -e "  ${RED}✖ [FAIL]${RESET} Localhost server failed to start on 127.0.0.1:${SERVER_PORT}"
-    FAILED_CHECKS=$((FAILED_CHECKS + 1))
-else
-    echo -e "  ${GREEN}✔ [PASS]${RESET} Localhost server started and responded healthy"
-    PASSED_CHECKS=$((PASSED_CHECKS + 1))
-
-    # Telemetry API returns exact tokens
-    SRV_TOKENS=$(curl -s "http://127.0.0.1:${SERVER_PORT}/api/telemetry" | jq '.totalTokens // 0')
-    if [[ "$SRV_TOKENS" -eq 759700 ]]; then
-        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server /api/telemetry matches token count (759,700)"
-        PASSED_CHECKS=$((PASSED_CHECKS + 1))
-    else
-        echo -e "  ${RED}✖ [FAIL]${RESET} Live server /api/telemetry token mismatch: expected 759700, got ${SRV_TOKENS}"
-        FAILED_CHECKS=$((FAILED_CHECKS + 1))
-    fi
-    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-
-    # Host header security check (untrusted authority rejected with 403)
-    FORBIDDEN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: untrusted.example" "http://127.0.0.1:${SERVER_PORT}/api/telemetry")
-    if [[ "$FORBIDDEN_CODE" -eq 403 ]]; then
-        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server rejects untrusted Host authority with HTTP 403"
-        PASSED_CHECKS=$((PASSED_CHECKS + 1))
-    else
-        echo -e "  ${RED}✖ [FAIL]${RESET} Live server did not reject untrusted Host authority: expected 403, got ${FORBIDDEN_CODE}"
-        FAILED_CHECKS=$((FAILED_CHECKS + 1))
-    fi
-    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-
-    # SSE stream connection & graceful cancellation (timeout 1s)
-    SSE_OUT=$(timeout 1s curl -s -N "http://127.0.0.1:${SERVER_PORT}/api/stream" || true)
-    if echo "$SSE_OUT" | grep -q "event: telemetry"; then
-        echo -e "  ${GREEN}✔ [PASS]${RESET} Live server /api/stream emits SSE event and handles client cancellation"
-        PASSED_CHECKS=$((PASSED_CHECKS + 1))
-    else
-        echo -e "  ${RED}✖ [FAIL]${RESET} Live server /api/stream did not emit expected SSE event: ${SSE_OUT}"
-        FAILED_CHECKS=$((FAILED_CHECKS + 1))
-    fi
-    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-fi
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-
-kill "${SERVER_PID}" 2>/dev/null || true
-wait "${SERVER_PID}" 2>/dev/null || true
-SERVER_PID=""
-
-# 4. Live Stream NDJSON Emission Check
+# 3. Live Stream NDJSON Emission Check
 STREAM_OUT=$(timeout 2s "${BIN_PATH}" live --json --stream --interval 100ms --offline || true)
 if echo "$STREAM_OUT" | grep -q '"type":"snapshot"'; then
     echo -e "  ${GREEN}✔ [PASS]${RESET} Live NDJSON streaming emits snapshot with bounded interval"

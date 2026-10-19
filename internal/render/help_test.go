@@ -45,7 +45,7 @@ func TestRenderHelp_NoColor(t *testing.T) {
 	commands := []string{
 		"daily", "weekly", "monthly", "projects", "models",
 		"mix", "stats", "trend", "replay", "yield", "receipt",
-		"share", "web", "serve", "audit", "changelog", "upgrade", "version", "license",
+		"share", "audit", "changelog", "upgrade", "version", "license",
 	}
 
 	for _, cmd := range commands {

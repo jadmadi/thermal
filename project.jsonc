@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-20-00-21",
+  "lastEdit": "26-10-20-00-37",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -34,13 +34,13 @@
       "Bubble Tea (Charm)",
       "Lip Gloss"
     ],
-    "architecture": "Single static binary, read-only SQLite mmap, bounded worker pools, delta snapshot caching, embedded localhost SSE web server",
+    "architecture": "Single static binary, read-only SQLite mmap, bounded worker pools, delta snapshot caching, terminal-native live monitor",
     "license": "Dual: AGPL-3.0 (Community) / Commercial (Enterprise)",
     "license_type": "copyleft" // "permissive" | "copyleft" | "waqf" | "proprietary"
   },
 
   // One-line metrics/capabilities pill shown on cards and tables
-  "stats": "15 AI Tools · FinOps, Replay, Yield & Receipts · CLI, TUI & Embedded Web · AGPL-3.0 / Commercial $30",
+  "stats": "15 AI Tools · FinOps, Replay, Yield & Receipts · CLI & Live Monitor · AGPL-3.0 / Commercial $30",
 
   // Highlight badges displayed on project cards
   "badges": [
@@ -75,7 +75,7 @@
   "problem_statement": "Developers using multiple AI coding agents (Devin, OpenCode, Codex, Claude Code, Grok, etc.) lack unified visibility into token expenditure, cost estimates, and daily coding activity across tools.",
 
   // Solution: How does this solve it?
-  "solution": "An instant, zero-configuration CLI and terminal dashboard that scans local session logs in milliseconds, calculates unified token metrics, prices model usage, and renders interactive heatmaps and charts directly in the terminal.",
+  "solution": "An instant, zero-configuration CLI and terminal live monitor that scans local session logs in milliseconds, calculates unified token metrics, prices model usage, and renders heatmaps, charts, and live burn telemetry directly in the terminal.",
 
   // List of major capabilities and distinct features
   "features": [
@@ -88,7 +88,7 @@
     "Token Yield (thermal yield): code output delta telemetry from diffs and patches (tokens per net line added) with session fork/branch lineage analysis",
     "Reasoning Effort Telemetry: cognitive intensity breakdowns across low, medium, and high reasoning tiers",
     "Context & Setup Health Audit (thermal audit): repository AGENTS.md context tax, MCP server density, local tool database file-readability checks (SQLite integrity and mmap are not assessed), and custom path checks",
-    "Embedded Local Web Dashboard & Live Monitor (thermal web, thermal live): zero-cloud localhost UI with live SSE token streaming, launch-relative session baselines with carried-in history separated from live bursts, one-second Peak/Rate buckets, metric-specific configurable flame ceilings, normalized token/step ticker columns with cost status and age/outlier markers, burst rollup with time/cost sorting and top spenders, today project/model rollups, velocity sparklines, and NDJSON export",
+    "Live Monitor (thermal live): terminal-native zero-cloud token streaming with launch-relative session baselines and carried-in history separated from live bursts, one-second Peak/Rate buckets, metric-specific configurable flame ceilings, normalized token/step ticker columns with cost status and age/outlier markers, burst rollup with time/cost sorting and top spenders, today project/model rollups, velocity sparklines, and NDJSON export",
     "Instant Shell Statusline Helper (thermal statusline): prompt-composable terminal helper for tmux and shell statuslines",
     "Zero-telemetry, offline-first design using read-only SQLite mmap and delta snapshot caching (~/.cache/thermal/); measured latency evidence and scale limits in docs/PERFORMANCE.md",
     "Static daily, weekly, monthly, projects, models, mix, stats, and trend reports with JSON output",

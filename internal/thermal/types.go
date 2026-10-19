@@ -53,10 +53,6 @@ type Options struct {
 	Grain           string        // day, week, month; mix verb
 	Against         string        // target model for replay simulation
 	Compare         string        // comma-separated plans/models for replay comparison
-	Port            int           // port for embedded web server (serve verb, default 8080)
-	Host            string        // host for embedded web server (serve verb, default 127.0.0.1)
-	Open            bool          // open browser automatically on serve
-	NoOpen          bool          // disable automatic browser opening on serve
 	Interval        time.Duration // polling interval for live monitor (live verb, default 1s)
 	Stream          bool          // stream continuous NDJSON live events (live verb)
 	Fresh           bool          // bypass cached statusline data; live sessions always start at launch

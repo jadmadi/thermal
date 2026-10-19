@@ -1080,3 +1080,32 @@ Use `thermal live` for real-time monitoring and static commands (`thermal`, `dai
 
 **Escape hatch**:
 For machine-readable data, use the static commands with `--json`. For live streaming, use `thermal live --json --stream`.
+
+---
+
+### Removed: Embedded Localhost Web Server
+<a id="removed-web-server"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal serve\|thermal web\|--port\|--host\|--open\|internal/server' .`.
+- **Detection signal**: `thermal web` and `thermal serve` exit 1 with a retirement notice. `--port`, `--host`, `--open`, and `--no-open` exit 1 when passed after a command. `internal/server/` no longer exists, and `thermal live --json --stream` is the supported headless telemetry path.
+
+**What changed and why**:
+The embedded HTTP server, SSE hub, and bundled HTML dashboard conflicted with Thermal's terminal-native anti-goals. The same telemetry is available as a snapshot or a continuous NDJSON stream from `thermal live`, which can be consumed by external tools without embedding a web stack in the binary. Static report commands also continue to support `--json`.
+
+**Before / After**:
+```bash
+# Before
+thermal serve --port 3000 --open
+curl http://127.0.0.1:3000/api/telemetry
+
+# After
+thermal live --json
+thermal live --json --stream
+```
+
+**The fix**:
+Replace `thermal serve`/`thermal web` with `thermal live --json` for a snapshot or `thermal live --json --stream` for continuous events. For historical reports, use the static commands with `--json`.
+
+**Escape hatch**:
+Pipe the NDJSON stream into your own local dashboard, log collector, or status bar. No network listener is required.

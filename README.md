@@ -48,7 +48,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
 2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
 3. **Insight — answers counting cannot.** `thermal replay` tests a real workload against subscription ceilings and API cards; `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add the 9-box FinOps grid, activity taxonomy, share drift, and regression forecasts.
-4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), the localhost web app (`thermal serve`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
+4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
 
 **The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
 
@@ -58,7 +58,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 
 | Edition | Price | Scope |
 | --- | --- | --- |
-| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI, TUI, and local web dashboard |
+| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI and live monitor |
 | **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
 | **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
 
@@ -593,19 +593,9 @@ thermal live --json
 thermal live --json --stream
 ```
 
-### `thermal serve`
-Embedded local web dashboard served on localhost. Compiles clean-room frontend assets directly into the binary via `go:embed`, binding to `127.0.0.1:8080` with zero telemetry and strict Content-Security-Policy headers:
-
-```bash
-# Start local web dashboard
-thermal serve
-
-# Custom port and automatic browser opening
-thermal serve --port 3000 --open
-
-# JSON export of complete telemetry dataset
-thermal serve --json
-```
+For headless telemetry and streaming, use `thermal live --json` for a snapshot
+or `thermal live --json --stream` for NDJSON. The embedded localhost web server
+has been retired to preserve terminal-native focus.
 
 ## Where the cost numbers come from
 
