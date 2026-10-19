@@ -208,12 +208,6 @@
       "shot": "shot-leaderboard.webp"
     },
     {
-      "command": "thermal dashboard",
-      "description": "Multi-view interactive Terminal User Interface (TUI)",
-      "category": "tui",
-      "shot": "shot-dashboard.webp"
-    },
-    {
       "command": "thermal projects",
       "description": "Breakdown usage by project and repository",
       "category": "analytics",
@@ -242,7 +236,7 @@
     },
     {
       "command": "thermal stats",
-      "description": "Interactive 9-box FinOps grid, cache efficiency, and volume distributions",
+      "description": "Daily volume and cost distribution, percentiles, and token composition",
       "category": "analytics"
     },
     {
@@ -256,23 +250,8 @@
       "category": "analytics"
     },
     {
-      "command": "thermal replay --against \"Claude Pro\"",
-      "description": "Replay historical workload against subscription caps",
-      "category": "cost"
-    },
-    {
-      "command": "thermal yield",
-      "description": "Token efficiency rating per net line of code produced from git diffs",
-      "category": "analytics"
-    },
-    {
-      "command": "thermal receipt",
-      "description": "Verifiable work outcome receipts from test runner and linter runs",
-      "category": "verification"
-    },
-    {
       "command": "thermal live",
-      "description": "Real-time token burn velocity gauge and rolling activity monitor",
+      "description": "Real-time token burn monitor with one-second rates, flame gauge, and cost-aware ticker",
       "category": "live"
     },
     {

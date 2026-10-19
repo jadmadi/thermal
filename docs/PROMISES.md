@@ -18,9 +18,6 @@ untested semantics.
 
 - [2026-10-14 promise-vs-delivery evaluation](evaluations/2026-10-14-promise-vs-delivery.md)
 - Remediation receipts and signed audits:
-  [receipt evidence](../goals/receipt-evidence-integrity/remediation-result.json),
-  [workload replay](../goals/workload-replay/remediation-result.json),
-  [rolling-window capacity](../goals/chatgpt-rolling-burst-replay/remediation-result.json),
   [setup audit](../goals/setup-health-audit/remediation-result.json),
   [ingestion performance](../goals/ingestion-performance-baseline/remediation-result.json)
 - [Performance baseline report](PERFORMANCE.md) · [Migration guide](MIGRATION.md)
@@ -67,77 +64,19 @@ unattributed), never silently priced.
 
 ## 3. Cross-surface totals
 
-**Wording:** "Four surfaces render the same numbers" (README Why Thermal).
+**Wording:** "CLI reports and the live monitor render the same numbers" (README Why Thermal).
 
-**Behavior:** CLI reports, JSON export, embedded web telemetry, live monitor and TUI views
-aggregate through the same canonical functions; a test asserts TUI totals equal the matching
-static command.
+**Behavior:** CLI reports, JSON export, and the live monitor aggregate through the same
+canonical functions; a test asserts live totals equal the matching static command.
 
-**Evidence:** gate check "Static/Web/Live token parity verified (759,700 tokens)" ·
-`go test ./internal/tui` · `go test ./internal/server`.
+**Evidence:** gate check "Static/Live token parity verified (759,700 tokens)" ·
+`go test ./internal/tui`.
 
-**Limits:** parity is verified on synthetic fixtures; browser-rendered appearance and every
-real history are not assessed.
+**Limits:** parity is verified on synthetic fixtures; every real history is not assessed.
 
 **Outcome: verified** (fixture-scoped).
 
-## 4. Verified work receipts (`thermal receipt`)
-
-**Wording:** "verifies test and lint outcomes with tiered confidence" (README).
-
-**Behavior:** receipts classify **observed command outcomes** from session transcripts —
-token-boundary runner recognition, explicit nonzero exits win, compound shell commands stay
-unknown, completed result lines can resolve an unrecorded exit. Tier 1 means an observed
-zero-exit test/linter/commit result, never an agent claim.
-
-**Evidence:** `go test -race ./internal/thermal -run 'Receipt|Evidence|Outcome'` ·
-[receipt remediation result](../goals/receipt-evidence-integrity/remediation-result.json) and
-its [signed audit](../goals/receipt-evidence-integrity/audit-receipt.json) ·
-[MIGRATION.md#changed-receipt-evidence-token-boundary](MIGRATION.md#changed-receipt-evidence-token-boundary).
-
-**Limits:** receipt sources are Claude, Agy, codewhale and Codex — a subset of the full
-ingestion registry listed in the README. A Tier 1 receipt is evidence that a command was
-observed to succeed; it is **not** proof that the task was correct, complete, or committed.
-
-**Outcome: verified** as observed command outcomes; **partial** as a coverage claim.
-
-## 5. Token yield (`thermal yield`)
-
-**Wording:** "measures tokens burned per net line of code" (README).
-
-**Behavior:** parses recorded diff/patch volume from transcripts and computes tokens per net
-line added, with session fork/mainline lineage where the source provides it.
-
-**Evidence:** `go test ./internal/thermal -run Yield` · render tests `go test ./internal/render -run Yield`.
-
-**Limits:** yield is a **recorded diff-volume ratio**. It does not measure correctness,
-maintainability, review effort, or business productivity, and deleted/rewritten code is only
-as well recorded as the transcript's diff data.
-
-**Outcome: verified** as a volume ratio; **unverified** as a productivity claim (not claimed).
-
-## 6. Workload replay (`thermal replay`)
-
-**Wording:** "simulates your real workload against subscription ceilings and API rate cards" (README).
-
-**Behavior:** a scenario comparison: canonical volume is conserved, unclassified tokens are
-disclosed, target pricing is labeled `complete` / `partial` / `missing` (rendered as `Unpriced`
-or `Partial estimate`), incomplete rows never carry a savings claim, and rolling-window
-capacity that daily telemetry cannot assess reports `UNKNOWN`.
-
-**Evidence:** `go test -race ./internal/thermal ./internal/render -run Replay` ·
-[replay remediation result](../goals/workload-replay/remediation-result.json) ·
-[capacity remediation result](../goals/chatgpt-rolling-burst-replay/remediation-result.json)
-and their signed audits ·
-[MIGRATION.md#changed-replay-volume-and-price-coverage](MIGRATION.md#changed-replay-volume-and-price-coverage).
-
-**Limits:** plan limits and rate cards are **configured assumptions**, not verified provider
-entitlements; replay cannot establish code quality or actual bills. Exact five-hour simulation
-is deferred until intraday timestamp coverage has its own design.
-
-**Outcome: verified** as a scenario comparison with explicit coverage labels.
-
-## 7. Performance (sub-10ms cached execution)
+## 4. Performance (sub-10ms cached execution)
 
 **Wording:** "sub-10ms cached execution on the baseline fixture" (README, qualified);
 sub-10ms target in [GOVERNANCE.md](../GOVERNANCE.md).
@@ -157,7 +96,7 @@ signature cannot observe a rewrite that preserves both byte size and modificatio
 
 **Outcome: verified** on both fixture scales (per-machine, fixture-scoped).
 
-## 8. Setup & context health audit (`thermal audit`)
+## 5. Setup & context health audit (`thermal audit`)
 
 **Wording:** "setup and permissions audit", "database mmap-readiness" (historical README text).
 
@@ -175,7 +114,7 @@ are not performed and are no longer advertised.
 
 **Outcome: verified** under the narrowed scope.
 
-## 9. Distribution and build provenance
+## 6. Distribution and build provenance
 
 **Wording:** SLSA Level 3 badge and "All official releases provide cryptographic build
 provenance … generated via OpenSSF" (README).
@@ -198,7 +137,7 @@ verification have not been re-checked.
 
 **Outcome: verified** for `v0.20.0` (artifact-level, reproducible).
 
-## 10. Commercial Use License ($30 per developer per year)
+## 7. Commercial Use License ($30 per developer per year)
 
 **Wording:** "Commercial Use License — $30 per developer per year" (README, `COMMERCIAL-LICENSE.md`, `thermal license`).
 
@@ -210,7 +149,7 @@ verification have not been re-checked.
 
 **Outcome: verified** as a published offer and terms; **unverified** as a demand or conversion claim.
 
-## 11. Allocation claims
+## 8. Allocation claims
 
 **Wording:** "zero allocations" (historical docs); performance invariant.
 

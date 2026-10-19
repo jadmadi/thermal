@@ -28,28 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 104
-- 🟡 **Ready to Execute (Pending)**: 6 (6 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 4
-- 🟢 **Implemented**: 94 (9 verified 📜, 17 stale ⚠️, 68 unverified)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 104 (19 verified 📜, 7 stale ⚠️, 78 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 103 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 411/466 completed (88%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`live-baseline-separation`](live-baseline-separation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#100)` | - | Separate live baseline carry-in from real-time activity and session counters — The live monitor treats its first poll as a session seed: it copies the current ... | `/goal goals/live-baseline-separation/goal.md` |
-| [`retire-dashboard-tui`](retire-dashboard-tui/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire interactive dashboard TUI and focus on thermal live (retire-dashboard-tui) | `/goal goals/retire-dashboard-tui/goal.md` |
-| [`retire-token-yield`](retire-token-yield/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire token yield efficiency metric and diff parsing (retire-token-yield) | `/goal goals/retire-token-yield/goal.md` |
-| [`retire-web-server`](retire-web-server/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire embedded localhost web dashboard and serve API (retire-web-server) | `/goal goals/retire-web-server/goal.md` |
-| [`retire-work-receipts`](retire-work-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire transcript session command scraping and receipts (retire-work-receipts) | `/goal goals/retire-work-receipts/goal.md` |
-| [`retire-workload-replay`](retire-workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire subscription capacity replay simulation (retire-workload-replay) | `/goal goals/retire-workload-replay/goal.md` |
-| [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#101)` | Prereqs: live-baseline-separation | Bucket live deltas into explicit one-second bins so Peak, Rate, and Speed share one window — `Peak: 567.9K tok/s` is currently the largest per-poll delta, not a per-second r... | `/goal goals/live-second-bucket-accounting/goal.md` |
-| [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#102)` | Prereqs: live-baseline-separation | Separate token and step ticker columns and make live cost precision explicit — The live ticker's `TOK/STEP` column prints `+567.9K tok` on one row and `+10.5K ... | `/goal goals/live-ticker-unit-and-cost-clarity/goal.md` |
-| [`live-flame-scale-contract`](live-flame-scale-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#103)` | Prereqs: live-baseline-separation, live-second-bucket-accounting | Define and expose the live flame ceiling per metric — The flame gauge currently mixes metrics and event counts. `intensity := math.Max... | `/goal goals/live-flame-scale-contract/goal.md` |
-| [`live-ticker-rollup-and-cost-sort`](live-ticker-rollup-and-cost-sort/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#104)` | Prereqs: live-ticker-unit-and-cost-clarity | Roll up live ticker bursts and add cost-first decision sorting — The live ticker renders one row per poll delta, so a project/model that emits se... | `/goal goals/live-ticker-rollup-and-cost-sort/goal.md` |
+- 📋 **Execution Tasks Progress**: 466/466 completed (100%)
 
 ---
 
@@ -72,11 +54,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `198772e` |
 | [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c00ef02` |
 | [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `56ec02b` |
-| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `26a20ae` |
+| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `26a20ae` |
 | [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `259d1e0` |
-| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6713335` |
+| [`live-baseline-separation`](live-baseline-separation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
+| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `6713335` |
 | [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `81901a8` |
-| [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `0d42b32` |
+| [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `0d42b32` |
 | [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e2cdc72` |
 | [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `78b5d70` |
 | [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `cd5600c` |
@@ -102,11 +85,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ad2d523` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f375fdf` |
 | [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `98772b5` |
-| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
 | [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9f08e2d` |
-| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
-| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
-| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e3b825b` |
+| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
+| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e3b825b` |
 | [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c4fffb` |
 | [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `3de20b6` |
 | [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7350bf` |
@@ -115,6 +98,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `598c3d1` |
 | [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `cebda93` |
 | [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b8fac89` |
+| [`retire-dashboard-tui`](retire-dashboard-tui/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `618f284` |
+| [`retire-token-yield`](retire-token-yield/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d516b38` |
+| [`retire-web-server`](retire-web-server/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a853b07` |
+| [`retire-work-receipts`](retire-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cc28819` |
+| [`retire-workload-replay`](retire-workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `97c2200` |
 | [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e657745` |
 | [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fd5ca83` |
 | [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `8e3d3e9` |
@@ -134,15 +122,19 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2842f1a` |
 | [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `79bbd75` |
 | [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `17b6b59` |
-| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `dd3ab4f` |
+| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `dd3ab4f` |
 | [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `305f589` |
 | [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `d162bf1` |
 | [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `752569e` |
-| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `8c7402c` |
+| [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `fbaff74` |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `8c7402c` |
+| [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `1f71cd2` |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `1f71cd2` |
+| [`live-flame-scale-contract`](live-flame-scale-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c5d85c0` |
+| [`live-ticker-rollup-and-cost-sort`](live-ticker-rollup-and-cost-sort/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b424c5` |
 | [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Audit Receipt | `c610c97fc84bf0d0b18416a5c137f01b758757db` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
