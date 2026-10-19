@@ -46,7 +46,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 | **DeepSeek (DSH)** | JSON session cache (`~/.dsh/storages`)             | Token usage, sessions, model breakdown        |
 | **Nous Hermes**    | SQLite DB (`~/.hermes/state.db`)                   | Token usage, sessions, cost, model breakdown  |
 | **Zed**            | SQLite DB (`~/.local/share/zed/threads/threads.db`)| Token usage, sessions, model breakdown        |
-| **command-code**   | JSONL transcripts                                  | Message activity, sessions, model breakdown   |
+| **command-code**   | JSONL session transcripts (`projects/*/*.jsonl`)   | Token usage, sessions, cost, models, projects |
 | **Agy**            | Transcript logs (JSONL)                            | Step activity, sessions, model breakdown      |
 
 Tools with token data appear in the **Token Warriors** leaderboard; activity-only tools appear in **Activity Hunters**.
@@ -641,7 +641,7 @@ The estimate is not a floor. It covers a day only when the source names a model 
 - Models the catalog cannot find are named in the `No pricing for` line rather than counted as free. A tool often records the variant it asked for, such as `claude-sonnet-5-high`, while the catalog prices the base model, so a short list of tier words (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco` and similar) is stripped before the lookup. Only one word is stripped, so two different models can never collapse onto one price.
 - A model the catalog genuinely lacks, such as Devin's `swe-1-7`, stays unpriced. Give it a price in `~/.config/thermal/pricing.json` and the total picks it up on the next run.
 
-Tools that record no tokens at all, such as Agy, Droid and command-code, report steps or messages instead. Those counts stay out of token totals and appear in the Activity Hunters leaderboard and in streaks, where they belong.
+Tools that record no tokens at all, such as Agy, Droid and Muse, report steps, messages, or prompts instead. Those counts stay out of token totals and appear in the Activity Hunters leaderboard and in streaks, where they belong. Legacy command-code transcripts that predate usage records keep contributing turns only.
 
 ## Cost estimation
 
@@ -671,23 +671,23 @@ Pricing is cached at `~/.cache/thermal/pricing.json` and refreshed every 24 hour
   Token Warriors
    #    Tool           Strk    Best    Days     Tokens      Cost
    ─────────────────────────────────────────────────────────────────
-   1. ZCode              6d      6d      8d   860.3M tok  ~$24.97
-   2. Devin              2d     33d     45d   19.2B tok   ~$20134.07
-   3. Codex              2d      7d     45d   978.6M tok  ~$462.60
-   4. OpenCode           1d     11d     28d   10.5B tok   $61.97
-   5. MiMoCode           1d      7d     16d   1.2B tok    $56.14
-   6. DeepSeek (DSH)     1d      1d      5d   18.0M tok   ~$0.07
-   7. Grok               1d      1d      1d   692.7K tok  $0.44
-   8. codewhale          1d      1d      3d   110.1K tok  $0.02
-   9. Claude             1d      1d      3d   0 tok       —
+   1. CMD               11d     11d     61d   3.5B tok    $89.42
+   2. ZCode              6d      6d      8d   860.3M tok  ~$24.97
+   3. Devin              2d     33d     45d   19.2B tok   ~$20134.07
+   4. Codex              2d      7d     45d   978.6M tok  ~$462.60
+   5. OpenCode           1d     11d     28d   10.5B tok   $61.97
+   6. MiMoCode           1d      7d     16d   1.2B tok    $56.14
+   7. DeepSeek (DSH)     1d      1d      5d   18.0M tok   ~$0.07
+   8. Grok               1d      1d      1d   692.7K tok  $0.44
+   9. codewhale          1d      1d      3d   110.1K tok  $0.02
+  10. Claude             1d      1d      3d   0 tok       —
 
   Activity Hunters
    #    Tool           Strk    Best    Days     Activity
    ───────────────────────────────────────────────────────
    1. Agy               40d     40d     47d   76.7K step
-   2. command-code       1d      9d     46d   10.8K msg
-   3. Droid              1d      1d      2d   14 msg
-   4. Muse               1d      1d      1d   1 prompt
+   2. Droid              1d      1d      2d   14 msg
+   3. Muse               1d      1d      1d   1 prompt
 
   >> Agy is on fire with a 40-day streak!
 
@@ -732,7 +732,7 @@ Thermal reads usage data from installed AI coding tools:
 - **OpenCode / MiMoCode**: Queries SQLite databases for pre-aggregated token usage, cost, and code diff stats. OpenCode v2 storage reads the `session_v2` table with fallback to the legacy schema
 - **Codex**: Reads `state_5.sqlite` (`threads.tokens_used`, model, source, reasoning_effort) as the primary source, supplements with rollout JSONL for the input/output/reasoning/cache token breakdown
 - **codewhale**: Reads JSON session files for `metadata.total_tokens`, `metadata.cost.session_cost_usd`, model, and mode
-- **command-code**: Parses JSONL session transcripts for message activity and model distribution (from `.meta.json` sidecars)
+- **command-code**: Parses `projects/*/*.jsonl` session transcripts for per-assistant `usage` (input/output/cache tokens and recorded `costUsd`), per-message models, and the header `cwd` for project attribution. `inputTokens` already includes cache read/write, which the loader subtracts to keep token types disjoint; legacy transcripts without usage contribute assistant turns only
 - **Agy**: Reads `transcript.jsonl` logs from all brain sessions for step activity and model info, with fallback to legacy `overview.txt`
 - **ZCode**: Reads the `model_usage` telemetry table (per-request tokens, model, agent; completed runs only) and `turn_usage` for turn counts. The database records no cost figures
 - **Grok**: Scans `sessions/*/*/updates.jsonl` for `turn_completed` usage (input/output/reasoning/cache tokens, `costUsdTicks` at 1e-10 USD, per-model `modelCalls`). Input already includes cache reads, reasoning is a subset of output; lifetime uses the recorded `totalTokens`. Honors `GROK_HOME`, falls back to `~/.grok`

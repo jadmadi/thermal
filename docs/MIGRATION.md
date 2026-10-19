@@ -16,6 +16,8 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Workload Replay Volume Conservation and Price Coverage](#changed-replay-volume-and-price-coverage)
   - [Changed: Rolling-Window Capacity Verdicts from Daily Telemetry](#changed-replay-rolling-capacity-unknown)
   - [Changed: `thermal replay --against` Resolves Built-In Plan Identifiers](#changed-replay-against-plan-resolution)
+- [Upgrading to v0.21.0](#upgrading-to-v0210)
+  - [Changed: Command Code Token and Project Attribution](#changed-command-code-token-attribution)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -251,6 +253,47 @@ If a script depended on `--against <plan>` producing an unpriced model row, swit
 
 **Escape hatch**:
 None needed for plan ids; model targeting is unchanged for any value that is not an exact plan id or name.
+
+---
+
+## Upgrading to v0.21.0
+
+### Changed: Command Code Token and Project Attribution
+<a id="changed-command-code-token-attribution"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*\(cmd\|command-code\)' .` or automated consumers of `thermal cmd --json`, `thermal projects --json`, and `thermal live`.
+- **Detection signal**: `CMD` moves from the Activity Hunters table to Token Warriors; `.summary.lifetimeTokens` changes from a timestamped-line count to real input+output tokens; `.summary.cost` becomes the recorded `costUsd` sum; `.daily[].input`, `.daily[].output`, `.daily[].cache`, and `.daily[].models` are populated; `thermal cmd projects` gains rows attributed to the session header `cwd`; `thermal live` reports CMD token burn instead of message steps.
+
+**What changed and why**:
+Thermal previously treated Command Code as an activity-only source and counted every timestamped transcript line as a "token", even though modern transcripts already carry per-assistant `usage` (`inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, `costUsd`), a per-message model, and the session working directory. The loader now reads those fields, subtracts cache read/write from `inputTokens` (they were nested) to keep token types disjoint, counts assistant messages as turns, and emits `ProjectDay` rows keyed on the header `cwd`. Legacy flat transcripts without usage still contribute assistant turns but never enter token totals. This removes the double count of user and assistant lines as tokens and exposes recorded spend without estimation.
+
+**Before / After**:
+```bash
+# Before (v0.20.x: line counts exposed as tokens, no cost or project attribution)
+thermal cmd --json
+# lifetimeTokens: 25800 · inputTokens: 0 · outputTokens: 0 · cacheTokens: 0 · cost: 0
+# daily[].tokens: line count
+thermal cmd projects
+# no project rows
+```
+
+```bash
+# After (v0.21.0+: real usage, recorded cost, per-project rows)
+thermal cmd --json
+# lifetimeTokens: 3500000000 · inputTokens: ... · outputTokens: ... · cacheTokens: ... · cost: 89.42
+# daily[].tokens: ... · daily[].turns: assistant messages
+thermal cmd projects
+# Project · Tools: CMD · Tokens · Cost · Days
+```
+
+**The fix**:
+Update dashboards, alerts, and scripts that compared Command Code's `lifetimeTokens` to message counts or expected it under Activity Hunters. Read `.summary.inputTokens`, `.summary.outputTokens`, `.summary.cacheTokens`, and `.summary.cost` for spend; use `.daily[].turns` for assistant-call counts and `thermal cmd projects` for per-repository FinOps. Compare recorded `costUsd` rather than token sums when measuring spend, because input tokens include re-sent context and cache is priced separately.
+
+**Escape hatch**:
+None. The old line-count metric conflated user and assistant messages with billable tokens and cannot be restored; legacy transcripts without usage remain visible as assistant turns with zero tokens.
+
+---
 
 ## Upgrading to v0.16.x
 

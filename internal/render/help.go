@@ -261,7 +261,7 @@ func RenderHelp(noColor bool) string {
 	sb.WriteString(fmt.Sprintf("  %s\n", secTitle("Supported Tools:")))
 	twLabel := "Token Warriors:"
 	twPadded := padStyled(theme.Secondary.SprintBold(colors, twLabel), len(twLabel), 18)
-	twList := "opencode · devin · codex · claude · zcode · grok · mimo · codewhale · dsh · hermes"
+	twList := "opencode · devin · codex · claude · zcode · grok · mimo · codewhale · dsh · hermes · cmd"
 	avail := termWidth - 23
 	twWrapped := WrapText(twList, avail)
 	for i, line := range twWrapped {
@@ -274,7 +274,7 @@ func RenderHelp(noColor bool) string {
 
 	ahLabel := "Activity Hunters:"
 	ahPadded := padStyled(theme.Secondary.SprintBold(colors, ahLabel), len(ahLabel), 18)
-	ahList := "agy · command-code · muse · droid"
+	ahList := "agy · muse · droid"
 	ahWrapped := WrapText(ahList, avail)
 	for i, line := range ahWrapped {
 		if i == 0 {

@@ -35,6 +35,25 @@ func TestRenderDashboard_Output(t *testing.T) {
 	}
 }
 
+func TestRenderDashboard_CommandCodeUsesTokenLabel(t *testing.T) {
+	sum := thermal.Summary{
+		Sessions:       1,
+		LifetimeTokens: 2500,
+		InputTokens:    2000,
+		OutputTokens:   500,
+	}
+	daily := []thermal.DailyRow{
+		{Day: "2026-07-15", Tokens: 2500, Input: 2000, Output: 500, Turns: 2},
+	}
+	out := RenderDashboard("CMD", sum, daily, "/path/to/projects", 52, true)
+	if !strings.Contains(out, "2.5K tokens") {
+		t.Errorf("expected CMD to report tokens, got:\n%s", out)
+	}
+	if strings.Contains(out, "2.5K messages") {
+		t.Errorf("CMD must not be labelled as message activity, got:\n%s", out)
+	}
+}
+
 func TestRenderDashboard_EstimatedCost(t *testing.T) {
 	sum := thermal.Summary{
 		Sessions:       2,

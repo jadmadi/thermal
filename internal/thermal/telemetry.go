@@ -241,5 +241,5 @@ func AggregateTelemetry(results []ToolResult, projects []ProjectDay, opts Teleme
 }
 
 func isActivityTool(t Tool) bool {
-	return t == ToolAgy || t == ToolCommandCode
+	return t == ToolAgy
 }

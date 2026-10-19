@@ -26,6 +26,22 @@ func TestRenderLeaderboard_Output(t *testing.T) {
 	}
 }
 
+func TestRenderLeaderboard_CommandCodeIsTokenWarrior(t *testing.T) {
+	results := []thermal.ToolResult{
+		{
+			Tool: thermal.ToolCommandCode, Name: "CMD", CurrentStreak: 1, LongestStreak: 2,
+			ActiveDays: 3, TotalActivity: 2500, Summary: thermal.Summary{Cost: 0.5},
+		},
+	}
+	out := RenderLeaderboard(results, 52, true, "", true)
+	if !strings.Contains(out, "Token Warriors") {
+		t.Errorf("expected CMD under Token Warriors, got:\n%s", out)
+	}
+	if strings.Contains(out, "Activity Hunters") {
+		t.Errorf("expected no Activity Hunters section for CMD alone, got:\n%s", out)
+	}
+}
+
 func TestRenderLeaderboardSortKeys(t *testing.T) {
 	// steady leads on streak, whale leads on tokens, pricey leads on cost.
 	results := []thermal.ToolResult{

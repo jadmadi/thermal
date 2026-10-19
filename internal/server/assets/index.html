@@ -1107,7 +1107,7 @@
     function isActivityTool(t) {
       if (!t) return false;
       const lower = t.toLowerCase();
-      return lower === "agy" || lower === "antigravity" || lower === "command-code" || lower === "cmd" || lower === "droid" || lower === "muse";
+      return lower === "agy" || lower === "antigravity" || lower === "droid" || lower === "muse";
     }
 
     function getActivityUnit(t) {
@@ -1115,7 +1115,7 @@
       const lower = t.toLowerCase();
       if (lower === "agy" || lower === "antigravity") return "step";
       if (lower === "muse") return "prompt";
-      if (lower === "command-code" || lower === "cmd" || lower === "droid") return "msg";
+      if (lower === "droid") return "msg";
       return "tok";
     }
 
