@@ -1,4 +1,4 @@
-# Goal: Fix live tracker phantom bursts and fractional speed display
+# Goal: Fix live tracker idle baseline collapse (live-tracker-phantom-bursts)
 
 ## Chain of Custody (Isnad)
 - Registered By: Jad Madi (via Antigravity)
@@ -6,7 +6,7 @@
 - Implemented By: Pending Implementation
 
 ## Goal Description
-Prevent live tracker from clobbering project cumulative baselines on idle ticks and preserve fractional sub-1.0 step and token speeds in terminal live monitor.
+Prevent `LiveTracker.Poll` from clobbering cumulative project token and turn baselines to single-day counts during idle (no-delta) poll ticks.
 
 ## Dependencies & Execution Order
 - Mode: Independent (disjoint, parallelizable)
@@ -18,8 +18,6 @@ Prevent live tracker from clobbering project cumulative baselines on idle ticks 
 ## Files to Touch
 - `internal/thermal/live.go`
 - `internal/thermal/live_test.go`
-- `internal/tui/live.go`
-- `internal/tui/live_test.go`
 - `docs/MIGRATION.md`
 
 ## References
@@ -27,8 +25,8 @@ Prevent live tracker from clobbering project cumulative baselines on idle ticks 
 - Execution Plan: [`goals/live-tracker-phantom-bursts/plan.md`](plan.md)
 
 ## Done Condition
-1. `LiveTracker.Poll` maintains cumulative project turn and token baselines across all days on idle (no-delta) ticks and day boundaries instead of collapsing to single-day counts.
-2. Project deltas (`pDTurns` and `pDTok`) clamp to tool-level `deltaTurns` and `deltaTok` when baselines exist, preventing project deltas from exceeding overall tool activity.
-3. `formatSpeed` displays fractional speeds (e.g., `0.7 step/s` or `0.7 tok/s`) for positive sub-1.0 speeds instead of truncating via `int64` to `0 step/s` when burn rate is positive.
-4. Unit tests in `internal/thermal/live_test.go` and `internal/tui/live_test.go` verify baseline preservation on idle polls and fractional speed formatting.
+1. In `internal/thermal/live.go:806-813`, when `deltaTok == 0 && deltaTurns == 0`, project baselines accumulate across all days matching the delta path instead of filtering on `pd.Day == lt.todayDay`.
+2. Sequential polling with zero tool deltas preserves cumulative project baselines in `lt.prevProjTokens` and `lt.prevProjTurns`.
+3. Subsequent tool increments (e.g. +1 turn) emit only the new activity delta in `RecentEvents` rather than re-emitting historical lifetime project totals.
+4. Deterministic unit tests in `internal/thermal/live_test.go` verify sequential baseline stability across idle polls.
 5. All automated unit tests pass cleanly with `-race` (`go test -race ./...`).

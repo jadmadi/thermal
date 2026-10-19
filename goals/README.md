@@ -27,11 +27,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 90
-- 🟡 **Ready to Execute (Pending)**: 1 (1 independent ⚡, 0 unblocked 🔗)
+- **Total Goals**: 93
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 2
 - 🟢 **Implemented**: 89 (15 verified 📜, 6 stale ⚠️, 68 unverified)
-- 🎯 **By Tier**: 2 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 391/397 completed (98%)
+- 🎯 **By Tier**: 5 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 391/407 completed (96%)
 
 ---
 
@@ -39,7 +40,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#90)` | - | Fix live tracker phantom bursts and fractional speed display — Prevent live tracker from clobbering project cumulative baselines on idle ticks ... | `/goal goals/live-tracker-phantom-bursts/goal.md` |
+| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#90)` | - | Fix live tracker idle baseline collapse (live-tracker-phantom-bursts) — Prevent `LiveTracker.Poll` from clobbering cumulative project token and turn bas... | `/goal goals/live-tracker-phantom-bursts/goal.md` |
+| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#93)` | - | Preserve fractional sub-1.0 speeds in live monitor (live-speed-fractional-display) — Display fractional token and step speeds for positive sub-1.0 rates in `internal... | `/goal goals/live-speed-fractional-display/goal.md` |
+| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `🎯 Immediate` | `🚢 SHIP ⛔ Blocked (#91)` | Prereqs: live-tracker-phantom-bursts | Preserve cumulative project baselines across midnight transitions (live-tracker-midnight-drift) — Prevent midnight day boundary transition in `LiveTracker.Poll` from resetting cu... | `/goal goals/live-tracker-midnight-drift/goal.md` |
+| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `🎯 Immediate` | `🚢 SHIP ⛔ Blocked (#92)` | Prereqs: live-tracker-phantom-bursts | Clamp project activity deltas to tool-level totals (live-tracker-delta-clamping) — Ensure individual project token and turn deltas in `LiveTracker.Poll` cannot exc... | `/goal goals/live-tracker-delta-clamping/goal.md` |
 
 ---
 
