@@ -283,8 +283,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 	// Baseline poll: Project A has 80,000 tokens, Project B has 20,000 tokens
 	res1 := []ToolResult{
 		{
-			Tool: ToolAgy,
-			Name: "Agy",
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
 			Summary: Summary{
 				LifetimeTokens: 100_000,
 				Sessions:       100,
@@ -292,8 +292,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 		},
 	}
 	proj1 := []ProjectDay{
-		{Tool: "Agy", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_000, Turns: 80},
-		{Tool: "Agy", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_000, Turns: 20},
+		{Tool: "OpenCode", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_000, Turns: 80},
+		{Tool: "OpenCode", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_000, Turns: 20},
 	}
 
 	snap1, events1 := lt.Poll(res1, proj1, t1)
@@ -308,8 +308,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 	t2 := t1.Add(time.Second)
 	res2 := []ToolResult{
 		{
-			Tool: ToolAgy,
-			Name: "Agy",
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
 			Summary: Summary{
 				LifetimeTokens: 100_010,
 				Sessions:       101,
@@ -317,8 +317,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 		},
 	}
 	proj2 := []ProjectDay{
-		{Tool: "Agy", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_000, Turns: 80}, // unchanged!
-		{Tool: "Agy", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_010, Turns: 21}, // +10 tokens, +1 turn
+		{Tool: "OpenCode", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_000, Turns: 80}, // unchanged!
+		{Tool: "OpenCode", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_010, Turns: 21}, // +10 tokens, +1 turn
 	}
 
 	snap2, events2 := lt.Poll(res2, proj2, t2)
@@ -339,8 +339,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 	t3 := t2.Add(time.Second)
 	res3 := []ToolResult{
 		{
-			Tool: ToolAgy,
-			Name: "Agy",
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
 			Summary: Summary{
 				LifetimeTokens: 100_015,
 				Sessions:       102,
@@ -348,8 +348,8 @@ func TestLiveTracker_MultiProjectDelta(t *testing.T) {
 		},
 	}
 	proj3 := []ProjectDay{
-		{Tool: "Agy", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_005, Turns: 81}, // +5 tokens!
-		{Tool: "Agy", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_010, Turns: 21}, // unchanged!
+		{Tool: "OpenCode", Project: "/workspace/projectA", Day: "2026-09-24", Tokens: 80_005, Turns: 81}, // +5 tokens!
+		{Tool: "OpenCode", Project: "/workspace/projectB", Day: "2026-09-24", Tokens: 20_010, Turns: 21}, // unchanged!
 	}
 
 	snap3, events3 := lt.Poll(res3, proj3, t3)
@@ -1002,5 +1002,1056 @@ func TestLiveTracker_ResumedSessionProjectAndModel(t *testing.T) {
 	}
 	if snap2.ActiveModel != "deepseek-flash" {
 		t.Errorf("expected snap2.ActiveModel 'deepseek-flash', got %q", snap2.ActiveModel)
+	}
+}
+
+func TestLiveTracker_IdlePollBaselinePreservation(t *testing.T) {
+	lt := NewLiveTracker()
+
+	t1, err := time.Parse("2006-01-02 15:04:05", "2026-10-19 10:00:00")
+	if err != nil {
+		t.Fatalf("failed to parse t1: %v", err)
+	}
+
+	// Historical activity: Day 2026-10-18 has 125,600 turns in project lab
+	res1 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       125_600,
+			},
+			Daily: []DailyRow{
+				{
+					Day:   "2026-10-18",
+					Turns: 125_600,
+				},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "Agy",
+			Project: "/mnt/Jad/github/lab/thermal-streak",
+			Day:     "2026-10-18",
+			Turns:   125_600,
+		},
+	}
+
+	// 1. Initial poll
+	snap1, events1 := lt.Poll(res1, proj1, t1)
+	if len(events1) != 0 {
+		t.Fatalf("expected 0 events on initial poll, got %d", len(events1))
+	}
+	if snap1.SessionTurns != 0 {
+		t.Errorf("expected 0 session turns initially, got %d", snap1.SessionTurns)
+	}
+
+	// 2. Sequential idle polls (zero delta)
+	for i := 1; i <= 3; i++ {
+		tIdle := t1.Add(time.Duration(i) * time.Second)
+		snapIdle, eventsIdle := lt.Poll(res1, proj1, tIdle)
+		if len(eventsIdle) != 0 {
+			t.Fatalf("idle poll %d: expected 0 events, got %d", i, len(eventsIdle))
+		}
+		if snapIdle.SessionTurns != 0 {
+			t.Errorf("idle poll %d: expected 0 session turns, got %d", i, snapIdle.SessionTurns)
+		}
+	}
+
+	// 3. +1 turn update arrives on today's day (2026-10-19)
+	t2 := t1.Add(10 * time.Second)
+	res2 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       125_601,
+			},
+			Daily: []DailyRow{
+				{
+					Day:   "2026-10-18",
+					Turns: 125_600,
+				},
+				{
+					Day:   "2026-10-19",
+					Turns: 1,
+				},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{
+			Tool:    "Agy",
+			Project: "/mnt/Jad/github/lab/thermal-streak",
+			Day:     "2026-10-18",
+			Turns:   125_600,
+		},
+		{
+			Tool:    "Agy",
+			Project: "/mnt/Jad/github/lab/thermal-streak",
+			Day:     "2026-10-19",
+			Turns:   1,
+		},
+	}
+
+	snap2, events2 := lt.Poll(res2, proj2, t2)
+	if len(events2) != 1 {
+		t.Fatalf("expected exactly 1 event on +1 turn update, got %d", len(events2))
+	}
+	if events2[0].Turns != 1 {
+		t.Errorf("expected event Turns: 1, got %d (phantom burst!)", events2[0].Turns)
+	}
+	if events2[0].Project != "thermal-streak" {
+		t.Errorf("expected event Project 'thermal-streak', got %q", events2[0].Project)
+	}
+
+	var sumTurns int
+	for _, ev := range snap2.RecentEvents {
+		sumTurns += ev.Turns
+	}
+	if sumTurns != snap2.SessionTurns {
+		t.Errorf("invariant violation: sum(RecentEvents.Turns)=%d != SessionTurns=%d", sumTurns, snap2.SessionTurns)
+	}
+	if snap2.SessionTurns != 1 {
+		t.Errorf("expected SessionTurns 1, got %d", snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_IdlePollNoDuplicateBursts(t *testing.T) {
+	lt := NewLiveTracker()
+
+	t1, err := time.Parse("2006-01-02 15:04:05", "2026-10-19 12:00:00")
+	if err != nil {
+		t.Fatalf("failed to parse t1: %v", err)
+	}
+
+	res := []ToolResult{
+		{
+			Tool: ToolClaude,
+			Name: "Claude",
+			Summary: Summary{
+				LifetimeTokens: 50_000,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-10-18",
+					Tokens: 40_000,
+					Turns:  8,
+				},
+				{
+					Day:    "2026-10-19",
+					Tokens: 10_000,
+					Turns:  2,
+				},
+			},
+		},
+	}
+	proj := []ProjectDay{
+		{
+			Tool:    "Claude",
+			Project: "/home/user/code/proj",
+			Day:     "2026-10-18",
+			Tokens:  40_000,
+			Turns:   8,
+		},
+		{
+			Tool:    "Claude",
+			Project: "/home/user/code/proj",
+			Day:     "2026-10-19",
+			Tokens:  10_000,
+			Turns:   2,
+		},
+	}
+
+	_, eventsInit := lt.Poll(res, proj, t1)
+	if len(eventsInit) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(eventsInit))
+	}
+
+	// Repeated identical polls
+	for i := 1; i <= 5; i++ {
+		tStep := t1.Add(time.Duration(i) * time.Second)
+		snap, events := lt.Poll(res, proj, tStep)
+		if len(events) != 0 {
+			t.Fatalf("poll %d with zero delta produced %d events (expected 0)", i, len(events))
+		}
+		if snap.SessionTokens != 0 || snap.SessionTurns != 0 {
+			t.Fatalf("poll %d mutated session counters without delta: tokens=%d, turns=%d", i, snap.SessionTokens, snap.SessionTurns)
+		}
+	}
+}
+
+func TestLiveTracker_MidnightTransitionBaseline(t *testing.T) {
+	lt := NewLiveTracker()
+
+	// 23:59:50 on Day 1
+	tPre, err := time.Parse("2006-01-02 15:04:05", "2026-10-19 23:59:50")
+	if err != nil {
+		t.Fatalf("failed to parse tPre: %v", err)
+	}
+
+	resPre := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_000_000,
+				Sessions:       100,
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-10-19",
+					Tokens: 1_000_000,
+					Turns:  100,
+				},
+			},
+		},
+	}
+	projPre := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-19",
+			Tokens:  1_000_000,
+			Turns:   100,
+		},
+	}
+
+	_, eventsPre := lt.Poll(resPre, projPre, tPre)
+	if len(eventsPre) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(eventsPre))
+	}
+
+	// Midnight crossing at 00:00:01 on Day 2 (no new activity yet)
+	tMid, _ := time.Parse("2006-01-02 15:04:05", "2026-10-20 00:00:01")
+	snapMid, eventsMid := lt.Poll(resPre, projPre, tMid)
+	if len(eventsMid) != 0 {
+		t.Fatalf("expected 0 events on midnight crossing without activity, got %d", len(eventsMid))
+	}
+	if snapMid.TodayTokens != 0 || snapMid.TodayTurns != 0 {
+		t.Errorf("expected todayTokens and todayTurns 0 on new day, got tokens=%d turns=%d", snapMid.TodayTokens, snapMid.TodayTurns)
+	}
+
+	// +500 tokens and +2 turns on Day 2 at 00:00:10
+	tPost, _ := time.Parse("2006-01-02 15:04:05", "2026-10-20 00:00:10")
+	resPost := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_000_500,
+				Sessions:       102,
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-10-19",
+					Tokens: 1_000_000,
+					Turns:  100,
+				},
+				{
+					Day:    "2026-10-20",
+					Tokens: 500,
+					Turns:  2,
+				},
+			},
+		},
+	}
+	projPost := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-19",
+			Tokens:  1_000_000,
+			Turns:   100,
+		},
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-20",
+			Tokens:  500,
+			Turns:   2,
+		},
+	}
+
+	snapPost, eventsPost := lt.Poll(resPost, projPost, tPost)
+	if len(eventsPost) != 1 {
+		t.Fatalf("expected 1 event for post-midnight increment, got %d", len(eventsPost))
+	}
+	ev := eventsPost[0]
+	if ev.Tokens != 500 {
+		t.Errorf("expected 500 tokens in post-midnight event, got %d (phantom burst!)", ev.Tokens)
+	}
+	if ev.Turns != 2 {
+		t.Errorf("expected 2 turns in post-midnight event, got %d", ev.Turns)
+	}
+	if ev.Project != "app" {
+		t.Errorf("expected Project 'app', got %q", ev.Project)
+	}
+
+	var sumTurns int
+	for _, e := range snapPost.RecentEvents {
+		sumTurns += e.Turns
+	}
+	if sumTurns != snapPost.SessionTurns {
+		t.Errorf("invariant violation: sum(RecentEvents.Turns)=%d != SessionTurns=%d", sumTurns, snapPost.SessionTurns)
+	}
+}
+
+func TestLiveTracker_MidnightTransitionNoPhantomReplay(t *testing.T) {
+	lt := NewLiveTracker()
+
+	t1, _ := time.Parse("2006-01-02 15:04:05", "2026-10-19 23:59:55")
+	t2, _ := time.Parse("2006-01-02 15:04:05", "2026-10-20 00:00:05")
+
+	res := []ToolResult{
+		{
+			Tool: ToolCodex,
+			Name: "Codex",
+			Summary: Summary{
+				LifetimeTokens: 75_000,
+				Sessions:       5,
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-10-19",
+					Tokens: 75_000,
+					Turns:  5,
+				},
+			},
+		},
+	}
+	proj := []ProjectDay{
+		{
+			Tool:    "Codex",
+			Project: "/mnt/Jad/github/lab/thermal-streak",
+			Day:     "2026-10-19",
+			Tokens:  75_000,
+			Turns:   5,
+		},
+	}
+
+	lt.Poll(res, proj, t1)
+	snap2, events2 := lt.Poll(res, proj, t2)
+	if len(events2) != 0 {
+		t.Fatalf("expected 0 events across midnight when data is unchanged, got %d", len(events2))
+	}
+	if snap2.SessionTurns != 0 {
+		t.Errorf("expected session turns 0, got %d", snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_ProjectDeltaClamping(t *testing.T) {
+	lt := NewLiveTracker()
+
+	t1, _ := time.Parse("2006-01-02 15:04:05", "2026-10-19 14:00:00")
+	t2, _ := time.Parse("2006-01-02 15:04:05", "2026-10-19 14:00:05")
+
+	res1 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{
+					Day:   "2026-10-19",
+					Turns: 10,
+				},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "Agy",
+			Project: "/mnt/Jad/github/lab",
+			Day:     "2026-10-19",
+			Turns:   10,
+		},
+	}
+
+	lt.Poll(res1, proj1, t1)
+
+	// Tool delta is +2 turns. But anomalous project telemetry reports +10,000 turns!
+	res2 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 0,
+				Sessions:       12, // +2 turns
+			},
+			Daily: []DailyRow{
+				{
+					Day:   "2026-10-19",
+					Turns: 12,
+				},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{
+			Tool:    "Agy",
+			Project: "/mnt/Jad/github/lab",
+			Day:     "2026-10-19",
+			Turns:   10_010, // anomalous +10,000 turns!
+		},
+	}
+
+	snap2, events2 := lt.Poll(res2, proj2, t2)
+	if len(events2) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events2))
+	}
+	if events2[0].Turns != 2 {
+		t.Errorf("expected clamped Turns: 2, got %d", events2[0].Turns)
+	}
+	if snap2.SessionTurns != 2 {
+		t.Errorf("expected SessionTurns 2, got %d", snap2.SessionTurns)
+	}
+
+	var sumTurns int
+	for _, ev := range snap2.RecentEvents {
+		sumTurns += ev.Turns
+	}
+	if sumTurns != snap2.SessionTurns {
+		t.Errorf("invariant violation: sum(RecentEvents.Turns)=%d != SessionTurns=%d", sumTurns, snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_ProjectDeltaExceedsToolRejected(t *testing.T) {
+	lt := NewLiveTracker()
+
+	t1, _ := time.Parse("2006-01-02 15:04:05", "2026-10-19 15:00:00")
+	t2, _ := time.Parse("2006-01-02 15:04:05", "2026-10-19 15:00:05")
+
+	res := []ToolResult{
+		{
+			Tool: ToolDevin,
+			Name: "Devin",
+			Summary: Summary{
+				LifetimeTokens: 200_000,
+				Sessions:       20,
+			},
+			Daily: []DailyRow{
+				{
+					Day:    "2026-10-19",
+					Tokens: 200_000,
+					Turns:  20,
+				},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "Devin",
+			Project: "/home/user/devin-proj",
+			Day:     "2026-10-19",
+			Tokens:  200_000,
+			Turns:   20,
+		},
+	}
+	proj2 := []ProjectDay{
+		{
+			Tool:    "Devin",
+			Project: "/home/user/devin-proj",
+			Day:     "2026-10-19",
+			Tokens:  300_000, // anomalous change without tool delta
+			Turns:   30,
+		},
+	}
+
+	lt.Poll(res, proj1, t1)
+	snap2, events2 := lt.Poll(res, proj2, t2)
+	if len(events2) != 0 {
+		t.Fatalf("expected 0 events when tool delta is 0, got %d", len(events2))
+	}
+	if snap2.SessionTokens != 0 || snap2.SessionTurns != 0 {
+		t.Errorf("expected 0 session counters, got tokens=%d turns=%d", snap2.SessionTokens, snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_ActivityToolDifferentLifetimeTokens(t *testing.T) {
+	lt := NewLiveTracker()
+	t1 := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	t2 := t1.Add(time.Second)
+
+	// Agy has LifetimeTokens: 100 (lifetime steps from legacy), but Daily turns: 10
+	res1 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 100,
+				Sessions:       100,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 10, Turns: 10},
+			},
+		},
+	}
+
+	snap1, events1 := lt.Poll(res1, nil, t1)
+	if len(events1) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(events1))
+	}
+	if snap1.SessionTokens != 0 {
+		t.Fatalf("expected 0 session tokens on init, got %d", snap1.SessionTokens)
+	}
+
+	// +1 step on Agy (LifetimeTokens becomes 101, Daily turns becomes 11)
+	res2 := []ToolResult{
+		{
+			Tool: ToolAgy,
+			Name: "Agy",
+			Summary: Summary{
+				LifetimeTokens: 101,
+				Sessions:       101,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 11, Turns: 11},
+			},
+		},
+	}
+
+	snap2, events2 := lt.Poll(res2, nil, t2)
+	if len(events2) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events2))
+	}
+	if events2[0].Tokens != 0 {
+		t.Errorf("expected 0 tokens for activity tool event, got %d", events2[0].Tokens)
+	}
+	if events2[0].Turns != 1 {
+		t.Errorf("expected 1 turn for activity tool event, got %d", events2[0].Turns)
+	}
+	if snap2.SessionTokens != 0 {
+		t.Errorf("expected SessionTokens to remain 0, got %d", snap2.SessionTokens)
+	}
+	if snap2.SessionTurns != 1 {
+		t.Errorf("expected SessionTurns 1, got %d", snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_MultiProjectNoPhantomTokenDuplication(t *testing.T) {
+	lt := NewLiveTracker()
+	t1 := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	t2 := t1.Add(time.Second)
+
+	res1 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_000,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 1_000, Turns: 10},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/projA",
+			Day:     "2026-10-19",
+			Tokens:  1_000,
+			Turns:   5,
+		},
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/projB",
+			Day:     "2026-10-19",
+			Tokens:  0,
+			Turns:   5,
+		},
+	}
+
+	lt.Poll(res1, proj1, t1)
+
+	// Tool delta: +100 tokens, +2 turns
+	// projA gets +100 tokens, 0 turns
+	// projB gets 0 tokens, +2 turns
+	res2 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_100,
+				Sessions:       12,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 1_100, Turns: 12},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/projA",
+			Day:     "2026-10-19",
+			Tokens:  1_100, // +100 tokens, 0 turns
+			Turns:   5,
+		},
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/projB",
+			Day:     "2026-10-19",
+			Tokens:  0, // 0 tokens, +2 turns
+			Turns:   7,
+		},
+	}
+
+	snap2, events2 := lt.Poll(res2, proj2, t2)
+	var totalEvTokens int64
+	var totalEvTurns int
+	for _, ev := range events2 {
+		totalEvTokens += ev.Tokens
+		totalEvTurns += ev.Turns
+		if ev.Project == "projB" && ev.Tokens != 0 {
+			t.Errorf("projB should have 0 tokens, but got %d (phantom token inflation!)", ev.Tokens)
+		}
+	}
+
+	if totalEvTokens != 100 {
+		t.Errorf("expected total emitted tokens strictly 100, got %d (phantom burst!)", totalEvTokens)
+	}
+	if totalEvTurns != 2 {
+		t.Errorf("expected total emitted turns strictly 2, got %d", totalEvTurns)
+	}
+	if snap2.SessionTokens != 100 {
+		t.Errorf("expected SessionTokens 100, got %d", snap2.SessionTokens)
+	}
+	if snap2.SessionTurns != 2 {
+		t.Errorf("expected SessionTurns 2, got %d", snap2.SessionTurns)
+	}
+}
+
+func TestLiveTracker_LateToolDiscoveryBaselineNotDoubled(t *testing.T) {
+	lt := NewLiveTracker()
+	t1 := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	t2 := t1.Add(time.Second)
+	t3 := t2.Add(time.Second)
+
+	// Poll 1: Tool Devin is NOT in results, but its historical project is in projDays
+	proj := []ProjectDay{
+		{
+			Tool:    "Devin",
+			Project: "/home/user/devin-app",
+			Day:     "2026-10-19",
+			Tokens:  50_000,
+			Turns:   10,
+		},
+	}
+	lt.Poll(nil, proj, t1)
+
+	// Poll 2: Devin appears in results for the first time
+	res2 := []ToolResult{
+		{
+			Tool: ToolDevin,
+			Name: "Devin",
+			Summary: Summary{
+				LifetimeTokens: 50_000,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 50_000, Turns: 10},
+			},
+		},
+	}
+	snap2, events2 := lt.Poll(res2, proj, t2)
+	if len(events2) != 0 {
+		t.Fatalf("expected 0 events on first discovery of Devin, got %d", len(events2))
+	}
+	if snap2.SessionTokens != 0 {
+		t.Errorf("expected SessionTokens 0, got %d", snap2.SessionTokens)
+	}
+
+	// Poll 3: Devin burns +100 tokens and +1 turn
+	res3 := []ToolResult{
+		{
+			Tool: ToolDevin,
+			Name: "Devin",
+			Summary: Summary{
+				LifetimeTokens: 50_100,
+				Sessions:       11,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 50_100, Turns: 11},
+			},
+		},
+	}
+	proj3 := []ProjectDay{
+		{
+			Tool:    "Devin",
+			Project: "/home/user/devin-app",
+			Day:     "2026-10-19",
+			Tokens:  50_100,
+			Turns:   11,
+		},
+	}
+	snap3, events3 := lt.Poll(res3, proj3, t3)
+	if len(events3) != 1 {
+		t.Fatalf("expected 1 event on poll 3, got %d", len(events3))
+	}
+	if events3[0].Tokens != 100 {
+		t.Errorf("expected 100 tokens in event, got %d (baseline was likely doubled and delta swallowed!)", events3[0].Tokens)
+	}
+	if events3[0].Turns != 1 {
+		t.Errorf("expected 1 turn in event, got %d", events3[0].Turns)
+	}
+	if snap3.SessionTokens != 100 {
+		t.Errorf("expected SessionTokens 100, got %d", snap3.SessionTokens)
+	}
+}
+
+func TestLiveTracker_MultiProjectTurnSortingClamping(t *testing.T) {
+	lt := NewLiveTracker()
+	t1 := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	t2 := t1.Add(time.Second)
+
+	res1 := []ToolResult{
+		{
+			Tool:    ToolAgy,
+			Name:    "Agy",
+			Summary: Summary{LifetimeTokens: 0, Sessions: 20},
+			Daily:   []DailyRow{{Day: "2026-10-19", Turns: 20}},
+		},
+	}
+	proj1 := []ProjectDay{
+		{Tool: "Agy", Project: "/repo/aaa", Day: "2026-10-19", Turns: 10},
+		{Tool: "Agy", Project: "/repo/zzz", Day: "2026-10-19", Turns: 10},
+	}
+	lt.Poll(res1, proj1, t1)
+
+	// Tool delta is +5 turns
+	// aaa reports +1 turn (Turns: 11)
+	// zzz reports +10 turns (Turns: 20)
+	// Clamping budget is 5 turns total. Higher delta (zzz: 10) must be prioritized over lower delta (aaa: 1).
+	res2 := []ToolResult{
+		{
+			Tool:    ToolAgy,
+			Name:    "Agy",
+			Summary: Summary{LifetimeTokens: 0, Sessions: 25},
+			Daily:   []DailyRow{{Day: "2026-10-19", Turns: 25}},
+		},
+	}
+	proj2 := []ProjectDay{
+		{Tool: "Agy", Project: "/repo/aaa", Day: "2026-10-19", Turns: 11},
+		{Tool: "Agy", Project: "/repo/zzz", Day: "2026-10-19", Turns: 20},
+	}
+
+	snap2, events2 := lt.Poll(res2, proj2, t2)
+	var sumTurns int
+	for _, ev := range events2 {
+		sumTurns += ev.Turns
+	}
+	if sumTurns != 5 {
+		t.Errorf("expected sum of event turns strictly 5, got %d", sumTurns)
+	}
+	if snap2.SessionTurns != 5 {
+		t.Errorf("expected SessionTurns 5, got %d", snap2.SessionTurns)
+	}
+	// zzz should get 5 turns (clamped from 10) because it was prioritized
+	if len(events2) > 0 && events2[0].Project == "zzz" && events2[0].Turns != 5 {
+		t.Errorf("expected prioritized zzz to get 5 turns, got %d", events2[0].Turns)
+	}
+}
+
+func TestLiveTracker_ClockJumpBackwardsAcrossMidnight(t *testing.T) {
+	lt := NewLiveTracker()
+
+	// Step 1: Poll on Day 2 (2026-10-20 00:01:00)
+	t1 := time.Date(2026, 10, 20, 0, 1, 0, 0, time.UTC)
+	res1 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_000_000,
+				Sessions:       100,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 900_000, Turns: 90},
+				{Day: "2026-10-20", Tokens: 100_000, Turns: 10},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-19",
+			Tokens:  900_000,
+			Turns:   90,
+		},
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-20",
+			Tokens:  100_000,
+			Turns:   10,
+		},
+	}
+
+	snap1, ev1 := lt.Poll(res1, proj1, t1)
+	if len(ev1) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(ev1))
+	}
+	if snap1.TodayTokens != 100_000 {
+		t.Errorf("expected TodayTokens 100,000, got %d", snap1.TodayTokens)
+	}
+
+	// Step 2: System clock jumps backwards across midnight to 2026-10-19 23:59:50
+	t2 := time.Date(2026, 10, 19, 23, 59, 50, 0, time.UTC)
+	snap2, ev2 := lt.Poll(res1, proj1, t2)
+	if len(ev2) != 0 {
+		t.Fatalf("expected 0 events on backward clock jump without delta, got %d", len(ev2))
+	}
+	if snap2.TodayTokens != 900_000 {
+		t.Errorf("expected TodayTokens 900,000 for Day 1, got %d", snap2.TodayTokens)
+	}
+	if snap2.SessionTokens != 0 {
+		t.Errorf("expected SessionTokens 0, got %d", snap2.SessionTokens)
+	}
+
+	// Step 3: Clock advances forward again across midnight to 2026-10-20 00:00:05 with +50 tokens and +1 turn
+	t3 := time.Date(2026, 10, 20, 0, 0, 5, 0, time.UTC)
+	res3 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 1_000_050,
+				Sessions:       101,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 900_000, Turns: 90},
+				{Day: "2026-10-20", Tokens: 100_050, Turns: 11},
+			},
+		},
+	}
+	proj3 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-19",
+			Tokens:  900_000,
+			Turns:   90,
+		},
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-20",
+			Tokens:  100_050,
+			Turns:   11,
+		},
+	}
+
+	snap3, ev3 := lt.Poll(res3, proj3, t3)
+	if len(ev3) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(ev3))
+	}
+	if ev3[0].Tokens != 50 {
+		t.Errorf("expected 50 tokens, got %d", ev3[0].Tokens)
+	}
+	if ev3[0].Turns != 1 {
+		t.Errorf("expected 1 turn, got %d", ev3[0].Turns)
+	}
+	if snap3.SessionTokens != 50 {
+		t.Errorf("expected SessionTokens 50, got %d", snap3.SessionTokens)
+	}
+	if snap3.TodayTokens != 100_050 {
+		t.Errorf("expected TodayTokens 100,050, got %d", snap3.TodayTokens)
+	}
+}
+
+func TestLiveTracker_MultiDaySleepWakeup(t *testing.T) {
+	lt := NewLiveTracker()
+
+	// Monday initial poll
+	t1 := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	res1 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 10_000,
+				Sessions:       10,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 10_000, Turns: 10},
+			},
+		},
+	}
+	proj1 := []ProjectDay{
+		{
+			Tool:    "OpenCode",
+			Project: "/home/user/code/app",
+			Day:     "2026-10-19",
+			Tokens:  10_000,
+			Turns:   10,
+		},
+	}
+
+	snap1, ev1 := lt.Poll(res1, proj1, t1)
+	if len(ev1) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(ev1))
+	}
+	if snap1.TodayTokens != 10_000 {
+		t.Errorf("expected TodayTokens 10,000, got %d", snap1.TodayTokens)
+	}
+
+	// Thursday wakeup (3 days later) with activity across intervening days
+	t2 := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
+	res2 := []ToolResult{
+		{
+			Tool: ToolOpenCode,
+			Name: "OpenCode",
+			Summary: Summary{
+				LifetimeTokens: 13_500,
+				Sessions:       13,
+			},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Tokens: 10_000, Turns: 10},
+				{Day: "2026-10-20", Tokens: 2_000, Turns: 1},
+				{Day: "2026-10-21", Tokens: 1_000, Turns: 1},
+				{Day: "2026-10-22", Tokens: 500, Turns: 1},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{Tool: "OpenCode", Project: "/home/user/code/app", Day: "2026-10-19", Tokens: 10_000, Turns: 10},
+		{Tool: "OpenCode", Project: "/home/user/code/app", Day: "2026-10-20", Tokens: 2_000, Turns: 1},
+		{Tool: "OpenCode", Project: "/home/user/code/app", Day: "2026-10-21", Tokens: 1_000, Turns: 1},
+		{Tool: "OpenCode", Project: "/home/user/code/app", Day: "2026-10-22", Tokens: 500, Turns: 1},
+	}
+
+	snap2, ev2 := lt.Poll(res2, proj2, t2)
+	if snap2.TodayTokens != 500 {
+		t.Errorf("expected TodayTokens 500 on Thursday, got %d", snap2.TodayTokens)
+	}
+	if snap2.SessionTokens != 3_500 {
+		t.Errorf("expected SessionTokens 3,500, got %d", snap2.SessionTokens)
+	}
+	if snap2.SessionTurns != 3 {
+		t.Errorf("expected SessionTurns 3, got %d", snap2.SessionTurns)
+	}
+
+	var sumEvTok int64
+	var sumEvTurns int
+	for _, e := range ev2 {
+		sumEvTok += e.Tokens
+		sumEvTurns += e.Turns
+	}
+	if sumEvTok != 3_500 {
+		t.Errorf("expected sum of event tokens 3,500, got %d", sumEvTok)
+	}
+	if sumEvTurns != 3 {
+		t.Errorf("expected sum of event turns 3, got %d", sumEvTurns)
+	}
+
+	var sumRecentTurns int
+	for _, e := range snap2.RecentEvents {
+		sumRecentTurns += e.Turns
+	}
+	if sumRecentTurns != snap2.SessionTurns {
+		t.Errorf("invariant violated: sum(RecentEvents.Turns)=%d != SessionTurns=%d", sumRecentTurns, snap2.SessionTurns)
+	}
+
+	// Sequential idle poll on Thursday
+	t3 := t2.Add(time.Second)
+	snap3, ev3 := lt.Poll(res2, proj2, t3)
+	if len(ev3) != 0 {
+		t.Fatalf("expected 0 events on idle poll, got %d", len(ev3))
+	}
+	if snap3.SessionTokens != 3_500 {
+		t.Errorf("expected SessionTokens preserved at 3,500, got %d", snap3.SessionTokens)
+	}
+}
+
+func TestLiveTracker_ActivityMidnightRollover(t *testing.T) {
+	lt := NewLiveTracker()
+
+	// Initial poll on Day 1 (2026-10-19 23:59:00) with 100 turns in project lab
+	t1 := time.Date(2026, 10, 19, 23, 59, 0, 0, time.UTC)
+	res1 := []ToolResult{
+		{
+			Tool:    ToolAgy,
+			Name:    "Agy",
+			Summary: Summary{LifetimeTokens: 0, Sessions: 100},
+			Daily:   []DailyRow{{Day: "2026-10-19", Turns: 100}},
+		},
+	}
+	proj1 := []ProjectDay{
+		{Tool: "Agy", Project: "/repo/lab", Day: "2026-10-19", Turns: 100},
+	}
+
+	snap1, ev1 := lt.Poll(res1, proj1, t1)
+	if len(ev1) != 0 {
+		t.Fatalf("expected 0 events on init, got %d", len(ev1))
+	}
+	if snap1.TodayTurns != 100 {
+		t.Errorf("expected TodayTurns 100 on Day 1, got %d", snap1.TodayTurns)
+	}
+
+	// Day 2 (2026-10-20 00:01:00) with +1 turn in project lab
+	t2 := time.Date(2026, 10, 20, 0, 1, 0, 0, time.UTC)
+	res2 := []ToolResult{
+		{
+			Tool:    ToolAgy,
+			Name:    "Agy",
+			Summary: Summary{LifetimeTokens: 0, Sessions: 101},
+			Daily: []DailyRow{
+				{Day: "2026-10-19", Turns: 100},
+				{Day: "2026-10-20", Turns: 1},
+			},
+		},
+	}
+	proj2 := []ProjectDay{
+		{Tool: "Agy", Project: "/repo/lab", Day: "2026-10-19", Turns: 100},
+		{Tool: "Agy", Project: "/repo/lab", Day: "2026-10-20", Turns: 1},
+	}
+
+	snap2, ev2 := lt.Poll(res2, proj2, t2)
+	if len(ev2) != 1 {
+		t.Fatalf("expected exactly 1 event on midnight +1 turn update, got %d", len(ev2))
+	}
+	if ev2[0].Turns != 1 {
+		t.Errorf("expected event Turns: 1, got %d", ev2[0].Turns)
+	}
+	if ev2[0].Tokens != 0 {
+		t.Errorf("expected event Tokens: 0 for activity tool, got %d", ev2[0].Tokens)
+	}
+	if ev2[0].Project != "lab" {
+		t.Errorf("expected event Project 'lab', got %q", ev2[0].Project)
+	}
+	if snap2.TodayTurns != 1 {
+		t.Errorf("expected TodayTurns 1 on Day 2, got %d", snap2.TodayTurns)
+	}
+	if snap2.SessionTurns != 1 {
+		t.Errorf("expected SessionTurns 1, got %d", snap2.SessionTurns)
+	}
+
+	var sumTurns int
+	for _, e := range snap2.RecentEvents {
+		sumTurns += e.Turns
+	}
+	if sumTurns != snap2.SessionTurns {
+		t.Errorf("invariant violated: sum(RecentEvents.Turns)=%d != SessionTurns=%d", sumTurns, snap2.SessionTurns)
+	}
+
+	// Idle poll on Day 2
+	t3 := t2.Add(time.Second)
+	snap3, ev3 := lt.Poll(res2, proj2, t3)
+	if len(ev3) != 0 {
+		t.Fatalf("expected 0 events on idle poll, got %d", len(ev3))
+	}
+	if snap3.SessionTurns != 1 {
+		t.Errorf("expected SessionTurns preserved at 1, got %d", snap3.SessionTurns)
 	}
 }

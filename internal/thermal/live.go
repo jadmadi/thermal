@@ -154,15 +154,6 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 	if lt.todayDay != "" && currentDay != lt.todayDay {
 		// Midnight transition: day boundary crossed
 		lt.todayDay = currentDay
-		lt.prevProjTokens = make(map[string]int64)
-		lt.prevProjTurns = make(map[string]int)
-		for _, pd := range projDays {
-			if pd.Day == currentDay {
-				key := pd.Tool + "\x00" + pd.Project
-				lt.prevProjTokens[key] = pd.Tokens
-				lt.prevProjTurns[key] = pd.Turns
-			}
-		}
 		lt.activeProject = ""
 		lt.activeModel = ""
 	} else if lt.todayDay == "" {
@@ -487,8 +478,7 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 	} else {
 		for _, res := range results {
 			curTok := res.Summary.LifetimeTokens
-			isAct := isActivityTool(res.Tool)
-			if isAct {
+			if isActivityTool(res.Tool) {
 				curTok = 0
 			}
 			curTurns := toolTotalTurns(res)
@@ -511,12 +501,18 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 					modMap[m] = c
 				}
 				lt.prevModels[res.Name] = modMap
+				toolProjTokens := make(map[string]int64)
+				toolProjTurns := make(map[string]int)
 				for _, pd := range projDays {
 					if pd.Tool == res.Name {
 						key := pd.Tool + "\x00" + pd.Project
-						lt.prevProjTokens[key] += pd.Tokens
-						lt.prevProjTurns[key] += pd.Turns
+						toolProjTokens[key] += pd.Tokens
+						toolProjTurns[key] += pd.Turns
 					}
+				}
+				for key, tok := range toolProjTokens {
+					lt.prevProjTokens[key] = tok
+					lt.prevProjTurns[key] = toolProjTurns[key]
 				}
 				continue
 			}
@@ -655,24 +651,24 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 						pDTok = acc.tokens - pPrevTok
 					} else {
 						pDTok = acc.tokens
-						if pDTok > deltaTok {
-							pDTok = deltaTok
-						}
 					}
 					if turnSeen {
 						pDTurns = acc.turns - pPrevTurns
 					} else {
 						pDTurns = acc.turns
-						if pDTurns > deltaTurns {
-							pDTurns = deltaTurns
-						}
 					}
 
 					if pDTok < 0 {
 						pDTok = 0
 					}
+					if pDTok > deltaTok {
+						pDTok = deltaTok
+					}
 					if pDTurns < 0 {
 						pDTurns = 0
+					}
+					if pDTurns > deltaTurns {
+						pDTurns = deltaTurns
 					}
 
 					if pDTok > 0 || pDTurns > 0 {
@@ -696,21 +692,70 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 						if pDeltas[i].deltaTok != pDeltas[j].deltaTok {
 							return pDeltas[i].deltaTok > pDeltas[j].deltaTok
 						}
+						if pDeltas[i].deltaTurns != pDeltas[j].deltaTurns {
+							return pDeltas[i].deltaTurns > pDeltas[j].deltaTurns
+						}
 						return pDeltas[i].slug < pDeltas[j].slug
 					})
+				}
+
+				if totalProjectTokDelta > deltaTok || totalProjectTurnDelta > deltaTurns {
+					var clamped []projectDeltaInfo
+					var allocTok int64
+					var allocTurns int
+					for _, pd := range pDeltas {
+						availTok := deltaTok - allocTok
+						availTurns := deltaTurns - allocTurns
+						if availTok <= 0 && availTurns <= 0 {
+							break
+						}
+						tokToAssign := pd.deltaTok
+						if tokToAssign > availTok {
+							tokToAssign = availTok
+						}
+						if tokToAssign < 0 {
+							tokToAssign = 0
+						}
+						turnsToAssign := pd.deltaTurns
+						if turnsToAssign > availTurns {
+							turnsToAssign = availTurns
+						}
+						if turnsToAssign < 0 {
+							turnsToAssign = 0
+						}
+						if tokToAssign > 0 || turnsToAssign > 0 {
+							clamped = append(clamped, projectDeltaInfo{
+								project:    pd.project,
+								slug:       pd.slug,
+								deltaTok:   tokToAssign,
+								deltaTurns: turnsToAssign,
+							})
+							allocTok += tokToAssign
+							allocTurns += turnsToAssign
+						}
+					}
+					pDeltas = clamped
+					totalProjectTokDelta = allocTok
+					totalProjectTurnDelta = allocTurns
 				}
 
 				isEst := !lt.noEstimate && res.Summary.Cost == 0 && res.EstimatedCost > 0
 
 				// If specific project deltas were identified, emit events for each active project
 				if len(pDeltas) > 0 {
+					var emittedTurns int
+					var emittedTok int64
 					for _, pd := range pDeltas {
 						tokShare := pd.deltaTok
-						if tokShare <= 0 && deltaTok > 0 && totalProjectTurnDelta > 0 {
+						if tokShare <= 0 && deltaTok > 0 && totalProjectTurnDelta > 0 && totalProjectTokDelta == 0 {
 							tokShare = deltaTok * int64(pd.deltaTurns) / int64(totalProjectTurnDelta)
 						}
 						if tokShare <= 0 && deltaTok > 0 && len(pDeltas) == 1 {
 							tokShare = deltaTok
+						}
+						turnShare := pd.deltaTurns
+						if turnShare <= 0 && deltaTurns > 0 && len(pDeltas) == 1 {
+							turnShare = deltaTurns
 						}
 						costShare := 0.0
 						if deltaTok > 0 && tokShare > 0 {
@@ -723,7 +768,7 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 							Timestamp:   now,
 							Tool:        res.Name,
 							Tokens:      tokShare,
-							Turns:       pd.deltaTurns,
+							Turns:       turnShare,
 							Model:       bestModel,
 							Project:     pd.slug,
 							Cost:        costShare,
@@ -735,16 +780,29 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 							lt.events = lt.events[:lt.maxEvents]
 						}
 						lt.activeProject = pd.slug
+						emittedTurns += turnShare
+						emittedTok += tokShare
 					}
 
 					// Remainder unattributed to any project
-					if deltaTok > totalProjectTokDelta && totalProjectTokDelta > 0 {
-						remTok := deltaTok - totalProjectTokDelta
-						remCost := deltaCost * (float64(remTok) / float64(deltaTok))
+					remTok := deltaTok - emittedTok
+					if remTok < 0 {
+						remTok = 0
+					}
+					remTurns := deltaTurns - emittedTurns
+					if remTurns < 0 {
+						remTurns = 0
+					}
+					if remTok > 0 || remTurns > 0 {
+						remCost := 0.0
+						if deltaTok > 0 && remTok > 0 {
+							remCost = deltaCost * (float64(remTok) / float64(deltaTok))
+						}
 						ev := LiveEvent{
 							Timestamp:   now,
 							Tool:        res.Name,
 							Tokens:      remTok,
+							Turns:       remTurns,
 							Model:       bestModel,
 							Project:     "",
 							Cost:        remCost,
@@ -803,12 +861,18 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 				lt.prevModels[res.Name] = modMap
 			} else {
 				// Keep project baselines updated even without tool-level delta
+				toolProjTokens := make(map[string]int64)
+				toolProjTurns := make(map[string]int)
 				for _, pd := range projDays {
-					if pd.Tool == res.Name && pd.Day == lt.todayDay {
+					if pd.Tool == res.Name {
 						key := pd.Tool + "\x00" + pd.Project
-						lt.prevProjTokens[key] = pd.Tokens
-						lt.prevProjTurns[key] = pd.Turns
+						toolProjTokens[key] += pd.Tokens
+						toolProjTurns[key] += pd.Turns
 					}
+				}
+				for key, tok := range toolProjTokens {
+					lt.prevProjTokens[key] = tok
+					lt.prevProjTurns[key] = toolProjTurns[key]
 				}
 			}
 		}

@@ -16,6 +16,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Workload Replay Volume Conservation and Price Coverage](#changed-replay-volume-and-price-coverage)
   - [Changed: Rolling-Window Capacity Verdicts from Daily Telemetry](#changed-replay-rolling-capacity-unknown)
   - [Changed: `thermal replay --against` Resolves Built-In Plan Identifiers](#changed-replay-against-plan-resolution)
+  - [Changed: Live Monitor Project Baseline Preservation and Delta Clamping](#changed-live-project-baseline-clamping)
 - [Upgrading to v0.21.0](#upgrading-to-v0210)
   - [Changed: Command Code Token and Project Attribution](#changed-command-code-token-attribution)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
@@ -253,6 +254,45 @@ If a script depended on `--against <plan>` producing an unpriced model row, swit
 
 **Escape hatch**:
 None needed for plan ids; model targeting is unchanged for any value that is not an exact plan id or name.
+
+### Changed: Live Monitor Project Baseline Preservation and Delta Clamping
+<a id="changed-live-project-baseline-clamping"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal.*live' .` or automated consumers of `thermal live --json` or
+  `thermal live --stream`.
+- **Detection signal**: `RecentEvents` no longer emits spurious bursts with lifetime project totals on
+  idle ticks or midnight crossings; `recentEvents[].turns` within an observation window strictly
+  equals `sessionTurns`; project token and turn deltas are clamped to tool-level increments.
+
+**What changed and why**:
+Thermal's real-time live monitor previously collapsed project baseline maps to single-day slices on
+idle ticks and wiped them during midnight day crossings, causing subsequent polls to re-emit cumulative
+lifetime project volume as new bursts. In addition, project deltas were not clamped to tool-level
+increments, allowing anomalous project telemetry to generate events exceeding actual tool burn. The
+tracker now accumulates project baselines across all days on both active and idle ticks, preserves
+cumulative baselines across midnight, and unconditionally clamps project deltas to tool totals so
+recent events strictly match session metrics.
+
+**Before / After**:
+```bash
+# Before (Idle tick collapsed project baselines; next turn replayed lifetime volume)
+thermal live --json
+# Output: {"sessionTurns": 1, "recentEvents": [{"tool": "Agy", "turns": 125600, "project": "lab"}]}
+
+# After (Cumulative baselines preserved; only incremental deltas emitted)
+thermal live --json
+# Output: {"sessionTurns": 1, "recentEvents": [{"tool": "Agy", "turns": 1, "project": "lab"}]}
+```
+
+**The fix**:
+Update monitoring consumers and automation expecting inflated project burst deltas to rely on accurate
+incremental deltas. Verify that the sum of `recentEvents[].turns` matches `sessionTurns` across
+observation windows.
+
+**Escape hatch**:
+None. Cumulative baseline preservation and delta clamping are correctness requirements; raw lifetime
+totals remain accessible in `toolTotals` and per-tool daily reports (`thermal <tool> daily`).
 
 ---
 
