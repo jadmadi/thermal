@@ -27,11 +27,23 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 94
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 94 (19 verified 📜, 7 stale ⚠️, 68 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 93 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 411/411 completed (100%)
+- **Total Goals**: 99
+- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 94 (18 verified 📜, 8 stale ⚠️, 68 unverified)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 98 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 411/431 completed (95%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`retire-dashboard-tui`](retire-dashboard-tui/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire interactive dashboard TUI and focus on thermal live (retire-dashboard-tui) | `/goal goals/retire-dashboard-tui/goal.md` |
+| [`retire-token-yield`](retire-token-yield/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire token yield efficiency metric and diff parsing (retire-token-yield) | `/goal goals/retire-token-yield/goal.md` |
+| [`retire-web-server`](retire-web-server/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire embedded localhost web dashboard and serve API (retire-web-server) | `/goal goals/retire-web-server/goal.md` |
+| [`retire-work-receipts`](retire-work-receipts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire transcript session command scraping and receipts (retire-work-receipts) | `/goal goals/retire-work-receipts/goal.md` |
+| [`retire-workload-replay`](retire-workload-replay/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Retire subscription capacity replay simulation (retire-workload-replay) | `/goal goals/retire-workload-replay/goal.md` |
 
 ---
 
@@ -63,7 +75,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `78b5d70` |
 | [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `cd5600c` |
 | [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `de16cf9` |
-| [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `95321d8` |
+| [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `95321d8` |
 | [`release-provenance-verification`](release-provenance-verification/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `5fd9958` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
