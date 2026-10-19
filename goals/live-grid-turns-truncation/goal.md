@@ -1,31 +1,53 @@
-# Goal: Fix turns and cache-hit text truncation in narrow live monitor grid (live-grid-turns-truncation)
+# Task: Fix turns text truncation and align gauge brackets in live monitor grid (live-grid-turns-truncation)
 
-## Chain of Custody (Isnad)
-- Registered By: Jad Madi (via Antigravity)
-- Spec Audited By: Pending Spec Audit
-- Implemented By: Pending Implementation
-
-## Goal Description
-Prevent `Turns: X turns (Y% hit)` metric from clipping with ellipsis (`6642 turns (86% h…`) on standard 80-column terminals through width-aware responsive abbreviation in `internal/tui/live.go`.
-
-## Dependencies & Execution Order
-- Mode: Independent (disjoint, parallelizable)
-- Depends On: none
-- Sequence: 94
-- Shape: fix
-- Tier: immediate
+## Context
+- Goal: Prevent `Turns: X turns (Y% hit)` metric from clipping with ellipsis on standard 80-column terminals and harmonize gauge bracket widths.
+- Why: 30-character turn strings overflow 24-character grid cells (`6642 turns (86% h…`), and unaligned flame and sparkline brackets create visual raggedness.
+- Repository/cwd: `/mnt/Jad/github/lab/thermal-streak`
+- Prerequisite Task IDs: None (Independent, Seq #94)
+- Readiness: Ready to claim
 
 ## Files to Touch
-- `internal/tui/live.go`
-- `internal/tui/live_test.go`
-- `docs/MIGRATION.md`
+- internal/tui/live.go
+- internal/tui/live_test.go
 
-## References
-- Shared Understanding & Fact Sheet: [`goals/live-grid-turns-truncation/facts.md`](facts.md)
-- Execution Plan: [`goals/live-grid-turns-truncation/plan.md`](plan.md)
+## Scope & File Details
+- Edit: `internal/tui/live.go` in `formatTurnsAndHit` (lines 672-678, lines 332) and gauge bracket rendering (lines 693-705, 748-760)
+- Create: `internal/tui/live_test.go` (responsive turn format and bracket tests)
+- Read: `internal/tui/live.go:322-346` (3-box metric KPI grid layout)
 
-## Done Condition
-1. In `internal/tui/live.go`, `formatTurnsAndHit` accepts column width (`colW`) and renders text that fits without ellipsis truncation on 80-column terminal layouts (`colW = 24`).
-2. When full text exceeds available width, it compactly formats turns (e.g. `6.6K (86% hit)` or `6642 turns`) to stay within cell boundaries.
-3. Unit tests in `internal/tui/live_test.go` verify that at `colW = 24`, no ellipsis or truncation artifacts appear.
-4. All automated unit tests pass cleanly with `-race` (`go test -race ./...`).
+## Requirements
+1. In `internal/tui/live.go`, `formatTurnsAndHit` must accept available cell width and apply progressive abbreviation:
+   Full: `6642 turns (86% hit)` (if text fits within available width)
+   Compact: `6.6K (86% hit)` (if full overflows but compact fits)
+   Minimal: `6642 turns` (if compact also overflows)
+2. On 80-column terminal layouts (`colW = 24`), turns and cache hit must never clip with an ellipsis (`…`).
+3. Gauge bracket widths in `formatFlameLine` and `formatSparkLine` must align consistently so opening and closing brackets do not show visual raggedness across terminal sizes.
+
+## Interfaces / signatures (fixed)
+```go
+func formatTurnsAndHit(turns int, hit float64, availWidth int, colors bool) string
+func formatFlameLine(intensity float64, model string, innerWidth int, colors bool) string
+func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity bool, colors bool) string
+```
+
+## Constraints and non-goals
+- Non-goal: Do NOT edit `docs/MIGRATION.md` (pure TUI visual format, no CLI flags or `--json` schema changes).
+- No new external dependencies.
+- Monospace alignment and ANSI cell padding must be preserved.
+- Do not alter turn count or cache hit rate calculations in `internal/thermal`.
+
+## Example
+- Input: `turns = 6642`, `hit = 86.0%`, `availWidth = 14`.
+- Output: `6.6K (86% hit)` (14 chars) -> fits within `colW = 24` without `…`.
+- Boundary failure prevented: `6642 turns (86% h…` is never produced on 80-column screens.
+
+## Acceptance criteria
+- AC-001: `go test -race -v -run TestLiveTUI_FormatTurnsAndHit_Responsive ./internal/tui`, cwd `/mnt/Jad/github/lab/thermal-streak`, expected exit 0; asserts that `colW = 24` formats without ellipsis truncation.
+- AC-002: `go test -race -v -run TestLiveTUI_FormatTurnsAndHit_NoEllipsisOverflow ./internal/tui`, cwd `/mnt/Jad/github/lab/thermal-streak`, expected exit 0; asserts that string width never exceeds `colW - len("Turns:    ")` for any turn count from 1 to 10,000,000 (negative case).
+
+## If blocked
+Stop affected work; report evidence and the decision needed. Do not guess.
+
+## Return
+Return status, summary, changed files, case results, commands/exits, evidence, candidate, blocker.

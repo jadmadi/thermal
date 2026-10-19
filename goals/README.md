@@ -27,12 +27,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 96
+- **Total Goals**: 94
 - 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 2
 - 🟢 **Implemented**: 89 (15 verified 📜, 6 stale ⚠️, 68 unverified)
-- 🎯 **By Tier**: 8 immediate (Tier 1), 88 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 391/419 completed (93%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 93 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 391/411 completed (95%)
 
 ---
 
@@ -40,13 +39,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#90)` | - | Fix live tracker idle baseline collapse (live-tracker-phantom-bursts) — Prevent `LiveTracker.Poll` from clobbering cumulative project token and turn bas... | `/goal goals/live-tracker-phantom-bursts/goal.md` |
-| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#93)` | - | Preserve fractional sub-1.0 speeds in live monitor (live-speed-fractional-display) — Display fractional token and step speeds for positive sub-1.0 rates in `internal... | `/goal goals/live-speed-fractional-display/goal.md` |
-| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#94)` | - | Fix turns and cache-hit text truncation in narrow live monitor grid (live-grid-turns-truncation) — Prevent `Turns: X turns (Y% hit)` metric from clipping with ellipsis (`6642 turn... | `/goal goals/live-grid-turns-truncation/goal.md` |
-| [`live-meter-bracket-alignment`](live-meter-bracket-alignment/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#95)` | - | Align flame intensity gauge and sparkline bracket widths (live-meter-bracket-alignment) — Harmonize the visual alignment and bracket widths between the flame intensity me... | `/goal goals/live-meter-bracket-alignment/goal.md` |
-| [`live-cost-micro-precision`](live-cost-micro-precision/goal.md) | `🎯 Immediate` | `🚢 SHIP ⚡ Independent (#96)` | - | Support 4-decimal sub-cent precision in live event cost display (live-cost-micro-precision) — Format sub-cent event costs in `internal/tui/live.go` `formatCost` with 4 decima... | `/goal goals/live-cost-micro-precision/goal.md` |
-| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `🎯 Immediate` | `🚢 SHIP ⛔ Blocked (#91)` | Prereqs: live-tracker-phantom-bursts | Preserve cumulative project baselines across midnight transitions (live-tracker-midnight-drift) — Prevent midnight day boundary transition in `LiveTracker.Poll` from resetting cu... | `/goal goals/live-tracker-midnight-drift/goal.md` |
-| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `🎯 Immediate` | `🚢 SHIP ⛔ Blocked (#92)` | Prereqs: live-tracker-phantom-bursts | Clamp project activity deltas to tool-level totals (live-tracker-delta-clamping) — Ensure individual project token and turn deltas in `LiveTracker.Poll` cannot exc... | `/goal goals/live-tracker-delta-clamping/goal.md` |
+| [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Fix turns text truncation and align gauge brackets in live monitor grid (live-grid-turns-truncation) | `/goal goals/live-grid-turns-truncation/goal.md` |
+| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Preserve fractional sub-1.0 speeds in live monitor (live-speed-fractional-display) | `/goal goals/live-speed-fractional-display/goal.md` |
+| [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Clamp project activity deltas to tool-level totals (live-tracker-delta-clamping) | `/goal goals/live-tracker-delta-clamping/goal.md` |
+| [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Preserve cumulative project baselines across midnight transitions (live-tracker-midnight-drift) | `/goal goals/live-tracker-midnight-drift/goal.md` |
+| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent` | - | Task: Fix live tracker idle baseline collapse (live-tracker-phantom-bursts) | `/goal goals/live-tracker-phantom-bursts/goal.md` |
 
 ---
 
