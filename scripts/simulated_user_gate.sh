@@ -10,7 +10,7 @@
 # 5. Semantic consistency (token sums, rate ranges, verdicts)
 # 6. Language & terminology integrity (no typo duplicate words)
 # 7. Graceful validation errors on invalid flag combinations
-# 8. Semantic regression suites: receipt/replay/audit claim semantics with
+# 8. Semantic regression suites: receipt/audit claim semantics with
 #    nonempty test-selection assertions
 #
 set -euo pipefail
@@ -247,12 +247,8 @@ run_check "Trend fit & projection" 0 text "${BIN_PATH}" trend --no-color
 run_check "Trend cost metric" 0 text "${BIN_PATH}" trend --metric cost --no-color
 run_check "Trend JSON export" 0 json "${BIN_PATH}" trend --json
 
-echo -e "\n${BOLD}6. Replay Simulation (Workloads vs Subscriptions & APIs):${RESET}"
-run_check "Replay default multi-tier simulation" 0 text "${BIN_PATH}" replay --no-color
-run_check "Replay against Claude Pro subscription" 0 text "${BIN_PATH}" replay --against claude-pro --no-color
-run_check "Replay against DeepSeek V3 API" 0 text "${BIN_PATH}" replay --against deepseek-v3 --no-color
-run_check "Replay compare all plans" 0 text "${BIN_PATH}" replay --compare all --no-color
-run_check "Replay JSON export" 0 json "${BIN_PATH}" replay --json
+echo -e "\n${BOLD}6. Retired Replay Command:${RESET}"
+run_check "Replay command retired" 1 error "${BIN_PATH}" replay
 
 echo -e "\n${BOLD}7. Token Yield & Verifiable Work Receipts:${RESET}"
 run_check "Yield report standard output" 0 text "${BIN_PATH}" yield --no-color
@@ -282,9 +278,6 @@ run_check "Changelog JSON output" 0 json "${BIN_PATH}" changelog --json
 
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
-run_check "Rejects --by on replay" 1 error "${BIN_PATH}" replay --by model
-run_check "Rejects --against on projects" 1 error "${BIN_PATH}" projects --against claude-pro
-run_check "Rejects --chart on replay" 1 error "${BIN_PATH}" replay --chart
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
 run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects invalid --sort on receipt" 1 error "${BIN_PATH}" receipt --sort invalid_sort
@@ -480,7 +473,7 @@ run_check "Persona: Developer verifiable test receipts" 0 text "${BIN_PATH}" rec
 
 # Persona 2: FinOps & Engineering Director flow
 run_check "Persona: FinOps daily distribution audit" 0 text "${BIN_PATH}" stats --no-color
-run_check "Persona: FinOps subscription replay comparison" 0 text "${BIN_PATH}" replay --compare all --no-color
+run_check "Persona: FinOps monthly cost review" 0 text "${BIN_PATH}" monthly --no-color
 run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" projects --sort cost --top 3 --no-color
 
 # Persona 3: Security & Local Infrastructure flow
@@ -547,11 +540,11 @@ TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 # 17. Semantic Regression Suites
 # Runs the named Go regression tests that encode the semantics behind public
-# claims: observed receipt evidence, conserved replay volume with price-coverage
+# claims: observed receipt evidence with tiered outcome confidence
 # labels, and honest audit wording. The minimum test counts are deliberate
 # tripwires: a renamed or deleted test fails the gate instead of the pattern
 # silently matching nothing.
-echo -e "\n${BOLD}17. Semantic Regression Suites (receipt / replay / audit):${RESET}"
+echo -e "\n${BOLD}17. Semantic Regression Suites (receipt / audit):${RESET}"
 
 run_semantic_suite() {
     local label="$1"
@@ -593,7 +586,6 @@ run_semantic_suite() {
 }
 
 run_semantic_suite "Receipt evidence semantics" 13 'Receipt|Evidence|Outcome' ./internal/thermal
-run_semantic_suite "Replay volume and pricing semantics" 11 'Replay' ./internal/thermal ./internal/render
 run_semantic_suite "Audit claim semantics" 10 'Audit' ./internal/audit ./internal/render
 
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"

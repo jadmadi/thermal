@@ -259,103 +259,6 @@ func TestSimulatedUser_Analytics(t *testing.T) {
 	}
 }
 
-// 6. Replay: Workload simulation against subscriptions and API pricing.
-func TestSimulatedUser_ReplaySimulation(t *testing.T) {
-	t.Run("default replay", func(t *testing.T) {
-		stdout, stderr, code := runSim(t, "replay", "--no-color")
-		if code != 0 {
-			t.Fatalf("replay failed with code %d: %s", code, stderr)
-		}
-		if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "replay") {
-			t.Errorf("replay header missing")
-		}
-		if !strings.Contains(stdout, "Capacity Verdict") || !strings.Contains(stdout, "Cost/Mo") {
-			t.Errorf("replay table columns missing (Capacity Verdict, Cost/Mo)")
-		}
-		checkLanguageSanity(t, stdout)
-	})
-
-	t.Run("replay against specific targets", func(t *testing.T) {
-		targets := []string{"claude-pro", "deepseek-v3", "chatgpt-plus"}
-		for _, target := range targets {
-			stdout, stderr, code := runSim(t, "replay", "--against", target, "--no-color")
-			if code != 0 {
-				t.Fatalf("replay --against %s failed with code %d: %s", target, code, stderr)
-			}
-			// Verify verdict is one of PASS, DEGRADED, FAIL, or UNKNOWN
-			if !strings.Contains(stdout, "PASS") && !strings.Contains(stdout, "DEGRADED") && !strings.Contains(stdout, "FAIL") && !strings.Contains(stdout, "UNKNOWN") {
-				t.Errorf("replay output missing valid verdict (PASS/DEGRADED/FAIL/UNKNOWN)")
-			}
-			checkLanguageSanity(t, stdout)
-		}
-	})
-
-	t.Run("replay against plan identifiers resolves to plans", func(t *testing.T) {
-		againstOut, stderr, code := runSim(t, "replay", "--against", "claude-pro", "--no-color")
-		if code != 0 {
-			t.Fatalf("replay --against claude-pro failed with code %d: %s", code, stderr)
-		}
-		if strings.Contains(againstOut, "claude-pro (API)") {
-			t.Errorf("plan identifier was captured as a model rate card:\n%s", againstOut)
-		}
-
-		compareOut, stderr, code := runSim(t, "replay", "--compare", "claude-pro", "--no-color")
-		if code != 0 {
-			t.Fatalf("replay --compare claude-pro failed with code %d: %s", code, stderr)
-		}
-		againstRow := planRowLine(againstOut, "Claude Pro ($20)")
-		compareRow := planRowLine(compareOut, "Claude Pro ($20)")
-		if againstRow == "" || compareRow == "" {
-			t.Fatalf("plan row missing (against=%q compare=%q)", againstRow, compareRow)
-		}
-		if againstRow != compareRow {
-			t.Errorf("--against row %q does not match --compare row %q", againstRow, compareRow)
-		}
-
-		// A value that is not an exact plan id or name stays a model lookup;
-		// a shared prefix must never resolve.
-		prefixOut, stderr, code := runSim(t, "replay", "--against", "claude", "--no-color")
-		if code != 0 {
-			t.Fatalf("replay --against claude failed with code %d: %s", code, stderr)
-		}
-		if !strings.Contains(prefixOut, "claude (API)") {
-			t.Errorf("expected claude (API) model row for a non-plan target:\n%s", prefixOut)
-		}
-	})
-
-	t.Run("replay JSON schema", func(t *testing.T) {
-		jsonOut, stderr, code := runSim(t, "replay", "--json", "--compare", "all")
-		if code != 0 {
-			t.Fatalf("replay --json failed with code %d: %s", code, stderr)
-		}
-		var jDoc map[string]interface{}
-		if err := json.Unmarshal([]byte(jsonOut), &jDoc); err != nil {
-			t.Fatalf("replay --json is not valid JSON: %v", err)
-		}
-		if _, ok := jDoc["workload"]; !ok {
-			t.Errorf("replay --json missing 'workload'")
-		}
-		if _, ok := jDoc["plans"]; !ok {
-			t.Errorf("replay --json missing 'plans'")
-		}
-
-		// Verify throttle rate range [0.0, 1.0] and valid verdicts
-		plansRaw, _ := json.Marshal(jDoc["plans"])
-		var plans []map[string]interface{}
-		_ = json.Unmarshal(plansRaw, &plans)
-		for _, plan := range plans {
-			verdict, _ := plan["capacityVerdict"].(string)
-			if verdict != "PASS" && verdict != "DEGRADED" && verdict != "FAIL" && verdict != "UNKNOWN" {
-				t.Errorf("unexpected verdict %q in plan %v", verdict, plan["id"])
-			}
-			rate, _ := plan["throttleRate"].(float64)
-			if rate < 0.0 || rate > 1.0 {
-				t.Errorf("throttleRate %v out of range [0, 1]", rate)
-			}
-		}
-	})
-}
-
 // 7. Validation Negative Tests: Incorrect flags produce exit code 1 with clear, descriptive messages.
 func TestSimulatedUser_ValidationErrors(t *testing.T) {
 	testCases := []struct {
@@ -363,9 +266,7 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 		expectedMsg string
 	}{
 		{[]string{"weekly", "--top", "5"}, "--top only applies to the projects and models commands"},
-		{[]string{"replay", "--by", "model"}, "--metric, --by, and --grain only apply to the trend, mix, and stats commands"},
-		{[]string{"projects", "--against", "claude-pro"}, "--against and --compare only apply to the replay command"},
-		{[]string{"replay", "--chart"}, "--breakdown and --chart do not apply to the replay command"},
+		{[]string{"replay"}, "subscription replay simulation has been retired"},
 		{[]string{"daily", "--last", "-5"}, "--last cannot be negative"},
 	}
 
@@ -382,17 +283,6 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 			}
 		})
 	}
-}
-
-// planRowLine returns the first rendered table row containing name, trimmed of
-// trailing whitespace, so two runs can be compared row for row.
-func planRowLine(output, name string) string {
-	for _, line := range strings.Split(output, "\n") {
-		if strings.Contains(line, name) && strings.Contains(line, "│") {
-			return strings.TrimRight(line, " ")
-		}
-	}
-	return ""
 }
 
 // Helper: verifies no raw NaN, Inf, or weird formatting artifacts.

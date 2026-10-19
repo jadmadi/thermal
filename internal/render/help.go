@@ -115,10 +115,9 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "FinOps & Analytics:",
 			Items: []HelpItem{
-				{Name: "stats", Desc: "High-density 9-box FinOps grid & distribution histogram"},
+				{Name: "stats", Desc: "Daily distribution, percentiles, and token composition"},
 				{Name: "mix", Desc: "Tool and model market-share & switching frequency"},
 				{Name: "trend", Desc: "Daily trend fit with month-end volume & spend projection"},
-				{Name: "replay", Desc: "Simulate workload against subscription tiers & API models"},
 				{Name: "yield", Desc: "Token yield efficiency (tokens burned per net line added)"},
 				{Name: "receipt", Desc: "Verifiable work outcomes (test runners & linter executions)"},
 			},
@@ -160,8 +159,7 @@ func RenderHelp(noColor bool) string {
 	}{
 		{"thermal", "All-tool leaderboard & streak heatmap"},
 		{"thermal opencode weekly --chart", "Weekly breakdown with terminal bar chart"},
-		{"thermal stats", "Dense 9-box FinOps activity grid"},
-		{"thermal replay", "Simulate workload against subscriptions"},
+		{"thermal stats", "Daily distribution and token composition"},
 		{"thermal audit", "Audit instruction files & MCP context tax"},
 		{"thermal changelog --top 5", "View latest new features & arguments"},
 	}
@@ -204,8 +202,6 @@ func RenderHelp(noColor bool) string {
 				{Name: "--metric <field>", Desc: "Analytics metric: tokens or cost (default: tokens)"},
 				{Name: "--by <tool|model>", Desc: "Mix breakdown dimension (default: tool)"},
 				{Name: "--grain <grain>", Desc: "Mix window: day, week, or month (default: week)"},
-				{Name: "--against <model>", Desc: "Target model for subscription replay simulation"},
-				{Name: "--compare <plans>", Desc: "Subscription plans to compare in replay"},
 			},
 		},
 		{

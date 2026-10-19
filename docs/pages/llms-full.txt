@@ -36,7 +36,6 @@ thermal [options] [tool] [report]
 - `mix`: Usage distribution across tools or models with switching statistics.
 - `stats`: Percentile distributions, weekday seasonality, and outlier detection.
 - `trend`: Linear trend regression with month-end projection.
-- `replay`: Historical workload simulation against commercial plans and API rate cards.
 - `license`: Display AGPL-3.0 terms, the Community Reciprocity Covenant, the $30/developer/year Commercial Use License, and Enterprise & OEM terms.
 - `upgrade`: Self-update binary to latest release from GitHub.
 - `version`: Print SemVer, git commit SHA, and build timestamp.
@@ -57,8 +56,6 @@ thermal [options] [tool] [report]
 - `--metric <tokens|cost>`: Metric for `mix`, `stats`, and `trend` (default: `tokens`).
 - `--by <tool|model>`: Breakdown dimension for `mix` (default: `tool`).
 - `--grain <day|week|month>`: Time window for `mix` (default: `week`).
-- `--against <model>`: Single target model rate-card simulation for `replay`.
-- `--compare <plans>`: Comma-separated plans or `all` for `replay`.
 - `--breakdown`: Display per-model sub-rows under period tables.
 - `--chart`: Render ASCII bar charts beneath report tables.
 - `--start-of-week <day>`: First day of week (`sunday` through `saturday`).
@@ -71,29 +68,7 @@ thermal [options] [tool] [report]
 
 ---
 
-## 3. Workload Replay Simulation Engine (`thermal replay`)
-
-Evaluates historical token workloads against subscription plans and API model pricing cards from `models.dev`.
-
-### Predefined Subscription Plans
-- `claude-pro`: Anthropic Claude Pro ($20/mo, 15M daily token ceiling).
-- `claude-max`: Anthropic Claude Max ($200/mo, 75M daily token ceiling).
-- `chatgpt-plus`: OpenAI ChatGPT Plus ($20/mo, 20M daily token ceiling; 5M rolling window).
-- `agy-pro`: Antigravity Pro ($20/mo, 50M daily token ceiling).
-- `opencode-pro`: OpenCode Pro ($20/mo, 40M daily token ceiling).
-- `zcode-pro`: ZCode Pro ($20/mo, 35M daily token ceiling).
-- `kimi-k2`: Kimi K2 Pro ($15/mo, 60M daily token ceiling).
-- `deepseek-api`: DeepSeek V3 API (pay-as-you-go; no fixed daily ceiling).
-
-### Capacity Verdicts
-- `PASS`: Historical daily peaks remained safely within plan limits.
-- `DEGRADED`: Workload occasionally exceeded daily ceilings (throttling expected).
-- `FAIL`: Daily workloads routinely saturated tier limits.
-- `UNKNOWN`: A rolling-window limit cannot be assessed from daily telemetry without intraday evidence; rolling spikes are not asserted.
-
----
-
-## 4. Machine-Readable JSON Schema Examples
+## 3. Machine-Readable JSON Schema Examples
 
 ### `thermal license --json`
 ```json
@@ -144,30 +119,9 @@ Evaluates historical token workloads against subscription plans and API model pr
 }
 ```
 
-### `thermal replay --json`
-```json
-{
-  "summary": {
-    "total_tokens": 1500000,
-    "active_days": 28
-  },
-  "targets": [
-    {
-      "name": "Claude Pro ($20/mo)",
-      "target_type": "subscription",
-      "verdict": "PASS",
-      "monthly_cost_usd": 20.00,
-      "monthly_delta_usd": -12.50,
-      "headroom_pct": 34.2
-    }
-  ],
-  "generatedAt": "2026-09-22T08:00:00Z"
-}
-```
-
 ---
 
-## 5. Governance & Licensing
+## 4. Governance & Licensing
 
 Thermal is dual-licensed under:
 - **GNU Affero General Public License v3.0 (AGPL-3.0)** for the open-source community edition.

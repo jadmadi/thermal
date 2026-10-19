@@ -1109,3 +1109,33 @@ Replace `thermal serve`/`thermal web` with `thermal live --json` for a snapshot 
 
 **Escape hatch**:
 Pipe the NDJSON stream into your own local dashboard, log collector, or status bar. No network listener is required.
+
+---
+
+### Removed: Subscription Replay Simulation
+<a id="removed-workload-replay"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal replay\|--against\|--compare\|internal/thermal/replay' .`.
+- **Detection signal**: `thermal replay` exits 1 with a retirement notice. `--against` and `--compare` exit 1. `internal/thermal/replay.go` and `internal/render/replay.go` no longer exist, and `thermal replay --json` no longer emits a replay payload.
+
+**What changed and why**:
+The replay simulator hardcoded subscription ceilings and rate-card assumptions that change unpredictably, and its capacity verdicts could not be verified against provider entitlements. Maintaining that scenario engine inside a local CLI added drag and implied precision the data did not support. The static reports already expose the recorded volume and model pricing needed for a user's own scenario analysis.
+
+**Before / After**:
+```bash
+# Before
+thermal replay --against claude-pro
+thermal replay --compare all --json
+
+# After: exits 1 with migration guidance
+thermal replay
+# thermal: subscription replay simulation has been retired.
+# For monthly volume and model pricing: thermal monthly, thermal models
+```
+
+**The fix**:
+Use `thermal monthly` for period volume and `thermal models` for model-level token and cost breakdowns. Export either with `--json` for your own scenario model.
+
+**Escape hatch**:
+Combine `thermal daily --json` or `thermal monthly --json` with your own subscription limits and rate cards outside the CLI.

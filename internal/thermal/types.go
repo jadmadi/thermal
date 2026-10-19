@@ -51,8 +51,6 @@ type Options struct {
 	Metric          string        // tokens or cost; analytics verbs
 	By              string        // tool or model; mix verb
 	Grain           string        // day, week, month; mix verb
-	Against         string        // target model for replay simulation
-	Compare         string        // comma-separated plans/models for replay comparison
 	Interval        time.Duration // polling interval for live monitor (live verb, default 1s)
 	Stream          bool          // stream continuous NDJSON live events (live verb)
 	Fresh           bool          // bypass cached statusline data; live sessions always start at launch
@@ -336,49 +334,6 @@ type ModelOptions struct {
 	Now   time.Time
 }
 
-// WorkloadSnapshot captures the aggregate and distributional metrics of a
-// historical window for simulation against target plans or rate cards.
-// TotalTokens always sums canonical in-window DailyRow.Tokens; UnclassifiedTokens
-// counts the part of that volume whose token category the source never recorded.
-type WorkloadSnapshot struct {
-	ActiveDays         int     `json:"activeDays"`
-	TotalDays          int     `json:"totalDays"`
-	TotalTokens        int64   `json:"totalTokens"`
-	UncachedInput      int64   `json:"uncachedInput"`
-	Output             int64   `json:"output"`
-	Reasoning          int64   `json:"reasoning"`
-	CacheRead          int64   `json:"cacheRead"`
-	CacheWrite         int64   `json:"cacheWrite"`
-	UnclassifiedTokens int64   `json:"unclassifiedTokens"`
-	CacheHitRate       float64 `json:"cacheHitRate"`
-	MedianDailyTokens  int64   `json:"medianDailyTokens"`
-	P90DailyTokens     int64   `json:"p90DailyTokens"`
-	PeakDailyTokens    int64   `json:"peakDailyTokens"`
-	PeakDay            string  `json:"peakDay,omitempty"`
-	ActualSpend        float64 `json:"actualSpend"`
-	IsEstimatedSpend   bool    `json:"isEstimatedSpend,omitempty"`
-}
-
-// PlanReplayRow represents the simulation outcome for a single plan or model.
-// PricingStatus is "complete", "partial" (known subtotal only) or "missing"
-// (no target rate found); incomplete rows are placeholders without a savings claim.
-type PlanReplayRow struct {
-	ID               string  `json:"id"`
-	Name             string  `json:"name"`
-	Type             string  `json:"type"` // "sub" or "payg"
-	MonthlyCost      float64 `json:"monthlyCost"`
-	CostDelta        float64 `json:"costDelta"`
-	CostDeltaPercent float64 `json:"costDeltaPercent"`
-	ThrottledDays    int     `json:"throttledDays"`
-	TotalDays        int     `json:"totalDays"`
-	ThrottleRate     float64 `json:"throttleRate"`
-	BurstThrottles   int     `json:"burstThrottles,omitempty"`
-	CapacityVerdict  string  `json:"capacityVerdict"` // "PASS", "DEGRADED", "FAIL"
-	VerdictDetail    string  `json:"verdictDetail"`
-	PricingStatus    string  `json:"pricingStatus"` // "complete", "partial", "missing"
-	IsRecommended    bool    `json:"isRecommended,omitempty"`
-}
-
 // PlanType denotes whether a plan is a flat subscription or pay-as-you-go API.
 type PlanType string
 
@@ -400,30 +355,4 @@ type SubscriptionPlan struct {
 	DefaultModel       string   `json:"defaultModel"`                 // model id in catalog
 	Provider           string   `json:"provider"`
 	Notes              string   `json:"notes"`
-}
-
-// ReplayOptions configures the historical window and simulation parameters.
-type ReplayOptions struct {
-	Since   string
-	Until   string
-	Last    int
-	Against string
-	Compare []SubscriptionPlan
-	Now     time.Time
-}
-
-// ReplayPricer extends Pricer with per-model unit price lookups for replay.
-type ReplayPricer interface {
-	Pricer
-	LookupPrice(model string) (input, output, cacheRead, cacheWrite float64, ok bool)
-}
-
-// ReplayReport is the payload behind the thermal replay command.
-type ReplayReport struct {
-	Type           string           `json:"type"`
-	Since          string           `json:"since,omitempty"`
-	Until          string           `json:"until,omitempty"`
-	Workload       WorkloadSnapshot `json:"workload"`
-	Plans          []PlanReplayRow  `json:"plans"`
-	Recommendation string           `json:"recommendation"`
 }

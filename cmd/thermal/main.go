@@ -84,8 +84,6 @@ func parseArgs() thermal.Options {
 	flag.StringVar(&opts.Metric, "metric", "tokens", "Analytics metric: tokens or cost")
 	flag.StringVar(&opts.By, "by", "tool", "Mix dimension: tool or model")
 	flag.StringVar(&opts.Grain, "grain", "week", "Mix bucket size: day, week, or month")
-	flag.StringVar(&opts.Against, "against", "", "Target model for replay simulation")
-	flag.StringVar(&opts.Compare, "compare", "", "Plans to compare in replay: comma-separated or all")
 	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
 	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
 	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
@@ -240,14 +238,10 @@ func parseArgs() thermal.Options {
 			if v, ok := takeValue(); ok {
 				opts.StartOfWeek = v
 			}
-		case "--against":
-			if v, ok := takeValue(); ok {
-				opts.Against = v
-			}
-		case "--compare":
-			if v, ok := takeValue(); ok {
-				opts.Compare = v
-			}
+		case "--against", "--compare":
+			fmt.Fprintln(os.Stderr, "thermal: subscription replay simulation has been retired; --against and --compare are no longer supported.")
+			fmt.Fprintln(os.Stderr, "  For monthly volume and model pricing: thermal monthly, thermal models")
+			os.Exit(1)
 		case "--interval":
 			if v, ok := takeValue(); ok {
 				if d, err := time.ParseDuration(v); err == nil {
@@ -451,9 +445,6 @@ func validateReportFlags(opts thermal.Options) error {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
-			if opts.Against != "" || opts.Compare != "" {
-				return fmt.Errorf("--against and --compare only apply to the replay command")
-			}
 			return nil
 		}
 		// Leaderboard flags. Sort is optional here and means streak when unset.
@@ -468,9 +459,6 @@ func validateReportFlags(opts thermal.Options) error {
 		}
 		// --no-estimate and --offline also apply to the leaderboard, which is
 		// the one place a reader compares recorded cost against reports.
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
 			opts.Breakdown || opts.Chart ||
 			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
@@ -481,9 +469,6 @@ func validateReportFlags(opts thermal.Options) error {
 
 	switch opts.Report {
 	case "statusline", "prompt", "status":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the statusline command")
 		}
@@ -500,9 +485,6 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("report options do not apply to the statusline command")
 		}
 	case "live":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the live command")
 		}
@@ -516,32 +498,13 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("report options do not apply to the live command")
 		}
 	case "changelog":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the changelog command")
 		}
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the changelog command")
 		}
-	case "replay":
-		if sortKey != "" {
-			return fmt.Errorf("--sort does not apply to the replay command")
-		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top only applies to the projects and models commands")
-		}
-		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
-			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
-		}
-		if opts.Breakdown || opts.Chart {
-			return fmt.Errorf("--breakdown and --chart do not apply to the replay command")
-		}
 	case "yield":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the yield command")
 		}
@@ -554,9 +517,6 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--sort must be tokens, lines, or yield for the yield command")
 		}
 	case "receipt":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the receipt command")
 		}
@@ -569,27 +529,18 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--sort must be tokens, verified, cost, or rate for the receipt command")
 		}
 	case "projects":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		switch sortKey {
 		case "", "tokens", "cost", "days", "recent":
 		default:
 			return fmt.Errorf("--sort must be tokens, cost, days, or recent for projects")
 		}
 	case "models":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		switch sortKey {
 		case "", "tokens", "cost":
 		default:
 			return fmt.Errorf("--sort must be tokens or cost for models")
 		}
 	case "trend", "mix", "stats":
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the analytics commands")
 		}
@@ -621,9 +572,6 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--grain only applies to the mix command")
 		}
 	default:
-		if opts.Against != "" || opts.Compare != "" {
-			return fmt.Errorf("--against and --compare only apply to the replay command")
-		}
 		if sortKey != "" {
 			return fmt.Errorf("--sort only applies to the leaderboard, projects, and models")
 		}
@@ -666,6 +614,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "  Interactive monitoring: thermal live")
 		fmt.Fprintln(os.Stderr, "  Historical breakdown:   thermal, thermal projects, thermal stats")
 		os.Exit(1)
+	case "replay":
+		retireReplayCommand()
 	case "yield":
 		opts.Tool = "all"
 		opts.Report = "yield"
@@ -729,7 +679,7 @@ func main() {
 		case "trend":
 			runTrendReport(opts)
 		case "replay":
-			runReplayReport(opts)
+			retireReplayCommand()
 		case "yield":
 			runYieldReport(opts)
 		case "receipt":
@@ -1316,90 +1266,6 @@ func runTrendReport(opts thermal.Options) {
 	fmt.Print(render.RenderTrend(rep, opts.NoColor))
 }
 
-// newReplayPricer returns a ReplayPricer unless estimation is disabled.
-func newReplayPricer(opts thermal.Options) thermal.ReplayPricer {
-	if opts.NoEstimate {
-		return nil
-	}
-	cat := pricing.Load(pricing.DefaultCachePath(), opts.Offline)
-	if cat.Len() > 0 {
-		return cat
-	}
-	if opts.Verbose {
-		fmt.Fprintln(os.Stderr, "thermal: warning: no pricing data available; replay cannot estimate models")
-	}
-	return nil
-}
-
-// runReplayReport simulates the historical workload against subscriptions and API pricing.
-func runReplayReport(opts thermal.Options) {
-	set := loadUsage(opts)
-	pricer := newReplayPricer(opts)
-
-	var plans []thermal.SubscriptionPlan
-	if opts.Compare != "" {
-		if strings.ToLower(opts.Compare) == "all" {
-			plans = pricing.StandardPlans()
-		} else {
-			for _, key := range strings.Split(opts.Compare, ",") {
-				key = strings.TrimSpace(key)
-				if key == "" {
-					continue
-				}
-				p, ok := pricing.LookupPlan(key)
-				if !ok {
-					p = thermal.SubscriptionPlan{
-						ID:           key,
-						Name:         fmt.Sprintf("%s (API)", key),
-						Type:         thermal.PlanTypePayAsYouGo,
-						DefaultModel: key,
-					}
-				}
-				plans = append(plans, p)
-			}
-		}
-	} else if opts.Against == "" {
-		for _, id := range pricing.DefaultComparisonPlans() {
-			if p, ok := pricing.LookupPlan(id); ok {
-				plans = append(plans, p)
-			}
-		}
-	}
-
-	// A --against value that names a built-in plan resolves to that plan,
-	// exactly like --compare; anything else stays a model rate-card target.
-	against := opts.Against
-	if against != "" {
-		if plan, ok := pricing.LookupPlanExact(against); ok {
-			plans = append([]thermal.SubscriptionPlan{plan}, plans...)
-			against = ""
-		}
-	}
-
-	replayOpts := thermal.ReplayOptions{
-		Since:   opts.Since,
-		Until:   opts.Until,
-		Last:    opts.Last,
-		Against: against,
-		Compare: plans,
-	}
-	rep := thermal.AggregateReplay(set.days, replayOpts, pricer)
-
-	if opts.JSON {
-		type jsonReport struct {
-			thermal.ReplayReport
-			GeneratedAt string `json:"generatedAt"`
-		}
-		writeReportJSON(jsonReport{
-			ReplayReport: rep,
-			GeneratedAt:  time.Now().UTC().Format(time.RFC3339),
-		})
-		return
-	}
-
-	fmt.Print(render.RenderReplay(rep, opts.NoColor))
-}
-
 func runLicense(opts thermal.Options) {
 	if opts.JSON {
 		payload := map[string]any{
@@ -1738,6 +1604,12 @@ func runReceiptReport(opts thermal.Options) {
 func retireWebCommand() {
 	fmt.Fprintln(os.Stderr, "thermal: embedded web server has been retired to preserve terminal-native focus.")
 	fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
+	os.Exit(1)
+}
+
+func retireReplayCommand() {
+	fmt.Fprintln(os.Stderr, "thermal: subscription replay simulation has been retired.")
+	fmt.Fprintln(os.Stderr, "  For monthly volume and model pricing: thermal monthly, thermal models")
 	os.Exit(1)
 }
 

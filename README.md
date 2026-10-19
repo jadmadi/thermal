@@ -12,7 +12,7 @@
 [![Governance: Solo Authority](https://img.shields.io/badge/Governance-Solo_Authority-purple.svg)](GOVERNANCE.md)
 [![SLSA Level 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
-> Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine for 15 AI coding agents.
+> Multi-agent terminal heatmap, token FinOps, live burn monitor, and verifiable work receipt engine for 15 AI coding agents.
 
 ```bash
 # Automated install (Linux & macOS)
@@ -47,7 +47,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 
 1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
 2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
-3. **Insight — answers counting cannot.** `thermal replay` tests a real workload against subscription ceilings and API cards; `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add the 9-box FinOps grid, activity taxonomy, share drift, and regression forecasts.
+3. **Insight — answers counting cannot.** `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add distribution analytics, share drift, and regression forecasts.
 4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
 
 **The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
@@ -455,54 +455,6 @@ thermal devin trend
   Projection to 2026-09-30 (9 days)
   Expected     336.3M
   Band         0 to 855.4M
-```
-
-### `thermal replay`
-Simulate your real local developer workload against alternative subscriptions (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro) and API price cards (DeepSeek V3, Claude 3.5/3.7 Sonnet, GPT-4o) with daily capacity analysis, explicit pricing coverage, and cache efficiency accounting:
-
-```bash
-# Compare default commercial subscription plans and pay-as-you-go API tiers
-thermal replay
-
-# Replay workload specifically against a candidate model rate card
-thermal replay --against deepseek-v3
-thermal replay --against claude-3-7-sonnet --since 2026-08-01
-
-# Built-in plan ids or names resolve to the plan itself (same row as --compare)
-thermal replay --against claude-pro
-
-# Compare custom plans or all available standard plans side-by-side
-thermal replay --compare all
-thermal replay --compare "claude-pro,claude-max,opencode-pro,deepseek-api"
-
-# JSON output for financial modeling
-thermal replay --json
-```
-
-Replay conserves the full recorded workload even when a day's model map covers only part of it, and discloses any volume that could not be attributed to a token category. Targets with no catalog rate are labeled `Unpriced` with no savings comparison, and partially attributed workloads show a `Partial estimate` with the known-category subtotal. Plan limits and rate cards are configured scenario assumptions — replay cannot establish code quality or actual provider bills.
-
-```
-  Thermal · replay · 30-day workload simulation
-
-  Real Workload
-  Active days: 28 ·  Total: 18.9B  · Cache hit rate: 97.6%  · Spend/mo: ~$5897.68
-  Daily volume: Median 537.8M  · p90 burst 1.8B  · Peak 2.2B
-
-  Plan / Target Model         Type         Cost/Mo     Delta vs Actual  Capacity Verdict                
-  ──────────────────────────────────────────────────────────────────────────────────────────────────────
-  Claude Pro ($20)            Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 28/28 days (100%))
-  Claude Team/Max ($200)      Sub          $200.00    -$5697.68 (-97%)  FAIL (throttled 26/28 days (93%))
-  OpenCode Pro ($20)          Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 27/28 days (96%))
-  ★ DeepSeek V3 (API)         Payg         $983.31    -$4914.37 (-83%)  PASS (0% throttled (unmetered API))
-  Claude 3.5 Sonnet (API)     Payg        $7541.10    +$1643.42 (+28%)  PASS (0% throttled (unmetered API))
-  ──────────────────────────────────────────────────────────────────────────────────────────────────────
-
-  Recommendation:
-  • Your median daily volume (537.8M) and p90 burst (1.8B) exceed flat $20/mo rate limits on heavy days.
-  • Switching to DeepSeek V3 (API) would cost ~$983.31/mo with 0% throttling, saving $4914.37/mo.
-
-  Replay is a scenario comparison against configured plan limits and rate-card assumptions, not
-  verified provider entitlements; it cannot establish code quality or actual provider bills.
 ```
 
 ### `thermal yield`

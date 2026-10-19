@@ -126,7 +126,7 @@ func (c *Catalog) Lookup(model string) (Price, bool) {
 	return Price{}, false
 }
 
-// LookupPrice implements thermal.ReplayPricer.
+// LookupPrice returns per-model unit prices for scenario comparisons.
 func (c *Catalog) LookupPrice(model string) (input, output, cacheRead, cacheWrite float64, ok bool) {
 	p, ok := c.Lookup(model)
 	if !ok {
