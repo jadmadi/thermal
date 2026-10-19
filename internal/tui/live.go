@@ -396,8 +396,8 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	flameLine := formatFlameLine(intensity, m.snapshot.ActiveModel, innerWidth, colors)
 
 	// 4. Rolling 60s Sparkline
-	hasTokenSpark := m.snapshot.PeakRollingTok > 0
-	hasTurnSpark := m.snapshot.PeakRollingTurn > 0
+	hasTokenSpark := m.snapshot.PeakTokensPerSec > 0
+	hasTurnSpark := m.snapshot.PeakStepsPerSec > 0
 
 	var sparkBuckets [60]int64
 	var peakVal int64
@@ -410,10 +410,10 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 		for i, v := range m.snapshot.RollingTurns {
 			sparkBuckets[i] = int64(v)
 		}
-		peakVal = int64(m.snapshot.PeakRollingTurn)
+		peakVal = int64(m.snapshot.PeakStepsPerSec)
 	} else {
 		sparkBuckets = m.snapshot.RollingTokens
-		peakVal = m.snapshot.PeakRollingTok
+		peakVal = m.snapshot.PeakTokensPerSec
 	}
 	sparkLine := formatSparkLine(sparkBuckets, peakVal, innerWidth, isSparkActivity, colors)
 
@@ -515,7 +515,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	sb.WriteString(divider("FLAME INTENSITY") + "\n")
 	sb.WriteString(border(" │ ") + padLine(flameLine, innerWidth) + border(" │\n"))
 	if showSparkline {
-		sb.WriteString(divider("ROLLING ACTIVITY (60s)") + "\n")
+		sb.WriteString(divider("ROLLING ACTIVITY · 60s / 1s buckets") + "\n")
 		sb.WriteString(border(" │ ") + padLine(sparkLine, innerWidth) + border(" │\n"))
 	}
 	sb.WriteString(divider(tickerLabel) + "\n")
@@ -640,26 +640,47 @@ func join3(c1, c2, c3 string, colW int) string {
 	return padCell(c1, colW, false) + "  " + padCell(c2, colW, false) + "  " + padCell(c3, colW, false)
 }
 
+func formatRateNumber(v float64) string {
+	if v <= 0 {
+		return "0"
+	}
+	if v < 10 {
+		return fmt.Sprintf("%.1f", v)
+	}
+	return thermal.CompactNumber(int64(math.Round(v)))
+}
+
+func formatSpeedNumber(v float64) string {
+	if v <= 0 {
+		return "0"
+	}
+	if v < 1 {
+		return fmt.Sprintf("%.3f", v)
+	}
+	if v < 10 {
+		return fmt.Sprintf("%.2f", v)
+	}
+	return thermal.CompactNumber(int64(math.Round(v)))
+}
+
 func formatRate(tokRate, turnRate float64, isActivity bool, colW int, colors bool) string {
 	if isActivity {
 		if turnRate <= 0 {
 			return theme.TextMuted.Sprint(colors, "0 step/min")
 		}
-		str := fmt.Sprintf("%s step/min", thermal.CompactNumber(int64(turnRate)))
-		return theme.Primary.SprintBold(colors, str)
+		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/min")
 	}
 	if tokRate <= 0 && turnRate <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/min")
 	}
-	if tokRate > 0 && turnRate > 0 && colW >= 24 {
-		str := fmt.Sprintf("%s/m · %s step/m", thermal.CompactNumber(int64(tokRate)), thermal.CompactNumber(int64(turnRate)))
+	if tokRate <= 0 {
+		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/min")
+	}
+	if turnRate > 0 && colW >= 24 {
+		str := formatRateNumber(tokRate) + "/m · " + formatRateNumber(turnRate) + " step/m"
 		return theme.Primary.SprintBold(colors, str)
 	}
-	if tokRate <= 0 {
-		return theme.TextMuted.Sprint(colors, "0 tok/min")
-	}
-	str := fmt.Sprintf("%s/min", thermal.CompactNumber(int64(tokRate)))
-	return theme.Primary.SprintBold(colors, str)
+	return theme.Primary.SprintBold(colors, formatRateNumber(tokRate)+"/min")
 }
 
 func formatSpeed(tokSpeed, turnSpeed float64, isActivity bool, colW int, colors bool) string {
@@ -667,41 +688,18 @@ func formatSpeed(tokSpeed, turnSpeed float64, isActivity bool, colW int, colors 
 		if turnSpeed <= 0 {
 			return theme.TextMuted.Sprint(colors, "0 step/s")
 		}
-		if turnSpeed < 1.0 {
-			return fmt.Sprintf("%.1f step/s", turnSpeed)
-		}
-		if colW >= 24 && turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed) {
-			return fmt.Sprintf("%.1f step/s", turnSpeed)
-		}
-		return fmt.Sprintf("%s step/s", thermal.CompactNumber(int64(turnSpeed)))
+		return formatSpeedNumber(turnSpeed) + " step/s"
 	}
 	if tokSpeed <= 0 && turnSpeed <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/s")
 	}
 	if tokSpeed > 0 && turnSpeed > 0 && colW >= 24 {
-		tokStr := thermal.CompactNumber(int64(tokSpeed))
-		if tokSpeed < 1.0 || (tokSpeed < 10.0 && tokSpeed != math.Trunc(tokSpeed)) {
-			tokStr = fmt.Sprintf("%.1f", tokSpeed)
-		}
-		turnStr := thermal.CompactNumber(int64(turnSpeed))
-		if turnSpeed < 1.0 || (turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed)) {
-			turnStr = fmt.Sprintf("%.1f", turnSpeed)
-		}
-		return fmt.Sprintf("%s · %s step/s", tokStr, turnStr)
+		return formatSpeedNumber(tokSpeed) + " · " + formatSpeedNumber(turnSpeed) + " step/s"
 	}
 	if tokSpeed <= 0 {
-		if turnSpeed > 0 {
-			if turnSpeed < 1.0 || (colW >= 24 && turnSpeed < 10.0 && turnSpeed != math.Trunc(turnSpeed)) {
-				return fmt.Sprintf("%.1f step/s", turnSpeed)
-			}
-			return fmt.Sprintf("%s step/s", thermal.CompactNumber(int64(turnSpeed)))
-		}
-		return theme.TextMuted.Sprint(colors, "0 tok/s")
+		return formatSpeedNumber(turnSpeed) + " step/s"
 	}
-	if tokSpeed < 1.0 || (colW >= 24 && tokSpeed < 10.0 && tokSpeed != math.Trunc(tokSpeed)) {
-		return fmt.Sprintf("%.1f tok/s", tokSpeed)
-	}
-	return fmt.Sprintf("%s tok/s", thermal.CompactNumber(int64(tokSpeed)))
+	return formatSpeedNumber(tokSpeed) + " tok/s"
 }
 
 func formatCostHr(costHr float64, colors bool) string {
@@ -968,7 +966,7 @@ func formatSparkLine(buckets [60]int64, peak int64, innerWidth int, isActivity b
 
 	peakStr := ""
 	if peak > 0 {
-		formatted := thermal.CompactNumber(peak) + unitSec
+		formatted := thermal.CompactNumber(peak) + unitSec + " (1s bucket)"
 		if colors {
 			peakStr = "  Peak: " + theme.DarkStep12.Sprint(true, formatted)
 		} else {

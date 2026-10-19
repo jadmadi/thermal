@@ -80,8 +80,8 @@ func TestLiveTracker_InitialBaseline(t *testing.T) {
 	if snap.FlameIntensity != 0 || snap.ActivityIntensity != 0 {
 		t.Errorf("expected zero flame on baseline, got %f/%f", snap.FlameIntensity, snap.ActivityIntensity)
 	}
-	if snap.PeakRollingTok != 0 || snap.PeakRollingTurn != 0 {
-		t.Errorf("expected zero peak on baseline, got %d/%d", snap.PeakRollingTok, snap.PeakRollingTurn)
+	if snap.PeakTokensPerSec != 0 || snap.PeakStepsPerSec != 0 {
+		t.Errorf("expected zero peak on baseline, got %d/%d", snap.PeakTokensPerSec, snap.PeakStepsPerSec)
 	}
 	if len(snap.RecentEvents) != 0 {
 		t.Errorf("expected no baseline events, got %d", len(snap.RecentEvents))
@@ -769,6 +769,137 @@ func TestLiveTracker_PricingAndNoEstimate(t *testing.T) {
 	}
 }
 
+func TestLiveTracker_SecondBucketDistribution(t *testing.T) {
+	lt := NewLiveTracker()
+	t0 := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	res1 := []ToolResult{{
+		Tool: ToolOpenCode,
+		Name: "OpenCode",
+		Summary: Summary{
+			LifetimeTokens: 10_000_000,
+			Sessions:       500,
+		},
+		Daily: []DailyRow{{Day: "2026-09-24", Tokens: 1_000_000, Turns: 50}},
+	}}
+	lt.Poll(res1, nil, t0)
+
+	res2 := []ToolResult{{
+		Tool: ToolOpenCode,
+		Name: "OpenCode",
+		Summary: Summary{
+			LifetimeTokens: 10_020_000,
+			Sessions:       501,
+		},
+		Daily: []DailyRow{{Day: "2026-09-24", Tokens: 1_020_000, Turns: 70}},
+	}}
+	snap, _ := lt.Poll(res2, nil, t0.Add(2*time.Second))
+
+	if snap.SessionTokens != 20_000 || snap.SessionTurns != 20 {
+		t.Fatalf("expected session 20K/20, got %d/%d", snap.SessionTokens, snap.SessionTurns)
+	}
+	if snap.PeakTokensPerSec != 10_000 {
+		t.Errorf("expected peak 10K tok/s, got %d", snap.PeakTokensPerSec)
+	}
+	if snap.PeakStepsPerSec != 10 {
+		t.Errorf("expected peak 10 steps/s, got %d", snap.PeakStepsPerSec)
+	}
+	var tokenSum int64
+	for _, b := range snap.RollingTokens {
+		tokenSum += b
+	}
+	if tokenSum != 20_000 {
+		t.Errorf("expected ring token sum 20K, got %d", tokenSum)
+	}
+	var turnSum int
+	for _, b := range snap.RollingTurns {
+		turnSum += b
+	}
+	if turnSum != 20 {
+		t.Errorf("expected ring turn sum 20, got %d", turnSum)
+	}
+	if snap.BurnTokensPerMin != 20_000 || math.Abs(snap.BurnTokensPerSec-333.333) > 0.01 {
+		t.Errorf("expected 20K/min and 333.3/s, got %f/%f", snap.BurnTokensPerMin, snap.BurnTokensPerSec)
+	}
+	if snap.BucketSeconds != 1 || snap.WindowSeconds != 60 {
+		t.Errorf("expected 1s buckets over 60s, got %d/%d", snap.BucketSeconds, snap.WindowSeconds)
+	}
+}
+
+func TestLiveTracker_LongIntervalWindow(t *testing.T) {
+	lt := NewLiveTracker()
+	t0 := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	res1 := []ToolResult{{
+		Tool:    ToolOpenCode,
+		Name:    "OpenCode",
+		Summary: Summary{LifetimeTokens: 10_000_000},
+		Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_000_000, Turns: 50}},
+	}}
+	lt.Poll(res1, nil, t0)
+
+	res2 := []ToolResult{{
+		Tool:    ToolOpenCode,
+		Name:    "OpenCode",
+		Summary: Summary{LifetimeTokens: 10_090_000},
+		Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_090_000, Turns: 140}},
+	}}
+	snap, _ := lt.Poll(res2, nil, t0.Add(90*time.Second))
+
+	if snap.SessionTokens != 90_000 || snap.SessionTurns != 90 {
+		t.Fatalf("expected full session delta 90K/90, got %d/%d", snap.SessionTokens, snap.SessionTurns)
+	}
+	if snap.BurnTokensPerMin != 60_000 {
+		t.Errorf("expected only the last 60s share (60K) in the ring, got %f", snap.BurnTokensPerMin)
+	}
+	if snap.PeakTokensPerSec != 1_000 {
+		t.Errorf("expected proportional peak 1K tok/s, got %d", snap.PeakTokensPerSec)
+	}
+	if snap.PeakStepsPerSec != 1 {
+		t.Errorf("expected proportional peak 1 step/s, got %d", snap.PeakStepsPerSec)
+	}
+}
+
+func TestLiveTracker_SubSecondAccumulation(t *testing.T) {
+	lt := NewLiveTracker()
+	t0 := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	res1 := []ToolResult{{
+		Tool:    ToolOpenCode,
+		Name:    "OpenCode",
+		Summary: Summary{LifetimeTokens: 10_000_000},
+		Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_000_000, Turns: 50}},
+	}}
+	lt.Poll(res1, nil, t0)
+
+	res2 := []ToolResult{{
+		Tool:    ToolOpenCode,
+		Name:    "OpenCode",
+		Summary: Summary{LifetimeTokens: 10_001_000},
+		Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_001_000, Turns: 51}},
+	}}
+	lt.Poll(res2, nil, t0.Add(500*time.Millisecond))
+
+	res3 := []ToolResult{{
+		Tool:    ToolOpenCode,
+		Name:    "OpenCode",
+		Summary: Summary{LifetimeTokens: 10_002_000},
+		Daily:   []DailyRow{{Day: "2026-09-24", Tokens: 1_002_000, Turns: 52}},
+	}}
+	snap, _ := lt.Poll(res3, nil, t0.Add(time.Second))
+
+	if snap.SessionTokens != 2_000 {
+		t.Fatalf("expected session 2K, got %d", snap.SessionTokens)
+	}
+	if snap.PeakTokensPerSec != 1_000 {
+		t.Errorf("expected peak 1K tok/s after sub-second accumulation, got %d", snap.PeakTokensPerSec)
+	}
+	var sum int64
+	for _, b := range snap.RollingTokens {
+		sum += b
+	}
+	if sum != 2_000 {
+		t.Errorf("expected ring sum 2K, got %d", sum)
+	}
+}
+
 func TestLiveTracker_TodayRollups(t *testing.T) {
 	lt := NewLiveTrackerWithPricer(&testLivePricer{}, false)
 	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
@@ -857,8 +988,8 @@ func TestLiveTracker_LaunchRelativeSession(t *testing.T) {
 	if math.Abs(snap.CarriedInCost-1.25) > 0.001 {
 		t.Errorf("expected carried-in cost 1.25, got %f", snap.CarriedInCost)
 	}
-	if snap.BurnTokensPerMin != 0 || snap.PeakRollingTok != 0 || snap.FlameIntensity != 0 {
-		t.Errorf("expected zero rate/peak/flame on baseline, got %f/%d/%f", snap.BurnTokensPerMin, snap.PeakRollingTok, snap.FlameIntensity)
+	if snap.BurnTokensPerMin != 0 || snap.PeakTokensPerSec != 0 || snap.FlameIntensity != 0 {
+		t.Errorf("expected zero rate/peak/flame on baseline, got %f/%d/%f", snap.BurnTokensPerMin, snap.PeakTokensPerSec, snap.FlameIntensity)
 	}
 	if len(snap.RecentEvents) != 0 {
 		t.Errorf("expected no baseline events, got %d", len(snap.RecentEvents))

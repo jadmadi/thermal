@@ -565,6 +565,37 @@ For the old combined display, derive your own string from `tokens`/`turns`. For 
 
 ---
 
+### Changed: Live Peak Uses One-Second Buckets
+<a id="changed-live-one-second-peak"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'peakRollingTok\|peakRollingTurn\|rollingTokens\|thermal.*live' .`.
+- **Detection signal**: `peakRollingTok` and `peakRollingTurn` are replaced by `peakTokensPerSec` and `peakStepsPerSec`; snapshots now include `bucketSeconds: 1` and `windowSeconds: 60`. `rollingTokens` and `rollingTurns` are one-second buckets, so a multi-second poll delta is split across the seconds it spans instead of becoming one oversized peak.
+
+**What changed and why**:
+The old tracker advanced empty buckets and then added the whole poll delta to the latest bucket, so a single event's token count was displayed as a per-second peak. Peak is now the maximum one-second bucket, and Rate and Speed both derive from the same 60-second ring. Sub-second polls accumulate in the current second; gaps longer than 60 seconds contribute only their last 60 seconds to the rolling window, while session counters keep the full delta. Displayed sub-one-per-second speeds use three decimals so multiplying by 60 matches the displayed per-minute rate within 0.05.
+
+**Before / After**:
+```text
+# Before: 20K tokens observed over 2 seconds
+Peak: 20K tok/s
+Rate: 20K/min
+Speed: 333 tok/s
+
+# After: the same delta split into two one-second buckets
+Peak: 10K tok/s (1s bucket)
+Rate: 20K/min
+Speed: 333 tok/s
+```
+
+**The fix**:
+Consume `peakTokensPerSec` and `peakStepsPerSec` as one-second maxima, and use `bucketSeconds`/`windowSeconds` to describe the series. Do not infer a rate from a single event; use `burnTokensPerMin`/`burnTokensPerSec` and `burnTurnsPerMin`/`burnTurnsPerSec`.
+
+**Escape hatch**:
+For poll-sized deltas, read `recentEvents[].tokens` and `recentEvents[].turns`. For static period totals, use `thermal daily`, `thermal stats`, or `thermal models`.
+
+---
+
 ### Changed: Web Telemetry Parity and Filtering Options
 <a id="changed-web-telemetry-parity"></a>
 

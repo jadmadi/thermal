@@ -71,10 +71,12 @@ type LiveSnapshot struct {
 	TodayProjects     []LiveRollup     `json:"todayProjects,omitempty"`
 	TodayModels       []LiveRollup     `json:"todayModels,omitempty"`
 	RecentEvents      []LiveEvent      `json:"recentEvents"`
-	RollingTokens     [60]int64        `json:"rollingTokens"` // 60 seconds rolling buckets
-	PeakRollingTok    int64            `json:"peakRollingTok"`
-	RollingTurns      [60]int          `json:"rollingTurns,omitempty"` // 60 seconds rolling turns
-	PeakRollingTurn   int              `json:"peakRollingTurn,omitempty"`
+	RollingTokens     [60]int64        `json:"rollingTokens"` // one-second buckets
+	PeakTokensPerSec  int64            `json:"peakTokensPerSec"`
+	RollingTurns      [60]int          `json:"rollingTurns,omitempty"` // one-second buckets
+	PeakStepsPerSec   int              `json:"peakStepsPerSec"`
+	BucketSeconds     int              `json:"bucketSeconds"`
+	WindowSeconds     int              `json:"windowSeconds"`
 	ToolTotals        map[string]int64 `json:"toolTotals"`
 }
 
@@ -169,6 +171,40 @@ func toolTotalTurns(res ToolResult) int {
 		tot = res.Summary.Sessions
 	}
 	return tot
+}
+
+func (lt *LiveTracker) addRollingDelta(tokens int64, turns int, elapsed time.Duration) {
+	if tokens <= 0 && turns <= 0 {
+		return
+	}
+	seconds := int(elapsed / time.Second)
+	if seconds < 1 {
+		seconds = 1
+	}
+	windowTokens := tokens
+	windowTurns := turns
+	if seconds > 60 {
+		windowTokens = tokens * 60 / int64(seconds)
+		windowTurns = turns * 60 / seconds
+		seconds = 60
+	}
+	baseTokens := windowTokens / int64(seconds)
+	remTokens := windowTokens % int64(seconds)
+	baseTurns := windowTurns / seconds
+	remTurns := windowTurns % seconds
+	for i := 0; i < seconds; i++ {
+		idx := (lt.bucketIndex - i + 60) % 60
+		addTokens := baseTokens
+		if int64(i) < remTokens {
+			addTokens++
+		}
+		lt.burnBuckets[idx] += addTokens
+		addTurns := baseTurns
+		if i < remTurns {
+			addTurns++
+		}
+		lt.turnBuckets[idx] += addTurns
+	}
 }
 
 func addRollupCost(r *LiveRollup, cost float64, estimated bool, tokenBearing bool) {
@@ -295,14 +331,16 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		lt.todayDay = currentDay
 	}
 
-	// 1. Advance rolling seconds & decay flame intensity
+	// 1. Advance one-second buckets and decay flame intensity.
+	elapsed := time.Duration(0)
 	if !lt.lastBucketTime.IsZero() {
-		elapsed := now.Sub(lt.lastBucketTime)
-		steps := int(elapsed.Seconds())
+		elapsed = now.Sub(lt.lastBucketTime)
+		rawSteps := int(elapsed / time.Second)
+		steps := rawSteps
+		if steps > 60 {
+			steps = 60
+		}
 		if steps > 0 {
-			if steps > 60 {
-				steps = 60
-			}
 			for s := 0; s < steps; s++ {
 				lt.bucketIndex = (lt.bucketIndex + 1) % 60
 				lt.burnBuckets[lt.bucketIndex] = 0
@@ -316,9 +354,14 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 			if lt.activityIntensity < 0.02 {
 				lt.activityIntensity = 0
 			}
+			if rawSteps > 60 {
+				lt.lastBucketTime = now
+			} else {
+				lt.lastBucketTime = lt.lastBucketTime.Add(time.Duration(rawSteps) * time.Second)
+			}
+		} else if rawSteps < 0 {
 			lt.lastBucketTime = now
-		} else if steps < 0 {
-			lt.lastBucketTime = now
+			elapsed = 0
 		}
 	} else {
 		lt.lastBucketTime = now
@@ -888,12 +931,11 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 				lt.sessionCost += deltaCost
 				lt.sessionTurns += deltaTurns
 
+				lt.addRollingDelta(deltaTok, deltaTurns, elapsed)
 				if deltaTok > 0 {
-					lt.burnBuckets[lt.bucketIndex] += deltaTok
 					lt.flameIntensity = math.Min(1.0, lt.flameIntensity+0.5)
 				}
 				if deltaTurns > 0 {
-					lt.turnBuckets[lt.bucketIndex] += deltaTurns
 					lt.activityIntensity = math.Min(1.0, lt.activityIntensity+0.4)
 				}
 				if bestModel != "" {
@@ -994,9 +1036,11 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 		TodayModels:       lt.todayModels,
 		RecentEvents:      append([]LiveEvent{}, lt.events...),
 		RollingTokens:     lt.burnBuckets,
-		PeakRollingTok:    peakRolling,
+		PeakTokensPerSec:  peakRolling,
 		RollingTurns:      lt.turnBuckets,
-		PeakRollingTurn:   peakTurns,
+		PeakStepsPerSec:   peakTurns,
+		BucketSeconds:     1,
+		WindowSeconds:     60,
 		ToolTotals:        toolTotals,
 	}
 

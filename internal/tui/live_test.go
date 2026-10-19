@@ -5,6 +5,7 @@ package tui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -677,15 +678,48 @@ func TestLiveModel_CompactViewport(t *testing.T) {
 
 func TestLiveTUI_FormatSpeed_Fractional(t *testing.T) {
 	got := formatSpeed(0, 0.667, true, 24, false)
-	want := "0.7 step/s"
+	want := "0.667 step/s"
 	if got != want {
 		t.Errorf("formatSpeed(0, 0.667, true, 24, false) = %q, want %q", got, want)
 	}
 
 	gotTok := formatSpeed(0.5, 0, false, 24, false)
-	wantTok := "0.5 tok/s"
+	wantTok := "0.500 tok/s"
 	if gotTok != wantTok {
 		t.Errorf("formatSpeed(0.5, 0, false, 24, false) = %q, want %q", gotTok, wantTok)
+	}
+}
+
+func TestLiveTUI_BucketLabels(t *testing.T) {
+	m := NewLiveModel(nil, time.Second, "", false)
+	m.width = 100
+	m.height = 30
+	m.snapshot.PeakTokensPerSec = 1_000
+	m.snapshot.RollingTokens[0] = 1_000
+
+	view := m.View().Content
+	if !strings.Contains(view, "60s / 1s buckets") {
+		t.Errorf("expected one-second window label, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Peak: 1.0K tok/s (1s bucket)") {
+		t.Errorf("expected one-second peak label, got:\n%s", view)
+	}
+}
+
+func TestLiveTUI_RateSpeedParity(t *testing.T) {
+	for _, turnsPerMin := range []float64{1, 7.8, 8, 9.9, 23, 60} {
+		rateText := strings.TrimSuffix(formatRate(0, turnsPerMin, true, 24, false), " step/min")
+		speedText := strings.TrimSuffix(formatSpeed(0, turnsPerMin/60, true, 24, false), " step/s")
+		var rate, speed float64
+		if _, err := fmt.Sscanf(rateText, "%f", &rate); err != nil {
+			t.Fatalf("parse rate %q: %v", rateText, err)
+		}
+		if _, err := fmt.Sscanf(speedText, "%f", &speed); err != nil {
+			t.Fatalf("parse speed %q: %v", speedText, err)
+		}
+		if math.Abs(speed*60-rate) > 0.05 {
+			t.Errorf("turns/min %v: rate %q and speed %q disagree", turnsPerMin, rateText, speedText)
+		}
 	}
 }
 
