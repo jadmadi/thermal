@@ -267,6 +267,7 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 	}{
 		{[]string{"weekly", "--top", "5"}, "--top only applies to the projects and models commands"},
 		{[]string{"replay"}, "subscription replay simulation has been retired"},
+		{[]string{"yield"}, "token yield efficiency reporting has been retired"},
 		{[]string{"daily", "--last", "-5"}, "--last cannot be negative"},
 	}
 
@@ -470,63 +471,6 @@ func TestSimulatedUser_ChangelogCommand(t *testing.T) {
 	releases, ok := res["releases"].([]any)
 	if !ok || len(releases) == 0 {
 		t.Fatalf("expected releases list in JSON, got %v", res)
-	}
-}
-
-func TestSimulatedUser_YieldCommand(t *testing.T) {
-	// 1. Text mode
-	stdout, stderr, code := runSim(t, "yield", "--no-color", "--top", "5")
-	if code != 0 {
-		t.Fatalf("expected exit code 0 for 'thermal yield', got %d. stderr: %s", code, stderr)
-	}
-	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "yield") {
-		t.Errorf("'thermal yield' missing header: %s", stdout)
-	}
-	if strings.Contains(stdout, "\x1b[") {
-		t.Errorf("'thermal yield' contains ANSI escapes under --no-color")
-	}
-	checkLanguageSanity(t, stdout)
-
-	// 2. JSON mode
-	jsonOut, stderr, code := runSim(t, "yield", "--json")
-	if code != 0 {
-		t.Fatalf("expected exit code 0 for 'thermal yield --json', got %d. stderr: %s", code, stderr)
-	}
-	var res map[string]any
-	if err := json.Unmarshal([]byte(jsonOut), &res); err != nil {
-		t.Fatalf("failed to parse JSON from 'thermal yield --json': %v. stdout: %s", err, jsonOut)
-	}
-	if res["type"] != "yield" {
-		t.Errorf("expected type == yield in JSON, got %v", res["type"])
-	}
-	if _, ok := res["totals"]; !ok {
-		t.Errorf("expected totals in JSON, got %v", res)
-	}
-
-	// 3. Flags: --sort lines, --sort yield, --sort tokens
-	for _, sortKey := range []string{"lines", "yield", "tokens"} {
-		_, _, code := runSim(t, "yield", "--sort", sortKey, "--no-color")
-		if code != 0 {
-			t.Errorf("expected exit code 0 for 'thermal yield --sort %s', got %d", sortKey, code)
-		}
-	}
-
-	// 4. Invalid sort flag rejected
-	_, stderr, code = runSim(t, "yield", "--sort", "invalid_sort")
-	if code == 0 {
-		t.Errorf("expected non-zero exit code for invalid --sort in yield, got 0")
-	}
-	if !strings.Contains(stderr, "--sort must be tokens, lines, or yield") {
-		t.Errorf("unexpected error message for invalid --sort: %s", stderr)
-	}
-
-	// 5. Single tool yield
-	stdout, stderr, code = runSim(t, "codewhale", "yield", "--no-color")
-	if code != 0 {
-		t.Fatalf("expected exit code 0 for 'thermal codewhale yield', got %d. stderr: %s", code, stderr)
-	}
-	if !strings.Contains(stdout, "Thermal") || !strings.Contains(stdout, "yield") {
-		t.Errorf("'thermal codewhale yield' missing header: %s", stdout)
 	}
 }
 

@@ -118,7 +118,6 @@ func RenderHelp(noColor bool) string {
 				{Name: "stats", Desc: "Daily distribution, percentiles, and token composition"},
 				{Name: "mix", Desc: "Tool and model market-share & switching frequency"},
 				{Name: "trend", Desc: "Daily trend fit with month-end volume & spend projection"},
-				{Name: "yield", Desc: "Token yield efficiency (tokens burned per net line added)"},
 			},
 		},
 		{
@@ -196,7 +195,7 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "Ranking & Analytics Options:",
 			Items: []HelpItem{
-				{Name: "--sort <field>", Desc: "Sort metric: streak|tokens|cost|lines|yield"},
+				{Name: "--sort <field>", Desc: "Sort metric: streak|tokens|cost"},
 				{Name: "--top <N>", Desc: "Cap table rows to top N items (default: all)"},
 				{Name: "--metric <field>", Desc: "Analytics metric: tokens or cost (default: tokens)"},
 				{Name: "--by <tool|model>", Desc: "Mix breakdown dimension (default: tool)"},

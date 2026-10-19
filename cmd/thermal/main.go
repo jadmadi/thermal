@@ -99,7 +99,7 @@ func parseArgs() thermal.Options {
 	flag.BoolVar(&opts.Fresh, "fresh", false, "Bypass cached statusline data; live sessions always start at launch")
 	var showLicense bool
 	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
-	flag.StringVar(&opts.Format, "format", "text", "Output format: text, json, md, or markdown")
+	flag.StringVar(&opts.Format, "format", "text", "Output format: text or json")
 	flag.BoolVar(&opts.Nerd, "nerd", false, "Use Nerd Font glyphs in statusline")
 	flag.BoolVar(&opts.Plain, "plain", false, "Plain text output without glyphs or icons")
 	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of the terminal UI")
@@ -397,14 +397,11 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	switch opts.Format {
-	case "", "text", "json", "md", "markdown":
+	case "", "text", "json":
+	case "md", "markdown":
+		return fmt.Errorf("--format %s has been retired with thermal yield; use --json for structured output", opts.Format)
 	default:
-		return fmt.Errorf("--format must be text, json, md, or markdown")
-	}
-	if opts.Format == "md" || opts.Format == "markdown" {
-		if opts.Report != "yield" {
-			return fmt.Errorf("--format %s only applies to the yield command", opts.Format)
-		}
+		return fmt.Errorf("--format must be text or json")
 	}
 
 	if opts.Last < 0 {
@@ -504,18 +501,6 @@ func validateReportFlags(opts thermal.Options) error {
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the changelog command")
 		}
-	case "yield":
-		if opts.Breakdown || opts.Chart {
-			return fmt.Errorf("--breakdown and --chart do not apply to the yield command")
-		}
-		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
-			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
-		}
-		switch sortKey {
-		case "", "tokens", "lines", "yield":
-		default:
-			return fmt.Errorf("--sort must be tokens, lines, or yield for the yield command")
-		}
 	case "projects":
 		switch sortKey {
 		case "", "tokens", "cost", "days", "recent":
@@ -607,10 +592,7 @@ func main() {
 	case "receipt":
 		retireReceiptCommand()
 	case "yield":
-		opts.Tool = "all"
-		opts.Report = "yield"
-		runYieldReport(opts)
-		return
+		retireYieldCommand()
 	case "audit":
 		runAudit(opts)
 		return
@@ -671,7 +653,7 @@ func main() {
 		case "replay":
 			retireReplayCommand()
 		case "yield":
-			runYieldReport(opts)
+			retireYieldCommand()
 		case "receipt":
 			retireReceiptCommand()
 		case "audit":
@@ -1465,43 +1447,6 @@ func runShare(opts thermal.Options) {
 	fmt.Print(sb.String())
 }
 
-// runYieldReport correlates token spend with code output delta telemetry.
-func runYieldReport(opts thermal.Options) {
-	if opts.Tool == "yield" {
-		opts.Tool = "all"
-	}
-	yieldOpts := thermal.YieldOptions{
-		Since: opts.Since,
-		Until: opts.Until,
-		Last:  opts.Last,
-		Sort:  opts.Sort,
-		Top:   opts.Top,
-	}
-
-	set := loadUsage(opts)
-	rep := thermal.AggregateYield(set.results, set.projects, yieldOpts)
-	rep.Tool = set.toolName
-
-	if opts.JSON {
-		type jsonYieldReport struct {
-			thermal.YieldReport
-			GeneratedAt string `json:"generatedAt"`
-		}
-		writeReportJSON(jsonYieldReport{
-			YieldReport: rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
-		return
-	}
-
-	if opts.Format == "md" || opts.Format == "markdown" {
-		fmt.Print(render.RenderYieldMarkdown(rep, opts.Top))
-		return
-	}
-
-	fmt.Print(render.RenderYield(rep, opts.Top, opts.NoColor))
-}
-
 func retireWebCommand() {
 	fmt.Fprintln(os.Stderr, "thermal: embedded web server has been retired to preserve terminal-native focus.")
 	fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
@@ -1517,6 +1462,12 @@ func retireReplayCommand() {
 func retireReceiptCommand() {
 	fmt.Fprintln(os.Stderr, "thermal: transcript command receipt auditing has been retired.")
 	fmt.Fprintln(os.Stderr, "  Verify test outcomes using native test runners: go test, pytest, cargo test")
+	os.Exit(1)
+}
+
+func retireYieldCommand() {
+	fmt.Fprintln(os.Stderr, "thermal: token yield efficiency reporting has been retired.")
+	fmt.Fprintln(os.Stderr, "  For token burn rates and velocity: thermal live, thermal stats")
 	os.Exit(1)
 }
 

@@ -250,11 +250,8 @@ run_check "Trend JSON export" 0 json "${BIN_PATH}" trend --json
 echo -e "\n${BOLD}6. Retired Replay Command:${RESET}"
 run_check "Replay command retired" 1 error "${BIN_PATH}" replay
 
-echo -e "\n${BOLD}7. Token Yield:${RESET}"
-run_check "Yield report standard output" 0 text "${BIN_PATH}" yield --no-color
-run_check "Yield report sorted by lines" 0 text "${BIN_PATH}" yield --sort lines --no-color
-run_check "Yield report sorted by yield" 0 text "${BIN_PATH}" yield --sort yield --no-color
-run_check "Yield report JSON export" 0 json "${BIN_PATH}" yield --json
+echo -e "\n${BOLD}7. Retired Yield Command:${RESET}"
+run_check "Yield command retired" 1 error "${BIN_PATH}" yield
 
 echo -e "\n${BOLD}8. Local Setup Audit & Stateless URL Sharing:${RESET}"
 run_check "Audit command standard output" 0 text "${BIN_PATH}" audit --no-color
@@ -275,7 +272,6 @@ run_check "Changelog JSON output" 0 json "${BIN_PATH}" changelog --json
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
-run_check "Rejects invalid --sort on yield" 1 error "${BIN_PATH}" yield --sort invalid_sort
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
@@ -463,7 +459,6 @@ TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 echo -e "\n${BOLD}15. End-to-End Human User Persona Simulation Flows:${RESET}"
 # Persona 1: Daily Developer Standup flow
 run_check "Persona: Developer daily standup flow" 0 text "${BIN_PATH}" daily --last 3 --no-color
-run_check "Persona: Developer code yield review" 0 text "${BIN_PATH}" yield --sort yield --no-color
 
 # Persona 2: FinOps & Engineering Director flow
 run_check "Persona: FinOps daily distribution audit" 0 text "${BIN_PATH}" stats --no-color

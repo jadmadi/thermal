@@ -72,9 +72,6 @@ thermal mix --chart
 thermal stats --chart
 thermal trend --chart
 
-# Code generation token yield and net line efficiency
-thermal yield --sort lines
-
 # Local setup and context health diagnostic
 thermal audit
 
@@ -139,15 +136,11 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Daily background check caches the latest tag in `~/.cache/thermal/update.json` and notifies users on stderr in interactive sessions.
 - Fully controllable via `--no-update-check` or `THERMAL_NO_UPDATE_CHECK=1`.
 
-### 6. Token Yield Telemetry (`thermal yield`)
-- Evaluates code generation productivity from git diffs and patches.
-- Calculates Token Yield (tokens burned per net line of code added) with efficiency classification ratings (`[HIGH]`, `[BALANCED]`, `[VERBOSE]`, `[EXPLORATORY]`).
-
-### 7. Distribution Analytics (`thermal stats`)
+### 6. Distribution Analytics (`thermal stats`)
 - Daily volume/cost distribution, percentiles, weekday profile, token composition, and outlier days.
 - Text and `--json` output for scripts and agent workflows.
 
-### 8. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
+### 7. Environment Health Audit & Stateless Sharing (`thermal audit` / `share`)
 - `thermal audit` inspects local SQLite permissions, 256MB mmap status, and pricing cache integrity.
 - `thermal share` encodes streak and telemetry metadata into compact, zero-database stateless share URLs.
 

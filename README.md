@@ -47,7 +47,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 
 1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
 2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
-3. **Insight — answers counting cannot.** `thermal yield` measures tokens per net line; `stats`, `mix`, and `trend` add distribution analytics, share drift, and regression forecasts.
+3. **Insight — answers counting cannot.** `stats`, `mix`, and `trend` add distribution analytics, share drift, and regression forecasts.
 4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the live monitor (`thermal live`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and tests assert that live totals agree with the static commands.
 
 **The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
@@ -455,31 +455,6 @@ thermal devin trend
   Projection to 2026-09-30 (9 days)
   Expected     336.3M
   Band         0 to 855.4M
-```
-
-### `thermal yield`
-Measures concrete code generation efficiency from diff patches and changesets, tracking total tokens burned per net line of code produced:
-
-```bash
-# Token yield overview across tools
-thermal yield
-
-# Rank by net lines produced or yield efficiency
-thermal yield --sort lines
-thermal yield --sort yield
-
-# Filter window and export JSON
-thermal yield --last 30 --json
-```
-
-```
-  Thermal · token yield
-
-  #    Tool / Model                Tokens        +Added      -Deleted       Net Lines       Yield (Tok/Line)   Rating
-  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1.  OpenCode / deepseek-v4.1      2.4B        42,180         8,420         +33,760             71.1 tok/l   [HIGH]
-   2.  Codex / gpt-5.6-sol         688.8M         9,120         2,410          +6,710           102.7 tok/l   [BALANCED]
-   3.  Devin / swe-1-7               1.8B        14,500         3,200         +11,300           159.3 tok/l   [VERBOSE]
 ```
 
 ### `thermal audit`

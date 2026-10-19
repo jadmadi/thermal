@@ -1169,3 +1169,36 @@ Run tests and linters through their native tools or CI. Use `thermal daily`, `th
 
 **Escape hatch**:
 Export token and project data with `--json` and join it to CI results outside the CLI.
+
+---
+
+### Removed: Token Yield and Diff Parsing
+<a id="removed-token-yield"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal yield\|--sort yield\|--format md\|internal/thermal/yield' .`.
+- **Detection signal**: `thermal yield` and tool-prefixed forms such as `thermal codewhale yield` exit 1 with a retirement notice. `internal/thermal/yield.go` and `internal/render/yield.go` no longer exist. `--format md` and `--format markdown` exit 1; `--format text` and `--format json` remain. Codex rollout caching no longer parses `FileChange` unified diffs; token caching and line metrics from databases that record them are unchanged.
+
+**What changed and why**:
+Net lines added is a misleading proxy for AI code efficiency: it penalizes refactoring, debugging, and deletions, and it coupled git-diff parsing to token telemetry. The yield badges implied a quality ranking the data could not support. Token burn and model cost remain available in the live monitor and static reports.
+
+**Before / After**:
+```bash
+# Before
+thermal yield --sort yield
+thermal yield --json
+thermal daily --format md
+
+# After: exits 1 with migration guidance
+thermal yield
+# thermal: token yield efficiency reporting has been retired.
+# For token burn rates and velocity: thermal live, thermal stats
+
+thermal daily --json
+```
+
+**The fix**:
+Use `thermal live` for real-time burn rates, `thermal stats` for distribution and token composition, and `thermal models` for model-level cost. Use `git diff --numstat` or your repository host for line-change data.
+
+**Escape hatch**:
+Join `thermal daily --json` or `thermal models --json` with `git diff --numstat` outside the CLI.

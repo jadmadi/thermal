@@ -209,18 +209,9 @@ func scanRolloutDelta(path string, prev CodexRolloutEntry, curSize, curMod int64
 		}
 	}
 
-	linesAdded := prev.LinesAdded
-	linesDeleted := prev.LinesDeleted
-	filesTouched := prev.FilesTouched
-
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
-			continue
-		}
-
-		if strings.Contains(line, `"FileChange"`) {
-			parseFileChange(line, &linesAdded, &linesDeleted, &filesTouched)
 			continue
 		}
 
@@ -242,12 +233,9 @@ func scanRolloutDelta(path string, prev CodexRolloutEntry, curSize, curMod int64
 	}
 
 	newEntry := CodexRolloutEntry{
-		Size:         curSize,
-		ModTime:      curMod,
-		LinesAdded:   linesAdded,
-		LinesDeleted: linesDeleted,
-		FilesTouched: filesTouched,
-		Offset:       curOffset,
+		Size:    curSize,
+		ModTime: curMod,
+		Offset:  curOffset,
 	}
 	if last != nil {
 		newEntry.HasBreakdown = true
@@ -257,12 +245,7 @@ func scanRolloutDelta(path string, prev CodexRolloutEntry, curSize, curMod int64
 		newEntry.Cache = last.cache
 	}
 
-	return rolloutResult{
-		breakdown:    last,
-		linesAdded:   linesAdded,
-		linesDeleted: linesDeleted,
-		filesTouched: filesTouched,
-	}, newEntry, true
+	return rolloutResult{breakdown: last}, newEntry, true
 }
 
 func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string, int64) {
@@ -277,16 +260,10 @@ func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string,
 
 	scanner := newJSONLScanner(f)
 	var last *tokenBreakdown
-	var linesAdded, linesDeleted, filesTouched int64
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
-			continue
-		}
-
-		if strings.Contains(line, `"FileChange"`) {
-			parseFileChange(line, &linesAdded, &linesDeleted, &filesTouched)
 			continue
 		}
 
@@ -308,38 +285,7 @@ func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string,
 		curOffset = fi.Size()
 	}
 
-	return last, linesAdded, linesDeleted, filesTouched, warning, curOffset
-}
-
-func parseFileChange(line string, linesAdded, linesDeleted, filesTouched *int64) {
-	var rec struct {
-		Type    string          `json:"type"`
-		Payload json.RawMessage `json:"payload"`
-	}
-	if json.Unmarshal([]byte(line), &rec) == nil && rec.Type == "event_msg" {
-		var ev struct {
-			Item *struct {
-				Type    string `json:"type"`
-				Changes map[string]struct {
-					Type        string `json:"type"`
-					UnifiedDiff string `json:"unified_diff"`
-					Content     string `json:"content"`
-				} `json:"changes"`
-			} `json:"item"`
-		}
-		if json.Unmarshal(rec.Payload, &ev) == nil && ev.Item != nil && ev.Item.Type == "FileChange" && ev.Item.Changes != nil {
-			*filesTouched += int64(len(ev.Item.Changes))
-			for _, ch := range ev.Item.Changes {
-				if ch.UnifiedDiff != "" {
-					add, del := thermal.ParseDiffStats(ch.UnifiedDiff)
-					*linesAdded += add
-					*linesDeleted += del
-				} else if ch.Content != "" && ch.Type == "add" {
-					*linesAdded += thermal.CountLines(ch.Content)
-				}
-			}
-		}
-	}
+	return last, 0, 0, 0, warning, curOffset
 }
 
 func parseTokenCount(line string) *tokenBreakdown {
