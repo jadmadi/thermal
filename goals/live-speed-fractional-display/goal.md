@@ -1,5 +1,12 @@
 # Task: Preserve fractional sub-1.0 speeds in live monitor (live-speed-fractional-display)
 
+## Chain of Custody (Isnad)
+- **Registered By**: Pending Registration
+- **Spec Audited By**: Pending Spec Audit
+- **Implemented By**: Pending Implementation
+- **Mystery Audited By**: @mystery-auditor | Report: `receipt_live-speed-fractional-display_1792417593`
+
+
 ## Context
 - Goal: Display fractional token and step speeds for positive sub-1.0 rates in `internal/tui/live.go` `formatSpeed`.
 - Why: Truncating float speeds to `int64` turns rates like 40 step/min (0.67 step/s) into `0 step/s`, contradicting the rate metric and active flame state.

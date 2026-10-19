@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "live-speed-fractional-display",
+  "commit_sha": "70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc",
+  "spec_hash": "b34f3fb55e9ad5c59c06c42f93581eef03d98e0f8350bc3cf824795520f9e76b",
+  "sandbox_nonce": "a0ebb792fc8ac952",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "vs6TDDSJn+I/Nt3NHY2kzyNFyk9ixPVB98VnJIpiMqU=",
+  "auditor_signature": "WrgqAlIFCJazVtRJVRvRkSo78uvoX0bT0iuRcVvdtB/NXrvzQNefKHu54StNUceNeq5TNOmQ8CF+1bl2oNxiDQ==",
+  "certified_at": "2026-10-19T13:46:33Z"
+}
