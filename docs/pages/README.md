@@ -1,13 +1,14 @@
 # Thermal docs site
 
-Static, dependency-free HTML documentation for thermal. One file, no build
-step, no JavaScript framework, no external requests.
+Static, dependency-free HTML documentation for thermal. A small hand-written
+site, no build step, no JavaScript framework, no external requests.
 
 ## What is here
 
 ```
 docs/pages/
 ├── index.html       The whole site: styles, content, and a little vanilla JS
+├── pricing.html     The $30 Commercial Use License page
 ├── 404.html         A copy of index.html, served for unknown paths
 ├── og.png           Social share card, 1200x630
 ├── shot-*.webp      Terminal captures: leaderboard, weekly, projects

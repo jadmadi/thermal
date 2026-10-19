@@ -1506,12 +1506,13 @@ func runLicense(opts thermal.Options) {
 				"contact":   "contact@jadmadi.net",
 				"github":    "https://github.com/jadmadi/thermal",
 				"commercial_use": map[string]any{
-					"price_usd": 30,
-					"unit":      "developer/year",
-					"url":       "https://paypal.me/Madise/30",
-					"terms":     "COMMERCIAL-LICENSE.md",
-					"includes":  []string{"internal_commercial_use", "updates", "community_support"},
-					"excludes":  []string{"redistribution", "embedding", "hosted_service", "sla"},
+					"price_usd":    30,
+					"unit":         "developer/year",
+					"url":          "https://paypal.me/Madise/30",
+					"pricing_page": "https://thermal.jadmadi.net/pricing.html",
+					"terms":        "COMMERCIAL-LICENSE.md",
+					"includes":     []string{"internal_commercial_use", "updates", "community_support"},
+					"excludes":     []string{"redistribution", "embedding", "hosted_service", "sla"},
 				},
 				"enterprise_oem": map[string]any{
 					"contact": "contact@jadmadi.net",
@@ -1565,6 +1566,7 @@ func runLicense(opts thermal.Options) {
 	fmt.Println("  Includes updates and community support; excludes redistribution,")
 	fmt.Println("  embedding, hosted services, and support SLAs.")
 	fmt.Println("  Buy:     https://paypal.me/Madise/30")
+	fmt.Println("  Page:    https://thermal.jadmadi.net/pricing.html")
 	fmt.Println("  Terms:   COMMERCIAL-LICENSE.md")
 	fmt.Println("  Invoice: contact@jadmadi.net")
 	fmt.Println()

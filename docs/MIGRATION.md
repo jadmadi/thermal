@@ -339,7 +339,7 @@ None. The old line-count metric conflated user and assistant messages with billa
 
 **Affected if**:
 - **Search pattern**: `grep -rn 'thermal license' .` or parsers of `thermal license --json`.
-- **Detection signal**: `thermal license --json` now contains `commercial_licensing.commercial_use` (`price_usd: 30`, `unit: "developer/year"`, `url`, `terms`, `includes`, `excludes`) and `commercial_licensing.enterprise_oem`; `commercial_licensing.use_cases` no longer lists `dedicated_support_sla`. Text output now prints the $30 Commercial Use License and a separate Enterprise & OEM contact.
+- **Detection signal**: `thermal license --json` now contains `commercial_licensing.commercial_use` (`price_usd: 30`, `unit: "developer/year"`, `url`, `pricing_page`, `terms`, `includes`, `excludes`) and `commercial_licensing.enterprise_oem`; `commercial_licensing.use_cases` no longer lists `dedicated_support_sla`. Text output now prints the $30 Commercial Use License and a separate Enterprise & OEM contact.
 
 **What changed and why**:
 The commercial offer was previously contact-only, with no price, terms, or buyer-facing path. Thermal now publishes a **$30 per developer per 12-month term** Commercial Use License for internal commercial use, with full terms in [`COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md), and keeps embedding, hosted services, fleet/security review, custom loaders, and support commitments under separate Enterprise & OEM terms. The JSON adds the offer fields and moves SLA language out of the general commercial list so the command no longer promises an SLA in the $30 tier.
@@ -356,6 +356,7 @@ thermal license --json
 thermal license --json
 # commercial_licensing.commercial_use.price_usd: 30
 # commercial_licensing.commercial_use.unit: "developer/year"
+# commercial_licensing.commercial_use.pricing_page: "https://thermal.jadmadi.net/pricing.html"
 # commercial_licensing.enterprise_oem.contact: "contact@jadmadi.net"
 ```
 

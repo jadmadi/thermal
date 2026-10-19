@@ -34,7 +34,7 @@ For organizations that need to use Thermal in commercial work, or whose internal
 
 **Price:** **$30 per developer per 12-month term**. Pay through PayPal or request an invoice; a license certificate follows by email.
 
-**Terms:** [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+**Terms:** [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) · **Live pricing page:** [thermal.jadmadi.net/pricing.html](https://thermal.jadmadi.net/pricing.html).
 
 ## 3. Enterprise & OEM License
 
@@ -67,6 +67,7 @@ To foster genuine contributor trust and eliminate the fear of unilateral corpora
 ## 5. Commercial Licensing Inquiries
 
 **Commercial Use License — $30 per developer per year**
+* **Live pricing page**: [thermal.jadmadi.net/pricing.html](https://thermal.jadmadi.net/pricing.html)
 * **Terms**: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)
 * **Buy one developer**: [PayPal $30](https://paypal.me/Madise/30)
 * **Invoice or multiple developers**: [contact@jadmadi.net](mailto:contact@jadmadi.net)

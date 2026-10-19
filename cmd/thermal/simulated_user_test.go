@@ -474,6 +474,9 @@ func TestSimulatedUser_LicenseCommand(t *testing.T) {
 	if commercialUse["price_usd"] != float64(30) {
 		t.Errorf("expected commercial_licensing.commercial_use.price_usd == 30, got: %v", commercialUse["price_usd"])
 	}
+	if commercialUse["pricing_page"] != "https://thermal.jadmadi.net/pricing.html" {
+		t.Errorf("expected commercial_licensing.commercial_use.pricing_page, got: %v", commercialUse["pricing_page"])
+	}
 	enterprise, _ := comm["enterprise_oem"].(map[string]any)
 	if enterprise["contact"] != "contact@jadmadi.net" {
 		t.Errorf("expected commercial_licensing.enterprise_oem.contact == contact@jadmadi.net, got: %v", enterprise["contact"])

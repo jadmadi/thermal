@@ -111,6 +111,7 @@ Evaluates historical token workloads against subscription plans and API model pr
       "price_usd": 30,
       "unit": "developer/year",
       "url": "https://paypal.me/Madise/30",
+      "pricing_page": "https://thermal.jadmadi.net/pricing.html",
       "terms": "COMMERCIAL-LICENSE.md",
       "includes": ["internal_commercial_use", "updates", "community_support"],
       "excludes": ["redistribution", "embedding", "hosted_service", "sla"]
@@ -171,6 +172,6 @@ Evaluates historical token workloads against subscription plans and API model pr
 
 Thermal is dual-licensed under:
 - **GNU Affero General Public License v3.0 (AGPL-3.0)** for the open-source community edition.
-- **Commercial Use License** at **$30 per developer per 12-month term** for internal commercial use, including corporate OSPO relief. It excludes redistribution, embedding, hosted services, and SLAs. Terms: `COMMERCIAL-LICENSE.md`; buy: `https://paypal.me/Madise/30`.
+- **Commercial Use License** at **$30 per developer per 12-month term** for internal commercial use, including corporate OSPO relief. It excludes redistribution, embedding, hosted services, and SLAs. Live pricing: `https://thermal.jadmadi.net/pricing.html`; terms: `COMMERCIAL-LICENSE.md`; buy: `https://paypal.me/Madise/30`.
 - **Enterprise & OEM License** for proprietary software embedding, closed-source SaaS dashboards, fleet/security review, custom loaders, and support commitments.
 Commercial inquiries: `contact@jadmadi.net`.

@@ -25,7 +25,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 ## Pricing
 
 - **Community**: free under AGPL-3.0.
-- **Commercial Use**: **$30 per developer per 12-month term** for internal commercial use; excludes redistribution, embedding, hosted services, and SLAs. Buy: https://paypal.me/Madise/30. Terms: https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md.
+- **Commercial Use**: **$30 per developer per 12-month term** for internal commercial use; excludes redistribution, embedding, hosted services, and SLAs. Live pricing: https://thermal.jadmadi.net/pricing.html. Buy: https://paypal.me/Madise/30. Terms: https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md.
 - **Enterprise & OEM**: contact@jadmadi.net for embedding, hosted services, fleet/security review, custom loaders, and support commitments.
 
 ## Supported AI Coding Tools

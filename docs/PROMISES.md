@@ -204,7 +204,7 @@ verification have not been re-checked.
 
 **Behavior:** the license grants internal commercial use by named developers for a 12-month term. It excludes redistribution, embedding, hosted services, and support SLAs. Payment is by PayPal or invoice; a certificate is issued by email. Enterprise & OEM terms are separate.
 
-**Evidence:** `COMMERCIAL-LICENSE.md` · `thermal license` and `thermal license --json` · simulated user gate license checks.
+**Evidence:** `COMMERCIAL-LICENSE.md` · [live pricing page](https://thermal.jadmadi.net/pricing.html) · `thermal license` and `thermal license --json` · simulated user gate license checks.
 
 **Limits:** fulfillment is manual; there is no automated checkout or license-key service. The license includes no SLA and no redistribution or OEM rights. It does not change AGPL-3.0 rights or the Community Reciprocity Covenant.
 

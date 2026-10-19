@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermal Commercial Use License — $30 per developer per year</title>
+<meta name="description" content="Thermal Commercial Use License: $30 per developer per 12-month term for internal commercial use. Published terms, PayPal or invoice, no redistribution or hosted service.">
+<link rel="canonical" href="https://thermal.jadmadi.net/pricing.html">
+<meta property="og:title" content="Thermal Commercial Use License — $30 per developer per year">
+<meta property="og:description" content="Internal commercial use without AGPL obligations. $30 per developer per 12-month term. Enterprise & OEM terms are separate.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thermal.jadmadi.net/pricing.html">
+<meta name="twitter:card" content="summary">
+<style>
+  :root{
+    --bg:#0b0c0e;--panel:#121418;--panel2:#181b21;--line:#2a2f38;--text:#e8e6e1;
+    --muted:#a8adb7;--faint:#7c828d;--accent:#f5a524;--accent2:#ffd479;--green:#7ee787;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:dark}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6}
+  a{color:var(--accent2);text-decoration-thickness:1px;text-underline-offset:3px}
+  a:hover{color:#fff}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--line);padding:18px 0}
+  .top{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:700;letter-spacing:.02em}
+  .flame{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#e8590c);display:grid;place-items:center;color:#1a1206;font-weight:900;font-size:15px}
+  nav{display:flex;flex-wrap:wrap;gap:16px;font-size:14px}
+  nav a{color:var(--muted);text-decoration:none}
+  nav a:hover{color:var(--text)}
+  main{padding:56px 0 40px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:clamp(30px,5vw,48px);line-height:1.08;letter-spacing:-.03em;margin:12px 0 16px;max-width:18ch}
+  .lede{font-size:clamp(17px,2.2vw,21px);color:var(--muted);max-width:62ch;margin:0 0 28px}
+  .price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+  .price .amount{font-size:clamp(42px,8vw,72px);font-weight:800;letter-spacing:-.04em;color:var(--accent2)}
+  .price .unit{font-family:var(--mono);font-size:14px;color:var(--muted)}
+  .sub{color:var(--faint);font-size:14px;margin:0 0 28px}
+  .actions{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 40px}
+  .btn{display:inline-block;padding:13px 20px;border-radius:9px;font-weight:700;text-decoration:none;border:1px solid transparent}
+  .btn.primary{background:var(--accent);color:#1a1206}
+  .btn.primary:hover{background:var(--accent2);color:#1a1206}
+  .btn.secondary{border-color:var(--line);color:var(--text);background:var(--panel)}
+  .btn.secondary:hover{border-color:var(--faint);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:0 0 40px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h2{font-size:17px;margin:0 0 8px;letter-spacing:-.01em}
+  .card p{margin:0;color:var(--muted);font-size:14px}
+  .card ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:14px}
+  .card li{margin:5px 0}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin:0 0 40px}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+  th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);background:var(--panel2)}
+  tr:last-child td{border-bottom:0}
+  td.price-cell{font-family:var(--mono);white-space:nowrap;color:var(--accent2);font-weight:700}
+  .muted{color:var(--muted)}
+  .faint{color:var(--faint)}
+  .mono{font-family:var(--mono)}
+  h2.sec{font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;margin:0 0 14px}
+  h3{font-size:16px;margin:26px 0 8px}
+  p{margin:0 0 12px}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:16px 18px;color:var(--muted);font-size:14px;margin:0 0 40px}
+  .seats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .seat{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--text);font-size:14px}
+  .seat:hover{border-color:var(--accent);color:#fff}
+  .seat b{font-family:var(--mono);color:var(--accent2)}
+  footer{border-top:1px solid var(--line);padding:28px 0 56px;color:var(--faint);font-size:13px}
+  footer nav{gap:14px}
+  @media (max-width:600px){main{padding-top:36px}.wrap{padding:0 18px}}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Thermal Commercial Use License",
+  "description": "Internal commercial use license for Thermal, $30 per developer per 12-month term. Excludes redistribution, embedding, hosted services, and support SLAs.",
+  "brand": { "@type": "Brand", "name": "Thermal" },
+  "url": "https://thermal.jadmadi.net/pricing.html",
+  "offers": {
+    "@type": "Offer",
+    "price": "30",
+    "priceCurrency": "USD",
+    "url": "https://paypal.me/Madise/30",
+    "availability": "https://schema.org/InStock",
+    "eligibleQuantity": { "@type": "QuantitativeValue", "unitText": "developer per 12-month term" }
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <a class="brand" href="https://thermal.jadmadi.net/"><span class="flame">T</span> Thermal</a>
+    <nav aria-label="Site links">
+      <a href="https://thermal.jadmadi.net/">Home</a>
+      <a href="https://github.com/jadmadi/thermal">GitHub</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md">Terms</a>
+      <a href="mailto:contact@jadmadi.net?subject=Thermal%20Commercial%20Use%20License">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="eyebrow">Commercial licensing</div>
+  <h1>Commercial use, without the AGPL overhead.</h1>
+  <p class="lede">
+    The Commercial Use License covers internal company use by named developers.
+    It is a plain, published grant — not a sales call and not an enterprise contract.
+  </p>
+
+  <div class="price"><span class="amount">$30</span><span class="unit">per developer / 12 months</span></div>
+  <p class="sub">USD. PayPal or invoice. A license certificate follows by email.</p>
+
+  <div class="actions">
+    <a class="btn primary" href="https://paypal.me/Madise/30">Buy one developer — $30</a>
+    <a class="btn secondary" href="mailto:contact@jadmadi.net?subject=Thermal%20Commercial%20Use%20Invoice&body=Legal%20entity%3A%0ADeveloper%20count%3A%0ABilling%20contact%3A">Request an invoice</a>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Edition</th><th>Price</th><th>Scope</th><th>Buy or ask</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Community</strong></td>
+          <td class="price-cell">Free</td>
+          <td>Personal, academic, and open-source use under AGPL-3.0. Full CLI, TUI, and local web dashboard.</td>
+          <td><a href="https://github.com/jadmadi/thermal">Install</a></td>
+        </tr>
+        <tr>
+          <td><strong>Commercial Use</strong></td>
+          <td class="price-cell">$30 / developer / year</td>
+          <td>Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA.</td>
+          <td><a href="https://paypal.me/Madise/30">Buy $30</a></td>
+        </tr>
+        <tr>
+          <td><strong>Enterprise &amp; OEM</strong></td>
+          <td class="price-cell">Contact</td>
+          <td>Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments.</td>
+          <td><a href="mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM">Email</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Included</h2>
+      <ul>
+        <li>Internal commercial use by the licensed developers</li>
+        <li>Use on commercial projects and company machines</li>
+        <li>Updates released during the 12-month term</li>
+        <li>Community support through GitHub Issues</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Not included</h2>
+      <ul>
+        <li>Redistribution outside your organization</li>
+        <li>Embedding in a product or IDE extension</li>
+        <li>Hosted, SaaS, or managed services</li>
+        <li>A support SLA or priority response</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Enterprise &amp; OEM</h2>
+      <p>For embedding, hosted services, fleet deployment, security review, custom loaders, or a support commitment, email <a href="mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM">contact@jadmadi.net</a>. These terms are separate from the $30 license.</p>
+    </div>
+  </div>
+
+  <h2 class="sec">Buy for a team</h2>
+  <p class="muted">Each named developer needs one seat. Pay the total directly, or request an invoice for any count.</p>
+  <div class="seats">
+    <a class="seat" href="https://paypal.me/Madise/30"><b>1</b> developer · $30</a>
+    <a class="seat" href="https://paypal.me/Madise/150"><b>5</b> developers · $150</a>
+    <a class="seat" href="https://paypal.me/Madise/300"><b>10</b> developers · $300</a>
+    <a class="seat" href="https://paypal.me/Madise/750"><b>25</b> developers · $750</a>
+  </div>
+
+  <h2 class="sec">How delivery works</h2>
+  <ol class="muted">
+    <li>Pay the total for your developer count through PayPal, or request an invoice.</li>
+    <li>Email <a href="mailto:contact@jadmadi.net">contact@jadmadi.net</a> with the receipt or invoice number, legal entity, licensee name, and developer count.</li>
+    <li>A license certificate is issued by email. The license is effective when the certificate is issued.</li>
+  </ol>
+  <p class="faint">If a certificate cannot be issued, the payment is refunded in full.</p>
+
+  <div class="note">
+    <strong>The full terms are published.</strong> Read
+    <a href="https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md">COMMERCIAL-LICENSE.md</a>
+    before paying. It covers the grant, seat definition, term, updates, warranty disclaimer,
+    liability limit, and termination. The AGPL-3.0 remains available for anyone who does not need
+    this license.
+  </div>
+
+  <h2 class="sec">Common questions</h2>
+  <h3>Does this replace the AGPL?</h3>
+  <p class="muted">No. The community edition remains AGPL-3.0. This license is a separate commercial grant for internal use. It does not remove any AGPL rights.</p>
+  <h3>Is this an enterprise or OEM license?</h3>
+  <p class="muted">No. It covers internal commercial use only. Embedding, redistribution, hosted services, and support commitments require separate Enterprise &amp; OEM terms.</p>
+  <h3>Is support included?</h3>
+  <p class="muted">Community support through GitHub Issues only. There is no SLA, uptime commitment, or priority response in the $30 license.</p>
+  <h3>Is it per developer or per company?</h3>
+  <p class="muted">Per named developer, for 12 months. Teams buy one seat per developer who uses Thermal.</p>
+  <h3>Can I get an invoice?</h3>
+  <p class="muted">Yes. Email <a href="mailto:contact@jadmadi.net?subject=Thermal%20Commercial%20Use%20Invoice&body=Legal%20entity%3A%0ADeveloper%20count%3A%0ABilling%20contact%3A">contact@jadmadi.net</a> with the legal entity, developer count, and billing contact.</p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav aria-label="Footer links">
+      <a href="https://thermal.jadmadi.net/">Thermal home</a>
+      <a href="https://github.com/jadmadi/thermal">GitHub</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md">Terms</a>
+      <a href="https://github.com/jadmadi/thermal/blob/main/DUAL-LICENSE.md">Licensing overview</a>
+      <a href="mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM">Enterprise &amp; OEM</a>
+    </nav>
+    <p style="margin-top:16px">Thermal is dual-licensed under AGPL-3.0 and a Commercial Use License. Copyright (C) 2026 Jad Madi.</p>
+  </div>
+</footer>
+</body>
+</html>

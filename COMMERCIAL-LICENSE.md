@@ -3,6 +3,7 @@
 **Price:** **$30 per developer per 12-month term**
 **Licensor:** Jad Madi
 **Software:** Thermal, `https://github.com/jadmadi/thermal`
+**Pricing page:** [thermal.jadmadi.net/pricing.html](https://thermal.jadmadi.net/pricing.html)
 **Terms:** this document. For embedding, hosted services, or enterprise support, see [Enterprise & OEM](#enterprise--oem).
 
 This is a commercial alternative to the GNU Affero General Public License v3.0 (AGPL-3.0) for the internal commercial use described below. It does not change the AGPL-3.0 for anyone using the community edition.

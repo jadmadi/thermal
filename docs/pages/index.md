@@ -20,7 +20,7 @@ Terminal heatmap, streaks, tokens, and cost for 15 AI coding tools. Thermal read
 | **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
 | **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
 
-Buy the Commercial Use License through [PayPal](https://paypal.me/Madise/30) or email [contact@jadmadi.net](mailto:contact@jadmadi.net) for an invoice. Full terms: [COMMERCIAL-LICENSE.md](https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md). Enterprise & OEM: [contact@jadmadi.net](mailto:contact@jadmadi.net).
+Live pricing page: [thermal.jadmadi.net/pricing.html](https://thermal.jadmadi.net/pricing.html). Buy through [PayPal](https://paypal.me/Madise/30) or email [contact@jadmadi.net](mailto:contact@jadmadi.net) for an invoice. Full terms: [COMMERCIAL-LICENSE.md](https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md). Enterprise & OEM: [contact@jadmadi.net](mailto:contact@jadmadi.net).
 
 ---
 

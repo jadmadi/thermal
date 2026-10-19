@@ -62,7 +62,7 @@ Unlike `git log`, which only shows committed code, Thermal shows what your agent
 | **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
 | **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
 
-[Buy the $30 Commercial Use License](https://paypal.me/Madise/30) · [Commercial license terms](COMMERCIAL-LICENSE.md) · [Enterprise & OEM](mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM)
+[Live pricing page](https://thermal.jadmadi.net/pricing.html) · [Buy the $30 Commercial Use License](https://paypal.me/Madise/30) · [Commercial license terms](COMMERCIAL-LICENSE.md) · [Enterprise & OEM](mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM)
 
 ## Supported Tools
 

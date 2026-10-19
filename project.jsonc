@@ -112,7 +112,7 @@
     },
     {
       "question": "How much does the commercial license cost?",
-      "answer": "The Commercial Use License is $30 per developer per 12-month term for internal commercial use. It excludes redistribution, embedding, hosted services, and SLAs; Enterprise & OEM terms are separate. Pay via PayPal at https://paypal.me/Madise/30 or request an invoice at contact@jadmadi.net. Full terms: COMMERCIAL-LICENSE.md."
+      "answer": "The Commercial Use License is $30 per developer per 12-month term for internal commercial use. It excludes redistribution, embedding, hosted services, and SLAs; Enterprise & OEM terms are separate. Live pricing: https://thermal.jadmadi.net/pricing.html. Pay via PayPal at https://paypal.me/Madise/30 or request an invoice at contact@jadmadi.net. Full terms: COMMERCIAL-LICENSE.md."
     },
     {
       "question": "How do I upgrade Thermal to the latest version?",
