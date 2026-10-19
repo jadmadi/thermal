@@ -4,11 +4,23 @@
 
 # Thermal — Contribution Heatmap for AI Coding Tools
 
-Terminal heatmap, streaks, tokens, and cost for 14 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.
+Terminal heatmap, streaks, tokens, and cost for 15 AI coding tools. Thermal reads the session data your agents already wrote. One static binary, zero config.
 
 - **Website**: https://jadmadi.net/project/thermal/
 - **Repository**: https://github.com/jadmadi/thermal
-- **License**: Dual-licensed under AGPL-3.0 (Community Edition) and Commercial Enterprise License
+- **License**: AGPL-3.0 (Community) plus a **$30 per developer per year** Commercial Use License; Enterprise & OEM terms are separate.
+
+---
+
+## Pricing
+
+| Edition | Price | Scope |
+| :--- | :--- | :--- |
+| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI, TUI, and local web dashboard |
+| **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
+| **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
+
+Buy the Commercial Use License through [PayPal](https://paypal.me/Madise/30) or email [contact@jadmadi.net](mailto:contact@jadmadi.net) for an invoice. Full terms: [COMMERCIAL-LICENSE.md](https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md). Enterprise & OEM: [contact@jadmadi.net](mailto:contact@jadmadi.net).
 
 ---
 
@@ -26,7 +38,7 @@ Or via Homebrew:
 brew install jadmadi/tap/thermal
 ```
 
-Or build from source with Go 1.23+:
+Or build from source with Go 1.27.2+:
 
 ```bash
 go install github.com/jadmadi/thermal/cmd/thermal@latest
@@ -105,7 +117,7 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 | **Zed**            | Token Warrior   | Input, Output, Cache Read                   | Working directory                   |
 | **Muse**           | Activity Hunter | Prompt & turn counts                        | Session index                       |
 | **Droid**          | Activity Hunter | Turn & message counts                       | Message logs                        |
-| **command-code**   | Activity Hunter | Message counts, model distributions         | Workspace directory                 |
+| **command-code**   | Token Warrior   | Input, Output, Cache Read/Write, Recorded USD cost | Workspace directory (session header `cwd`) |
 | **Agy**            | Activity Hunter | Step activity, model selections             | CLI session logs                    |
 
 ---
@@ -126,8 +138,8 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 - Nested structures from tools (e.g. cache inside input or reasoning inside output) are automatically subtracted during loader ingestion.
 
 ### 3. Workload Replay & Capacity Planning (`thermal replay`)
-- Replays recorded daily token distributions against commercial subscription ceilings (Claude Pro, Claude Max, ChatGPT Plus/Pro, Cursor Pro).
-- Outputs capacity status (`PASS`, `DEGRADED`, `FAIL`) and monthly cost deltas.
+- Replays recorded daily token distributions against commercial subscription ceilings (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro).
+- Outputs capacity status (`PASS`, `DEGRADED`, `FAIL`, or `UNKNOWN` when a rolling-window limit cannot be assessed from daily telemetry) and monthly cost deltas.
 
 ### 4. Interactive TUI Dashboard (`thermal dashboard`)
 - Fullscreen Bubble Tea terminal interface with keyboard navigation.
@@ -168,7 +180,7 @@ Thermal automatically ingests activity and disjoint token metrics from 15 AI cod
 
 - **Documentation**: https://jadmadi.net/project/thermal/
 - **Repository**: https://github.com/jadmadi/thermal
-- **License Terms**: Dual-licensed under GNU AGPL-3.0 (Community Edition) and Commercial Enterprise License
+- **License Terms**: AGPL-3.0 (Community), a $30 per developer per year Commercial Use License, and separate Enterprise & OEM terms
 - **Governance & Scope**: [GOVERNANCE.md](https://github.com/jadmadi/thermal/blob/main/GOVERNANCE.md)
 - **Migration Guide**: [docs/MIGRATION.md](https://github.com/jadmadi/thermal/blob/main/docs/MIGRATION.md)
 - **Contributing & CLA**: [CONTRIBUTING.md](https://github.com/jadmadi/thermal/blob/main/CONTRIBUTING.md)

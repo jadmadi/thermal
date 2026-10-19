@@ -12,7 +12,7 @@
 [![Governance: Solo Authority](https://img.shields.io/badge/Governance-Solo_Authority-purple.svg)](GOVERNANCE.md)
 [![SLSA Level 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
-> Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine for 15+ AI coding agents.
+> Multi-agent terminal heatmap, token FinOps, workload replay simulator, and verifiable work receipt engine for 15 AI coding agents.
 
 ```bash
 # Automated install (Linux & macOS)
@@ -28,6 +28,41 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 Unlike `git log`, which only shows committed code, Thermal shows what your agents actually burned: tokens, cost, and streaks across tools, even when nothing got committed. All local, zero cloud telemetry, and sub-10ms cached execution on the baseline fixture — see [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for the measured limits at directory-scan scale.
 
 ![Thermal leaderboard](assets/leaderboard.webp)
+
+*Illustrative capture from an earlier build; CMD now reports tokens and ranks in Token Warriors. Rows depend on the tools installed.*
+
+## Why Thermal
+
+**Thermal is the local-first answer to what your AI coding agents cost and what they produced — across 15 tools, with zero uploads and zero writes to your data.**
+
+**Situation.** Developers run several agents in parallel, and each writes tokens, models, and spend to disk in its own SQLite, JSONL, or JSON format.
+
+**Complication.** The numbers do not add up: spend and output are fragmented per tool, and nothing shows what an agent burned when the work was never committed.
+
+**Question.** How do I see all of it in one place, safely?
+
+**Answer.** Thermal scans every source read-only, unifies the math, prices what it can, and renders it in your terminal.
+
+**The supporting argument, top to bottom:**
+
+1. **Coverage — one model of the data.** Fifteen agents are ingested through three shapes — SQLite (`?mode=ro`, memory-mapped), JSONL transcripts, and JSON session files — behind one registry in `internal/loaders`. Model ids are canonicalized before they become keys, token types are disjoint, and subdirectories fold into their nearest git root, so one project merges across every tool that touched it.
+2. **Trust — local, read-only, honest about limits.** Zero telemetry, no account, no daemon, and strictly read-only ingestion are codified anti-goals in [`GOVERNANCE.md`](GOVERNANCE.md). The daily update check is opt-out and `--offline` keeps pricing on disk. Recorded cost wins over an estimate, estimates carry a `~`, and models the catalog cannot price are named in the `No pricing for` line rather than treated as free.
+3. **Insight — answers counting cannot.** `thermal replay` tests a real workload against subscription ceilings and API cards; `thermal yield` measures tokens per net line; `thermal receipt` verifies test and lint outcomes with tiered confidence; `stats`, `mix`, and `trend` add the 9-box FinOps grid, activity taxonomy, share drift, and regression forecasts.
+4. **Speed — fast, and in every surface.** Sub-10ms cached invocation is an architectural invariant, kept by disk-backed delta snapshots, bounded worker pools, and a single static CGO-free binary. CLI reports, the Bubble Tea TUI (`thermal dashboard`), the localhost web app (`thermal serve`), and NDJSON streaming (`thermal live --json --stream`) render the same numbers, and a test asserts every TUI total equals the matching static command.
+
+**The evidence:** a strict layered dependency rule (`loaders → thermal → pricing → render`), the [promise ledger](docs/PROMISES.md) with reproducible evidence and stated limits, [measured performance](docs/PERFORMANCE.md), SLSA Build Level 3 provenance, and a single-command pre-flight suite (`./scripts/check.sh`) gating every change.
+
+**The price:** the CLI is free under AGPL-3.0. The **Commercial Use License is $30 per developer per year** for internal commercial use; embedding, hosted services, and support commitments are separate [Enterprise & OEM terms](DUAL-LICENSE.md). [Buy the $30 license](https://paypal.me/Madise/30) or read the [terms](COMMERCIAL-LICENSE.md).
+
+## Pricing
+
+| Edition | Price | Scope |
+| --- | --- | --- |
+| **Community** | **Free** (AGPL-3.0) | Personal, academic, and open-source use; full CLI, TUI, and local web dashboard |
+| **Commercial Use** | **$30 / developer / year** | Internal commercial use by named developers; updates; community support. No redistribution, embedding, hosted service, or SLA |
+| **Enterprise & OEM** | **Contact** | Proprietary embedding, closed-source hosted services, fleet/security review, custom loaders, and support commitments |
+
+[Buy the $30 Commercial Use License](https://paypal.me/Madise/30) · [Commercial license terms](COMMERCIAL-LICENSE.md) · [Enterprise & OEM](mailto:contact@jadmadi.net?subject=Thermal%20Enterprise%20%26%20OEM)
 
 ## Supported Tools
 
@@ -92,7 +127,7 @@ Or build from source using the included build script:
 ```bash
 git clone https://github.com/jadmadi/thermal
 cd thermal
-./build.sh --release   # Builds stripped production binary (~10.7MB) with embedded version tags
+./build.sh --release   # Builds stripped production binary (~15MB) with embedded version tags
 ```
 
 You can run `./build.sh --help` to explore available build modes (`--release`, `--dev`, `--upx`) and cross-compilation targets. Or build manually with Go:
@@ -439,7 +474,7 @@ thermal devin trend
 ```
 
 ### `thermal replay`
-Simulate your real local developer workload against alternative subscriptions ($20/mo Claude Pro, $200/mo Claude Max, Cursor Pro) and API price cards (DeepSeek V3, Claude 3.5/3.7 Sonnet, GPT-4o) with dynamic rate-limit throttling analysis and cache efficiency accounting:
+Simulate your real local developer workload against alternative subscriptions (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro) and API price cards (DeepSeek V3, Claude 3.5/3.7 Sonnet, GPT-4o) with daily capacity analysis, explicit pricing coverage, and cache efficiency accounting:
 
 ```bash
 # Compare default commercial subscription plans and pay-as-you-go API tiers
@@ -454,7 +489,7 @@ thermal replay --against claude-pro
 
 # Compare custom plans or all available standard plans side-by-side
 thermal replay --compare all
-thermal replay --compare "claude-pro,claude-max,cursor-pro,deepseek-api"
+thermal replay --compare "claude-pro,claude-max,opencode-pro,deepseek-api"
 
 # JSON output for financial modeling
 thermal replay --json
@@ -473,7 +508,7 @@ Replay conserves the full recorded workload even when a day's model map covers o
   ──────────────────────────────────────────────────────────────────────────────────────────────────────
   Claude Pro ($20)            Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 28/28 days (100%))
   Claude Team/Max ($200)      Sub          $200.00    -$5697.68 (-97%)  FAIL (throttled 26/28 days (93%))
-  Cursor Pro ($20)            Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 27/28 days (96%))
+  OpenCode Pro ($20)          Sub           $20.00   -$5877.68 (-100%)  FAIL (throttled 27/28 days (96%))
   ★ DeepSeek V3 (API)         Payg         $983.31    -$4914.37 (-83%)  PASS (0% throttled (unmetered API))
   Claude 3.5 Sonnet (API)     Payg        $7541.10    +$1643.42 (+28%)  PASS (0% throttled (unmetered API))
   ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -748,7 +783,7 @@ All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/
 
 ## Requirements
 
-- Go >= 1.26
+- Go >= 1.27.2
 
 ## Author
 
@@ -759,6 +794,8 @@ All SQLite databases are opened **read-only** (`?mode=ro`) with memory-mapped I/
 If you find Thermal useful, consider supporting:
 
 [![PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://paypal.me/Madise)
+
+For commercial use, the [Commercial Use License](COMMERCIAL-LICENSE.md) is **$30 per developer per year** — [buy it here](https://paypal.me/Madise/30).
 
 ## Governance
 
@@ -783,7 +820,8 @@ Contributions are welcome! Whether adding an agent loader, optimizing allocation
 Thermal is dual-licensed:
 
 1. **Community & Open Source Edition**: Licensed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE)**. Free for personal, academic, and open-source use. Modifications distributed as binaries or served over a network (e.g. hosted leaderboards, SaaS dashboards) require reciprocal source disclosure under AGPLv3 Section 13.
-2. **Commercial & Enterprise Edition**: For organizations requiring proprietary embedding, closed-source SaaS/cloud integration, or relief from copyleft requirements. See **[DUAL-LICENSE.md](DUAL-LICENSE.md)** or contact [contact@jadmadi.net](mailto:contact@jadmadi.net).
+2. **Commercial Use License**: **$30 per developer per year** for internal commercial use, with no redistribution, embedding, hosting, or SLA. Terms: **[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)**. Buy: **[PayPal $30](https://paypal.me/Madise/30)** or request an invoice at [contact@jadmadi.net](mailto:contact@jadmadi.net).
+3. **Enterprise & OEM**: For proprietary embedding, closed-source SaaS/cloud integration, fleet/security review, custom loaders, and support commitments. See **[DUAL-LICENSE.md](DUAL-LICENSE.md)** or contact [contact@jadmadi.net](mailto:contact@jadmadi.net).
 
 See **[NOTICES.md](NOTICES.md)** for third-party open-source attributions.  
 To contribute, see **[CONTRIBUTING.md](CONTRIBUTING.md)** (includes our Contributor License Agreement).

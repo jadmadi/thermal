@@ -1,6 +1,6 @@
 # Security Policy — Thermal (`thermal`)
 
-The Thermal project takes the security, privacy, and integrity of developers' local environments and telemetry data seriously. This document outlines our vulnerability disclosure policy, supported versions, response SLAs, and security design boundaries.
+The Thermal project takes the security, privacy, and integrity of developers' local environments and telemetry data seriously. This document outlines our vulnerability disclosure policy, supported versions, response targets, and security design boundaries.
 
 ---
 
@@ -10,8 +10,8 @@ Security patches and bug fixes are applied to the active release line:
 
 | Version Line | Supported | Notes |
 | :--- | :--- | :--- |
-| **v0.12.x** | ✅ Yes | Current active release branch |
-| < v0.12.0 | ❌ No | Please upgrade to the latest release via `thermal upgrade` or `go install github.com/jadmadi/thermal/cmd/thermal@latest` |
+| **Latest release line** | ✅ Yes | The most recent tagged release; see [Releases](https://github.com/jadmadi/thermal/releases) |
+| Older release lines | ❌ No | Please upgrade to the latest release via `thermal upgrade` or `go install github.com/jadmadi/thermal/cmd/thermal@latest` |
 
 ---
 
@@ -33,9 +33,9 @@ To expedite triage, please provide:
 
 ---
 
-## 3. Vulnerability Response Timeline & SLA
+## 3. Vulnerability Response Timeline & Targets
 
-Thermal enforces a strict, time-bounded response commitment for security reports:
+Thermal aims for the following best-effort response targets for the community edition. They are not a contractual SLA. The $30 Commercial Use License includes no support SLA; enterprise response commitments are separate agreements.
 
 - **48 Hours (Initial Triage)**: Acknowledge receipt of the report, confirm communication channels, and begin preliminary verification.
 - **7 Days (Severity Assessment)**: Complete impact analysis, determine Common Vulnerability Scoring System (CVSS) rating, and confirm reproducibility.

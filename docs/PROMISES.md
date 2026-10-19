@@ -14,7 +14,7 @@ untested semantics.
 | **partial** | The claim holds only within a stated scope (fixture, machine, source subset) or with qualifiers. |
 | **unverified** | No reproducible evidence was produced; the claim must be read as intent or workflow definition. |
 
-**Evidence base (2026-10-15, revision `abc2169`)**
+**Evidence base (2026-10-19, revision `70ad214`)**
 
 - [2026-10-14 promise-vs-delivery evaluation](evaluations/2026-10-14-promise-vs-delivery.md)
 - Remediation receipts and signed audits:
@@ -198,7 +198,19 @@ verification have not been re-checked.
 
 **Outcome: verified** for `v0.20.0` (artifact-level, reproducible).
 
-## 10. Allocation claims
+## 10. Commercial Use License ($30 per developer per year)
+
+**Wording:** "Commercial Use License — $30 per developer per year" (README, `COMMERCIAL-LICENSE.md`, `thermal license`).
+
+**Behavior:** the license grants internal commercial use by named developers for a 12-month term. It excludes redistribution, embedding, hosted services, and support SLAs. Payment is by PayPal or invoice; a certificate is issued by email. Enterprise & OEM terms are separate.
+
+**Evidence:** `COMMERCIAL-LICENSE.md` · `thermal license` and `thermal license --json` · simulated user gate license checks.
+
+**Limits:** fulfillment is manual; there is no automated checkout or license-key service. The license includes no SLA and no redistribution or OEM rights. It does not change AGPL-3.0 rights or the Community Reciprocity Covenant.
+
+**Outcome: verified** as a published offer and terms; **unverified** as a demand or conversion claim.
+
+## 11. Allocation claims
 
 **Wording:** "zero allocations" (historical docs); performance invariant.
 
@@ -217,6 +229,8 @@ process.
 wording change. A claim with no evidence command and no stated limit is a documentation bug.
 Claims whose verification depends on a released artifact (provenance, installers) stay
 **unverified** until an artifact is independently verified, and the README must say so.
+The commercial offer is a public promise: price or scope changes must update
+`COMMERCIAL-LICENSE.md`, the README, the landing page, and `thermal license` together.
 The hosted documentation under `docs/pages/` mirrors these qualified claims (performance,
 audit, and caching wording aligned after this ledger was introduced); the
 docs-page-claim-parity goal tracks that in lockstep with any future claim change.

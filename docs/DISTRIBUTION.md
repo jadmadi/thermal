@@ -30,7 +30,7 @@ Thermal employs a **Coverage-First** distribution model focused on zero-friction
 
 ## 2. Supply Chain Security & SLSA Level 3 Verification
 
-Thermal releases provide cryptographic build provenance conforming to **SLSA Build Level 3** (Supply-chain Levels for Software Artifacts) via the OpenSSF SLSA GitHub Generator (`slsa-framework/slsa-github-generator`). This satisfies enterprise OSPO compliance requirements, NIST SSDF guidelines, and US Executive Order 14028.
+Thermal releases provide cryptographic build provenance conforming to **SLSA Build Level 3** (Supply-chain Levels for Software Artifacts) via the OpenSSF SLSA GitHub Generator (`slsa-framework/slsa-github-generator`). This provides evidence that supports enterprise OSPO review, NIST SSDF supply-chain objectives, and US Executive Order 14028 provenance expectations. It does not by itself certify compliance with any framework; organizations must map the evidence to their own controls and complete their own review.
 
 ### Transitive Trust Architecture
 

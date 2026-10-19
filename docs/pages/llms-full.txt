@@ -12,7 +12,7 @@
 1. **Strict Read-Only Access**: All SQLite connections are opened using URI parameters with `mode=ro` (`file:<path>?mode=ro`). Thermal never writes to user agent databases.
 2. **Memory-Mapped I/O**: Multi-gigabyte SQLite databases are scanned with `PRAGMA mmap_size=268435456` (256 MB); measured end-to-end latency for the reference fixtures is published in `docs/PERFORMANCE.md`.
 3. **Disjoint Token Accounting**: Token fields (`Input`, `Output`, `Reasoning`, `CacheRead`, `CacheWrite`) are strictly disjoint:
-   - Nested tokens reported by source tools (e.g., Codex and Grok nesting reasoning in output; ZCode nesting cache in input) are subtracted at the loader boundary.
+   - Nested tokens reported by source tools (e.g., Codex and Grok nesting reasoning in output; ZCode and command-code nesting cache in input) are subtracted at the loader boundary.
    - `Input + Output + CacheRead + CacheWrite + Reasoning == Total`.
 4. **Canonical Model Normalization**: Model identifiers are normalized through `modelName()` before map indexing. Case differences across tools (`GLM-5.3-Flash` vs `glm-5.3-flash`) fold into a single canonical row.
 5. **Project Root Attribution**: Project paths are normalized through `thermal.ProjectKey`, resolving symlinks and collapsing subdirectories into their nearest git repository root.
@@ -38,7 +38,7 @@ thermal [options] [tool] [report]
 - `stats`: Percentile distributions, weekday seasonality, and outlier detection.
 - `trend`: Linear trend regression with month-end projection.
 - `replay`: Historical workload simulation against commercial plans and API rate cards.
-- `license`: Display AGPL-3.0 terms, Community Reciprocity Covenant, and enterprise licensing.
+- `license`: Display AGPL-3.0 terms, the Community Reciprocity Covenant, the $30/developer/year Commercial Use License, and Enterprise & OEM terms.
 - `upgrade`: Self-update binary to latest release from GitHub.
 - `version`: Print SemVer, git commit SHA, and build timestamp.
 
@@ -77,16 +77,20 @@ thermal [options] [tool] [report]
 Evaluates historical token workloads against subscription plans and API model pricing cards from `models.dev`.
 
 ### Predefined Subscription Plans
-- `claude-pro`: Anthropic Claude Pro ($20/mo, 250k daily token ceiling).
-- `claude-max`: Anthropic Claude Max ($100/mo, 1.25M daily token ceiling).
-- `chatgpt-plus`: OpenAI ChatGPT Plus ($20/mo, 200k daily token ceiling).
-- `chatgpt-pro`: OpenAI ChatGPT Pro ($200/mo, 2.0M daily token ceiling).
-- `cursor-pro`: Cursor Pro ($20/mo, 300k daily token ceiling).
+- `claude-pro`: Anthropic Claude Pro ($20/mo, 15M daily token ceiling).
+- `claude-max`: Anthropic Claude Max ($200/mo, 75M daily token ceiling).
+- `chatgpt-plus`: OpenAI ChatGPT Plus ($20/mo, 20M daily token ceiling; 5M rolling window).
+- `agy-pro`: Antigravity Pro ($20/mo, 50M daily token ceiling).
+- `opencode-pro`: OpenCode Pro ($20/mo, 40M daily token ceiling).
+- `zcode-pro`: ZCode Pro ($20/mo, 35M daily token ceiling).
+- `kimi-k2`: Kimi K2 Pro ($15/mo, 60M daily token ceiling).
+- `deepseek-api`: DeepSeek V3 API (pay-as-you-go; no fixed daily ceiling).
 
 ### Capacity Verdicts
 - `PASS`: Historical daily peaks remained safely within plan limits.
 - `DEGRADED`: Workload occasionally exceeded daily ceilings (throttling expected).
 - `FAIL`: Daily workloads routinely saturated tier limits.
+- `UNKNOWN`: A rolling-window limit cannot be assessed from daily telemetry without intraday evidence; rolling spikes are not asserted.
 
 ---
 
@@ -100,17 +104,35 @@ Evaluates historical token workloads against subscription plans and API model pr
   "license": "AGPL-3.0-only",
   "spdx": "AGPL-3.0-only",
   "dual_license_available": true,
-  "description": "GNU Affero General Public License v3.0 (Community) / Commercial Enterprise License",
+  "description": "GNU Affero General Public License v3.0 (Community) / Commercial Use ($30 per developer per year) / Enterprise & OEM",
   "commercial_licensing": {
     "available": true,
-    "contact": "contact@jadmadi.net",
-    "github": "https://github.com/jadmadi/thermal",
+    "commercial_use": {
+      "price_usd": 30,
+      "unit": "developer/year",
+      "url": "https://paypal.me/Madise/30",
+      "terms": "COMMERCIAL-LICENSE.md",
+      "includes": ["internal_commercial_use", "updates", "community_support"],
+      "excludes": ["redistribution", "embedding", "hosted_service", "sla"]
+    },
+    "enterprise_oem": {
+      "contact": "contact@jadmadi.net",
+      "use_cases": [
+        "proprietary_embedding",
+        "closed_source_saas",
+        "fleet_and_security_review",
+        "custom_loaders",
+        "support_commitments"
+      ]
+    },
     "use_cases": [
-      "proprietary_embedding",
-      "closed_source_saas",
+      "commercial_use_license",
       "enterprise_ospo_compliance",
-      "dedicated_support_sla"
-    ]
+      "proprietary_embedding",
+      "closed_source_saas"
+    ],
+    "contact": "contact@jadmadi.net",
+    "github": "https://github.com/jadmadi/thermal"
   },
   "covenant": {
     "irrevocable_agpl": true,
@@ -149,5 +171,6 @@ Evaluates historical token workloads against subscription plans and API model pr
 
 Thermal is dual-licensed under:
 - **GNU Affero General Public License v3.0 (AGPL-3.0)** for the open-source community edition.
-- **Commercial Enterprise License** for proprietary software embedding, closed-source SaaS dashboards, and corporate OSPO compliance.
+- **Commercial Use License** at **$30 per developer per 12-month term** for internal commercial use, including corporate OSPO relief. It excludes redistribution, embedding, hosted services, and SLAs. Terms: `COMMERCIAL-LICENSE.md`; buy: `https://paypal.me/Madise/30`.
+- **Enterprise & OEM License** for proprietary software embedding, closed-source SaaS dashboards, fleet/security review, custom loaders, and support commitments.
 Commercial inquiries: `contact@jadmadi.net`.

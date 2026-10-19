@@ -91,8 +91,14 @@ if [ -z "${VERSION}" ]; then
   fi
 
   if [ -z "${VERSION}" ]; then
-    echo "Warning: Could not determine latest version from GitHub API; defaulting to v0.14.0" >&2
-    VERSION="0.14.0"
+    if [ "${DRY_RUN}" -eq 1 ]; then
+      echo "Warning: Could not determine the latest version; dry-run will not download anything." >&2
+      VERSION="unknown"
+    else
+      echo "Error: Could not determine the latest version from the GitHub API." >&2
+      echo "Pass --version <version> to install a specific release." >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -142,32 +148,39 @@ elif command -v wget >/dev/null 2>&1; then
   wget -qO "${TMP_DIR}/checksums.txt" "${CHECKSUM_URL}" || true
 fi
 
-# Checksum verification
-if [ -f "${TMP_DIR}/checksums.txt" ] && grep -q "${ARCHIVE}" "${TMP_DIR}/checksums.txt"; then
-  echo "Verifying SHA-256 checksum..."
-  EXPECTED_SUM="$(grep "${ARCHIVE}" "${TMP_DIR}/checksums.txt" | awk '{print $1}')"
-  ACTUAL_SUM=""
-
-  if command -v sha256sum >/dev/null 2>&1; then
-    ACTUAL_SUM="$(sha256sum "${TMP_DIR}/${ARCHIVE}" | awk '{print $1}')"
-  elif command -v shasum >/dev/null 2>&1; then
-    ACTUAL_SUM="$(shasum -a 256 "${TMP_DIR}/${ARCHIVE}" | awk '{print $1}')"
-  elif command -v openssl >/dev/null 2>&1; then
-    ACTUAL_SUM="$(openssl dgst -sha256 "${TMP_DIR}/${ARCHIVE}" | awk '{print $NF}')"
-  fi
-
-  if [ -n "${ACTUAL_SUM}" ]; then
-    if [ "${ACTUAL_SUM}" != "${EXPECTED_SUM}" ]; then
-      echo "Error: Checksum mismatch for ${ARCHIVE}!" >&2
-      echo "  Expected: ${EXPECTED_SUM}" >&2
-      echo "  Actual:   ${ACTUAL_SUM}" >&2
-      exit 1
-    fi
-    echo "  Checksum verified: ${ACTUAL_SUM}"
-  else
-    echo "Notice: No sha256 utility found; skipping checksum validation."
-  fi
+# Checksum verification: fail closed if the checksum or a SHA-256 utility is missing.
+if [ ! -f "${TMP_DIR}/checksums.txt" ]; then
+  echo "Error: checksums.txt could not be downloaded; refusing an unverified install." >&2
+  exit 1
 fi
+if ! grep -q "${ARCHIVE}" "${TMP_DIR}/checksums.txt"; then
+  echo "Error: ${ARCHIVE} is not listed in checksums.txt; refusing an unverified install." >&2
+  exit 1
+fi
+
+echo "Verifying SHA-256 checksum..."
+EXPECTED_SUM="$(grep "${ARCHIVE}" "${TMP_DIR}/checksums.txt" | awk '{print $1}')"
+ACTUAL_SUM=""
+
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL_SUM="$(sha256sum "${TMP_DIR}/${ARCHIVE}" | awk '{print $1}')"
+elif command -v shasum >/dev/null 2>&1; then
+  ACTUAL_SUM="$(shasum -a 256 "${TMP_DIR}/${ARCHIVE}" | awk '{print $1}')"
+elif command -v openssl >/dev/null 2>&1; then
+  ACTUAL_SUM="$(openssl dgst -sha256 "${TMP_DIR}/${ARCHIVE}" | awk '{print $NF}')"
+fi
+
+if [ -z "${ACTUAL_SUM}" ]; then
+  echo "Error: no SHA-256 utility found; refusing an unverified install." >&2
+  exit 1
+fi
+if [ "${ACTUAL_SUM}" != "${EXPECTED_SUM}" ]; then
+  echo "Error: Checksum mismatch for ${ARCHIVE}!" >&2
+  echo "  Expected: ${EXPECTED_SUM}" >&2
+  echo "  Actual:   ${ACTUAL_SUM}" >&2
+  exit 1
+fi
+echo "  Checksum verified: ${ACTUAL_SUM}"
 
 # Extract binary
 echo "Extracting binary..."

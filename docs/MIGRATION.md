@@ -19,6 +19,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Live Monitor Project Baseline Preservation and Delta Clamping](#changed-live-project-baseline-clamping)
 - [Upgrading to v0.21.0](#upgrading-to-v0210)
   - [Changed: Command Code Token and Project Attribution](#changed-command-code-token-attribution)
+  - [Added: Commercial Use License Pricing in `thermal license`](#added-commercial-license-pricing)
 - [Upgrading to v0.16.x](#upgrading-to-v016x)
   - [Added: GitHub Flavored Markdown Output for Receipt and Yield Reports](#added-markdown-pr-receipts-and-yield)
   - [Added: Instant Shell Statusline and Prompt Helper (`thermal statusline`)](#added-terminal-statusline-helper)
@@ -332,6 +333,37 @@ Update dashboards, alerts, and scripts that compared Command Code's `lifetimeTok
 
 **Escape hatch**:
 None. The old line-count metric conflated user and assistant messages with billable tokens and cannot be restored; legacy transcripts without usage remain visible as assistant turns with zero tokens.
+
+### Added: Commercial Use License Pricing in `thermal license`
+<a id="added-commercial-license-pricing"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'thermal license' .` or parsers of `thermal license --json`.
+- **Detection signal**: `thermal license --json` now contains `commercial_licensing.commercial_use` (`price_usd: 30`, `unit: "developer/year"`, `url`, `terms`, `includes`, `excludes`) and `commercial_licensing.enterprise_oem`; `commercial_licensing.use_cases` no longer lists `dedicated_support_sla`. Text output now prints the $30 Commercial Use License and a separate Enterprise & OEM contact.
+
+**What changed and why**:
+The commercial offer was previously contact-only, with no price, terms, or buyer-facing path. Thermal now publishes a **$30 per developer per 12-month term** Commercial Use License for internal commercial use, with full terms in [`COMMERCIAL-LICENSE.md`](../COMMERCIAL-LICENSE.md), and keeps embedding, hosted services, fleet/security review, custom loaders, and support commitments under separate Enterprise & OEM terms. The JSON adds the offer fields and moves SLA language out of the general commercial list so the command no longer promises an SLA in the $30 tier.
+
+**Before / After**:
+```bash
+# Before (v0.20.x: contact-only, no price; SLA listed in the general commercial cases)
+thermal license --json
+# commercial_licensing.use_cases: ["proprietary_embedding","closed_source_saas","enterprise_ospo_compliance","dedicated_support_sla"]
+```
+
+```bash
+# After (v0.21.0+: published $30 offer and separate enterprise terms)
+thermal license --json
+# commercial_licensing.commercial_use.price_usd: 30
+# commercial_licensing.commercial_use.unit: "developer/year"
+# commercial_licensing.enterprise_oem.contact: "contact@jadmadi.net"
+```
+
+**The fix**:
+Read `commercial_licensing.commercial_use` for the published offer and `commercial_licensing.enterprise_oem` for embedding, hosted-service, or SLA discussions. If a script depended on `dedicated_support_sla` in `use_cases`, treat support commitments as absent from the $30 tier and use the enterprise contact.
+
+**Escape hatch**:
+The legacy `commercial_licensing.available`, `contact`, `github`, and `use_cases` keys remain. Only the SLA claim was removed from `use_cases`; no AGPL rights or community-edition behavior changed.
 
 ---
 

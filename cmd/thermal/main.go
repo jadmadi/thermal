@@ -1500,16 +1500,34 @@ func runLicense(opts thermal.Options) {
 			"license":                "AGPL-3.0-only",
 			"spdx":                   "AGPL-3.0-only",
 			"dual_license_available": true,
-			"description":            "GNU Affero General Public License v3.0 (Community) / Commercial Enterprise License",
+			"description":            "GNU Affero General Public License v3.0 (Community) / Commercial Use ($30 per developer per year) / Enterprise & OEM",
 			"commercial_licensing": map[string]any{
 				"available": true,
 				"contact":   "contact@jadmadi.net",
 				"github":    "https://github.com/jadmadi/thermal",
+				"commercial_use": map[string]any{
+					"price_usd": 30,
+					"unit":      "developer/year",
+					"url":       "https://paypal.me/Madise/30",
+					"terms":     "COMMERCIAL-LICENSE.md",
+					"includes":  []string{"internal_commercial_use", "updates", "community_support"},
+					"excludes":  []string{"redistribution", "embedding", "hosted_service", "sla"},
+				},
+				"enterprise_oem": map[string]any{
+					"contact": "contact@jadmadi.net",
+					"use_cases": []string{
+						"proprietary_embedding",
+						"closed_source_saas",
+						"fleet_and_security_review",
+						"custom_loaders",
+						"support_commitments",
+					},
+				},
 				"use_cases": []string{
+					"commercial_use_license",
+					"enterprise_ospo_compliance",
 					"proprietary_embedding",
 					"closed_source_saas",
-					"enterprise_ospo_compliance",
-					"dedicated_support_sla",
 				},
 			},
 			"covenant": map[string]any{
@@ -1542,17 +1560,23 @@ func runLicense(opts thermal.Options) {
 	fmt.Println("  contributions will never be retroactively relicensed into proprietary")
 	fmt.Println("  or closed-source products without contributor consent.")
 	fmt.Println()
-	fmt.Println("Commercial & Enterprise Dual-Licensing:")
-	fmt.Println("  A commercial license is available for organizations and vendors requiring:")
-	fmt.Println("  • Embedding Thermal into proprietary software or IDE extensions")
-	fmt.Println("  • Hosted multi-tenant cloud/SaaS leaderboards without source disclosure")
-	fmt.Println("  • Compliance with corporate OSPO policies restricting AGPL")
-	fmt.Println("  • Commercial support SLAs, custom agent loaders, and warranty")
+	fmt.Println("Commercial Use License:")
+	fmt.Println("  $30 per developer per 12-month term for internal commercial use.")
+	fmt.Println("  Includes updates and community support; excludes redistribution,")
+	fmt.Println("  embedding, hosted services, and support SLAs.")
+	fmt.Println("  Buy:     https://paypal.me/Madise/30")
+	fmt.Println("  Terms:   COMMERCIAL-LICENSE.md")
+	fmt.Println("  Invoice: contact@jadmadi.net")
 	fmt.Println()
-	fmt.Println("Commercial Inquiries:")
+	fmt.Println("Enterprise & OEM:")
+	fmt.Println("  Proprietary embedding, closed-source hosted SaaS, fleet/security")
+	fmt.Println("  review, custom agent loaders, and support commitments.")
+	fmt.Println("  Contact: contact@jadmadi.net")
+	fmt.Println("  Terms:   DUAL-LICENSE.md")
+	fmt.Println()
+	fmt.Println("Licensing Inquiries:")
 	fmt.Println("  Email:   contact@jadmadi.net")
 	fmt.Println("  GitHub:  https://github.com/jadmadi/thermal")
-	fmt.Println("  Terms:   DUAL-LICENSE.md")
 	fmt.Println()
 	fmt.Println("Third-Party Notices:")
 	fmt.Println("  Incorporates permissive open-source components (MIT, BSD-3, Public Domain).")

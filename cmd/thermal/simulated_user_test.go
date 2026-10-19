@@ -429,6 +429,9 @@ func TestSimulatedUser_LicenseCommand(t *testing.T) {
 	if !strings.Contains(stdout, "AGPL-3.0") || !strings.Contains(stdout, "Jad Madi") || !strings.Contains(stdout, "Commercial") {
 		t.Errorf("'thermal license' missing expected content: %s", stdout)
 	}
+	if !strings.Contains(stdout, "$30 per developer") || !strings.Contains(stdout, "COMMERCIAL-LICENSE.md") {
+		t.Errorf("'thermal license' missing the $30 commercial offer: %s", stdout)
+	}
 	if strings.Contains(stdout, "contact@jadmadi.com") {
 		t.Errorf("'thermal license' contains incorrect contact@jadmadi.com")
 	}
@@ -466,6 +469,14 @@ func TestSimulatedUser_LicenseCommand(t *testing.T) {
 	comm, _ := res["commercial_licensing"].(map[string]any)
 	if comm["contact"] != "contact@jadmadi.net" {
 		t.Errorf("expected commercial_licensing.contact == contact@jadmadi.net, got: %v", comm["contact"])
+	}
+	commercialUse, _ := comm["commercial_use"].(map[string]any)
+	if commercialUse["price_usd"] != float64(30) {
+		t.Errorf("expected commercial_licensing.commercial_use.price_usd == 30, got: %v", commercialUse["price_usd"])
+	}
+	enterprise, _ := comm["enterprise_oem"].(map[string]any)
+	if enterprise["contact"] != "contact@jadmadi.net" {
+		t.Errorf("expected commercial_licensing.enterprise_oem.contact == contact@jadmadi.net, got: %v", enterprise["contact"])
 	}
 }
 

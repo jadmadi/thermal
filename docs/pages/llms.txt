@@ -2,7 +2,7 @@
 
 > Don't break the streak. High-performance terminal contribution heatmap and leaderboard tool for AI coding assistants.
 
-Thermal scans local databases and session transcripts across 15 AI coding tools (Claude Code, Devin, OpenCode, Codex, Grok, Agy, DeepSeek DSH, Nous Hermes, MiMoCode, codewhale, ZCode, Muse, Droid, command-code), aggregates tokens and cost metrics, and renders beautiful terminal heatmaps and reports.
+Thermal scans local databases and session transcripts across 15 AI coding tools (Claude Code, Devin, OpenCode, Codex, Grok, Agy, DeepSeek DSH, Nous Hermes, MiMoCode, codewhale, ZCode, Muse, Droid, command-code, Zed), aggregates tokens and cost metrics, and renders beautiful terminal heatmaps and reports.
 
 - Canonical Site: https://jadmadi.net/project/thermal/
 - Repository: https://github.com/jadmadi/thermal
@@ -22,6 +22,12 @@ curl -fsSL https://jadmadi.net/thermal/install.sh | sh
 go install github.com/jadmadi/thermal/cmd/thermal@latest
 ```
 
+## Pricing
+
+- **Community**: free under AGPL-3.0.
+- **Commercial Use**: **$30 per developer per 12-month term** for internal commercial use; excludes redistribution, embedding, hosted services, and SLAs. Buy: https://paypal.me/Madise/30. Terms: https://github.com/jadmadi/thermal/blob/main/COMMERCIAL-LICENSE.md.
+- **Enterprise & OEM**: contact@jadmadi.net for embedding, hosted services, fleet/security review, custom loaders, and support commitments.
+
 ## Supported AI Coding Tools
 
 - **Claude Code** (`claude`): Scans `~/.claude/projects/*/*.jsonl` for assistant message usage.
@@ -35,7 +41,7 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 - **MiMoCode** (`mimocode`): SQLite pre-aggregated tokens and session directories.
 - **codewhale** (`codewhale`): Reads `~/.codewhale/sessions/*.json`.
 - **ZCode** (`zcode`): Reads `~/.zcode/cli/db/db.sqlite` completed model usage.
-- **command-code** (`command-code`): Scans `~/.commandcode/sessions/*/transcript.jsonl`.
+- **command-code** (`command-code`): Scans `~/.commandcode/projects/*/*.jsonl`; per-assistant usage, recorded cost, per-message models, and project `cwd`.
 - **Muse** (`muse`): Reads `~/.local/share/muse/session-index.db` prompt counts.
 - **Droid** (`droid`): Scans `~/.factory/sessions/*/*.jsonl` message records.
 
@@ -50,10 +56,10 @@ go install github.com/jadmadi/thermal/cmd/thermal@latest
 - `thermal mix`: Switching statistics and usage mix (`--by tool|model`, `--grain day|week|month`).
 - `thermal stats`: Daily percentile distribution, weekday seasonality, and outliers.
 - `thermal trend`: Daily linear trend fit with month-end token projection.
-- `thermal replay`: Historical simulation against subscription tiers (Claude Pro/Max, ChatGPT Plus/Pro, Cursor Pro) and API rate cards.
+- `thermal replay`: Historical simulation against subscription tiers (Claude Pro/Max, ChatGPT Plus, Antigravity Pro, OpenCode Pro, ZCode Pro, Kimi K2 Pro) and API rate cards.
 - `thermal dashboard`: Fullscreen interactive Bubble Tea terminal user interface.
 - `thermal upgrade`: Self-update binary in place to the latest GitHub release.
-- `thermal license`: Open-source AGPLv3 terms, Community Reciprocity Covenant, and commercial dual-licensing.
+- `thermal license`: AGPLv3 terms, Community Reciprocity Covenant, the $30/developer/year Commercial Use License, and Enterprise & OEM terms.
 
 ## Machine-Readable Output
 
