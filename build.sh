@@ -52,6 +52,9 @@ ${BOLD}OPTIONS & TARGETS:${RESET}
   ${BOLD}--target <os/arch>${RESET}    Cross-compile for target (e.g., --target linux/amd64 or --target darwin/arm64)
   ${BOLD}--all${RESET}                 Cross-compile for all major platforms (linux, darwin, windows x amd64, arm64)
                         Outputs to dist/<project>_<version>_<os>_<arch>
+  ${BOLD}--install [DIR]${RESET}       Build for the current platform and install atomically into DIR.
+                        Default: \$GOBIN, else \$GOPATH/bin, else ~/.local/bin.
+  ${BOLD}--prefix <DIR>${RESET}        Explicit install directory (implies --install).
   ${BOLD}-h, --help${RESET}            Display this help explanation and exit
 
 ${BOLD}EXAMPLES:${RESET}
@@ -60,6 +63,8 @@ ${BOLD}EXAMPLES:${RESET}
     ./build.sh --upx                          # Build ultra-small compressed binary (requires upx)
     ./build.sh --release --target darwin/arm64  # Cross-compile release binary for macOS Apple Silicon
     ./build.sh --release --all                # Build release binaries for all primary OS/Arch targets
+    ./build.sh --install                      # Build and install the current platform into GOBIN/GOPATH/bin
+    ./build.sh --install ~/.local/bin         # Build and install into a specific directory
 EOF
 }
 
@@ -67,6 +72,9 @@ MODE="release"
 OUTPUT=""
 TARGET_OS_ARCH=""
 BUILD_ALL=false
+INSTALL=false
+INSTALL_DIR=""
+INSTALL_TMP=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -95,6 +103,23 @@ while [[ $# -gt 0 ]]; do
             BUILD_ALL=true
             shift
             ;;
+        --install)
+            INSTALL=true
+            if [[ $# -gt 1 && "$2" != -* ]]; then
+                INSTALL_DIR="$2"
+                shift
+            fi
+            shift
+            ;;
+        --prefix)
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}Error: --prefix requires a directory${RESET}" >&2
+                exit 1
+            fi
+            INSTALL=true
+            INSTALL_DIR="$2"
+            shift 2
+            ;;
         -h|--help|help)
             show_help
             exit 0
@@ -106,6 +131,29 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ ! -f go.mod || ! -d cmd/thermal ]]; then
+    echo -e "${RED}Error: run build.sh from the repository root${RESET}" >&2
+    exit 1
+fi
+
+if [[ "$INSTALL" == "true" ]]; then
+    if [[ "$BUILD_ALL" == "true" ]]; then
+        echo -e "${RED}Error: --install cannot be combined with --all${RESET}" >&2
+        exit 1
+    fi
+    if [[ -n "$TARGET_OS_ARCH" ]]; then
+        current_target="$(go env GOHOSTOS)/$(go env GOHOSTARCH)"
+        if [[ "$TARGET_OS_ARCH" != "$current_target" ]]; then
+            echo -e "${RED}Error: --install only supports the current platform (${current_target})${RESET}" >&2
+            exit 1
+        fi
+    fi
+    if [[ -n "$OUTPUT" ]]; then
+        echo -e "${RED}Error: -o/--output cannot be combined with --install${RESET}" >&2
+        exit 1
+    fi
+fi
 
 # Resolve version tags from Git
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -120,6 +168,7 @@ build_single() {
     local target_goos="${1:-$(go env GOOS)}"
     local target_goarch="${2:-$(go env GOARCH)}"
     local out_path="${3:-}"
+    local display_path="${4:-}"
 
     if [[ -z "$out_path" ]]; then
         if [[ "$target_goos" == "windows" ]]; then
@@ -127,6 +176,9 @@ build_single() {
         else
             out_path="thermal"
         fi
+    fi
+    if [[ -z "$display_path" ]]; then
+        display_path="$out_path"
     fi
 
     echo -e "${BOLD}Building thermal (${CYAN}${MODE}${RESET}${BOLD} mode) for ${YELLOW}${target_goos}/${target_goarch}${RESET}${BOLD}...${RESET}"
@@ -167,10 +219,91 @@ build_single() {
         file_size=$(ls -lh "$out_path" | awk '{print $5}')
     fi
 
-    echo -e "${GREEN}✔ Built successfully:${RESET} ${BOLD}${out_path}${RESET} (${CYAN}${file_size}${RESET})"
+    echo -e "${GREEN}✔ Built successfully:${RESET} ${BOLD}${display_path}${RESET} (${CYAN}${file_size}${RESET})"
 }
 
-if [[ "$BUILD_ALL" == "true" ]]; then
+resolve_install_dir() {
+    if [[ -n "$INSTALL_DIR" ]]; then
+        INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+        printf '%s\n' "$INSTALL_DIR"
+        return
+    fi
+
+    local gobin
+    gobin="$(go env GOBIN 2>/dev/null || true)"
+    if [[ -n "$gobin" ]]; then
+        printf '%s\n' "$gobin"
+        return
+    fi
+
+    local gopath
+    gopath="$(go env GOPATH 2>/dev/null || true)"
+    if [[ -n "$gopath" ]]; then
+        gopath="${gopath%%:*}"
+        printf '%s/bin\n' "$gopath"
+        return
+    fi
+
+    printf '%s/.local/bin\n' "$HOME"
+}
+
+cleanup_install_tmp() {
+    if [[ -n "${INSTALL_TMP:-}" ]]; then
+        rm -f "$INSTALL_TMP"
+    fi
+}
+
+install_current() {
+    local goos goarch dir dest ext version resolved
+    goos="$(go env GOHOSTOS)"
+    goarch="$(go env GOHOSTARCH)"
+    dir="$(resolve_install_dir)"
+
+    if ! mkdir -p "$dir"; then
+        echo -e "${RED}Error: cannot create install directory: ${dir}${RESET}" >&2
+        exit 1
+    fi
+    if [[ ! -w "$dir" ]]; then
+        echo -e "${RED}Error: install directory is not writable: ${dir}${RESET}" >&2
+        exit 1
+    fi
+    dir="$(cd "$dir" && pwd)"
+
+    ext=""
+    if [[ "$goos" == "windows" ]]; then
+        ext=".exe"
+    fi
+    dest="${dir}/thermal${ext}"
+
+    INSTALL_TMP="$(mktemp "${dir}/.thermal-install.XXXXXX")"
+    build_single "$goos" "$goarch" "$INSTALL_TMP" "thermal (${MODE}, ${goos}/${goarch})"
+    chmod 0755 "$INSTALL_TMP"
+    mv -f "$INSTALL_TMP" "$dest"
+    INSTALL_TMP=""
+
+    echo -e "${GREEN}✔ Installed:${RESET} ${BOLD}${dest}${RESET}"
+    version="$("$dest" --version 2>&1 | head -n 1 || true)"
+    if [[ -n "$version" ]]; then
+        echo -e "  ${version}"
+    fi
+
+    if [[ ":$PATH:" != *":${dir}:"* ]]; then
+        echo -e "${YELLOW}Warning: ${dir} is not in PATH.${RESET}" >&2
+    fi
+    resolved="$(command -v thermal || true)"
+    if [[ "$resolved" != "$dest" ]]; then
+        echo -e "${YELLOW}Warning: 'thermal' resolves to ${resolved:-<not found>}, not ${dest}.${RESET}" >&2
+        echo -e "Remove or rebuild that copy, or put ${dir} earlier in PATH; then run 'hash -r'." >&2
+    else
+        echo -e "${GREEN}✔ Verified: 'thermal' resolves to the installed binary.${RESET}"
+    fi
+}
+
+trap cleanup_install_tmp EXIT
+
+if [[ "$INSTALL" == "true" ]]; then
+    install_current
+elif [[ "$BUILD_ALL" == "true" ]]; then
     mkdir -p dist
     targets=(
         "linux/amd64"
@@ -192,5 +325,5 @@ elif [[ -n "$TARGET_OS_ARCH" ]]; then
     build_single "$goos" "$goarch" "$OUTPUT"
 else
     build_single "$(go env GOOS)" "$(go env GOARCH)" "$OUTPUT"
-    echo -e "${YELLOW}→ To use it:${RESET} cp ${OUTPUT:-thermal} ~/.local/bin/thermal  (or run: ${BOLD}thermal upgrade${RESET})"
+    echo -e "${YELLOW}→ To install it:${RESET} ${BOLD}./build.sh --install${RESET}  (or copy ${OUTPUT:-thermal} into a directory on PATH)"
 fi

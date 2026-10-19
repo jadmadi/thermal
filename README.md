@@ -127,8 +127,10 @@ Or build from source using the included build script:
 ```bash
 git clone https://github.com/jadmadi/thermal
 cd thermal
-./build.sh --release   # Builds stripped production binary (~15MB) with embedded version tags
+./build.sh --install   # Builds the current platform and installs into GOBIN, else GOPATH/bin, else ~/.local/bin
 ```
+
+`--install` replaces the binary atomically, runs it to verify the version, and warns if another `thermal` earlier in `PATH` still shadows it. Use `./build.sh --install /custom/bin` or `--prefix /custom/bin` to choose the directory. `./build.sh --release` only builds into the repo root.
 
 You can run `./build.sh --help` to explore available build modes (`--release`, `--dev`, `--upx`) and cross-compilation targets. Or build manually with Go:
 
