@@ -10,6 +10,53 @@ import (
 	"time"
 )
 
+func TestGroupLiveEvents(t *testing.T) {
+	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	events := []LiveEvent{
+		{Timestamp: now, Tool: "CMD", Model: "model", Project: "thermal", Tokens: 100, Cost: 0.10, CostKind: LiveCostRecorded},
+		{Timestamp: now.Add(-10 * time.Second), Tool: "CMD", Model: "model", Project: "thermal", Tokens: 200, Cost: 0.20, CostKind: LiveCostRecorded},
+		{Timestamp: now.Add(-20 * time.Second), Tool: "CMD", Model: "model", Project: "thermal", Turns: 5, CostKind: LiveCostUnpriced},
+		{Timestamp: now.Add(-61 * time.Second), Tool: "CMD", Model: "model", Project: "thermal", Tokens: 300, CostKind: LiveCostUnpriced},
+		{Timestamp: now.Add(-5 * time.Second), Tool: "Agy", Project: "scripts", Turns: 10, CostKind: LiveCostUnpriced},
+		{Timestamp: now, Tool: "CMD", IsBaseline: true, Tokens: 999, CostKind: LiveCostRecorded},
+	}
+	groups := GroupLiveEvents(events, 60*time.Second, now)
+	if len(groups) != 3 {
+		t.Fatalf("expected 3 groups, got %d: %+v", len(groups), groups)
+	}
+
+	var grouped *LiveEventGroup
+	for i := range groups {
+		if groups[i].Count == 3 {
+			grouped = &groups[i]
+		}
+	}
+	if grouped == nil {
+		t.Fatalf("expected a 3-event group, got %+v", groups)
+	}
+	if grouped.Tool != "CMD" || grouped.Model != "model" || grouped.Project != "thermal" {
+		t.Errorf("unexpected group key: %+v", grouped)
+	}
+	if grouped.Tokens != 300 || grouped.Turns != 5 {
+		t.Errorf("expected summed 300 tok/5 turns, got %+v", grouped)
+	}
+	if math.Abs(grouped.Cost-0.30) > 0.001 {
+		t.Errorf("expected summed cost 0.30, got %+v", grouped)
+	}
+	if !grouped.AnyUnpriced {
+		t.Errorf("expected mixed group to be marked partially unpriced")
+	}
+	if grouped.Latest != now {
+		t.Errorf("expected latest timestamp, got %v", grouped.Latest)
+	}
+
+	for _, g := range groups {
+		if g.Count == 1 && g.Tool == "CMD" && g.Tokens != 300 {
+			t.Errorf("older CMD event should remain a separate 300-token group, got %+v", g)
+		}
+	}
+}
+
 func TestMedianOutlierFlags(t *testing.T) {
 	flags := MedianOutlierFlags([]int64{1, 1, 1, 4}, 3.0, 3)
 	if len(flags) != 4 || flags[0] || flags[1] || flags[2] || !flags[3] {

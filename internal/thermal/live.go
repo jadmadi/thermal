@@ -48,6 +48,22 @@ type LiveRollup struct {
 	CostKind LiveCostKind `json:"costKind,omitempty"`
 }
 
+// LiveEventGroup collapses repeated bursts for one tool/model/project into a
+// single decision row.
+type LiveEventGroup struct {
+	Tool        string
+	Model       string
+	Project     string
+	Count       int
+	Latest      time.Time
+	Tokens      int64
+	Turns       int
+	Cost        float64
+	CostKind    LiveCostKind
+	AnyUnpriced bool
+	AnyOutlier  bool
+}
+
 // LiveSnapshot is the instantaneous state of live token burn, velocity, and recent events.
 type LiveSnapshot struct {
 	Timestamp        time.Time        `json:"timestamp"`
@@ -1065,6 +1081,90 @@ func (lt *LiveTracker) Poll(results []ToolResult, projDays []ProjectDay, now tim
 	}
 
 	return snap, newEvents
+}
+
+func eventCostKind(ev LiveEvent) LiveCostKind {
+	if ev.CostKind != "" {
+		return ev.CostKind
+	}
+	if ev.IsEstimated {
+		return LiveCostEstimated
+	}
+	if ev.Cost > 0 {
+		return LiveCostRecorded
+	}
+	return LiveCostUnpriced
+}
+
+func mergeLiveEventGroup(g *LiveEventGroup, ev LiveEvent) {
+	if g.Count == 0 {
+		g.Tool = ev.Tool
+		g.Model = ev.Model
+		g.Project = ev.Project
+	}
+	g.Count++
+	g.Tokens += ev.Tokens
+	g.Turns += ev.Turns
+	g.Cost += ev.Cost
+	if ev.Timestamp.After(g.Latest) {
+		g.Latest = ev.Timestamp
+	}
+	kind := eventCostKind(ev)
+	if kind == LiveCostUnpriced {
+		g.AnyUnpriced = true
+	}
+	if kind == LiveCostEstimated {
+		g.CostKind = LiveCostEstimated
+	} else if kind == LiveCostRecorded && g.CostKind != LiveCostEstimated {
+		g.CostKind = LiveCostRecorded
+	}
+	if g.CostKind == "" {
+		g.CostKind = kind
+	}
+}
+
+// GroupLiveEvents groups non-baseline events by tool, model, and project when
+// they fall within window of the newest event. Older events remain individual
+// rows, and baseline rows are excluded.
+func GroupLiveEvents(events []LiveEvent, window time.Duration, now time.Time) []LiveEventGroup {
+	if now.IsZero() {
+		now = time.Now()
+	}
+	nonBaseline := make([]LiveEvent, 0, len(events))
+	newest := time.Time{}
+	for _, ev := range events {
+		if ev.IsBaseline {
+			continue
+		}
+		if ev.Timestamp.After(now) {
+			ev.Timestamp = now
+		}
+		nonBaseline = append(nonBaseline, ev)
+		if ev.Timestamp.After(newest) {
+			newest = ev.Timestamp
+		}
+	}
+	if len(nonBaseline) == 0 {
+		return nil
+	}
+
+	groups := make([]LiveEventGroup, 0, len(nonBaseline))
+	index := make(map[string]int)
+	for _, ev := range nonBaseline {
+		withinWindow := window > 0 && newest.Sub(ev.Timestamp) <= window
+		if withinWindow {
+			key := ev.Tool + "\x00" + ev.Model + "\x00" + ev.Project
+			if i, ok := index[key]; ok {
+				mergeLiveEventGroup(&groups[i], ev)
+				continue
+			}
+			index[key] = len(groups)
+		}
+		g := LiveEventGroup{}
+		mergeLiveEventGroup(&g, ev)
+		groups = append(groups, g)
+	}
+	return groups
 }
 
 // MedianOutlierFlags marks values strictly greater than factor times the median

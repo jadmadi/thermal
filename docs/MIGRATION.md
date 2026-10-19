@@ -625,6 +625,38 @@ For raw rates independent of the gauge, use `burnTokensPerMin`, `burnTokensPerSe
 
 ---
 
+### Changed: Live Ticker Burst Rollup and Cost Sort
+<a id="changed-live-ticker-rollup"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'Top spenders\|sortMode\|LiveEventGroup\|×' internal/tui`.
+- **Detection signal**: the live ticker now collapses repeated events sharing tool, model, and project within 60 seconds into one `TOOL×N` row with summed tokens, steps, and cost. Pressing `[s]` toggles time/cost ordering; cost mode adds a `Top spenders (60s)` project line. `thermal live --json` is unchanged; `recentEvents` remains the raw event stream.
+
+**What changed and why**:
+A project/model that emitted several near-identical bursts used to occupy several rows, pushing the useful decision data off screen. The ticker now groups those bursts, reports the count in the TOOL cell, and sums the group's values. Cost mode answers where the money went without requiring the user to add rows mentally. Mixed priced/unpriced groups show `≥$X`; all-unpriced groups show `—`.
+
+**Before / After**:
+```text
+# Before
+23:59:43  CMD  +1.0M  deepseek  thermal-streak  $0.10
+23:59:41  CMD  +500K  deepseek  thermal-streak  $0.10
+23:59:40  CMD  +200K  deepseek  thermal-streak  $0.10
+
+# After, time sort
+23:59:43  CMD×3  +1.7M  deepseek  thermal-streak  $0.30
+
+# After, cost sort ([s])
+Top spenders (60s): thermal-streak $0.30 · scripts —
+```
+
+**The fix**:
+No JSON migration is required. The grouping and ordering are TUI projections over the existing `recentEvents` array. If you need raw rows, read `recentEvents`; if you need today's decision totals, use `todayProjects` and `todayModels`.
+
+**Escape hatch**:
+Use `thermal live --json` for the ungrouped event stream, or `thermal projects` and `thermal models` for persisted period totals.
+
+---
+
 ### Changed: Web Telemetry Parity and Filtering Options
 <a id="changed-web-telemetry-parity"></a>
 

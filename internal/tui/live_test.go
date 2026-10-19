@@ -690,6 +690,93 @@ func TestLiveTUI_FormatSpeed_Fractional(t *testing.T) {
 	}
 }
 
+func TestLiveModel_GroupedBurstsAndSort(t *testing.T) {
+	now := time.Now()
+	m := NewLiveModel(nil, time.Second, "", false)
+	m.width = 120
+	m.height = 40
+	m.lastPollAt = now
+	m.lastEventAt = now
+	m.snapshot.RecentEvents = []thermal.LiveEvent{
+		{Timestamp: now, Tool: "CMD", Model: "model", Project: "thermal", Tokens: 1_000_000, Cost: 0.10, CostKind: thermal.LiveCostRecorded},
+		{Timestamp: now.Add(-2 * time.Second), Tool: "CMD", Model: "model", Project: "thermal", Tokens: 500_000, Cost: 0.10, CostKind: thermal.LiveCostRecorded},
+		{Timestamp: now.Add(-3 * time.Second), Tool: "CMD", Model: "model", Project: "thermal", Tokens: 200_000, Cost: 0.10, CostKind: thermal.LiveCostRecorded},
+		{Timestamp: now.Add(-4 * time.Second), Tool: "Agy", Project: "scripts", Turns: 10, CostKind: thermal.LiveCostUnpriced},
+	}
+
+	view := m.View().Content
+	if !strings.Contains(view, "CMD×3") {
+		t.Errorf("expected grouped burst count, got:\n%s", view)
+	}
+	if !strings.Contains(view, "+1.7M") || !strings.Contains(view, "$0.30") {
+		t.Errorf("expected summed tokens and cost, got:\n%s", view)
+	}
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	m = updated.(LiveModel)
+	if m.sortMode != "cost" {
+		t.Fatalf("expected cost sort, got %q", m.sortMode)
+	}
+	view = m.View().Content
+	if !strings.Contains(view, "Sort: cost") {
+		t.Errorf("expected sort mode in footer, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Top spenders (60s):") {
+		t.Errorf("expected top spenders line, got:\n%s", view)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	m = updated.(LiveModel)
+	if m.sortMode != "time" {
+		t.Fatalf("expected time sort after toggle, got %q", m.sortMode)
+	}
+}
+
+func TestLiveTUI_GroupCostAndSort(t *testing.T) {
+	now := time.Now()
+	group := thermal.LiveEventGroup{
+		Tool: "CMD", Model: "model", Project: "thermal",
+		Count: 3, Latest: now, Tokens: 1_700_000, Cost: 4.43,
+		CostKind: thermal.LiveCostEstimated, AnyUnpriced: true,
+	}
+	row := formatGroupRow(group, false, false, now, 116, false)
+	if !strings.Contains(row, "CMD×3") {
+		t.Errorf("expected burst count, got %q", row)
+	}
+	if !strings.Contains(row, "≥$4.43") {
+		t.Errorf("expected partial-known cost marker, got %q", row)
+	}
+	group.Cost = 0
+	group.CostKind = thermal.LiveCostUnpriced
+	row = formatGroupRow(group, false, false, now, 116, false)
+	if !strings.Contains(row, "—") {
+		t.Errorf("expected unpriced placeholder, got %q", row)
+	}
+
+	first := thermal.LiveEventGroup{Tool: "A", Latest: now, Cost: 0.10, Tokens: 10}
+	second := thermal.LiveEventGroup{Tool: "B", Latest: now.Add(-time.Minute), Cost: 5.00, Tokens: 20}
+	timeGroups := []thermal.LiveEventGroup{second, first}
+	sortLiveGroups(timeGroups, "time")
+	if timeGroups[0].Tool != "A" {
+		t.Errorf("expected newest first in time mode, got %+v", timeGroups)
+	}
+	costGroups := []thermal.LiveEventGroup{first, second}
+	sortLiveGroups(costGroups, "cost")
+	if costGroups[0].Tool != "B" {
+		t.Errorf("expected highest cost first in cost mode, got %+v", costGroups)
+	}
+
+	line := formatTopSpenders([]thermal.LiveEventGroup{
+		{Project: "thermal", Cost: 4.43, CostKind: thermal.LiveCostEstimated},
+		{Project: "scripts", Cost: 0.46, CostKind: thermal.LiveCostEstimated},
+		{Project: "other", Cost: 0.10, CostKind: thermal.LiveCostRecorded},
+		{Project: "free", Cost: 0, CostKind: thermal.LiveCostUnpriced},
+	}, false)
+	if !strings.Contains(line, "thermal ~$4.43") || !strings.Contains(line, "scripts ~$0.46") {
+		t.Errorf("unexpected top spenders line: %q", line)
+	}
+}
+
 func TestLiveTUI_FlameCeilingCaption(t *testing.T) {
 	m := NewLiveModel(nil, time.Second, "", false)
 	m.width = 100

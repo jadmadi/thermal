@@ -6,6 +6,7 @@ package tui
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -58,6 +59,7 @@ type LiveModel struct {
 	lastPollAt   time.Time
 	lastEventAt  time.Time
 	pollErr      error
+	sortMode     string
 	inFlight     bool
 	pollSeq      uint64
 	appliedSeq   uint64
@@ -103,6 +105,7 @@ func NewLiveModel(pollFn LivePollFunc, pollRate time.Duration, filterTool string
 		startedAt:    now,
 		lastPollAt:   lastPollAt,
 		pollErr:      pollErr,
+		sortMode:     "time",
 	}
 }
 
@@ -209,6 +212,14 @@ func (m LiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.snapshot.SessionTokens = 0
 			m.snapshot.SessionCost = 0
 			m.snapshot.SessionTurns = 0
+		}
+		return m, nil
+
+	case "s", "S":
+		if m.sortMode == "cost" {
+			m.sortMode = "time"
+		} else {
+			m.sortMode = "cost"
 		}
 		return m, nil
 
@@ -439,6 +450,20 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	}
 	tickerHeader := formatTickerHeader(innerWidth, colors)
 
+	allEvents := make([]thermal.LiveEvent, 0, len(m.snapshot.RecentEvents))
+	for _, ev := range m.snapshot.RecentEvents {
+		if ev.IsBaseline {
+			continue
+		}
+		allEvents = append(allEvents, ev)
+	}
+	groups := thermal.GroupLiveEvents(allEvents, 60*time.Second, now)
+	sortLiveGroups(groups, m.sortMode)
+	topSpendersLine := ""
+	if m.sortMode == "cost" && len(groups) > 0 {
+		topSpendersLine = formatTopSpenders(groups, colors)
+	}
+
 	// Available lines for events based on terminal height
 	showSparkline := height >= 16
 	fixedLines := 13
@@ -450,6 +475,9 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	}
 	fixedLines++
 	fixedLines += len(todayRollups)
+	if topSpendersLine != "" {
+		fixedLines++
+	}
 	if height >= 18 {
 		fixedLines += 2
 	}
@@ -460,20 +488,12 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	if availEvents > 20 {
 		availEvents = 20
 	}
-
-	visible := make([]thermal.LiveEvent, 0, availEvents)
-	for _, ev := range m.snapshot.RecentEvents {
-		if ev.IsBaseline {
-			continue
-		}
-		visible = append(visible, ev)
-		if len(visible) >= availEvents {
-			break
-		}
+	if len(groups) > availEvents {
+		groups = groups[:availEvents]
 	}
 
 	var eventLines []string
-	if len(visible) == 0 {
+	if len(groups) == 0 {
 		msg := "Idle: no new bursts in the last 60s"
 		if m.lastEventAt.IsZero() {
 			msg = "Idle: no events since launch"
@@ -483,24 +503,26 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 		}
 		eventLines = append(eventLines, padLine("  "+msg, innerWidth))
 	} else {
-		tokValues := make([]int64, len(visible))
-		stepValues := make([]int64, len(visible))
-		for i, ev := range visible {
-			tokValues[i] = ev.Tokens
-			stepValues[i] = int64(ev.Turns)
+		tokValues := make([]int64, len(groups))
+		stepValues := make([]int64, len(groups))
+		for i, g := range groups {
+			tokValues[i] = g.Tokens
+			stepValues[i] = int64(g.Turns)
 		}
 		tokOutliers := thermal.MedianOutlierFlags(tokValues, 3.0, 3)
 		stepOutliers := thermal.MedianOutlierFlags(stepValues, 3.0, 3)
-		for i, ev := range visible {
-			eventLines = append(eventLines, formatEventRow(ev, tokOutliers[i], stepOutliers[i], now, innerWidth, colors))
+		for i, g := range groups {
+			g.AnyOutlier = tokOutliers[i] || stepOutliers[i]
+			eventLines = append(eventLines, formatGroupRow(g, tokOutliers[i], stepOutliers[i], now, innerWidth, colors))
 		}
 	}
 
 	// 7. Footer - exactly matches cardWidth
 	bottomLine := border(" ╰" + strings.Repeat("─", cardWidth-2) + "╯")
 	footerControls := theme.TextMuted.Sprint(colors, " • Controls: ") +
-		theme.DarkStep12.Sprint(colors, "[Space]") + theme.TextMuted.Sprint(colors, " Pause/Resume  ·  ") +
-		theme.DarkStep12.Sprint(colors, "[c]") + theme.TextMuted.Sprint(colors, " Reset Session  ·  ") +
+		theme.DarkStep12.Sprint(colors, "[Space]") + theme.TextMuted.Sprint(colors, " Pause  ·  ") +
+		theme.DarkStep12.Sprint(colors, "[c]") + theme.TextMuted.Sprint(colors, " Reset  ·  ") +
+		theme.DarkStep12.Sprint(colors, "[s]") + theme.TextMuted.Sprint(colors, " Sort: "+m.sortMode+"  ·  ") +
 		theme.DarkStep12.Sprint(colors, "[?]") + theme.TextMuted.Sprint(colors, " Help  ·  ") +
 		theme.DarkStep12.Sprint(colors, "[q]") + theme.TextMuted.Sprint(colors, " Quit")
 
@@ -524,6 +546,9 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	sb.WriteString(divider(tickerLabel) + "\n")
 	sb.WriteString(border(" │ ") + padLine(tickerHeader, innerWidth) + border(" │\n"))
 	sb.WriteString(border(" │ ") + padLine(m.formatLastEventLine(colors), innerWidth) + border(" │\n"))
+	if topSpendersLine != "" {
+		sb.WriteString(border(" │ ") + padLine(topSpendersLine, innerWidth) + border(" │\n"))
+	}
 	for _, el := range eventLines {
 		sb.WriteString(border(" │ ") + padLine(el, innerWidth) + border(" │\n"))
 	}
@@ -559,6 +584,7 @@ func (m LiveModel) renderHelp() string {
 		theme.Secondary.SprintBold(colors, "  Keyboard Navigation & Actions:"),
 		fmt.Sprintf("    %-14s %s", theme.DarkStep12.Sprint(colors, "[Space]"), "Pause / resume live event polling"),
 		fmt.Sprintf("    %-14s %s", theme.DarkStep12.Sprint(colors, "[c]"), "Clear and reset live session counters"),
+		fmt.Sprintf("    %-14s %s", theme.DarkStep12.Sprint(colors, "[s]"), "Toggle time/cost sorting"),
 		fmt.Sprintf("    %-14s %s", theme.DarkStep12.Sprint(colors, "[?]"), "Toggle this help screen"),
 		fmt.Sprintf("    %-14s %s", theme.DarkStep12.Sprint(colors, "[q] / [Esc]"), "Quit live monitor"),
 		"",
@@ -566,9 +592,9 @@ func (m LiveModel) renderHelp() string {
 		"    Burn Velocity  Calculated over a rolling 60-second activity window",
 		"    Flame Meter    Rate / ceiling; tokens default 9M/min, steps default 60/min",
 		"    Rolling 60s    Second-by-second activity sparkline across the past minute",
-		"    Event Ticker   Separate TOKENS/STEPS columns with model, project, age, and cost",
+		"    Event Ticker   Separate TOKENS/STEPS columns; TOOL×N groups N bursts",
 		"    Ticker Marks   * = older than 60s; ! = over 3x the visible median",
-		"    Costs          ~ = estimated; — = unpriced; $0.00 = recorded zero",
+		"    Costs          ~ = estimated; — = unpriced; ≥ = partial known; $0.00 = recorded zero",
 		"",
 		theme.Secondary.SprintBold(colors, "  Headless & Status Bar Automation:"),
 		"    thermal live --fresh           Accepted for compatibility; sessions always start at launch",
@@ -1120,7 +1146,106 @@ func formatLiveCostPlain(ev thermal.LiveEvent) string {
 	return fmt.Sprintf("%s$%.2f", prefix, ev.Cost)
 }
 
+func sortLiveGroups(groups []thermal.LiveEventGroup, mode string) {
+	sort.SliceStable(groups, func(i, j int) bool {
+		a, b := groups[i], groups[j]
+		if mode == "cost" {
+			aPriced, bPriced := a.Cost > 0, b.Cost > 0
+			if aPriced != bPriced {
+				return aPriced
+			}
+			if a.Cost != b.Cost {
+				return a.Cost > b.Cost
+			}
+			if a.Tokens != b.Tokens {
+				return a.Tokens > b.Tokens
+			}
+			return a.Latest.After(b.Latest)
+		}
+		if !a.Latest.Equal(b.Latest) {
+			return a.Latest.After(b.Latest)
+		}
+		if a.Tokens != b.Tokens {
+			return a.Tokens > b.Tokens
+		}
+		return a.Tool+a.Model+a.Project < b.Tool+b.Model+b.Project
+	})
+}
+
+func formatTopSpenders(groups []thermal.LiveEventGroup, colors bool) string {
+	type spend struct {
+		name     string
+		cost     float64
+		unpriced bool
+		kind     thermal.LiveCostKind
+	}
+	byProject := make(map[string]*spend)
+	for _, g := range groups {
+		name := g.Project
+		if name == "" {
+			name = "unattributed"
+		}
+		s := byProject[name]
+		if s == nil {
+			s = &spend{name: name}
+			byProject[name] = s
+		}
+		s.cost += g.Cost
+		s.unpriced = s.unpriced || g.AnyUnpriced
+		if g.CostKind == thermal.LiveCostEstimated {
+			s.kind = thermal.LiveCostEstimated
+		} else if g.CostKind == thermal.LiveCostRecorded && s.kind != thermal.LiveCostEstimated {
+			s.kind = thermal.LiveCostRecorded
+		}
+	}
+	list := make([]*spend, 0, len(byProject))
+	for _, s := range byProject {
+		list = append(list, s)
+	}
+	sort.SliceStable(list, func(i, j int) bool {
+		if list[i].cost != list[j].cost {
+			return list[i].cost > list[j].cost
+		}
+		return list[i].name < list[j].name
+	})
+	parts := make([]string, 0, 3)
+	for _, s := range list {
+		if s.cost <= 0 {
+			continue
+		}
+		costStr := formatRollupCost(thermal.LiveRollup{Cost: s.cost, CostKind: s.kind})
+		if s.unpriced {
+			costStr = "≥" + strings.TrimPrefix(costStr, "~")
+		}
+		parts = append(parts, s.name+" "+costStr)
+		if len(parts) >= 3 {
+			break
+		}
+	}
+	if len(parts) == 0 {
+		return "  Top spenders (60s): —"
+	}
+	return "  Top spenders (60s): " + strings.Join(parts, " · ")
+}
+
+func formatGroupRow(g thermal.LiveEventGroup, tokOutlier, stepOutlier bool, now time.Time, innerWidth int, colors bool) string {
+	return formatTickerRow(thermal.LiveEvent{
+		Timestamp: g.Latest,
+		Tool:      g.Tool,
+		Tokens:    g.Tokens,
+		Turns:     g.Turns,
+		Model:     g.Model,
+		Project:   g.Project,
+		Cost:      g.Cost,
+		CostKind:  g.CostKind,
+	}, g.Count, g.AnyUnpriced, tokOutlier, stepOutlier, now, innerWidth, colors)
+}
+
 func formatEventRow(ev thermal.LiveEvent, tokOutlier, stepOutlier bool, now time.Time, innerWidth int, colors bool) string {
+	return formatTickerRow(ev, 1, false, tokOutlier, stepOutlier, now, innerWidth, colors)
+}
+
+func formatTickerRow(ev thermal.LiveEvent, count int, anyUnpriced bool, tokOutlier, stepOutlier bool, now time.Time, innerWidth int, colors bool) string {
 	l := calcColWidths(innerWidth)
 
 	timeStr := ev.Timestamp.Format("15:04:05")
@@ -1137,6 +1262,8 @@ func formatEventRow(ev thermal.LiveEvent, tokOutlier, stepOutlier bool, now time
 	toolStr := ev.Tool
 	if toolStr == "" {
 		toolStr = "—"
+	} else if count > 1 {
+		toolStr = fmt.Sprintf("%s×%d", toolStr, count)
 	}
 	tokStr := "—"
 	if ev.Tokens > 0 {
@@ -1161,6 +1288,13 @@ func formatEventRow(ev thermal.LiveEvent, tokOutlier, stepOutlier bool, now time
 		projStr = "—"
 	}
 	costStr := formatLiveCostPlain(ev)
+	if anyUnpriced {
+		if ev.Cost <= 0 {
+			costStr = "—"
+		} else {
+			costStr = "≥" + strings.TrimPrefix(costStr, "~")
+		}
+	}
 
 	timeCell := padCell(timeStr, l.timeW, false)
 	ageCell := padCell(ageStr, l.ageW, false)
