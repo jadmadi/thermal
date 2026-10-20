@@ -64,6 +64,11 @@ func TestValidateReportFlags(t *testing.T) {
 		{"fresh on live ok", with(base, func(o *thermal.Options) { o.Report = "live"; o.Fresh = true }), false},
 		{"fresh on leaderboard bad", with(base, func(o *thermal.Options) { o.Fresh = true }), true},
 		{"fresh on weekly bad", with(base, func(o *thermal.Options) { o.Report = "weekly"; o.Fresh = true }), true},
+		{"chart on daily ok", with(base, func(o *thermal.Options) { o.Report = "daily"; o.Chart = true }), false},
+		{"chart on projects ok", with(base, func(o *thermal.Options) { o.Report = "projects"; o.Chart = true }), false},
+		{"chart on mix bad", with(base, func(o *thermal.Options) { o.Report = "mix"; o.Chart = true }), true},
+		{"chart on stats bad", with(base, func(o *thermal.Options) { o.Report = "stats"; o.Chart = true }), true},
+		{"chart on trend bad", with(base, func(o *thermal.Options) { o.Report = "trend"; o.Chart = true }), true},
 	}
 
 	for _, tc := range cases {

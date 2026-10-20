@@ -21,7 +21,7 @@ func TestChartScalesWithWidth(t *testing.T) {
 	}
 	var prev int
 	for _, w := range []int{80, 100, 120, 160, 200} {
-		out := RenderProjectChart(rep, nil, w, true)
+		out := RenderProjectChart(rep, nil, 0, w, true)
 		var widest int
 		for _, line := range strings.Split(out, "\n") {
 			if n := len([]rune(line)); n > widest {

@@ -233,9 +233,10 @@ leaderboard.
 
 ## Charts
 
-Every report takes `--chart` to print bar rows under the table. The bars are
-plain text, so they survive being pasted into a chat, an issue, or a commit
-message, where a terminal heatmap does not.
+`daily`, `weekly`, `monthly`, `projects`, and `models` take `--chart` to print
+bar rows under the table; `mix`, `stats`, and `trend` reject it instead of
+silently ignoring it. The bars are plain text, so they survive being pasted into
+a chat, an issue, or a commit message, where a terminal heatmap does not.
 
 ```bash
 thermal projects --chart          # bars under the project table
@@ -245,9 +246,10 @@ thermal weekly --chart --sort cost
 ```
 
 Each bar prints its number beside it, so nothing depends on colour, and the
-caption names the scale. A chart draws its first twelve rows and says how many
-it left out, because a bar chart with eighty rows is a second copy of the table
-rather than a chart. `--chart` never changes `--json` output.
+caption names the scale. Project/model charts follow `--top`, preserve the
+table's order, scale against the largest charted row, and cap at twelve bars
+with the same remainder count as the table. `--chart` never changes `--json`
+output.
 
 ## The live monitor
 

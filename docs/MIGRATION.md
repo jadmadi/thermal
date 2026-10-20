@@ -1273,3 +1273,32 @@ Use `thermal daily --json` (`totals.storedCost`, `estimatedCost`, `cost`, `unatt
 
 **Escape hatch**:
 For a custom allocation, consume daily/project/model JSON and apply your own cost basis; do not compare `models.estimatedCost` to `daily.cost` as if they were the same basis.
+
+---
+
+### Changed: Chart Scale, Order, and `--chart` Applicability
+<a id="changed-chart-scale-order-and-top"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'Projects by tokens\|Models by tokens\|--chart' .` or scripts comparing chart rows to `thermal projects --top`.
+- **Detection signal**: `thermal mix --chart`, `thermal stats --chart`, and `thermal trend --chart` now fail with a message naming the supported commands. Project/model charts draw the same first `--top` rows as their table, scale against the largest **charted** row, preserve table order, and cap at twelve bars with a matching remainder count. Model chart costs use the shared `~$` estimate marker.
+
+**What changed and why**:
+Charts were described as a view of the table, but project/model charts scaled from `Rows[0]` and ignored `--top`; a sorted or ascending table could produce misleading bars, and analytics commands accepted `--chart` while doing nothing. A chart that silently disagrees with its table is worse than no chart.
+
+**Before / After**:
+```text
+# Before
+thermal projects --top 5 --chart   # table 5 rows, chart 12 bars, scale = first row
+thermal mix --chart                # accepted, no chart
+
+# After
+thermal projects --top 5 --chart   # table 5 rows, chart 5 bars, scale = largest charted row
+thermal mix --chart                # error: --chart does not apply to the mix command
+```
+
+**The fix**:
+Use `--chart` only with `daily`, `weekly`, `monthly`, `projects`, or `models`. Pass `--top` through to project/model charts; the chart follows the table's order and scales against its largest displayed row. When the twelve-row cap omits bars, the remainder is printed.
+
+**Escape hatch**:
+`thermal <command> --json` always returns the full data regardless of `--chart`. Analytics commands remain table/text only.

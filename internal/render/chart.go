@@ -30,12 +30,32 @@ const chartBarMax = 48
 // a second copy of the table, not a chart, so the tail is summarised instead.
 const chartRowCap = 12
 
+// chartRowsFor returns how many rows to draw and how many were left out. A
+// positive top follows the table's --top limit first, then the chart cap.
+func chartRowsFor(n, top int) (int, int) {
+	shown := n
+	if top > 0 && top < shown {
+		shown = top
+	}
+	if shown > chartRowCap {
+		shown = chartRowCap
+	}
+	if shown < 0 {
+		shown = 0
+	}
+	return shown, n - shown
+}
+
 // chartRows returns how many rows to draw and how many were left out.
 func chartRows(n int) (int, int) {
-	if n <= chartRowCap {
-		return n, 0
+	return chartRowsFor(n, 0)
+}
+
+func chartMetricLabel(v float64, metric string) string {
+	if metric == "cost" {
+		return formatCost(v)
 	}
-	return chartRowCap, n - chartRowCap
+	return thermal.CompactNumber(int64(v)) + " tok"
 }
 
 // omittedLine prints the tail summary so a capped chart never looks like the
@@ -122,20 +142,13 @@ func chartColors(noColor bool) bool {
 // RenderProjectChart prints ranked project bars under the projects table. It
 // takes the same display names the table printed, so a chart label and a row
 // label are never two different strings for one project.
-func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, width int, noColor bool) string {
+func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, top, width int, noColor bool) string {
 	if len(rep.Rows) == 0 {
 		return ""
 	}
 	colors := chartColors(noColor)
 	labelW := 24
 	barW := chartWidth(width, labelW)
-
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("  %s  %s\n",
-		theme.Text.SprintBold(colors, "Projects by tokens"),
-		theme.TextMuted.Sprint(colors, fmt.Sprintf("bar = share of the largest row, %s", thermal.CompactNumber(rep.Rows[0].Tokens)))))
-	b.WriteString("\n")
 
 	if names == nil {
 		var paths []string
@@ -145,8 +158,24 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, widt
 		names = thermal.ProjectDisplayNames(paths)
 	}
 
+	shown, omitted := chartRowsFor(len(rep.Rows), top)
+	if shown == 0 {
+		return ""
+	}
 	maxVal := float64(rep.Rows[0].Tokens)
-	shown, omitted := chartRows(len(rep.Rows))
+	for _, row := range rep.Rows[1:shown] {
+		if float64(row.Tokens) > maxVal {
+			maxVal = float64(row.Tokens)
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  %s  %s\n",
+		theme.Text.SprintBold(colors, "Projects by tokens"),
+		theme.TextMuted.Sprint(colors, fmt.Sprintf("bar = share of the largest charted row, %s tok", thermal.CompactNumber(int64(maxVal))))))
+	b.WriteString("\n")
+
 	for _, row := range rep.Rows[:shown] {
 		label := row.Project
 		if display, ok := names[label]; ok && display != "" {
@@ -163,7 +192,7 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, widt
 }
 
 // RenderModelChart prints ranked model bars under the models table.
-func RenderModelChart(rep thermal.ModelReport, width int, noColor bool) string {
+func RenderModelChart(rep thermal.ModelReport, top, width int, noColor bool) string {
 	if len(rep.Rows) == 0 {
 		return ""
 	}
@@ -171,24 +200,26 @@ func RenderModelChart(rep thermal.ModelReport, width int, noColor bool) string {
 	labelW := 28
 	barW := chartWidth(width, labelW)
 
+	shown, omitted := chartRowsFor(len(rep.Rows), top)
+	if shown == 0 {
+		return ""
+	}
+	maxVal := float64(rep.Rows[0].Tokens)
+	for _, row := range rep.Rows[1:shown] {
+		if float64(row.Tokens) > maxVal {
+			maxVal = float64(row.Tokens)
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("  %s  %s\n",
 		theme.Text.SprintBold(colors, "Models by tokens"),
-		theme.TextMuted.Sprint(colors, "estimated cost beside each bar")))
+		theme.TextMuted.Sprint(colors, fmt.Sprintf("bar = share of the largest charted row, %s tok; ~ = estimated cost", thermal.CompactNumber(int64(maxVal))))))
 	b.WriteString("\n")
 
-	maxVal := float64(rep.Rows[0].Tokens)
-	shown, omitted := chartRows(len(rep.Rows))
 	for _, row := range rep.Rows[:shown] {
-		cost := "—"
-		if row.Cost > 0 {
-			if row.Cost < 0.01 {
-				cost = fmt.Sprintf("$%.4f", row.Cost)
-			} else {
-				cost = fmt.Sprintf("$%.2f", row.Cost)
-			}
-		}
+		cost := formatCostOrDashValue(row.Cost, true)
 		b.WriteString(fmt.Sprintf("  %s  %s  %s %s\n",
 			thermal.PadRight(truncateLabel(row.Model, labelW), labelW),
 			chartBar(float64(row.Tokens), maxVal, barW, colors),
@@ -207,26 +238,28 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 	colors := chartColors(noColor)
 
 	values := make([]float64, len(rep.Rows))
-	var maxVal float64
 	for i, row := range rep.Rows {
 		if metric == "cost" {
 			values[i] = row.Cost
 		} else {
 			values[i] = float64(row.Tokens)
 		}
-		if values[i] > maxVal {
-			maxVal = values[i]
-		}
-	}
-	if maxVal == 0 {
-		return ""
 	}
 
 	// The chart follows the table's own order, so a reader never has to work
 	// out whether the bars are in a different sequence from the rows above.
-	order := make([]int, len(rep.Rows))
-	for i := range order {
-		order[i] = i
+	shown, omitted := chartRows(len(rep.Rows))
+	if shown == 0 {
+		return ""
+	}
+	var maxVal float64
+	for _, value := range values[:shown] {
+		if value > maxVal {
+			maxVal = value
+		}
+	}
+	if maxVal == 0 {
+		return ""
 	}
 
 	labelW := 12
@@ -236,27 +269,18 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("  %s  %s\n",
 		theme.Text.SprintBold(colors, title),
-		theme.TextMuted.Sprint(colors, "bar = share of the largest period on screen")))
+		theme.TextMuted.Sprint(colors, fmt.Sprintf("bar = share of the largest charted period, %s", chartMetricLabel(maxVal, metric)))))
 	b.WriteString("\n")
 
-	shown, omitted := chartRows(len(order))
-	for _, i := range order[:shown] {
+	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
 		label := row.Period
 		if label == "" {
 			continue
 		}
-		value := thermal.CompactNumber(row.Tokens)
+		value := thermal.CompactNumber(row.Tokens) + " tok"
 		if metric == "cost" {
-			if row.Cost == 0 {
-				value = "—"
-			} else if row.Cost < 0.01 {
-				value = fmt.Sprintf("$%.4f", row.Cost)
-			} else {
-				value = fmt.Sprintf("$%.2f", row.Cost)
-			}
-		} else {
-			value += " tok"
+			value = formatCostOrDashValue(row.Cost, row.EstimatedCost > 0)
 		}
 		b.WriteString(fmt.Sprintf("  %s  %s  %s\n",
 			thermal.PadRight(truncateLabel(label, labelW), labelW),

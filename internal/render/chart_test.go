@@ -48,7 +48,7 @@ func twoDigits(n int) string {
 // printed beside the bar, so a monochrome terminal loses nothing.
 func TestChartIsNotColourOnly(t *testing.T) {
 	rep := projectRep(3)
-	out := RenderProjectChart(rep, nil, 100, true)
+	out := RenderProjectChart(rep, nil, 0, 100, true)
 	for _, want := range []string{"1.0M tok", "l project-a"} {
 		if !strings.Contains(out, want) && want == "l project-a" {
 			// The label column truncates, so check the tail only.
@@ -58,7 +58,7 @@ func TestChartIsNotColourOnly(t *testing.T) {
 			t.Errorf("chart is missing %q:\n%s", want, out)
 		}
 	}
-	if !strings.Contains(out, "bar = share of the largest row") {
+	if !strings.Contains(out, "bar = share of the largest charted row") {
 		t.Errorf("chart does not name its scale:\n%s", out)
 	}
 	// The largest row's bar must be full and the smallest must not be.
@@ -83,7 +83,7 @@ func TestChartIsNotColourOnly(t *testing.T) {
 // the omission is stated.
 func TestChartRowCap(t *testing.T) {
 	rep := projectRep(80)
-	out := RenderProjectChart(rep, nil, 100, true)
+	out := RenderProjectChart(rep, nil, 0, 100, true)
 	// Count rows that carry a bar, not filled cells: every bar line also holds
 	// filler runes, so counting runes counts nothing useful.
 	rows := 0
@@ -139,7 +139,7 @@ func TestChartFollowsTableOrder(t *testing.T) {
 func TestChartFitsWidth(t *testing.T) {
 	rep := projectRep(3)
 	for _, w := range []int{60, 80, 100, 160} {
-		out := RenderProjectChart(rep, nil, w, true)
+		out := RenderProjectChart(rep, nil, 0, w, true)
 		for _, line := range strings.Split(out, "\n") {
 			if n := len([]rune(line)); n > w && n > 0 {
 				// A long project path is truncated by the label column, so only
@@ -152,9 +152,56 @@ func TestChartFitsWidth(t *testing.T) {
 	}
 }
 
+func TestChartRowsFollowTopAndRemainder(t *testing.T) {
+	if shown, omitted := chartRowsFor(20, 5); shown != 5 || omitted != 15 {
+		t.Errorf("chartRowsFor(20,5) = %d/%d, want 5/15", shown, omitted)
+	}
+	if shown, omitted := chartRowsFor(20, 0); shown != chartRowCap || omitted != 8 {
+		t.Errorf("chartRowsFor(20,0) = %d/%d, want %d/8", shown, omitted, chartRowCap)
+	}
+	rep := projectRep(20)
+	out := RenderProjectChart(rep, nil, 5, 100, true)
+	bars := 0
+	for _, line := range strings.Split(out, "\n") {
+		if strings.Contains(line, "█") {
+			bars++
+		}
+	}
+	if bars != 5 {
+		t.Errorf("--top 5 chart drew %d bars, want 5:\n%s", bars, out)
+	}
+	if !strings.Contains(out, "and 15 more rows") {
+		t.Errorf("chart remainder does not match table remainder:\n%s", out)
+	}
+}
+
+func TestChartScaleUsesLargestChartedRow(t *testing.T) {
+	rep := thermal.ProjectReport{
+		Type: "projects",
+		Rows: []thermal.ProjectRow{
+			{Project: "/small", Tokens: 1_000_000},
+			{Project: "/large", Tokens: 5_000_000},
+			{Project: "/medium", Tokens: 3_000_000},
+		},
+	}
+	out := RenderProjectChart(rep, nil, 0, 100, true)
+	if !strings.Contains(out, "largest charted row, 5.0M tok") {
+		t.Errorf("chart scaled from the wrong row:\n%s", out)
+	}
+	var labels []string
+	for _, line := range strings.Split(out, "\n") {
+		if strings.Contains(line, "█") {
+			labels = append(labels, strings.Fields(line)[0])
+		}
+	}
+	if len(labels) != 3 || labels[0] != "small" || labels[1] != "large" || labels[2] != "medium" {
+		t.Errorf("chart did not preserve table order: %v\n%s", labels, out)
+	}
+}
+
 // TestChartEmptyReport prints nothing rather than an empty chart frame.
 func TestChartEmptyReport(t *testing.T) {
-	if got := RenderProjectChart(thermal.ProjectReport{}, nil, 100, true); got != "" {
+	if got := RenderProjectChart(thermal.ProjectReport{}, nil, 0, 100, true); got != "" {
 		t.Errorf("empty report produced:\n%s", got)
 	}
 	if got := RenderPeriodChart(thermal.Report{}, "tokens", 100, true); got != "" {
@@ -175,7 +222,7 @@ func TestModelChartCostBesideBar(t *testing.T) {
 		thermal.ModelRow{Model: "big-model", Tokens: 900_000_000, Cost: 256.25},
 		thermal.ModelRow{Model: "small-model", Tokens: 1_000_000, Cost: 0},
 	)
-	out := RenderModelChart(rep, 100, true)
+	out := RenderModelChart(rep, 0, 100, true)
 	if !strings.Contains(out, "$256.25") {
 		t.Errorf("model chart is missing the cost:\n%s", out)
 	}

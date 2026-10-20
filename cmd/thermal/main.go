@@ -514,6 +514,9 @@ func validateReportFlags(opts thermal.Options) error {
 			return fmt.Errorf("--sort must be tokens or cost for models")
 		}
 	case "trend", "mix", "stats":
+		if opts.Chart {
+			return fmt.Errorf("--chart does not apply to the %s command; use daily, weekly, monthly, projects, or models", opts.Report)
+		}
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the analytics commands")
 		}
@@ -1100,13 +1103,13 @@ func runProjectReport(opts thermal.Options) {
 	if opts.Breakdown {
 		fmt.Print(render.RenderProjectsBreakdown(rep, opts.Top, opts.NoColor))
 		if opts.Chart {
-			fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), reportWidth(), opts.NoColor))
+			fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), opts.Top, reportWidth(), opts.NoColor))
 		}
 		return
 	}
 	fmt.Print(render.RenderProjects(rep, opts.Top, opts.NoColor))
 	if opts.Chart {
-		fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), reportWidth(), opts.NoColor))
+		fmt.Print(render.RenderProjectChart(rep, projectDisplayNames(rep), opts.Top, reportWidth(), opts.NoColor))
 	}
 }
 
@@ -1142,7 +1145,7 @@ func runModelReport(opts thermal.Options) {
 		fmt.Print(render.RenderModels(rep, opts.Top, opts.NoColor))
 	}
 	if opts.Chart {
-		fmt.Print(render.RenderModelChart(rep, reportWidth(), opts.NoColor))
+		fmt.Print(render.RenderModelChart(rep, opts.Top, reportWidth(), opts.NoColor))
 	}
 }
 
