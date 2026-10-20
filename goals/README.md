@@ -29,18 +29,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 ## Summary
 - **Total Goals**: 114
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 113 (19 verified 📜, 7 stale ⚠️, 87 unverified)
+- 🟢 **Implemented**: 114 (19 verified 📜, 7 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 113 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 513/518 completed (99%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@command-code` | Implementing gallery fixture, validation, consistency matrix, and regression gate ⚠️ (stale: process 1293821 is no longer running) | 21m0s ago |
+- 📋 **Execution Tasks Progress**: 518/518 completed (100%)
 
 ---
 
@@ -160,4 +151,5 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`statusline-and-share-scope-contract`](statusline-and-share-scope-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `0dd1f4d` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `25163db` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `80b3e4f` |
+| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a5e6a9d` |
 | [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `de17df6` |
