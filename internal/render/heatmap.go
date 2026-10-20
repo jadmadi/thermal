@@ -4,7 +4,7 @@
 package render
 
 import (
-	"strings"
+	"time"
 
 	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -23,33 +23,51 @@ func heatCell(level int, colors bool) string {
 	return theme.HeatmapLevels[level].Sprint(true, "■")
 }
 
+// monthHeader places month abbreviations without overlapping them. A label
+// needs three cells plus at least one separator; if the natural week slot is
+// too close to the previous label, it shifts right. A label that cannot fit is
+// omitted rather than truncated into a misleading fragment like "ONov".
+func monthHeader(firstSunday time.Time, weeks int) string {
+	if weeks <= 0 {
+		return ""
+	}
+	line := make([]rune, weeks)
+	for i := range line {
+		line[i] = ' '
+	}
+	lastMonth := -1
+	nextFree := 0
+	for w := 0; w < weeks; w++ {
+		date := firstSunday.AddDate(0, 0, w*7)
+		m := int(date.Month()) - 1
+		if m == lastMonth {
+			continue
+		}
+		lastMonth = m
+		monthAbbr := date.Format("Jan")
+		start := w
+		if start < nextFree {
+			start = nextFree
+		}
+		if start+len(monthAbbr) > weeks {
+			continue
+		}
+		for i, ch := range monthAbbr {
+			line[start+i] = ch
+		}
+		nextFree = start + len(monthAbbr) + 1
+	}
+	return string(line)
+}
+
 func RenderHeatmap(activity map[string]thermal.DayActivity, weeks int, colors bool) []string {
 	today := thermal.StartOfToday()
 	thisSunday := today.AddDate(0, 0, -int(today.Weekday()))
 	firstSunday := thisSunday.AddDate(0, 0, -(weeks-1)*7)
 	thresholds := thermal.ActivityThresholds(activity)
 
-	monthLine := make([]string, weeks)
-	for i := range monthLine {
-		monthLine[i] = " "
-	}
-	lastMonth := -1
-	for w := 0; w < weeks; w++ {
-		date := firstSunday.AddDate(0, 0, w*7)
-		m := int(date.Month()) - 1
-		if m != lastMonth {
-			monthAbbr := date.Format("Jan")
-			for i, ch := range monthAbbr {
-				if w+i < weeks {
-					monthLine[w+i] = string(ch)
-				}
-			}
-			lastMonth = m
-		}
-	}
-
 	labels := []string{"   ", "Mon", "   ", "Wed", "   ", "Fri", "   "}
-	lines := []string{"      " + strings.Join(monthLine, "")}
+	lines := []string{"      " + monthHeader(firstSunday, weeks)}
 
 	for weekday := 0; weekday < 7; weekday++ {
 		row := "  " + labels[weekday] + " "
