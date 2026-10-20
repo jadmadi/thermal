@@ -1336,3 +1336,36 @@ Use `rules[].scope` and `rules[].path` in JSON, and the `(scope)` label in text.
 
 **Escape hatch**:
 Read `thermal audit --json` for full paths and the penalty fields; text intentionally abbreviates scopes for width.
+
+---
+
+### Changed: JSON Envelopes, Aliases, and Numeric Precision
+<a id="changed-json-envelopes-aliases-precision"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn '"Tool"\|"Name"\|"Summary"\|estimatedCost\|todayCost\|share\|mean' .` or consumers of any `thermal ... --json` payload.
+- **Detection signal**: leaderboard JSON now has `type:"leaderboard"`, `generatedAt`, `results`, and `totals`; results no longer contain uppercase `Tool`, `Name`, or `Summary` aliases. Audit/changelog/license/live/share/version have explicit types. Every serialized float is rounded to four decimal places. `docs/JSON-CONTRACT.md` is the canonical key table.
+
+**What changed and why**:
+Four envelope shapes and duplicated leaderboard keys made JSON consumers branch by command and inflated the leaderboard payload. Raw floats such as `1.9774259520000008` were an artifact of binary arithmetic, not data. The contract now has one precision rule and a documented envelope table; aliases are removed rather than kept as a second full copy.
+
+**Before / After**:
+```text
+# Before
+{ "generatedAt": "...", "results": [{ "Tool": "opencode", "tool": "opencode",
+  "Name": "OpenCode", "name": "OpenCode", "Summary": {...}, "summary": {...} }] }
+"todayCost": 1.9774259520000008
+"share": 0.5038565852808624
+
+# After
+{ "type": "leaderboard", "generatedAt": "...", "results": [{ "tool": "opencode",
+  "name": "OpenCode", "summary": {...} }], "totals": {...} }
+"todayCost": 1.9774
+"share": 0.5039
+```
+
+**The fix**:
+Use lower camelCase keys from `docs/JSON-CONTRACT.md`. Do not read uppercase aliases; they are removed. If you need raw precision for a calculation, compute from the source rather than parsing the rounded JSON. The four-decimal rule is serialization-only and does not change aggregation values.
+
+**Escape hatch**:
+Text output keeps its display precision; use JSON for machine values. Audit/live use `timestamp` by documented exception; all other envelopes use `generatedAt`.

@@ -48,6 +48,7 @@ type ReadinessFinding struct {
 
 // AuditReport aggregates all local setup and context hygiene diagnostics.
 type AuditReport struct {
+	Type              string             `json:"type"`
 	Timestamp         time.Time          `json:"timestamp"`
 	Score             int                `json:"score"`
 	Grade             string             `json:"grade"`
@@ -80,6 +81,7 @@ func RunAuditWithOptions(workDir, homeDir string) AuditReport {
 	}
 
 	report := AuditReport{
+		Type:              "audit",
 		Timestamp:         time.Now(),
 		Score:             100,
 		RulesFindings:     []RuleFinding{},

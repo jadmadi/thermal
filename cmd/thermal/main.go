@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -626,6 +625,16 @@ func main() {
 		runLicense(opts)
 		return
 	case "version", "--version", "-v":
+		if opts.JSON {
+			writeJSON(map[string]any{
+				"type":        "version",
+				"generatedAt": time.Now().UTC().Format(time.RFC3339),
+				"version":     version.String(),
+				"commit":      version.Commit,
+				"date":        version.Date,
+			})
+			return
+		}
 		fmt.Printf("thermal %s\n", version.String())
 		if version.Commit != "unknown" {
 			fmt.Printf("  commit: %s\n", version.Commit)
@@ -738,32 +747,7 @@ func main() {
 		}
 
 		if opts.JSON {
-			type jsonResult struct {
-				thermal.ToolResult
-				LegacyTool    thermal.Tool    `json:"Tool"`
-				LegacyName    string          `json:"Name"`
-				LegacySummary thermal.Summary `json:"Summary"`
-				CurrentStreak int             `json:"currentStreak"`
-				LongestStreak int             `json:"longestStreak"`
-			}
-			var jsonResults []jsonResult
-			for _, r := range results {
-				jsonResults = append(jsonResults, jsonResult{
-					ToolResult:    r,
-					LegacyTool:    r.Tool,
-					LegacyName:    r.Name,
-					LegacySummary: r.Summary,
-					CurrentStreak: r.CurrentStreak,
-					LongestStreak: r.LongestStreak,
-				})
-			}
-			out := map[string]interface{}{
-				"generatedAt": time.Now().UTC().Format(time.RFC3339),
-				"results":     jsonResults,
-			}
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			enc.Encode(out)
+			writeJSON(leaderboardJSONPayload(results, time.Now()))
 			return
 		}
 
@@ -806,16 +790,14 @@ func main() {
 			CurrentStreak int `json:"currentStreak"`
 			LongestStreak int `json:"longestStreak"`
 		}
-		out := map[string]interface{}{
+		writeJSON(map[string]interface{}{
+			"type":        "tool",
 			"tool":        info.Name,
 			"dataPath":    data.Path,
 			"generatedAt": time.Now().UTC().Format(time.RFC3339),
 			"summary":     jsonSummary{Summary: data.Summary, CurrentStreak: current, LongestStreak: longest},
 			"daily":       data.Daily,
-		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		enc.Encode(out)
+		})
 		return
 	}
 
@@ -1002,13 +984,6 @@ func startOfWeek(opts thermal.Options) time.Weekday {
 	return time.Sunday
 }
 
-// writeReportJSON prints any report payload with the standard indentation.
-func writeReportJSON(v interface{}) {
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	enc.Encode(v)
-}
-
 // runReport folds the loaded days into the requested grain and prints a table
 // or JSON.
 func runReport(opts thermal.Options) {
@@ -1091,9 +1066,7 @@ func runProjectReport(opts thermal.Options) {
 			thermal.ProjectReport
 			GeneratedAt string `json:"generatedAt"`
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		enc.Encode(jsonReport{
+		writeReportJSON(jsonReport{
 			ProjectReport: rep,
 			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
 		})
@@ -1245,6 +1218,8 @@ func runTrendReport(opts thermal.Options) {
 func runLicense(opts thermal.Options) {
 	if opts.JSON {
 		payload := map[string]any{
+			"type":                   "license",
+			"generatedAt":            time.Now().UTC().Format(time.RFC3339),
 			"name":                   "thermal",
 			"author":                 "Jad Madi",
 			"license":                "AGPL-3.0-only",
@@ -1289,9 +1264,7 @@ func runLicense(opts thermal.Options) {
 			},
 			"third_party_notices": "NOTICES.md",
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		_ = enc.Encode(payload)
+		writeJSON(payload)
 		return
 	}
 
@@ -1339,7 +1312,7 @@ func runLicense(opts thermal.Options) {
 func runAudit(opts thermal.Options) {
 	rep := audit.RunAudit("")
 	if opts.JSON {
-		fmt.Println(render.RenderAuditJSON(rep))
+		writeReportJSON(rep)
 		return
 	}
 	fmt.Print(render.RenderAudit(rep, opts.NoColor))
@@ -1349,7 +1322,16 @@ func runAudit(opts thermal.Options) {
 func runChangelog(opts thermal.Options, limit int) {
 	rep := changelog.GetReport(limit)
 	if opts.JSON {
-		fmt.Println(changelog.RenderChangelogJSON(rep))
+		type jsonReport struct {
+			changelog.ChangelogReport
+			Type        string `json:"type"`
+			GeneratedAt string `json:"generatedAt"`
+		}
+		writeReportJSON(jsonReport{
+			ChangelogReport: rep,
+			Type:            "changelog",
+			GeneratedAt:     time.Now().UTC().Format(time.RFC3339),
+		})
 		return
 	}
 	fmt.Print(changelog.RenderChangelog(rep, opts.NoColor))
@@ -1388,13 +1370,13 @@ func runShare(opts thermal.Options) {
 	}
 
 	if opts.JSON {
-		res := map[string]any{
-			"url":      url,
-			"token":    token,
-			"snapshot": snap,
-		}
-		b, _ := json.MarshalIndent(res, "", "  ")
-		fmt.Println(string(b))
+		writeJSON(map[string]any{
+			"type":        "share",
+			"generatedAt": time.Now().UTC().Format(time.RFC3339),
+			"url":         url,
+			"token":       token,
+			"snapshot":    snap,
+		})
 		return
 	}
 
@@ -1628,7 +1610,11 @@ func runLive(opts thermal.Options) {
 		snap, _ := tracker.Poll(results, projects, time.Now())
 
 		if !opts.Stream {
-			writeReportJSON(snap)
+			type liveReport struct {
+				thermal.LiveSnapshot
+				Type string `json:"type"`
+			}
+			writeReportJSON(liveReport{LiveSnapshot: snap, Type: "live"})
 			return
 		}
 
@@ -1641,7 +1627,7 @@ func runLive(opts thermal.Options) {
 		}
 
 		// Initial snapshot
-		initLine, _ := json.Marshal(streamPayload{
+		initLine, _ := marshalJSONCompact(streamPayload{
 			Type:      "snapshot",
 			Timestamp: snap.Timestamp,
 			Snapshot:  &snap,
@@ -1664,11 +1650,10 @@ func runLive(opts thermal.Options) {
 				}
 				_, newEvents := tracker.Poll(res, prj, t)
 				for _, ev := range newEvents {
-					evCopy := ev
-					line, _ := json.Marshal(streamPayload{
+					line, _ := marshalJSONCompact(streamPayload{
 						Type:      "event",
-						Timestamp: t,
-						Event:     &evCopy,
+						Timestamp: ev.Timestamp,
+						Event:     &ev,
 					})
 					fmt.Println(string(line))
 				}

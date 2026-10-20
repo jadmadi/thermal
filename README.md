@@ -467,6 +467,8 @@ thermal audit
 thermal audit --json
 ```
 
+JSON surfaces use the contract in [`docs/JSON-CONTRACT.md`](docs/JSON-CONTRACT.md): a `type` on every envelope, `generatedAt` (or documented `timestamp` for audit/live), canonical lower-camelCase leaderboard rows without aliases, and four-decimal serialization precision.
+
 ### `thermal share`
 Stateless, zero-database share card engine. Generates a compact share URL encoding streaks, active days, and token volumes directly into the URL fragment for instant sharing:
 
