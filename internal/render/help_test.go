@@ -55,6 +55,45 @@ func TestRenderHelp_NoColor(t *testing.T) {
 	}
 }
 
+func TestRenderHelp_AllRegisteredToolsAndFlags(t *testing.T) {
+	out := RenderHelp(true)
+	start := strings.Index(out, "Supported Tools:")
+	end := strings.Index(out[start:], "Documentation & guides:")
+	if start < 0 || end < 0 {
+		t.Fatalf("supported tools section missing")
+	}
+	section := strings.ToLower(out[start : start+end])
+	for _, alias := range []string{
+		"opencode", "devin", "codex", "claude", "zcode", "grok", "mimo",
+		"codewhale", "dsh", "hermes", "cmd", "zed", "agy", "muse", "droid",
+	} {
+		if !strings.Contains(section, alias) {
+			t.Errorf("help supported-tools section is missing %q", alias)
+		}
+	}
+	for _, display := range []string{"MiMoCode", "DeepSeek DSH", "Nous Hermes", "CMD", "Zed"} {
+		if !strings.Contains(section, strings.ToLower(display)) {
+			t.Errorf("help supported-tools section is missing display name %q", display)
+		}
+	}
+	for _, want := range []string{
+		"--start-of-week <day>",
+		"--sort <field>",
+		"projects: tokens|cost|days|recent",
+		"--format <text|json>",
+		"Charts for daily, weekly, monthly, projects, and models reports",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("help is missing flag reference %q", want)
+		}
+	}
+	for _, retired := range []string{"dashboard", "thermal web", "thermal serve", "thermal replay", "thermal receipt", "thermal yield", "9-box"} {
+		if strings.Contains(out, retired) {
+			t.Errorf("help still advertises retired surface %q", retired)
+		}
+	}
+}
+
 func TestRenderHelp_WithColors(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 	t.Setenv("CLICOLOR_FORCE", "1")

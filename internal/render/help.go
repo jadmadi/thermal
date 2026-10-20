@@ -189,13 +189,13 @@ func RenderHelp(noColor bool) string {
 				{Name: "--last <N>", Desc: "Limit to last N days, weeks, or months"},
 				{Name: "--order <asc|desc>", Desc: "Sort order for report rows (default: desc)"},
 				{Name: "--weeks <N>", Desc: "Heatmap width in weeks (default: 52)"},
-				{Name: "--start-of-week", Desc: "First day of week: sunday-saturday (default: sunday)"},
+				{Name: "--start-of-week <day>", Desc: "First day of week: sunday-saturday (default: sunday)"},
 			},
 		},
 		{
 			Title: "Ranking & Analytics Options:",
 			Items: []HelpItem{
-				{Name: "--sort <field>", Desc: "Sort metric: streak|tokens|cost"},
+				{Name: "--sort <field>", Desc: "Leaderboard: streak|tokens|cost; projects: tokens|cost|days|recent; models: tokens|cost"},
 				{Name: "--top <N>", Desc: "Cap table rows to top N items (default: all)"},
 				{Name: "--metric <field>", Desc: "Analytics metric: tokens or cost (default: tokens)"},
 				{Name: "--by <tool|model>", Desc: "Mix breakdown dimension (default: tool)"},
@@ -205,11 +205,12 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "Display & Formatting Options:",
 			Items: []HelpItem{
-				{Name: "--chart", Desc: "Render inline terminal bar charts under reports & rankings"},
+				{Name: "--chart", Desc: "Charts for daily, weekly, monthly, projects, and models reports"},
 				{Name: "--breakdown", Desc: "Show per-model token breakdown under each period"},
 				{Name: "--nerd", Desc: "Use Nerd Font flame glyph (󰈸) in statusline"},
 				{Name: "--plain", Desc: "Plain text statusline output without emoji or glyphs"},
 				{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+				{Name: "--format <text|json>", Desc: "Output format (json is an alias for --json; md/markdown retired)"},
 			},
 		},
 		{
@@ -249,7 +250,7 @@ func RenderHelp(noColor bool) string {
 	sb.WriteString(fmt.Sprintf("  %s\n", secTitle("Supported Tools:")))
 	twLabel := "Token Warriors:"
 	twPadded := padStyled(theme.Secondary.SprintBold(colors, twLabel), len(twLabel), 18)
-	twList := "opencode · devin · codex · claude · zcode · grok · mimo · codewhale · dsh · hermes · cmd"
+	twList := "OpenCode · Devin · Codex · Claude · ZCode · Grok · MiMoCode (mimo) · codewhale · DeepSeek DSH (dsh) · Nous Hermes (hermes) · CMD (command-code) · Zed"
 	avail := termWidth - 23
 	twWrapped := WrapText(twList, avail)
 	for i, line := range twWrapped {
@@ -262,7 +263,7 @@ func RenderHelp(noColor bool) string {
 
 	ahLabel := "Activity Hunters:"
 	ahPadded := padStyled(theme.Secondary.SprintBold(colors, ahLabel), len(ahLabel), 18)
-	ahList := "agy · muse · droid"
+	ahList := "Agy (agy) · Muse (muse) · Droid (droid)"
 	ahWrapped := WrapText(ahList, avail)
 	for i, line := range ahWrapped {
 		if i == 0 {
