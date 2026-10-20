@@ -68,9 +68,9 @@ the summary. `totals` contains `tools`, `activeDays`, `totalTokens`,
   `estimatedCost`, `missingPricing`, `reasoningEffort`.
 - `stats.composition`: `uncachedInput`, `output`, `reasoning`, `cacheRead`,
   `cacheWrite`, `total`, `classifiedTotal`, `unclassified`, `cacheHitRate`.
-- `share.snapshot`: `scope`, `window`, `activeDays`, `totalTokens`,
-  `recordedCost`, `estimatedCost`, `totalCost`, `coverage`, plus the URL/token
-  envelope fields.
+- `share.snapshot`: `scope`, `window`, `streakBasis`, `activeDays`,
+  `totalTokens`, `recordedCost`, `estimatedCost`, `totalCost`, `coverage`,
+  plus the URL/token envelope fields.
 
 All displayed text values have a JSON counterpart; no displayed field is
 `null`. Warnings are stderr-only and never appear in JSON.

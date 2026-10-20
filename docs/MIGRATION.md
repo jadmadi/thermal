@@ -1405,3 +1405,37 @@ Use the canonical `/m` and `/s` units. Drop the secondary value before truncatin
 
 **Escape hatch**:
 `thermal live --json` exposes `todayCost`, `todayModels[].cost`, and `todayModels[].costKind` separately. Use the recorded/blended Today total for reconciliation and the model estimate only for attribution.
+
+---
+
+### Changed: Statusline and Share-Card Scope, and Share URL Display
+<a id="changed-statusline-share-scope-url"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'statusline\|Shareable Card URL\|Scope:.*All\|Active Days\|streakBasis' .` or consumers of `thermal share --json`.
+- **Detection signal**: the statusline reads like `🔥 91d all tools · 220.0M tok today · top: CMD`; the share card prints `Window`, `Streak ... token-active`, and `Active Days ... token-active days`; `share --json` includes `scope`, `window`, `streakBasis`, `activeDays`, `totalTokens`, `recordedCost`, `estimatedCost`, `totalCost`, and `coverage`. The default text URL is shortened in the middle with a note; the full URL remains in JSON.
+
+**What changed and why**:
+`91d`, `220.0M tok`, and `CMD` were three different scopes in one line, while share `Active Days: 145` counted activity-only days but its volume/spend were token-only. A 1.5KB URL was presented as a compact card line. Scope labels and one snapshot now make the differences explainable, and the full URL remains machine-recoverable.
+
+**Before / After**:
+```text
+# Before
+🔥 91d · 220.0M tok · CMD
+Scope: All · Active Days: 145 days · Total Volume: 38.0B tokens
+Shareable Card URL: https://...<1500 chars>
+
+# After
+🔥 91d all tools · 220.0M tok today · top: CMD
+Scope: All · Window: all time (96 active days)
+Streak: 20 days (Longest: 37 days, token-active)
+Active Days: 96 token-active days
+Shareable Card URL: https://...<middle ellipsis>...
+(full URL (1517 chars) is available with --json)
+```
+
+**The fix**:
+Use the statusline's `scope`/`today`/`top` labels. Use share `scope`, `window`, and `streakBasis` together; do not mix all-activity streaks with token-active active days without the label. Copy the full URL from `thermal share --json`; the text card intentionally abbreviates it.
+
+**Escape hatch**:
+`thermal share --json` returns the full `url` and `token` plus the snapshot. Statusline JSON includes `scope`, `todayTokens`, and `activeTool`.

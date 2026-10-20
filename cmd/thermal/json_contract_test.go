@@ -102,6 +102,17 @@ func TestJSONEnvelopeContract(t *testing.T) {
 	}
 }
 
+func TestShortenShareURL(t *testing.T) {
+	long := "https://thermal.example/share?v=v1." + strings.Repeat("x", 200)
+	short := shortenURL(long, 96)
+	if len([]rune(short)) != 96 || !strings.Contains(short, "…") {
+		t.Errorf("shortenURL length/ellipsis = %d/%v", len([]rune(short)), short)
+	}
+	if shortenURL("short", 96) != "short" {
+		t.Errorf("short URL was changed")
+	}
+}
+
 func TestJSONShareFields(t *testing.T) {
 	snap := share.BuildShareSnapshot("all", []thermal.DailyRow{
 		{Day: "2026-01-01", Tokens: 100, Turns: 1},
@@ -124,7 +135,7 @@ func TestJSONShareFields(t *testing.T) {
 	if decoded.Type != "share" {
 		t.Errorf("type = %q", decoded.Type)
 	}
-	for _, key := range []string{"scope", "window", "activeDays", "recordedCost", "estimatedCost", "totalCost", "coverage"} {
+	for _, key := range []string{"scope", "window", "streakBasis", "activeDays", "recordedCost", "estimatedCost", "totalCost", "coverage"} {
 		raw, ok := decoded.Snapshot[key]
 		if !ok || string(raw) == "null" {
 			t.Errorf("share snapshot field %q missing or null", key)

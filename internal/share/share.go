@@ -41,6 +41,7 @@ type TelemetryShareSnapshot struct {
 	Tool          string           `json:"tool,omitempty"`
 	Scope         string           `json:"scope,omitempty"`
 	Window        string           `json:"window,omitempty"`
+	StreakBasis   string           `json:"streakBasis,omitempty"`
 	CurrentStreak int              `json:"currentStreak"`
 	LongestStreak int              `json:"longestStreak"`
 	ActiveDays    int              `json:"activeDays"`
@@ -98,6 +99,7 @@ func BuildShareSnapshot(tool string, days []thermal.DailyRow, recordedCost, esti
 		Tool:          tool,
 		Scope:         scope,
 		Window:        window,
+		StreakBasis:   "token-active",
 		CurrentStreak: currStreak,
 		LongestStreak: longestStreak,
 		ActiveDays:    len(dayMap),

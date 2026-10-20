@@ -28,7 +28,7 @@ func TestBuildShareSnapshot_TokenScope(t *testing.T) {
 	if snap.EstimatedCost != 7 || snap.TotalCost != 7 || snap.Coverage != "estimated" {
 		t.Errorf("cost = total %v estimated %v coverage %q, want 7/7/estimated", snap.TotalCost, snap.EstimatedCost, snap.Coverage)
 	}
-	if snap.Scope != "all" || snap.Window != "all time (2 active days)" {
-		t.Errorf("scope/window = %q/%q", snap.Scope, snap.Window)
+	if snap.Scope != "all" || snap.Window != "all time (2 active days)" || snap.StreakBasis != "token-active" {
+		t.Errorf("scope/window/basis = %q/%q/%q", snap.Scope, snap.Window, snap.StreakBasis)
 	}
 }

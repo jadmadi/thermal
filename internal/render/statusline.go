@@ -18,6 +18,7 @@ import (
 // StatuslineData carries lightweight state for terminal prompt and statusline integration.
 type StatuslineData struct {
 	Streak        int    `json:"streak"`
+	Scope         string `json:"scope,omitempty"`
 	LongestStreak int    `json:"longestStreak"`
 	TodayTokens   int64  `json:"todayTokens"`
 	TodayTurns    int    `json:"todayTurns"`
@@ -119,7 +120,11 @@ func RenderStatusline(data StatuslineData, opts StatuslineOptions) string {
 		}
 	}
 
-	streakText := fmt.Sprintf("%dd", data.Streak)
+	scope := data.Scope
+	if scope == "" {
+		scope = "all tools"
+	}
+	streakText := fmt.Sprintf("%dd %s", data.Streak, scope)
 	if colors {
 		if data.Streak > 0 {
 			streakText = theme.Primary.Sprint(true, icon+streakText)
@@ -133,11 +138,11 @@ func RenderStatusline(data StatuslineData, opts StatuslineOptions) string {
 	// 2. Today's Token Burn or Turns
 	var tokenText string
 	if data.TodayTokens > 0 {
-		tokenText = fmt.Sprintf("%s tok", thermal.CompactNumber(data.TodayTokens))
+		tokenText = fmt.Sprintf("%s tok today", thermal.CompactNumber(data.TodayTokens))
 	} else if data.TodayTurns > 0 {
-		tokenText = fmt.Sprintf("%d turns", data.TodayTurns)
+		tokenText = fmt.Sprintf("%d turns today", data.TodayTurns)
 	} else {
-		tokenText = "0 tok"
+		tokenText = "0 tok today"
 	}
 
 	if colors {
@@ -153,10 +158,9 @@ func RenderStatusline(data StatuslineData, opts StatuslineOptions) string {
 	// 3. Active Tool
 	var toolText string
 	if data.ActiveTool != "" {
+		toolText = "top: " + data.ActiveTool
 		if colors {
-			toolText = theme.Text.Sprint(true, data.ActiveTool)
-		} else {
-			toolText = data.ActiveTool
+			toolText = theme.Text.Sprint(true, toolText)
 		}
 	}
 

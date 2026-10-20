@@ -1337,6 +1337,15 @@ func runChangelog(opts thermal.Options, limit int) {
 	fmt.Print(changelog.RenderChangelog(rep, opts.NoColor))
 }
 
+func shortenURL(url string, max int) string {
+	if len(url) <= max || max < 16 {
+		return url
+	}
+	head := max * 2 / 3
+	tail := max - head - 1
+	return url[:head] + "…" + url[len(url)-tail:]
+}
+
 // runShare generates a stateless, zero-database share URL for user streaks and telemetry.
 func runShare(opts thermal.Options) {
 	targetTool := "all"
@@ -1402,8 +1411,8 @@ func runShare(opts thermal.Options) {
 		fmt.Sprintf(" %s %s", dim("Scope:        "), highlight(scopeLabel)),
 		fmt.Sprintf(" %s %s", dim("Window:       "), highlight(snap.Window)),
 		fmt.Sprintf(" %s %s", dim("Coverage:     "), highlight(snap.Coverage)),
-		fmt.Sprintf(" %s %s %s", dim("Streak:       "), gold(fmt.Sprintf("%d days 🔥", snap.CurrentStreak)), dim(fmt.Sprintf("(Longest: %d days)", snap.LongestStreak))),
-		fmt.Sprintf(" %s %s", dim("Active Days:  "), highlight(fmt.Sprintf("%d days", snap.ActiveDays))),
+		fmt.Sprintf(" %s %s %s", dim("Streak:       "), gold(fmt.Sprintf("%d days 🔥", snap.CurrentStreak)), dim(fmt.Sprintf("(Longest: %d days, %s)", snap.LongestStreak, snap.StreakBasis))),
+		fmt.Sprintf(" %s %s", dim("Active Days:  "), highlight(fmt.Sprintf("%d token-active days", snap.ActiveDays))),
 		fmt.Sprintf(" %s %s", dim("Total Volume: "), green(thermal.CompactNumber(snap.TotalTokens)+" tokens")),
 		fmt.Sprintf(" %s %s", dim("Spend Profile:"), highlight(costStr)),
 	}
@@ -1419,8 +1428,19 @@ func runShare(opts thermal.Options) {
 	}))
 	sb.WriteString("\n\n")
 
+	urlWidth := reportWidth() - 4
+	if urlWidth > 96 {
+		urlWidth = 96
+	}
+	if urlWidth < 32 {
+		urlWidth = 32
+	}
 	sb.WriteString(fmt.Sprintf("  %s\n", highlight("Shareable Card URL:")))
-	sb.WriteString(fmt.Sprintf("  %s\n\n", cyan(url)))
+	sb.WriteString(fmt.Sprintf("  %s\n", cyan(shortenURL(url, urlWidth))))
+	if len(url) > urlWidth {
+		sb.WriteString(fmt.Sprintf("  %s\n", dim(fmt.Sprintf("… full URL (%d chars) is available with --json", len(url)))))
+	}
+	sb.WriteString("\n")
 
 	footLimit := render.BoundedCardWidth(2)
 	for _, wl := range render.WrapBullet("  • ", "Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file paths, repository roots, or prompt telemetry encoded.", footLimit, dim) {
@@ -1756,8 +1776,16 @@ func runStatusline(opts thermal.Options) {
 		}
 	}
 
+	scope := "all tools"
+	if !isAllTools {
+		scope = set.toolName
+		if scope == "" {
+			scope = opts.Tool
+		}
+	}
 	data := render.StatuslineData{
 		Streak:        currentStreak,
+		Scope:         scope,
 		LongestStreak: longestStreak,
 		TodayTokens:   todayTokens,
 		TodayTurns:    todayTurns,

@@ -473,7 +473,7 @@ thermal audit --json
 JSON surfaces use the contract in [`docs/JSON-CONTRACT.md`](docs/JSON-CONTRACT.md): a `type` on every envelope, `generatedAt` (or documented `timestamp` for audit/live), canonical lower-camelCase leaderboard rows without aliases, and four-decimal serialization precision.
 
 ### `thermal share`
-Stateless, zero-database share card engine. Generates a compact share URL encoding streaks, active days, and token volumes directly into the URL fragment for instant sharing:
+Stateless, zero-database share card engine. Generates a compact share URL encoding streaks, active days, and token volumes directly into the URL fragment for instant sharing. The card names its `Scope` and `Window`; streak and active days are labeled **token-active**, so they are not confused with the all-activity statusline streak. The default text shortens the URL with a middle ellipsis; use `--json` for the full URL and token:
 
 ```bash
 thermal share
@@ -495,6 +495,10 @@ thermal live --interval 500ms
 
 # Instantaneous JSON snapshot for status bars (Waybar, Polybar, Tmux)
 thermal live --json
+
+# One-line shell statusline with scope labels
+thermal statusline
+thermal statusline --plain
 
 # Continuous NDJSON streaming mode for scripts and pipelines
 thermal live --json --stream
