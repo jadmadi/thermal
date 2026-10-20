@@ -1369,3 +1369,39 @@ Use lower camelCase keys from `docs/JSON-CONTRACT.md`. Do not read uppercase ali
 
 **Escape hatch**:
 Text output keeps its display precision; use JSON for machine values. Audit/live use `timestamp` by documented exception; all other envelopes use `generatedAt`.
+
+---
+
+### Changed: Live Ticker Units, Sparkline Glyphs, and Model Cost Basis
+<a id="changed-live-ticker-units-and-model-cost-basis"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'step/min\|tok/min\|/min\|step…\|tok…\|(+60 s)\|Top model:' .` or consumers of live `todayModels`.
+- **Detection signal**: live rate units are `tok/m` and `step/m`; speed units are `tok/s` and `step/s`; `Burned` uses `step`, not `s`. A compact `Steps:` line keeps both step rates visible when a narrow KPI cell drops the secondary value. Sparkline zero cells and the all-zero state both use `·`. Model rollups render `Top model (est. cost)` and JSON retains `costKind:"estimated"`.
+
+**What changed and why**:
+The old hybrid line omitted the token unit and could truncate `step/s` into `step…`; `s` meant both seconds and steps. The sparkline used spaces for leading zeros but dots for the all-zero state, which looked like missing data. Model cost was an estimate while Today/project cost was recorded, so the two dollar totals appeared to disagree without a basis label.
+
+**Before / After**:
+```text
+# Before
+Rate: 3.4M/m · 23 step/m
+Speed: 56.7K · 0.383 step…
+Burned: +1.7M tok (+60 s)
+Spark: [   ▂▃ ...] / all-zero [····]
+Top model: deepseek ~$3.95
+
+# After
+Rate: 3.4M tok/m · 23 step/m
+Speed: 56.7K tok/s · 0.383 step/s
+Burned: +1.7M tok · +60 step
+Steps: 23 step/m · 0.383 step/s   # when the KPI cell is narrow
+Spark: [···▂▃ ...] / all-zero [····]
+Top model (est. cost): deepseek ~$3.95
+```
+
+**The fix**:
+Use the canonical `/m` and `/s` units. Drop the secondary value before truncating a unit; the compact `Steps:` line preserves it. Treat model rollup cost as estimate-only (`costKind`) and never compare it directly to Today's reconciled cost.
+
+**Escape hatch**:
+`thermal live --json` exposes `todayCost`, `todayModels[].cost`, and `todayModels[].costKind` separately. Use the recorded/blended Today total for reconciliation and the model estimate only for attribution.

@@ -486,8 +486,8 @@ func TestLiveModel_LaunchRelativeSessionAndActivityUnits(t *testing.T) {
 	if strings.Contains(view, "+150 step") {
 		t.Errorf("expected no seeded session delta, got:\n%s", view)
 	}
-	if !strings.Contains(view, "step/min") {
-		t.Errorf("expected view to contain 'step/min' for Rate, got:\n%s", view)
+	if !strings.Contains(view, "step/m") {
+		t.Errorf("expected view to contain 'step/m' for Rate, got:\n%s", view)
 	}
 	if !strings.Contains(view, "step/s") {
 		t.Errorf("expected view to contain 'step/s' for Speed, got:\n%s", view)
@@ -630,7 +630,7 @@ func TestLiveModel_TodayRollups(t *testing.T) {
 	if !strings.Contains(view, "Today by project: thermal-streak ~$4.43 · scripts ~$0.46") {
 		t.Errorf("expected project cost rollup, got:\n%s", view)
 	}
-	if !strings.Contains(view, "Top model: deepseek-v4.1-flash ~$4.43") {
+	if !strings.Contains(view, "Top model (est. cost): deepseek-v4.1-flash ~$4.43") {
 		t.Errorf("expected top model rollup, got:\n%s", view)
 	}
 }
@@ -687,6 +687,77 @@ func TestLiveTUI_FormatSpeed_Fractional(t *testing.T) {
 	wantTok := "0.500 tok/s"
 	if gotTok != wantTok {
 		t.Errorf("formatSpeed(0.5, 0, false, 24, false) = %q, want %q", gotTok, wantTok)
+	}
+}
+
+func TestLiveTUI_UnitsAndNoTruncation(t *testing.T) {
+	rate := formatRate(3_400_000, 23, false, 80, false)
+	if !strings.Contains(rate, "3.4M tok/m · 23 step/m") {
+		t.Errorf("rate units = %q", rate)
+	}
+	speed := formatSpeed(56_700, 0.383, false, 80, false)
+	if !strings.Contains(speed, "56.7K tok/s · 0.383 step/s") {
+		t.Errorf("speed units = %q", speed)
+	}
+	narrow := formatSpeed(56_700, 0.383, false, 22, false)
+	if strings.Contains(narrow, "step") || strings.Contains(narrow, "…") || !strings.Contains(narrow, "tok/s") {
+		t.Errorf("narrow speed truncated a unit: %q", narrow)
+	}
+	delta := formatDelta(1_700_000, 60, 80, false)
+	if !strings.Contains(delta, "+1.7M tok") || !strings.Contains(delta, "+60 step") || strings.Contains(delta, "(+60 s)") {
+		t.Errorf("burned units = %q", delta)
+	}
+	volume := formatVolume(1_700_000, 60, 80, false)
+	if !strings.Contains(volume, "step") {
+		t.Errorf("volume units = %q", volume)
+	}
+}
+
+func TestLiveTUI_HybridUnitsAtWidths(t *testing.T) {
+	for _, width := range []int{80, 100, 120} {
+		m := NewLiveModel(nil, time.Second, "", false)
+		m.width = width
+		m.height = 30
+		m.snapshot.BurnTokensPerMin = 3_400_000
+		m.snapshot.BurnTurnsPerMin = 23
+		m.snapshot.BurnTokensPerSec = 56_700
+		m.snapshot.BurnTurnsPerSec = 0.383
+		m.snapshot.TodayTokens = 1_700_000
+		m.snapshot.TodayTurns = 60
+		m.snapshot.TodayCost = 1.20
+		m.snapshot.TodayCacheHit = 96.1
+		m.snapshot.SessionTokens = 1_600_000
+		m.snapshot.SessionTurns = 60
+		m.snapshot.SessionCost = 1.10
+		m.snapshot.ActiveModel = "very-long-model-name-that-must-truncate"
+
+		view := m.View().Content
+		for _, unit := range []string{"tok/m", "step/m", "tok/s", "step/s"} {
+			if !strings.Contains(view, unit) {
+				t.Errorf("width %d: missing unit %q:\n%s", width, unit, view)
+			}
+		}
+		if strings.Contains(view, "step…") || strings.Contains(view, "tok…") {
+			t.Errorf("width %d: unit was truncated:\n%s", width, view)
+		}
+		if !strings.Contains(view, "Cache hit: 96.1%") {
+			t.Errorf("width %d: cache precision drift:\n%s", width, view)
+		}
+		if width >= 100 && !strings.Contains(view, "+60 step") {
+			t.Errorf("width %d: burned steps missing unit:\n%s", width, view)
+		}
+		if !strings.Contains(view, "Controls:") || !strings.Contains(view, "[s]") {
+			t.Errorf("width %d: controls changed:\n%s", width, view)
+		}
+	}
+}
+
+func TestLiveTUI_ModelCostBasisLabel(t *testing.T) {
+	lines := formatTodayRollups(nil, []thermal.LiveRollup{
+		{Name: "model-a", Cost: 3.954, CostKind: thermal.LiveCostEstimated},
+	})
+	if len(lines) != 1 || !strings.Contains(lines[0], "Top model (est. cost): model-a ~$3.95") {
+		t.Errorf("model rollup missing estimate label: %v", lines)
 	}
 }
 
@@ -820,7 +891,7 @@ func TestLiveTUI_BucketLabels(t *testing.T) {
 
 func TestLiveTUI_RateSpeedParity(t *testing.T) {
 	for _, turnsPerMin := range []float64{1, 7.8, 8, 9.9, 23, 60} {
-		rateText := strings.TrimSuffix(formatRate(0, turnsPerMin, true, 24, false), " step/min")
+		rateText := strings.TrimSuffix(formatRate(0, turnsPerMin, true, 24, false), " step/m")
 		speedText := strings.TrimSuffix(formatSpeed(0, turnsPerMin/60, true, 24, false), " step/s")
 		var rate, speed float64
 		if _, err := fmt.Sscanf(rateText, "%f", &rate); err != nil {

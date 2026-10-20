@@ -4,6 +4,7 @@
 package thermal
 
 import (
+	"encoding/json"
 	"math"
 	"strings"
 	"testing"
@@ -294,6 +295,36 @@ func TestSparkline60(t *testing.T) {
 	// The newest element (at index 59) is 100K (the max), should be '█'
 	if runes[59] != '█' {
 		t.Errorf("expected last rune to be '█', got %c", runes[59])
+	}
+}
+
+func TestLiveRollupJSONCostKind(t *testing.T) {
+	b, err := json.Marshal(LiveRollup{Name: "model-a", Cost: 3.954, CostKind: LiveCostEstimated})
+	if err != nil {
+		t.Fatalf("marshal rollup: %v", err)
+	}
+	if !strings.Contains(string(b), `"costKind":"estimated"`) {
+		t.Errorf("model rollup lost its cost basis: %s", b)
+	}
+}
+
+func TestSparkline60_ZeroGlyphPolicy(t *testing.T) {
+	var buckets [60]int64
+	buckets[0] = 100
+	buckets[58] = 50
+	spark := Sparkline60(buckets, 59)
+	runes := []rune(spark)
+	if runes[0] != '█' && runes[0] != '▇' {
+		t.Errorf("expected leading nonzero bucket to render a bar, got %c", runes[0])
+	}
+	for _, i := range []int{1, 2, 57, 59} {
+		if runes[i] != '·' {
+			t.Errorf("zero bucket %d rendered %q, want ·", i, runes[i])
+		}
+	}
+	var empty [60]int64
+	if got := Sparkline60(empty, 59); strings.Trim(got, "·") != "" {
+		t.Errorf("all-zero sparkline used a different glyph: %q", got)
 	}
 }
 

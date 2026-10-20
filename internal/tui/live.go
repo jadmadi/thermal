@@ -405,6 +405,14 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	if height < 20 {
 		todayRollups = nil
 	}
+	if !rateIsActivity && height >= 20 && (m.snapshot.BurnTurnsPerMin > 0 || m.snapshot.BurnTurnsPerSec > 0) {
+		rateBoth := liveCellFits("Rate:     ", formatRateNumber(burnRate)+" tok/m · "+formatRateNumber(m.snapshot.BurnTurnsPerMin)+" step/m", colW)
+		speedBoth := liveCellFits("Speed:    ", formatSpeedNumber(burnSpeed)+" tok/s · "+formatSpeedNumber(m.snapshot.BurnTurnsPerSec)+" step/s", colW)
+		if !rateBoth || !speedBoth {
+			todayRollups = append(todayRollups, fmt.Sprintf("  Steps: %s step/m · %s step/s",
+				formatRateNumber(m.snapshot.BurnTurnsPerMin), formatSpeedNumber(m.snapshot.BurnTurnsPerSec)))
+		}
+	}
 
 	// 3. Flame Intensity Gauge
 	flameLine := formatFlameLine(intensity, m.snapshot.FlameMetric, m.snapshot.FlameCeiling, m.snapshot.ActiveModel, innerWidth, colors)
@@ -692,24 +700,31 @@ func formatSpeedNumber(v float64) string {
 	return thermal.CompactNumber(int64(math.Round(v)))
 }
 
+func liveCellFits(label, value string, colW int) bool {
+	return colW <= 0 || ansi.StringWidth(label+value) <= colW
+}
+
 func formatRate(tokRate, turnRate float64, isActivity bool, colW int, colors bool) string {
 	if isActivity {
 		if turnRate <= 0 {
-			return theme.TextMuted.Sprint(colors, "0 step/min")
+			return theme.TextMuted.Sprint(colors, "0 step/m")
 		}
-		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/min")
+		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/m")
 	}
 	if tokRate <= 0 && turnRate <= 0 {
-		return theme.TextMuted.Sprint(colors, "0 tok/min")
+		return theme.TextMuted.Sprint(colors, "0 tok/m")
 	}
 	if tokRate <= 0 {
-		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/min")
+		return theme.Primary.SprintBold(colors, formatRateNumber(turnRate)+" step/m")
 	}
-	if turnRate > 0 && colW >= 24 {
-		str := formatRateNumber(tokRate) + "/m · " + formatRateNumber(turnRate) + " step/m"
-		return theme.Primary.SprintBold(colors, str)
+	token := formatRateNumber(tokRate) + " tok/m"
+	if turnRate > 0 {
+		both := token + " · " + formatRateNumber(turnRate) + " step/m"
+		if liveCellFits("Rate:     ", both, colW) {
+			return theme.Primary.SprintBold(colors, both)
+		}
 	}
-	return theme.Primary.SprintBold(colors, formatRateNumber(tokRate)+"/min")
+	return theme.Primary.SprintBold(colors, token)
 }
 
 func formatSpeed(tokSpeed, turnSpeed float64, isActivity bool, colW int, colors bool) string {
@@ -722,13 +737,17 @@ func formatSpeed(tokSpeed, turnSpeed float64, isActivity bool, colW int, colors 
 	if tokSpeed <= 0 && turnSpeed <= 0 {
 		return theme.TextMuted.Sprint(colors, "0 tok/s")
 	}
-	if tokSpeed > 0 && turnSpeed > 0 && colW >= 24 {
-		return formatSpeedNumber(tokSpeed) + " · " + formatSpeedNumber(turnSpeed) + " step/s"
+	if tokSpeed > 0 {
+		token := formatSpeedNumber(tokSpeed) + " tok/s"
+		if turnSpeed > 0 {
+			both := token + " · " + formatSpeedNumber(turnSpeed) + " step/s"
+			if liveCellFits("Speed:    ", both, colW) {
+				return both
+			}
+		}
+		return token
 	}
-	if tokSpeed <= 0 {
-		return formatSpeedNumber(turnSpeed) + " step/s"
-	}
-	return formatSpeedNumber(tokSpeed) + " tok/s"
+	return formatSpeedNumber(turnSpeed) + " step/s"
 }
 
 func formatCostHr(costHr float64, colors bool) string {
@@ -754,9 +773,13 @@ func formatVolume(tokens int64, turns int, colW int, colors bool) string {
 		if colW <= 0 || ansi.StringWidth("Volume:   "+full) <= colW {
 			return theme.Secondary.SprintBold(colors, full)
 		}
-		compact := fmt.Sprintf("%s tok (%s s)", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
+		compact := fmt.Sprintf("%s tok (%s step)", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
 		if ansi.StringWidth("Volume:   "+compact) <= colW {
 			return theme.Secondary.SprintBold(colors, compact)
+		}
+		short := fmt.Sprintf("%s tok %s step", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
+		if ansi.StringWidth("Volume:   "+short) <= colW {
+			return theme.Secondary.SprintBold(colors, short)
 		}
 	}
 	str := fmt.Sprintf("%s tok", thermal.CompactNumber(tokens))
@@ -776,9 +799,13 @@ func formatDelta(tokens int64, turns int, colW int, colors bool) string {
 		if colW <= 0 || ansi.StringWidth("Burned:   "+full) <= colW {
 			return theme.Accent.SprintBold(colors, full)
 		}
-		compact := fmt.Sprintf("+%s tok (+%s s)", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
+		compact := fmt.Sprintf("+%s tok (+%s step)", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
 		if ansi.StringWidth("Burned:   "+compact) <= colW {
 			return theme.Accent.SprintBold(colors, compact)
+		}
+		short := fmt.Sprintf("+%s tok +%s step", thermal.CompactNumber(tokens), thermal.CompactNumber(int64(turns)))
+		if ansi.StringWidth("Burned:   "+short) <= colW {
+			return theme.Accent.SprintBold(colors, short)
 		}
 	}
 	str := fmt.Sprintf("+%s tok", thermal.CompactNumber(tokens))
@@ -845,7 +872,11 @@ func formatTodayRollups(projects, models []thermal.LiveRollup) []string {
 	}
 	if len(models) > 0 {
 		top := models[0]
-		lines = append(lines, "  Top model: "+top.Name+" "+formatRollupCost(top))
+		label := "  Top model: "
+		if top.CostKind == thermal.LiveCostEstimated {
+			label = "  Top model (est. cost): "
+		}
+		lines = append(lines, label+top.Name+" "+formatRollupCost(top))
 	}
 	return lines
 }

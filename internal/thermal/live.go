@@ -1233,7 +1233,7 @@ func Sparkline(buckets [60]int64, currentIndex int, count int) string {
 		idx := (currentIndex + i) % 60
 		val := buckets[idx]
 		if val <= 0 || maxVal <= 0 {
-			sb.WriteRune(' ')
+			sb.WriteRune('·')
 			continue
 		}
 		ratio := float64(val) / float64(maxVal)

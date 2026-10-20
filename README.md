@@ -256,7 +256,10 @@ output.
 `thermal live` is the interactive terminal surface: a real-time token burn
 monitor with carried-in baselines, one-second Peak/Rate buckets, a metric-specific
 flame gauge, a 60-second sparkline, and a ticker with cost status, age,
-outlier marks, burst rollup, and time/cost sorting.
+outlier marks, burst rollup, and time/cost sorting. Rates use complete
+`tok/m`/`step/m` and `tok/s`/`step/s` units; `Burned` reports steps, and model
+rollups are labeled estimate-only so they are not mistaken for the reconciled
+Today total.
 
 ```bash
 thermal live
