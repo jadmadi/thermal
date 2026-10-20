@@ -40,7 +40,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode | Agent | Status & Note | Started |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@command-code` | Implementing gallery fixture, validation, consistency matrix, and regression gate | 0s ago |
+| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@command-code` | Implementing gallery fixture, validation, consistency matrix, and regression gate ⚠️ (stale: process 1293821 is no longer running) | 21m0s ago |
 
 ---
 
@@ -141,7 +141,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `fbaff74` |
 | [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `8c7402c` |
 | [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
-| [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7c9a988` |
+| [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e288c50` |
 | [`chart-scale-order-and-top-contract`](chart-scale-order-and-top-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b92b6a` |
 | [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `472c5a6` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
