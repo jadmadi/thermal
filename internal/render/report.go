@@ -75,19 +75,19 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	case "monthly":
 		unit = "month"
 	}
-	periodLabel := fmt.Sprintf("%d %ss", len(rep.Rows), unit)
-	if len(rep.Rows) == 1 {
-		periodLabel = fmt.Sprintf("1 %s", unit)
+	periodLabel := rep.Window
+	if periodLabel == "" {
+		periodLabel = fmt.Sprintf("%d %ss", len(rep.Rows), unit)
+		if len(rep.Rows) == 1 {
+			periodLabel = fmt.Sprintf("1 %s", unit)
+		}
 	}
 	hitRateStr := "—"
 	if rep.Totals.Cache+rep.Totals.Input > 0 {
-		hitRateStr = fmt.Sprintf("%.1f%%", float64(rep.Totals.Cache)/float64(rep.Totals.Cache+rep.Totals.Input)*100)
+		hitRateStr = formatPercent(float64(rep.Totals.Cache)/float64(rep.Totals.Cache+rep.Totals.Input)*100, 1)
 	}
 
-	costDisplay := formatCost(rep.Totals.Cost)
-	if rep.Totals.EstimatedCost > 0 {
-		costDisplay = "~" + costDisplay
-	}
+	costDisplay := formatTotalCost(rep.Totals.Cost, rep.Totals.StoredCost, rep.Totals.EstimatedCost)
 
 	sb.WriteString(fmt.Sprintf("  Window: [%s · %s]  Total: [%s · %s]  Cache: [%s hit]\n\n",
 		highlight(periodLabel),
@@ -135,7 +135,11 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 			cells = append(cells, padLeft(thermal.CompactNumber(n), numberWidth))
 		}
 		if row.Cost > 0 {
-			cells = append(cells, padLeft(formatCost(row.Cost), numberWidth))
+			costText := formatCostValue(row.Cost, row.EstimatedCost > 0)
+			if isTotal {
+				costText = formatTotalCost(row.Cost, row.StoredCost, row.EstimatedCost)
+			}
+			cells = append(cells, padLeft(costText, numberWidth))
 		} else {
 			if colors && !isTotal && !isBreakdown {
 				cells = append(cells, padLeftStyled("—", numberWidth, func(s string) string { return theme.TextMuted.Sprint(true, s) }))
@@ -194,8 +198,8 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	}))
 
 	if rep.Totals.EstimatedCost > 0 {
-		note := fmt.Sprintf("Total = %s recorded + ~%s estimated from pricing data.",
-			formatCost(rep.Totals.StoredCost), formatCost(rep.Totals.EstimatedCost))
+		note := fmt.Sprintf("Total = %s recorded + %s estimated from pricing data.",
+			formatCost(rep.Totals.StoredCost), formatEstimatedCost(rep.Totals.EstimatedCost))
 		for _, line := range WrapText(note, cardWidth) {
 			sb.WriteString(fmt.Sprintf("\n  %s", dim(line)))
 		}
@@ -237,13 +241,6 @@ func truncate(s string, width int) string {
 // runeLen counts runes for width comparisons in the table.
 func runeLen(s string) int {
 	return utf8.RuneCountInString(s)
-}
-
-func formatCost(v float64) string {
-	if v < 0.01 {
-		return fmt.Sprintf("$%.4f", v)
-	}
-	return fmt.Sprintf("$%.2f", v)
 }
 
 // modelCell renders the top models in a fixed-width cell, truncating with an

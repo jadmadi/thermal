@@ -1407,12 +1407,9 @@ func runShare(opts thermal.Options) {
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("  %s %s %s\n\n", highlight("Thermal"), dim("·"), highlight("share · stateless streak card")))
 
-	costStr := fmt.Sprintf("$%.2f", snap.TotalCost)
+	costStr := thermal.FormatCost(snap.TotalCost, false)
 	if snap.EstimatedCost {
-		costStr = "~" + costStr
-	}
-	if snap.TotalCost == 0 {
-		costStr = "$0.00"
+		costStr += " incl. est."
 	}
 
 	scopeLabel := strings.ToUpper(toolLabel[:1]) + toolLabel[1:]
@@ -1680,7 +1677,7 @@ func runLive(opts thermal.Options) {
 		fmt.Println()
 		fmt.Println("  thermal live --json            instant JSON snapshot")
 		fmt.Println("  thermal live --json --stream   stream NDJSON live events")
-		fmt.Println("  thermal stats                  9-box FinOps grid or distribution")
+		fmt.Println("  thermal stats                  daily distribution and token composition")
 		return
 	}
 

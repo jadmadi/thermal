@@ -385,7 +385,7 @@ func (m LiveModel) renderLiveFrame(width, height int) string {
 	c3L3 := fmt.Sprintf("State:    %s", formatIntensityBadge(intensity, colors))
 	if sessionEmpty {
 		c3L1 = "Since launch: 0 tok"
-		c3L2 = theme.TextMuted.Sprint(colors, "Spend:    ~$0.00")
+		c3L2 = theme.TextMuted.Sprint(colors, "Spend:    "+thermal.FormatCost(0, false))
 		c3L3 = "State:    " + formatIntensityBadge(intensity, colors)
 	}
 	if sameAsToday {
@@ -738,7 +738,7 @@ func formatCostHr(costHr float64, colors bool) string {
 	if costHr < 0.01 {
 		return "<$0.01/hr"
 	}
-	return fmt.Sprintf("~$%.2f/hr", costHr)
+	return thermal.FormatCost(costHr, true) + "/hr"
 }
 
 func formatVolume(tokens int64, turns int, colW int, colors bool) string {
@@ -871,26 +871,20 @@ func formatCarriedIn(tokens int64, turns int, cost float64, colors bool) string 
 
 func formatCost(c float64, colors bool) string {
 	if c <= 0 {
-		return theme.TextMuted.Sprint(colors, "$0.00")
+		return theme.TextMuted.Sprint(colors, thermal.FormatCost(0, false))
 	}
-	if c < 0.01 {
-		return "<$0.01"
-	}
-	if c >= 1000 {
-		return fmt.Sprintf("~$%.0f", c)
-	}
-	return fmt.Sprintf("~$%.2f", c)
+	return thermal.FormatCost(c, true)
 }
 
 func formatCacheHit(hit float64, availWidth int, colors bool) string {
 	if hit <= 0 {
 		return theme.TextMuted.Sprint(colors, "Cache hit: —")
 	}
-	full := fmt.Sprintf("Cache hit: %.0f%%", hit)
+	full := "Cache hit: " + thermal.FormatCacheHit(hit)
 	if availWidth <= 0 || ansi.StringWidth(full) <= availWidth {
 		return full
 	}
-	compact := fmt.Sprintf("%.0f%% cache", hit)
+	compact := thermal.FormatPercent(hit, 1) + " cache"
 	if ansi.StringWidth(compact) <= availWidth {
 		return compact
 	}

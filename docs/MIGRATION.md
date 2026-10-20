@@ -1202,3 +1202,36 @@ Use `thermal live` for real-time burn rates, `thermal stats` for distribution an
 
 **Escape hatch**:
 Join `thermal daily --json` or `thermal models --json` with `git diff --numstat` outside the CLI.
+
+---
+
+### Changed: Output Formatting Semantics
+<a id="changed-output-formatting-semantics"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn '~97.5M\|Window: \\[96 days\\]\|OpenCode,Devin\|P-Days\|M-Days\|incl. est.' .` or scripts parsing cost markers/table headers.
+- **Detection signal**: `~` now means estimated money only; approximate non-cost values use `≈` (trend mean, audit tax). Report windows say `all time (N active days/weeks/months)` unless an explicit `--last` is used. Projects/models day columns are `P-Days`/`M-Days`. Tool lists use ` · ` instead of commas. Mixed report totals are printed without `~` and explained in the footer; all-estimated totals keep `~`. Share spend is `$X incl. est.` when estimates are included.
+
+**What changed and why**:
+One symbol and several local formatters were doing different jobs across surfaces. The result was a trust problem: `~$10` could mean estimated cost, a mixed total, or an approximate volume; `OpenCode,Devin` differed from the `·` convention; `Window: 96 days` looked like a calendar window when it was the number of active days. The formatting contract centralizes money/percent/window/tool-list rendering so a reader can compare surfaces without learning a different legend for each one.
+
+**Before / After**:
+```text
+# Before
+Window: [96 days · all tools]  Total: [38.0B tok · ~$20596.53]
+Tools: OpenCode,Devin +8
+Daily Mean: ~97.5M
+Context Tax: ~45.4K tokens / turn
+
+# After
+Window: [all time (96 active days) · all tools]  Total: [38.0B tok · $20596.53]
+Tools: OpenCode · Devin +8
+Daily Mean: ≈97.5M
+Context Tax: ≈45.4K tokens / turn
+```
+
+**The fix**:
+Consume the shared formatting helpers rather than local `formatCost` copies. `$` is recorded money, `~$` includes estimated pricing, `—` is absent/unpriced, `≥$` is a partial-known live group, and `≈` is an approximate non-cost value. Use `--json` for machine values; do not parse the text cost marker as a numeric type.
+
+**Escape hatch**:
+For raw values, use `thermal <command> --json`. For a custom legend, map `$`/`~$`/`—`/`≥$` explicitly and use `≈` only for non-money approximations.

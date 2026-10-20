@@ -15,7 +15,7 @@ import (
 const (
 	projectWidth = 28
 	toolsWidth   = 20
-	daysWidth    = 4
+	daysWidth    = 6
 	lastWidth    = 10
 	rankWidth    = 3
 )
@@ -67,7 +67,7 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		rWidth = 5
 	}
 
-	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "Days", "Last"}
+	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "P-Days", "Last"}
 	alignRight := []bool{true, false, false, true, true, true, false}
 	widths := []int{rWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
 
@@ -102,7 +102,7 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		padRight("Total", projectWidth),
 		padRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
 		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		padLeft(formatCostOrDash(totals.Cost), numberWidth),
+		padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
 		padLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
 		padRight(totals.LastDay, lastWidth),
 	}
@@ -128,7 +128,7 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 
 	footLimit := BoundedCardWidth(2)
 	if totals.EstimatedCost > 0 {
-		note := fmt.Sprintf("Total = %s recorded + ~%s estimated from pricing data.", formatCost(totals.StoredCost), formatCost(totals.EstimatedCost))
+		note := fmt.Sprintf("Total = %s recorded + %s estimated from pricing data.", formatCost(totals.StoredCost), formatEstimatedCost(totals.EstimatedCost))
 		for _, wl := range WrapText(note, footLimit) {
 			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
 		}
@@ -188,7 +188,7 @@ func formatProjectRow(rank int, row thermal.ProjectRow, name string, widths []in
 
 	toolsCellStr := formatToolsCell(row.Tools, tWidth, colors)
 	tokCell := formatTokensCell(row.Tokens, tokWidth, colors)
-	costCell := formatCostCell(row.Cost, costWidth, colors)
+	costCell := formatCostCellKind(row.Cost, row.EstimatedCost > 0, costWidth, colors)
 	daysCell := formatDaysCell(row.ActiveDays, daysWidth, colors)
 	lastCell := formatDateCell(row.LastDay, lastWidth, colors)
 
@@ -311,7 +311,7 @@ func toolsCell(tools []string, width int) string {
 		if i < len(tools)-1 {
 			suffix = fmt.Sprintf(" +%d", len(tools)-i-1)
 		}
-		candidate := strings.Join(append(append([]string{}, shown...), t), ",") + suffix
+		candidate := strings.Join(append(append([]string{}, shown...), t), " · ") + suffix
 		if runeLen(candidate) > width {
 			if len(shown) == 0 {
 				shown = append(shown, truncate(t, width))
@@ -320,7 +320,7 @@ func toolsCell(tools []string, width int) string {
 		}
 		shown = append(shown, t)
 	}
-	cell := strings.Join(shown, ",")
+	cell := strings.Join(shown, " · ")
 	if used := len(shown); used < len(tools) {
 		cell += fmt.Sprintf(" +%d", len(tools)-used)
 	}

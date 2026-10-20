@@ -46,7 +46,7 @@ func TestRenderModels_Table(t *testing.T) {
 	out := RenderModels(sampleModelReport(), 0, true)
 	for _, want := range []string{
 		"models", "Model", "Tools", "Tokens", "deepseek-v4.1-flash",
-		"OpenCode,MiMoCode", "$12.50", "estimated from models.dev",
+		"OpenCode · MiMoCode", "$12.50", "estimated from models.dev",
 		"No pricing for: codex-auto-review",
 	} {
 		if !strings.Contains(out, want) {

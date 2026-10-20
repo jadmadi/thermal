@@ -228,6 +228,7 @@ type Report struct {
 	Tool   string      `json:"tool,omitempty"`
 	Rows   []PeriodRow `json:"data"`
 	Totals PeriodRow   `json:"totals"`
+	Window string      `json:"window,omitempty"`
 }
 
 // ProjectDay is one day of usage attributed to one project directory. Loaders

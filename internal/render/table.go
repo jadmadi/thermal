@@ -96,17 +96,6 @@ func tableRule(widths []int) string {
 	return strings.Repeat("─", rule)
 }
 
-// formatCostOrDash formats cost as $X.XX or em dash if zero or negative.
-func formatCostOrDash(v float64) string {
-	if v <= 0 {
-		return "—"
-	}
-	if v < 0.01 {
-		return fmt.Sprintf("$%.4f", v)
-	}
-	return fmt.Sprintf("$%.2f", v)
-}
-
 // formatRankCell formats a rank number (e.g. "1.") with podium medal styling.
 func formatRankCell(rank int, rWidth int, colors bool) string {
 	rankPlain := fmt.Sprintf("%d.", rank)
@@ -148,17 +137,7 @@ func formatTokensCell(tokens int64, width int, colors bool) string {
 
 // formatCostCell formats dollar cost or em dash with unified styling.
 func formatCostCell(cost float64, width int, colors bool) string {
-	costPlain := formatCostOrDash(cost)
-	if !colors {
-		return padLeft(costPlain, width)
-	}
-	if costPlain == "—" {
-		return padLeftStyled(costPlain, width, func(s string) string { return theme.TextMuted.Sprint(true, s) })
-	}
-	if cost >= 1000.0 {
-		return padLeftStyled(costPlain, width, func(s string) string { return theme.Secondary.Sprint(true, s) })
-	}
-	return padLeftStyled(costPlain, width, func(s string) string { return theme.Text.Sprint(true, s) })
+	return formatCostCellKind(cost, false, width, colors)
 }
 
 // formatDaysCell formats active days with high-activity badges.

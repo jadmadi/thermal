@@ -849,7 +849,7 @@ func TestLiveTUI_FormatSpeed_ZeroMuted(t *testing.T) {
 
 func TestLiveTUI_FormatCacheHit_Responsive(t *testing.T) {
 	formatted := formatCacheHit(86.0, 24, false)
-	if formatted != "Cache hit: 86%" {
+	if formatted != "Cache hit: 86.0%" {
 		t.Errorf("formatCacheHit(86, 24, false) = %q", formatted)
 	}
 
@@ -869,7 +869,7 @@ func TestLiveTUI_FormatCacheHit_Responsive(t *testing.T) {
 	m.snapshot.TodayCacheHit = 86.0
 
 	view := m.View().Content
-	if !strings.Contains(view, "Cache hit: 86%") {
+	if !strings.Contains(view, "Cache hit: 86.0%") {
 		t.Errorf("expected cache-hit label in view, got:\n%s", view)
 	}
 	if strings.Contains(view, "Turns:") {

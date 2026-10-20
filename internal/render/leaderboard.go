@@ -207,19 +207,9 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 				tokStr = padLeft(tokPlain, tokenWidths[5])
 			}
 
-			costPlain := "—"
-			if r.Summary.Cost > 0 {
-				if r.Summary.Cost < 0.01 {
-					costPlain = fmt.Sprintf("$%.4f", r.Summary.Cost)
-				} else {
-					costPlain = fmt.Sprintf("$%.2f", r.Summary.Cost)
-				}
-			} else if estimate && r.EstimatedCost > 0 {
-				if r.EstimatedCost < 0.01 {
-					costPlain = fmt.Sprintf("~$%.4f", r.EstimatedCost)
-				} else {
-					costPlain = fmt.Sprintf("~$%.2f", r.EstimatedCost)
-				}
+			costPlain := formatCostOrDash(r.Summary.Cost)
+			if r.Summary.Cost <= 0 && estimate && r.EstimatedCost > 0 {
+				costPlain = formatEstimatedCost(r.EstimatedCost)
 			}
 			var costStr string
 			if colors {
@@ -373,7 +363,7 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		}
 		if estimate {
 			if estimating > 0 {
-				parts = append(parts, fmt.Sprintf("Estimated: ~%s across %d tools (~ prefix).", formatCost(estimated), estimating))
+				parts = append(parts, fmt.Sprintf("Estimated: %s across %d tools (~ prefix).", formatEstimatedCost(estimated), estimating))
 			} else {
 				parts = append(parts, "Reports estimate the rest from pricing data; the leaderboard does not.")
 			}

@@ -70,7 +70,7 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		rWidth = 5
 	}
 
-	headers := []string{"#", "Model", "Tools", "Tokens", "Cost", "Days", "Last"}
+	headers := []string{"#", "Model", "Tools", "Tokens", "Cost", "M-Days", "Last"}
 	alignRight := []bool{true, false, false, true, true, true, false}
 	widths := []int{rWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
 
@@ -96,7 +96,7 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		}
 		toolsCellStr := formatToolsCell(row.Tools, modelToolsWidth, colors)
 		tokCell := formatTokensCell(row.Tokens, numberWidth, colors)
-		costCell := formatCostCell(row.Cost, numberWidth, colors)
+		costCell := formatCostCellKind(row.Cost, true, numberWidth, colors)
 		daysCell := formatDaysCell(row.Days, daysWidth, colors)
 		lastCell := formatDateCell(row.LastDay, lastWidth, colors)
 
@@ -127,7 +127,7 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		padRight("Total", modelWidth),
 		padRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
 		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		padLeft(formatCostOrDash(totals.Cost), numberWidth),
+		padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
 		padLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
 		padRight(totals.LastDay, lastWidth),
 	}

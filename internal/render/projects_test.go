@@ -46,7 +46,7 @@ func TestRenderProjects_Table(t *testing.T) {
 	out := RenderProjects(sampleProjectReport(), 0, true)
 	for _, want := range []string{
 		"projects", "Project", "Tools", "Tokens", "alpha", "beta",
-		"Claude,OpenCode", "Total", "$12.50", "2026-09-16",
+		"Claude · OpenCode", "Total", "$12.50", "2026-09-16",
 		"estimated from pricing", "No pricing for: mystery-model",
 	} {
 		if !strings.Contains(out, want) {

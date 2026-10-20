@@ -149,6 +149,7 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		BorderColor: theme.Border,
 	}))
 
+	sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Shares are rounded to the nearest percent.")))
 	if rep.By == "tool" {
 		sb.WriteString("\n")
 		sb.WriteString(fmt.Sprintf("  %s %s\n", dim("Dominant  "), rep.Dominant))
@@ -390,7 +391,7 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		badgeColor = faint
 	}
 
-	sb.WriteString(fmt.Sprintf("  Trajectory: [%s]  Window: [%d Days · %s to %s]  Daily Mean: ~%s\n\n",
+	sb.WriteString(fmt.Sprintf("  Trajectory: [%s]  Calendar window: [%d days · %s to %s]  Daily Mean: ≈%s\n\n",
 		badgeColor(badge),
 		len(rep.Points),
 		rep.FirstDay,
@@ -509,7 +510,11 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 	if dir == "rising" {
 		bullet := fmt.Sprintf("Workload velocity is accelerating by %s daily (%.1f%% growth).", signedValue(rep.Slope, rep.Metric), math.Abs(relPct))
 		if rep.Projection != nil {
-			bullet += fmt.Sprintf(" Projected volume through %s is ~%s.", rep.Projection.To, metric(rep.Projection.Expected))
+			noun := "volume"
+			if rep.Metric == "cost" {
+				noun = "spend"
+			}
+			bullet += fmt.Sprintf(" Projected %s through %s is ≈%s.", noun, rep.Projection.To, metric(rep.Projection.Expected))
 		}
 		for _, line := range WrapBullet("  • ", bullet, cardWidth) {
 			sb.WriteString(line + "\n")
@@ -520,7 +525,7 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 			sb.WriteString(line + "\n")
 		}
 	} else {
-		bullet := fmt.Sprintf("Workload is holding steady at ~%s daily with consistent utilization.", metric(rep.Mean))
+		bullet := fmt.Sprintf("Workload is holding steady at ≈%s daily with consistent utilization.", metric(rep.Mean))
 		for _, line := range WrapBullet("  • ", bullet, cardWidth) {
 			sb.WriteString(line + "\n")
 		}

@@ -57,7 +57,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		highlight("audit · local setup & context health"),
 	))
 
-	sb.WriteString(fmt.Sprintf("  Score: [%s/100 · Grade %s]  Context Tax: ~%s tokens / turn (Rules: ~%s tok, MCP: ~%s tok)\n\n",
+	sb.WriteString(fmt.Sprintf("  Score: [%s/100 · Grade %s]  Context Tax: ≈%s tokens / turn (Rules: ≈%s tok, MCP: ≈%s tok)\n\n",
 		highlight(fmt.Sprintf("%d", rep.Score)),
 		gradeBadge(rep.Grade),
 		highlight(thermal.CompactNumber(int64(rep.TotalRulesTax+rep.TotalMCPTax))),
@@ -82,7 +82,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 				hasCrit = true
 			}
 			rel := filepath.Base(rf.Path)
-			cardLinesRules = append(cardLinesRules, fmt.Sprintf(" %-4s  %-24s  %4d lines  ~%-9s",
+			cardLinesRules = append(cardLinesRules, fmt.Sprintf(" %-4s  %-24s  %4d lines  ≈%-9s",
 				statusBadge(rf.Status),
 				highlight(rel),
 				rf.Lines,
@@ -124,7 +124,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 			if mf.Status == "WARN" {
 				hasWarn = true
 			}
-			cardLinesMCP = append(cardLinesMCP, fmt.Sprintf(" %-6s  %-24s  %-12s  ~%-9s",
+			cardLinesMCP = append(cardLinesMCP, fmt.Sprintf(" %-6s  %-24s  %-12s  ≈%-9s",
 				statusBadge(mf.Status),
 				highlight(mf.ServerName),
 				faint(mf.Client),

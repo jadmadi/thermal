@@ -95,9 +95,9 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		}
 	} else if est > 0 {
 		if est < 0.01 {
-			extra = append(extra, fmt.Sprintf("~$%.4f spent (est)", est))
+			extra = append(extra, fmt.Sprintf("%s spent (est)", thermal.FormatCost(est, true)))
 		} else {
-			extra = append(extra, fmt.Sprintf("~$%.2f spent (est)", est))
+			extra = append(extra, fmt.Sprintf("%s spent (est)", thermal.FormatCost(est, true)))
 		}
 	}
 	if summary.LinesAdded > 0 || summary.LinesDeleted > 0 {

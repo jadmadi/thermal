@@ -499,6 +499,8 @@ has been retired to preserve terminal-native focus.
 
 ## Where the cost numbers come from
 
+Output legend: `$` is recorded money, `~$` includes estimated pricing, `—` is absent or unpriced, `≥$` is a partial-known live group, and `≈` is an approximate non-cost value. Report windows name active days/weeks/months unless `--last` is explicit; trend windows are calendar days.
+
 Thermal displays cost figures from two sources:
 
 - **Recorded cost**: What tools wrote directly into their databases (OpenCode, MiMoCode, codewhale, Grok).

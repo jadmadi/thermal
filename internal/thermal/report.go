@@ -308,7 +308,19 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		total.Models = totalModels
 	}
 
-	return Report{Type: string(grain), Rows: rows, Totals: total}
+	unit := "day"
+	switch grain {
+	case GrainWeek:
+		unit = "week"
+	case GrainMonth:
+		unit = "month"
+	}
+	return Report{
+		Type:   string(grain),
+		Rows:   rows,
+		Totals: total,
+		Window: FormatReportWindow(len(rows), unit, opts.Last, opts.Since, opts.Until),
+	}
 }
 
 func containsString(list []string, s string) bool {
