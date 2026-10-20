@@ -150,6 +150,9 @@ go build -o /tmp/thermal-test ./cmd/thermal
 
 # 4. Run automated simulated user testing release gate
 ./scripts/simulated_user_gate.sh
+
+# 5. Regenerate and verify the fixed-fixture output gallery
+./scripts/output_gallery_gate.sh
 ```
 
 When modifying loaders, ensure unit tests inside `internal/loaders/*_test.go` cover edge cases (missing databases, corrupted files, zero-token sessions, timestamp variations, and schema differences) using mock temporary files or SQLite in-memory databases.

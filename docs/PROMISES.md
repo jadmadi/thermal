@@ -70,9 +70,13 @@ unattributed), never silently priced.
 canonical functions; a test asserts live totals equal the matching static command.
 
 **Evidence:** gate check "Static/Live token parity verified (759,700 tokens)" ·
-`go test ./internal/tui`.
+`go test ./internal/tui` · `./scripts/output_gallery_gate.sh` (fixed fixture
+matrix: leaderboard/projects/share equal daily, models classified+unclassified
+equal daily, tool-mix cost equal daily).
 
 **Limits:** parity is verified on synthetic fixtures; every real history is not assessed.
+The gallery gate's equality checks are fixture-scoped and do not prove a user's
+mixed-source history is free of attribution gaps.
 
 **Outcome: verified** (fixture-scoped).
 

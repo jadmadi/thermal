@@ -559,6 +559,17 @@ run_semantic_suite() {
 
 run_semantic_suite "Audit claim semantics" 10 'Audit' ./internal/audit ./internal/render
 
+echo -e "\n${BOLD}18. Fixed-fixture Output Gallery Regression:${RESET}"
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+if gallery_output=$("${ROOT_DIR}/scripts/output_gallery_gate.sh" 2>&1); then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} Output gallery matrix, schemas, units, and validation cases"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} Output gallery gate"
+    printf '%s\n' "${gallery_output}" | tail -12 | sed 's/^/      /' >&2
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}"
 echo -e "${BOLD}Simulated User Gate Summary:${RESET} ${GREEN}${PASSED_CHECKS} passed${RESET}, ${RED}${FAILED_CHECKS} failed${RESET} (out of ${TOTAL_CHECKS} checks)"
 echo -e "${BOLD}${CYAN}─────────────────────────────────────────────────────────────────────${RESET}\n"

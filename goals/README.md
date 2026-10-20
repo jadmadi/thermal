@@ -27,11 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 104
+- **Total Goals**: 114
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 104 (19 verified 📜, 7 stale ⚠️, 78 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 103 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 466/466 completed (100%)
+- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented**: 113 (19 verified 📜, 7 stale ⚠️, 87 unverified)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 113 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 513/518 completed (99%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🗺️ Roadmap` | `🔗 Dep` | `@command-code` | Implementing gallery fixture, validation, consistency matrix, and regression gate | 0s ago |
 
 ---
 
@@ -66,6 +75,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `de16cf9` |
 | [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `95321d8` |
 | [`release-provenance-verification`](release-provenance-verification/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `5fd9958` |
+| [`output-formatting-primitives`](output-formatting-primitives/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a8efc3a` |
+| [`help-supported-tools-and-flags`](help-supported-tools-and-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7aec97d` |
+| [`heatmap-month-label-overlap`](heatmap-month-label-overlap/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `6b834b8` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
@@ -129,6 +141,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `fbaff74` |
 | [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `8c7402c` |
 | [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
+| [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7c9a988` |
+| [`chart-scale-order-and-top-contract`](chart-scale-order-and-top-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b92b6a` |
+| [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `472c5a6` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
@@ -136,10 +151,13 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`live-flame-scale-contract`](live-flame-scale-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c5d85c0` |
 | [`live-ticker-rollup-and-cost-sort`](live-ticker-rollup-and-cost-sort/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b424c5` |
 | [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Audit Receipt | `c610c97fc84bf0d0b18416a5c137f01b758757db` |
+| [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2be3081` |
+| [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `095d165` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `be1e45f` |
 | [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7b0813c` |
+| [`statusline-and-share-scope-contract`](statusline-and-share-scope-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `0dd1f4d` |
 | [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `25163db` |
 | [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `80b3e4f` |
 | [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `de17df6` |
