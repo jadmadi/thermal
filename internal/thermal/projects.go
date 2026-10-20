@@ -68,7 +68,11 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 			row.UnattributedTokens += day.Tokens
 		}
 
-		if pricer != nil && day.Cost == 0 && day.Tokens > 0 {
+		estimateProjectDay := true
+		if opts.RecordedCostDays != nil && opts.RecordedCostDays[day.Tool+"|"+day.Day] {
+			estimateProjectDay = false
+		}
+		if pricer != nil && day.Cost == 0 && day.Tokens > 0 && estimateProjectDay {
 			cost, missing := pricer.PriceDay(DailyRow{
 				Day:       day.Day,
 				Tokens:    day.Tokens,
@@ -123,7 +127,29 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 		}
 	}
 
-	return ProjectReport{Type: "projects", Rows: rows, Totals: sumProjects(rows)}
+	return ProjectReport{Type: "projects", Rows: rows, Totals: sumProjects(rows), CostBasis: CostBasisTotal}
+}
+
+// RecordedCostDaysForResults returns the tool/day pairs whose daily row already
+// carries recorded cost. Project-day estimation consults this set so a project
+// is not estimated when its tool-day was priced as recorded by the daily path.
+func RecordedCostDaysForResults(results []ToolResult) map[string]bool {
+	recorded := make(map[string]bool)
+	for _, r := range results {
+		for _, d := range r.Daily {
+			if d.Cost <= 0 {
+				continue
+			}
+			recorded[string(r.Tool)+"|"+d.Day] = true
+			if r.Name != "" {
+				recorded[r.Name+"|"+d.Day] = true
+			}
+		}
+	}
+	if len(recorded) == 0 {
+		return nil
+	}
+	return recorded
 }
 
 // sortProjectRows ranks projects by the requested key, largest or newest

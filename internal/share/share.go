@@ -39,28 +39,33 @@ type TelemetryShareSnapshot struct {
 	Version       int              `json:"v"`
 	GeneratedAt   int64            `json:"t"`
 	Tool          string           `json:"tool,omitempty"`
+	Scope         string           `json:"scope,omitempty"`
+	Window        string           `json:"window,omitempty"`
 	CurrentStreak int              `json:"currentStreak"`
 	LongestStreak int              `json:"longestStreak"`
 	ActiveDays    int              `json:"activeDays"`
 	TotalTokens   int64            `json:"totalTokens"`
+	RecordedCost  float64          `json:"recordedCost,omitempty"`
+	EstimatedCost float64          `json:"estimatedCost,omitempty"`
 	TotalCost     float64          `json:"totalCost,omitempty"`
-	EstimatedCost bool             `json:"estimatedCost,omitempty"`
+	Coverage      string           `json:"coverage,omitempty"`
 	Days          map[string]int64 `json:"days,omitempty"`   // YYYY-MM-DD -> tokens/steps
 	Models        map[string]int64 `json:"models,omitempty"` // canonical model -> token count
 }
 
-// BuildShareSnapshot constructs a sanitized share payload from aggregated tool days.
-func BuildShareSnapshot(tool string, days []thermal.DailyRow, cost float64, estimated bool) TelemetryShareSnapshot {
+// BuildShareSnapshot constructs a sanitized, single-scope share payload from
+// aggregated tool days and the canonical daily report components.
+func BuildShareSnapshot(tool string, days []thermal.DailyRow, recordedCost, estimatedCost float64, window string) TelemetryShareSnapshot {
 	dayMap := make(map[string]bool)
 	dayActivity := make(map[string]int64)
 	models := make(map[string]int64)
 	var totalTokens int64
 
 	for _, d := range days {
-		if d.Day == "" {
+		if d.Day == "" || thermal.IsActivityOnly(d) {
 			continue
 		}
-		if d.Tokens > 0 || d.Turns > 0 {
+		if d.Tokens > 0 {
 			dayMap[d.Day] = true
 			dayActivity[d.Day] += d.Tokens
 			totalTokens += d.Tokens
@@ -83,18 +88,39 @@ func BuildShareSnapshot(tool string, days []thermal.DailyRow, cost float64, esti
 		}
 	}
 
+	scope := tool
+	if scope == "" {
+		scope = "all"
+	}
 	return TelemetryShareSnapshot{
 		Version:       1,
 		GeneratedAt:   time.Now().Unix(),
 		Tool:          tool,
+		Scope:         scope,
+		Window:        window,
 		CurrentStreak: currStreak,
 		LongestStreak: longestStreak,
 		ActiveDays:    len(dayMap),
 		TotalTokens:   totalTokens,
-		TotalCost:     cost,
-		EstimatedCost: estimated,
+		RecordedCost:  recordedCost,
+		EstimatedCost: estimatedCost,
+		TotalCost:     recordedCost + estimatedCost,
+		Coverage:      costCoverage(recordedCost, estimatedCost),
 		Days:          dayActivity,
 		Models:        topModels,
+	}
+}
+
+func costCoverage(recorded, estimated float64) string {
+	switch {
+	case recorded > 0 && estimated > 0:
+		return "recorded+estimated"
+	case estimated > 0:
+		return "estimated"
+	case recorded > 0:
+		return "recorded"
+	default:
+		return "none"
 	}
 }
 

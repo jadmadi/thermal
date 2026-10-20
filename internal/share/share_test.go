@@ -19,7 +19,7 @@ func TestShareToken_Roundtrip(t *testing.T) {
 		{Day: "2026-09-03", Tokens: 200_000, Turns: 15},
 	}
 
-	snap := BuildShareSnapshot("opencode", days, 4.50, false)
+	snap := BuildShareSnapshot("opencode", days, 4.50, 0, "all time (3 active days)")
 
 	url, token, err := ShareURL(snap)
 	if err != nil {

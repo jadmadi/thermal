@@ -190,6 +190,13 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		{"p90", metric(rep.P90)},
 		{"Max", metric(rep.Max)},
 	}
+	if rep.Metric == "cost" && rep.CostedDays > 0 {
+		costed := fmt.Sprintf("%d", rep.CostedDays)
+		if excluded := rep.Days - rep.CostedDays; excluded > 0 {
+			costed = fmt.Sprintf("%d (%d zero/unpriced excluded)", rep.CostedDays, excluded)
+		}
+		rows = append([][2]string{rows[0], {"Costed days", costed}}, rows[1:]...)
+	}
 	for _, row := range rows {
 		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(row[0], 12)), row[1]))
 	}
@@ -219,12 +226,12 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		))
 	}
 
-	if rep.Composition != nil && rep.Composition.Total > 0 {
+	if rep.Composition != nil && (rep.Composition.Total > 0 || rep.Composition.Unclassified > 0) {
 		c := rep.Composition
-		totalF := float64(c.Total)
+		totalF := float64(c.Total + c.Unclassified)
 
 		maxPart := float64(c.CacheRead)
-		for _, v := range []int64{c.CacheWrite, c.UncachedInput, c.Output, c.Reasoning} {
+		for _, v := range []int64{c.CacheWrite, c.UncachedInput, c.Output, c.Reasoning, c.Unclassified} {
 			if float64(v) > maxPart {
 				maxPart = float64(v)
 			}
@@ -244,6 +251,7 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 			{"Uncached input", c.UncachedInput},
 			{"Output", c.Output},
 			{"Reasoning", c.Reasoning},
+			{"Unclassified", c.Unclassified},
 		}
 		for _, p := range parts {
 			share := 0.0
@@ -263,6 +271,12 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 			sb.WriteString(fmt.Sprintf("  %s: %.1f%% of prompt tokens read from cache\n",
 				dim("Cache hit rate"), c.CacheHitRate*100))
 		}
+		if c.Unclassified > 0 {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim("Composition percentages use all tokens (classified + unclassified); cache hit rate uses prompt categories only.")))
+		}
+	}
+	if rep.Metric == "cost" && rep.CostedDays > 0 && rep.CostedDays != rep.Days {
+		sb.WriteString(fmt.Sprintf("  %s\n", dim("Mean, median, p90, max, weekday profile, and distribution use costed days; active days include zero-cost days.")))
 	}
 
 	if len(rep.Histogram) > 0 {

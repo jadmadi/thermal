@@ -100,6 +100,12 @@ func TopModels(models map[string]ModelTokens) []string {
 //
 // The distinction matters because reporting a step count in a Tokens column is
 // wrong, and counting it as an unpriceable token is wrong twice.
+// IsActivityOnly reports whether a daily row carries only activity counts
+// (steps/messages) rather than token volume.
+func IsActivityOnly(day DailyRow) bool {
+	return isActivityOnly(day)
+}
+
 func isActivityOnly(day DailyRow) bool {
 	if day.Tokens <= 0 || int64(day.Turns) != day.Tokens {
 		return false
@@ -143,6 +149,21 @@ func hasTokenData(day DailyRow) bool {
 		}
 	}
 	return false
+}
+
+// FilterDailyRows returns the rows inside the same window Aggregate uses. It is
+// for snapshot surfaces that need the raw windowed rows, not just totals.
+func FilterDailyRows(days []DailyRow, opts AggregateOptions) []DailyRow {
+	since, until, lastStart := windowBounds(opts.Since, opts.Until, opts.Last, opts.Now)
+	out := make([]DailyRow, 0, len(days))
+	for _, day := range days {
+		t, ok := ParseDay(day.Day)
+		if !ok || !inWindow(t, since, until, lastStart) {
+			continue
+		}
+		out = append(out, day)
+	}
+	return out
 }
 
 // Aggregate folds day rows into a report at the requested grain. Days outside
@@ -316,10 +337,11 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 		unit = "month"
 	}
 	return Report{
-		Type:   string(grain),
-		Rows:   rows,
-		Totals: total,
-		Window: FormatReportWindow(len(rows), unit, opts.Last, opts.Since, opts.Until),
+		Type:      string(grain),
+		Rows:      rows,
+		Totals:    total,
+		Window:    FormatReportWindow(len(rows), unit, opts.Last, opts.Since, opts.Until),
+		CostBasis: CostBasisTotal,
 	}
 }
 

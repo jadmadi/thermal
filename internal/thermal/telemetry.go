@@ -33,6 +33,7 @@ type TelemetryData struct {
 	Reasoning      int64                  `json:"reasoningTokens"`
 	CacheTokens    int64                  `json:"cacheTokens"`
 	TotalCost      float64                `json:"totalCost"`
+	CostBasis      CostBasis              `json:"costBasis,omitempty"`
 	RecordedCost   float64                `json:"recordedCost,omitempty"`
 	EstimatedCost  float64                `json:"estimatedCost,omitempty"`
 	UnpricedTokens int64                  `json:"unpricedTokens,omitempty"`
@@ -208,10 +209,11 @@ func AggregateTelemetry(results []ToolResult, projects []ProjectDay, opts Teleme
 
 	// Canonical project aggregation via AggregateProjects
 	projReport := AggregateProjects(filteredProjects, ProjectOptions{
-		Since: opts.Since,
-		Until: opts.Until,
-		Last:  opts.Last,
-		Now:   opts.Now,
+		Since:            opts.Since,
+		Until:            opts.Until,
+		Last:             opts.Last,
+		Now:              opts.Now,
+		RecordedCostDays: RecordedCostDaysForResults(filteredResults),
 	}, pricer)
 
 	genTime := opts.Now
@@ -230,6 +232,7 @@ func AggregateTelemetry(results []ToolResult, projects []ProjectDay, opts Teleme
 		Reasoning:      reasTokens,
 		CacheTokens:    cacheTokens,
 		TotalCost:      totCost,
+		CostBasis:      CostBasisTotal,
 		RecordedCost:   totRecordedCost,
 		EstimatedCost:  totEstimatedCost,
 		UnpricedTokens: totUnpricedTokens,

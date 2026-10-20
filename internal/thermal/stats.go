@@ -41,13 +41,15 @@ type HistogramBin struct {
 // TokenComposition breaks down total tokens into canonical disjoint categories
 // and calculates prompt cache efficiency.
 type TokenComposition struct {
-	UncachedInput int64   `json:"uncachedInput"`
-	Output        int64   `json:"output"`
-	Reasoning     int64   `json:"reasoning"`
-	CacheRead     int64   `json:"cacheRead"`
-	CacheWrite    int64   `json:"cacheWrite"`
-	Total         int64   `json:"total"`
-	CacheHitRate  float64 `json:"cacheHitRate"` // CacheRead / (UncachedInput + CacheRead + CacheWrite)
+	UncachedInput   int64   `json:"uncachedInput"`
+	Output          int64   `json:"output"`
+	Reasoning       int64   `json:"reasoning"`
+	CacheRead       int64   `json:"cacheRead"`
+	CacheWrite      int64   `json:"cacheWrite"`
+	Total           int64   `json:"total"`
+	ClassifiedTotal int64   `json:"classifiedTotal"`
+	Unclassified    int64   `json:"unclassified,omitempty"`
+	CacheHitRate    float64 `json:"cacheHitRate"` // CacheRead / (UncachedInput + CacheRead + CacheWrite)
 }
 
 // StatsReport is the payload behind thermal stats. Percentiles and outliers
@@ -55,7 +57,9 @@ type TokenComposition struct {
 type StatsReport struct {
 	Type             string            `json:"type"`
 	Metric           string            `json:"metric"`
+	CostBasis        CostBasis         `json:"costBasis,omitempty"`
 	Days             int               `json:"activeDays"`
+	CostedDays       int               `json:"costedDays,omitempty"`
 	Total            float64           `json:"total"`
 	Mean             float64           `json:"mean"`
 	Median           float64           `json:"median"`
@@ -81,17 +85,27 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 	var values []DayValue
 	estimated := false
 	byDay := make(map[string]float64)
+	activeDays := make(map[string]bool)
+	costedDays := make(map[string]bool)
+	var totalTokens int64
 	var (
 		uncachedInput int64
 		output        int64
 		reasoning     int64
 		cacheRead     int64
 		cacheWrite    int64
+		unclassified  int64
 	)
 	for _, day := range days {
 		t, ok := ParseDay(day.Day)
 		if !ok || !inWindow(t, since, until, lastStart) {
 			continue
+		}
+		if isActivityOnly(day) {
+			continue
+		}
+		if day.Tokens > 0 {
+			activeDays[day.Day] = true
 		}
 		if metric == "cost" {
 			value, est := dayCost(day, pricer)
@@ -99,20 +113,26 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 				estimated = true
 			}
 			byDay[day.Day] += value
-			continue
-		}
-		if isActivityOnly(day) {
+			if value > 0 {
+				costedDays[day.Day] = true
+			}
 			continue
 		}
 		byDay[day.Day] += float64(day.Tokens)
+		totalTokens += day.Tokens
 
 		if len(day.Models) > 0 {
+			var classified int64
 			for _, m := range day.Models {
 				uncachedInput += m.Input
 				output += m.Output
 				reasoning += m.Reasoning
 				cacheRead += m.CacheRead
 				cacheWrite += m.CacheWrite
+				classified += m.Total()
+			}
+			if day.Tokens > classified {
+				unclassified += day.Tokens - classified
 			}
 		} else {
 			uncachedInput += day.Input
@@ -121,7 +141,7 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 			cacheRead += day.Cache
 			typedSum := day.Input + day.Output + day.Reasoning + day.Cache
 			if day.Tokens > typedSum {
-				uncachedInput += (day.Tokens - typedSum)
+				unclassified += day.Tokens - typedSum
 			}
 		}
 	}
@@ -134,27 +154,34 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 	}
 
 	rep := StatsReport{
-		Type:      "stats",
-		Metric:    metric,
-		Estimated: estimated,
-		Days:      len(values),
+		Type:       "stats",
+		Metric:     metric,
+		CostBasis:  CostBasisTotal,
+		Estimated:  estimated,
+		Days:       len(activeDays),
+		CostedDays: len(costedDays),
 	}
 	if metric == "tokens" {
 		compTotal := uncachedInput + output + reasoning + cacheRead + cacheWrite
-		if compTotal > 0 {
+		if compTotal > 0 || totalTokens > 0 {
 			var hitRate float64
 			promptTotal := uncachedInput + cacheRead + cacheWrite
 			if promptTotal > 0 {
 				hitRate = float64(cacheRead) / float64(promptTotal)
 			}
+			if unclassified < 0 {
+				unclassified = 0
+			}
 			rep.Composition = &TokenComposition{
-				UncachedInput: uncachedInput,
-				Output:        output,
-				Reasoning:     reasoning,
-				CacheRead:     cacheRead,
-				CacheWrite:    cacheWrite,
-				Total:         compTotal,
-				CacheHitRate:  hitRate,
+				UncachedInput:   uncachedInput,
+				Output:          output,
+				Reasoning:       reasoning,
+				CacheRead:       cacheRead,
+				CacheWrite:      cacheWrite,
+				Total:           compTotal,
+				ClassifiedTotal: compTotal,
+				Unclassified:    unclassified,
+				CacheHitRate:    hitRate,
 			}
 		}
 	}

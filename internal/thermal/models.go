@@ -27,12 +27,16 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 	activeDays := make(map[string]map[string]bool)
 	toolSets := make(map[string]map[string]bool)
 	var order []string
+	var totalDayTokens int64
 
 	for _, batch := range batches {
 		for _, day := range batch.Days {
 			t, ok := ParseDay(day.Day)
 			if !ok || !inWindow(t, since, until, lastStart) {
 				continue
+			}
+			if !isActivityOnly(day) {
+				totalDayTokens += day.Tokens
 			}
 			for model, counts := range day.Models {
 				if model == "" || counts.Total() == 0 {
@@ -127,7 +131,11 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 		}
 	}
 
-	return ModelReport{Type: "models", Rows: rows, Totals: sumModels(rows)}
+	total := sumModels(rows)
+	if totalDayTokens > total.Tokens {
+		total.UnattributedTokens = totalDayTokens - total.Tokens
+	}
+	return ModelReport{Type: "models", Rows: rows, Totals: total, CostBasis: CostBasisEstimated}
 }
 
 // sortModelRows ranks models by the requested key, largest first. Ties fall

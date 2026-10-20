@@ -1235,3 +1235,41 @@ Consume the shared formatting helpers rather than local `formatCost` copies. `$`
 
 **Escape hatch**:
 For raw values, use `thermal <command> --json`. For a custom legend, map `$`/`~$`/`—`/`≥$` explicitly and use `≈` only for non-money approximations.
+
+---
+
+### Changed: Report Totals, Unclassified Tokens, and Cost Basis
+<a id="changed-report-totals-and-cost-basis"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'Costed days\|Unclassified\|unattributedTokens\|estimatedCost\|costedDays' .` or consumers comparing leaderboard/daily/projects/models/mix/stats/share totals.
+- **Detection signal**: `thermal models` now prints a `Classified + Unclassified = total volume` line and its JSON total exposes `unattributedTokens`; `thermal stats --metric cost` reports `Active days` and `Costed days` (with the excluded count); `thermal stats` includes `ClassifiedTotal`/`Unclassified` and labels the composition denominator. Reports expose `costBasis` (`total` for daily/projects/stats/tool-mix; `estimated` for models/model-mix). Leaderboard estimated cost, daily/project totals, and share spend use the same daily recorded+estimated basis. The share snapshot exposes numeric `recordedCost`, `estimatedCost`, `totalCost`, plus `scope`, `window`, and `coverage`; share active days are token-active days in that window.
+
+**What changed and why**:
+The same data previously produced 38.0B tokens on daily, 36.7B on models, 38.0B on projects, 20596.53 on daily and 20606.08 on models/mix, and 145 share active days vs 96 daily active days. Most of the token gap was unclassified volume; some cost gaps came from leaderboard/project estimators and from counting zero-cost days as active cost days. Report totals are now either equal to the canonical daily basis or explicitly labeled as a different basis (models/mix estimates). Unclassified volume is counted in composition percentages rather than silently folded into uncached input.
+
+**Before / After**:
+```text
+# Before
+models: 36.7B tok, no unclassified line
+stats cost: Active days 80
+stats composition: Cache read + Uncached input + ... (no unclassified row)
+leaderboard estimated: ~$20381.54
+daily estimated:        ~$20381.71
+projects estimated:     ~$20384.60
+share: Active Days 145, Total Volume 38.0B
+
+# After
+models: 36.7B classified + 1.3B unclassified = 38.0B total volume
+stats cost: Active days 96, Costed days 80
+stats composition: includes Unclassified; percentages include it
+leaderboard estimated == daily estimated
+projects total == daily recorded+estimated
+share: Active Days 96, Total Volume 38.0B
+```
+
+**The fix**:
+Use `thermal daily --json` (`totals.storedCost`, `estimatedCost`, `cost`, `unattributedTokens`) as the canonical cost/volume basis. Treat `thermal models` and model mixes as **estimate-only** because recorded cost is not attributable to a model. Treat `Costed days` as the denominator for cost mean/median/percentile/distribution. Use `unattributedTokens`/`Unclassified` for tokens without a model.
+
+**Escape hatch**:
+For a custom allocation, consume daily/project/model JSON and apply your own cost basis; do not compare `models.estimatedCost` to `daily.cost` as if they were the same basis.

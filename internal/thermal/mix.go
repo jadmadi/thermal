@@ -45,6 +45,7 @@ type MixReport struct {
 	Type            string         `json:"type"`
 	By              string         `json:"by"`
 	Metric          string         `json:"metric"`
+	CostBasis       CostBasis      `json:"costBasis,omitempty"`
 	Series          []MixSeries    `json:"series"`
 	Buckets         []MixBucket    `json:"data"`
 	Dominant        string         `json:"dominant,omitempty"`
@@ -139,6 +140,7 @@ func (a *mixAccumulator) finish(opts MixOptions) MixReport {
 		Type:         "mix",
 		By:           normalMixBy(opts.By),
 		Metric:       a.metric,
+		CostBasis:    CostBasisTotal,
 		Total:        grand,
 		Estimated:    a.estimated,
 		Buckets:      make([]MixBucket, 0, len(a.bucketOrder)),
@@ -266,7 +268,9 @@ func AggregateToolMix(batches []ToolDays, opts MixOptions, pricer Pricer) MixRep
 			a.add(day.Day, batch.Tool, float64(day.Tokens))
 		}
 	}
-	return a.finish(opts)
+	rep := a.finish(opts)
+	rep.CostBasis = CostBasisTotal
+	return rep
 }
 
 // AggregateModelMix buckets per-day model usage into periods. Model cost is
@@ -304,7 +308,9 @@ func AggregateModelMix(days []DailyRow, opts MixOptions, pricer Pricer) MixRepor
 			a.add(day.Day, model, float64(counts.Total()))
 		}
 	}
-	return a.finish(opts)
+	rep := a.finish(opts)
+	rep.CostBasis = CostBasisEstimated
+	return rep
 }
 
 // dayCost returns a day's cost, preferring the recorded value and falling back

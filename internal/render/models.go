@@ -157,6 +157,14 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
 		}
 	}
+	if totals.UnattributedTokens > 0 {
+		totalVolume := totals.Tokens + totals.UnattributedTokens
+		note := fmt.Sprintf("Classified: %s tok + Unclassified: %s tok = %s tok total volume.",
+			thermal.CompactNumber(totals.Tokens), thermal.CompactNumber(totals.UnattributedTokens), thermal.CompactNumber(totalVolume))
+		for _, wl := range WrapText(note, footLimit) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))
+		}
+	}
 	if len(totals.MissingPricing) > 0 {
 		models := totals.MissingPricing
 		if len(models) > 4 {

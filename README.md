@@ -501,6 +501,8 @@ has been retired to preserve terminal-native focus.
 
 Output legend: `$` is recorded money, `~$` includes estimated pricing, `—` is absent or unpriced, `≥$` is a partial-known live group, and `≈` is an approximate non-cost value. Report windows name active days/weeks/months unless `--last` is explicit; trend windows are calendar days.
 
+Totals are reconciled to the daily basis: leaderboard estimated cost equals daily estimated cost, and project totals equal the daily recorded+estimated total. `thermal models` and model mixes are **estimate-only** because recorded cost is not attributable to a single model; their `Unclassified`/`unattributedTokens` remainder makes the total volume explicit. Cost stats report both active days and costed days, and their mean/percentiles/distribution use costed days. JSON reports expose `costBasis`; share JSON exposes `scope`, `window`, `recordedCost`, `estimatedCost`, `totalCost`, and `coverage`.
+
 Thermal displays cost figures from two sources:
 
 - **Recorded cost**: What tools wrote directly into their databases (OpenCode, MiMoCode, codewhale, Grok).

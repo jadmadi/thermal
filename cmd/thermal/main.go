@@ -698,9 +698,9 @@ func main() {
 			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 
 			var estCost float64
-			if pricer != nil && data.Summary.Cost == 0 {
+			if pricer != nil {
 				for _, d := range data.Daily {
-					if len(d.Models) > 0 {
+					if d.Cost == 0 && d.Tokens > 0 {
 						c, _ := pricer.PriceDay(d)
 						estCost += c
 					}
@@ -1074,11 +1074,12 @@ func runProjectReport(opts thermal.Options) {
 	set := loadUsage(opts)
 
 	projectOpts := thermal.ProjectOptions{
-		Since: opts.Since,
-		Until: opts.Until,
-		Last:  opts.Last,
-		Sort:  opts.Sort,
-		Order: opts.Order,
+		Since:            opts.Since,
+		Until:            opts.Until,
+		Last:             opts.Last,
+		Sort:             opts.Sort,
+		Order:            opts.Order,
+		RecordedCostDays: thermal.RecordedCostDaysForResults(set.results),
 	}
 	rep := thermal.AggregateProjects(set.projects, projectOpts, newPricer(opts))
 
@@ -1363,21 +1364,20 @@ func runShare(opts thermal.Options) {
 	set := loadUsage(opts)
 	toolLabel := targetTool
 	pricer := newPricer(opts)
-	var totalCost float64
-	var estimated bool
-	for _, d := range set.days {
-		if d.Cost > 0 {
-			totalCost += d.Cost
-		} else if pricer != nil && len(d.Models) > 0 {
-			c, _ := pricer.PriceDay(d)
-			if c > 0 {
-				totalCost += c
-				estimated = true
-			}
-		}
-	}
-
-	snap := share.BuildShareSnapshot(toolLabel, set.days, totalCost, estimated)
+	now := time.Now()
+	dailyRep := thermal.Aggregate(set.days, thermal.GrainDay, thermal.AggregateOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Now:   now,
+	}, pricer)
+	windowDays := thermal.FilterDailyRows(set.days, thermal.AggregateOptions{
+		Since: opts.Since,
+		Until: opts.Until,
+		Last:  opts.Last,
+		Now:   now,
+	})
+	snap := share.BuildShareSnapshot(toolLabel, windowDays, dailyRep.Totals.StoredCost, dailyRep.Totals.EstimatedCost, dailyRep.Window)
 	url, token, err := share.ShareURL(snap)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "thermal: failed generating share token: %v\n", err)
@@ -1408,13 +1408,15 @@ func runShare(opts thermal.Options) {
 	sb.WriteString(fmt.Sprintf("  %s %s %s\n\n", highlight("Thermal"), dim("·"), highlight("share · stateless streak card")))
 
 	costStr := thermal.FormatCost(snap.TotalCost, false)
-	if snap.EstimatedCost {
+	if snap.EstimatedCost > 0 {
 		costStr += " incl. est."
 	}
 
 	scopeLabel := strings.ToUpper(toolLabel[:1]) + toolLabel[1:]
 	cardLines := []string{
 		fmt.Sprintf(" %s %s", dim("Scope:        "), highlight(scopeLabel)),
+		fmt.Sprintf(" %s %s", dim("Window:       "), highlight(snap.Window)),
+		fmt.Sprintf(" %s %s", dim("Coverage:     "), highlight(snap.Coverage)),
 		fmt.Sprintf(" %s %s %s", dim("Streak:       "), gold(fmt.Sprintf("%d days 🔥", snap.CurrentStreak)), dim(fmt.Sprintf("(Longest: %d days)", snap.LongestStreak))),
 		fmt.Sprintf(" %s %s", dim("Active Days:  "), highlight(fmt.Sprintf("%d days", snap.ActiveDays))),
 		fmt.Sprintf(" %s %s", dim("Total Volume: "), green(thermal.CompactNumber(snap.TotalTokens)+" tokens")),
