@@ -79,7 +79,11 @@ func FormatReportWindow(active int, unit string, last int, since, until string) 
 		}
 		return "through " + until
 	default:
-		return fmt.Sprintf("all time (%d active %s)", active, plural)
+		activeUnit := plural
+		if active == 1 {
+			activeUnit = unit
+		}
+		return fmt.Sprintf("all time (%d active %s)", active, activeUnit)
 	}
 }
 

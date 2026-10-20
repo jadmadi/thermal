@@ -96,10 +96,12 @@ func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time) map[str
 	active := make(map[string]bool)
 	totals := leaderboardTotals{Tools: len(results), CostBasis: string(thermal.CostBasisTotal)}
 	for _, r := range results {
-		totals.Tokens += r.Summary.LifetimeTokens
 		totals.RecordedCost += r.Summary.Cost
 		totals.EstimatedCost += r.EstimatedCost
 		for _, d := range r.Daily {
+			if !thermal.IsActivityOnly(d) {
+				totals.Tokens += d.Tokens
+			}
 			if d.Turns > 0 {
 				active[d.Day] = true
 			}

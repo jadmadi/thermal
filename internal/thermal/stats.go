@@ -48,7 +48,7 @@ type TokenComposition struct {
 	CacheWrite      int64   `json:"cacheWrite"`
 	Total           int64   `json:"total"`
 	ClassifiedTotal int64   `json:"classifiedTotal"`
-	Unclassified    int64   `json:"unclassified,omitempty"`
+	Unclassified    int64   `json:"unclassified"`
 	CacheHitRate    float64 `json:"cacheHitRate"` // CacheRead / (UncachedInput + CacheRead + CacheWrite)
 }
 

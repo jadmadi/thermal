@@ -323,7 +323,7 @@ type ModelRow struct {
 	CacheRead          int64          `json:"cacheReadTokens"`
 	CacheWrite         int64          `json:"cacheWriteTokens"`
 	Tokens             int64          `json:"totalTokens"`
-	UnattributedTokens int64          `json:"unattributedTokens,omitempty"`
+	UnattributedTokens int64          `json:"unattributedTokens"`
 	Days               int            `json:"activeDays"`
 	FirstDay           string         `json:"firstDay,omitempty"`
 	LastDay            string         `json:"lastDay,omitempty"`

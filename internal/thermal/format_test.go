@@ -86,6 +86,9 @@ func TestFormatReportWindow(t *testing.T) {
 	if got := FormatReportWindow(96, "day", 0, "", ""); got != "all time (96 active days)" {
 		t.Errorf("all-time window = %q", got)
 	}
+	if got := FormatReportWindow(1, "day", 0, "", ""); got != "all time (1 active day)" {
+		t.Errorf("singular active window = %q", got)
+	}
 	if got := FormatReportWindow(7, "day", 7, "", ""); got != "last 7 days" {
 		t.Errorf("last window = %q", got)
 	}
