@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/jadmadi/thermal/internal/audit"
 	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -57,7 +58,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		highlight("audit · local setup & context health"),
 	))
 
-	sb.WriteString(fmt.Sprintf("  Score: [%s/100 · Grade %s]  Context Tax: ≈%s tokens / turn (Rules: ≈%s tok, MCP: ≈%s tok)\n\n",
+	sb.WriteString(fmt.Sprintf("  Score: [%s/100 · Grade %s]  Context Tax: ≈%s tokens / turn (Rules: ≈%s tok, MCP: ≈%s tok)\n",
 		highlight(fmt.Sprintf("%d", rep.Score)),
 		gradeBadge(rep.Grade),
 		highlight(thermal.CompactNumber(int64(rep.TotalRulesTax+rep.TotalMCPTax))),
@@ -67,6 +68,28 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 
 	cardWidth := BoundedCardWidth(2)
 	innerWidth := cardWidth - 4
+
+	largest := "none"
+	largestPenalty := 0
+	for label, penalty := range map[string]int{
+		"rule files":  rep.RulePenalty,
+		"MCP density": rep.MCPPenalty,
+		"readiness":   rep.ReadinessPenalty,
+	} {
+		if penalty > largestPenalty {
+			largest = label
+			largestPenalty = penalty
+		}
+	}
+	explanation := fmt.Sprintf("Score components: rules -%d · MCP -%d · readiness -%d. Largest: %s.",
+		rep.RulePenalty, rep.MCPPenalty, rep.ReadinessPenalty, largest)
+	if len(rep.Recommendations) > 0 {
+		explanation += " Biggest win: " + rep.Recommendations[0]
+	}
+	for _, line := range WrapText(explanation, cardWidth) {
+		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+	}
+	sb.WriteString("\n")
 
 	// 1. Rule Files
 	var cardLinesRules []string
@@ -81,10 +104,16 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 			} else if rf.Status == "CRIT" {
 				hasCrit = true
 			}
-			rel := filepath.Base(rf.Path)
-			cardLinesRules = append(cardLinesRules, fmt.Sprintf(" %-4s  %-24s  %4d lines  ≈%-9s",
-				statusBadge(rf.Status),
-				highlight(rel),
+			label := filepath.Base(rf.Path)
+			if rf.Scope != "" {
+				label += " (" + rf.Scope + ")"
+			}
+			label = truncateLabel(label, 30)
+			status := padRightStyled(rf.Status, 4, func(s string) string { return statusBadge(s) })
+			labelCell := padRightStyled(label, 30, highlight)
+			cardLinesRules = append(cardLinesRules, fmt.Sprintf(" %s  %s  %4d lines  ≈%-9s",
+				status,
+				labelCell,
 				rf.Lines,
 				thermal.CompactNumber(int64(rf.EstimatedTokens))+" tok",
 			))
@@ -124,10 +153,13 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 			if mf.Status == "WARN" {
 				hasWarn = true
 			}
-			cardLinesMCP = append(cardLinesMCP, fmt.Sprintf(" %-6s  %-24s  %-12s  ≈%-9s",
-				statusBadge(mf.Status),
-				highlight(mf.ServerName),
-				faint(mf.Client),
+			status := padRightStyled(mf.Status, 6, func(s string) string { return statusBadge(s) })
+			server := padRightStyled(truncateLabel(mf.ServerName, 24), 24, highlight)
+			client := padRightStyled(truncateLabel(mf.Client, 12), 12, faint)
+			cardLinesMCP = append(cardLinesMCP, fmt.Sprintf(" %s  %s  %s  ≈%-9s",
+				status,
+				server,
+				client,
 				thermal.CompactNumber(int64(mf.EstimatedTax))+" tok",
 			))
 		}
@@ -154,16 +186,42 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 	if len(rep.ReadinessFindings) == 0 {
 		cardLinesReadiness = append(cardLinesReadiness, " "+faint("No readiness checks recorded."))
 	} else {
+		checkWidth := 16
 		for _, rf := range rep.ReadinessFindings {
-			badge := padStyled(statusBadge(rf.Status), len(rf.Status), 4)
-			chk := padStyled(highlight(rf.Check), len(rf.Check), 16)
-			cardLinesReadiness = append(cardLinesReadiness, fmt.Sprintf(" %s  %s  %s",
-				badge,
-				chk,
-				rf.Message,
-			))
+			if len(rf.Check) > checkWidth {
+				checkWidth = len(rf.Check)
+			}
+		}
+		if checkWidth > 28 {
+			checkWidth = 28
+		}
+		for _, rf := range rep.ReadinessFindings {
+			badge := padRightStyled(rf.Status, 4, func(s string) string { return statusBadge(s) })
+			chk := padRightStyled(truncateLabel(rf.Check, checkWidth), checkWidth, highlight)
+			prefix := fmt.Sprintf(" %s  %s  ", badge, chk)
+			prefixWidth := ansi.StringWidth(prefix)
+			avail := innerWidth - prefixWidth
+			if avail < 12 {
+				avail = 12
+			}
+			msgLines := WrapText(rf.Message, avail)
+			for i, line := range msgLines {
+				if i == 0 {
+					cardLinesReadiness = append(cardLinesReadiness, prefix+line)
+				} else {
+					cardLinesReadiness = append(cardLinesReadiness, strings.Repeat(" ", prefixWidth)+line)
+				}
+			}
 			if rf.Advice != "" {
-				cardLinesReadiness = append(cardLinesReadiness, "       "+faint("↳ "+rf.Advice))
+				advicePrefix := strings.Repeat(" ", prefixWidth) + faint("↳ ")
+				adviceLines := WrapText(rf.Advice, innerWidth-prefixWidth-2)
+				for i, line := range adviceLines {
+					if i == 0 {
+						cardLinesReadiness = append(cardLinesReadiness, advicePrefix+faint(line))
+					} else {
+						cardLinesReadiness = append(cardLinesReadiness, strings.Repeat(" ", prefixWidth+2)+faint(line))
+					}
+				}
 			}
 		}
 	}

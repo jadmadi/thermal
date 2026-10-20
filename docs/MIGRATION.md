@@ -1302,3 +1302,37 @@ Use `--chart` only with `daily`, `weekly`, `monthly`, `projects`, or `models`. P
 
 **Escape hatch**:
 `thermal <command> --json` always returns the full data regardless of `--chart`. Analytics commands remain table/text only.
+
+---
+
+### Changed: Audit Finding Scope and Score Components
+<a id="changed-audit-finding-scope-and-score-components"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'Score components\|rulePenalty\|mcpPenalty\|readinessPenalty\|"scope"' .` or consumers of `thermal audit --json`.
+- **Detection signal**: rule findings now carry `scope` (`repo root`, `~/.claude`, `repo .cursor/rules`, etc.) and the text table renders `AGENTS.md (repo root)` / `AGENTS.md (~/.agents)`. `thermal audit` prints a `Score components:` line naming rule/MCP/readiness penalties, the largest contributor, and the first mapped recommendation. Readiness rows use one status/check width and wrapped messages align under the message column. Long MCP names truncate with an ellipsis.
+
+**What changed and why**:
+Duplicate basenames (`CLAUDE.md`, `AGENTS.md`) were indistinguishable, so a recommendation could not be acted on. `PASS Tool Databases` and wrapped readiness messages broke the table's columns, and `58/100` did not explain its deductions. Scope and penalty components make the finding and the score addressable without changing what the audit checks.
+
+**Before / After**:
+```text
+# Before
+WARN  CLAUDE.md   204 lines  ≈6.8K tok
+WARN  AGENTS.md   204 lines  ≈6.8K tok
+PASS Tool Databases 3 local tool database...
+Score: [58/100 · Grade D]
+
+# After
+WARN  CLAUDE.md (repo root)   204 lines  ≈6.8K tok
+WARN  AGENTS.md (repo root)   204 lines  ≈6.8K tok
+PASS  Tool Databases          3 local tool database...
+Score: [58/100 · Grade D]
+Score components: rules -30 · MCP -12 · readiness -0. Largest: rule files. Biggest win: ...
+```
+
+**The fix**:
+Use `rules[].scope` and `rules[].path` in JSON, and the `(scope)` label in text. Use `rulePenalty`, `mcpPenalty`, and `readinessPenalty` to explain the score; recommendations carry the same scope as their finding.
+
+**Escape hatch**:
+Read `thermal audit --json` for full paths and the penalty fields; text intentionally abbreviates scopes for width.

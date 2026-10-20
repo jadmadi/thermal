@@ -460,7 +460,7 @@ thermal devin trend
 ```
 
 ### `thermal audit`
-Non-destructive local setup and context health diagnostic. Measures rule-file and MCP context tax, repository instruction hygiene, filesystem readability of local tool database paths (SQLite integrity and mmap are not checked), and a temporary writability probe inside Thermal's own cache directory — no agent data stores are touched:
+Non-destructive local setup and context health diagnostic. Measures rule-file and MCP context tax, repository instruction hygiene, filesystem readability of local tool database paths (SQLite integrity and mmap are not checked), and a temporary writability probe inside Thermal's own cache directory — no agent data stores are touched. Rule findings carry a path/scope (`AGENTS.md (repo root)` vs `AGENTS.md (~/.agents)`), recommendations use the same label, and the score line names rule/MCP/readiness penalties plus the biggest win:
 
 ```bash
 thermal audit

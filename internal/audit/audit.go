@@ -20,6 +20,7 @@ const maxFileSize = 1024 * 1024 // 1MB scan ceiling
 // RuleFinding captures context overhead metrics for an AI instructions or rules file.
 type RuleFinding struct {
 	Path            string `json:"path"`
+	Scope           string `json:"scope,omitempty"`
 	Lines           int    `json:"lines"`
 	EstimatedTokens int    `json:"estimatedTokens"`
 	Status          string `json:"status"` // "PASS", "WARN", "CRIT"
@@ -50,6 +51,9 @@ type AuditReport struct {
 	Timestamp         time.Time          `json:"timestamp"`
 	Score             int                `json:"score"`
 	Grade             string             `json:"grade"`
+	RulePenalty       int                `json:"rulePenalty"`
+	MCPPenalty        int                `json:"mcpPenalty"`
+	ReadinessPenalty  int                `json:"readinessPenalty"`
 	TotalRulesTax     int                `json:"totalRulesTaxTokens"`
 	TotalMCPTax       int                `json:"totalMCPTaxTokens"`
 	RulesFindings     []RuleFinding      `json:"rules"`
@@ -85,13 +89,19 @@ func RunAuditWithOptions(workDir, homeDir string) AuditReport {
 	}
 
 	// 1. Audit Rule Files
+	scoreBeforeRules := report.Score
 	auditRuleFiles(workDir, homeDir, &report)
+	report.RulePenalty = scoreBeforeRules - report.Score
 
 	// 2. Audit MCP Servers
+	scoreBeforeMCP := report.Score
 	auditMCPServers(homeDir, &report)
+	report.MCPPenalty = scoreBeforeMCP - report.Score
 
 	// 3. Audit Agent Readiness & Repository Hygiene
+	scoreBeforeReadiness := report.Score
 	auditAgentReadiness(workDir, homeDir, &report)
+	report.ReadinessPenalty = scoreBeforeReadiness - report.Score
 
 	// 4. Compute Grade & Recommendations
 	computeGradeAndRecommendations(&report)
@@ -115,7 +125,7 @@ func auditRuleFiles(workDir, homeDir string, rep *AuditReport) {
 	// Check project work directory
 	for _, name := range ruleNames {
 		p := filepath.Join(workDir, name)
-		if checkRuleFile(p, rep, seenPaths) {
+		if checkRuleFile(p, "repo root", rep, seenPaths) {
 			seenPaths[p] = true
 		}
 	}
@@ -126,7 +136,7 @@ func auditRuleFiles(workDir, homeDir string, rep *AuditReport) {
 		for _, e := range entries {
 			if !e.IsDir() && strings.HasSuffix(e.Name(), ".mdc") {
 				p := filepath.Join(cursorRulesDir, e.Name())
-				if checkRuleFile(p, rep, seenPaths) {
+				if checkRuleFile(p, "repo .cursor/rules", rep, seenPaths) {
 					seenPaths[p] = true
 				}
 			}
@@ -135,20 +145,23 @@ func auditRuleFiles(workDir, homeDir string, rep *AuditReport) {
 
 	// Check user home config directories
 	if homeDir != "" && homeDir != workDir {
-		homeRules := []string{
-			filepath.Join(homeDir, ".claude", "CLAUDE.md"),
-			filepath.Join(homeDir, ".gemini", "GEMINI.md"),
-			filepath.Join(homeDir, ".agents", "AGENTS.md"),
+		homeRules := []struct {
+			path  string
+			scope string
+		}{
+			{filepath.Join(homeDir, ".claude", "CLAUDE.md"), "~/.claude"},
+			{filepath.Join(homeDir, ".gemini", "GEMINI.md"), "~/.gemini"},
+			{filepath.Join(homeDir, ".agents", "AGENTS.md"), "~/.agents"},
 		}
-		for _, p := range homeRules {
-			if checkRuleFile(p, rep, seenPaths) {
-				seenPaths[p] = true
+		for _, rule := range homeRules {
+			if checkRuleFile(rule.path, rule.scope, rep, seenPaths) {
+				seenPaths[rule.path] = true
 			}
 		}
 	}
 }
 
-func checkRuleFile(path string, rep *AuditReport, seen map[string]bool) bool {
+func checkRuleFile(path, scope string, rep *AuditReport, seen map[string]bool) bool {
 	if seen[path] {
 		return false
 	}
@@ -159,10 +172,11 @@ func checkRuleFile(path string, rep *AuditReport, seen map[string]bool) bool {
 	if fi.Size() > maxFileSize {
 		rep.RulesFindings = append(rep.RulesFindings, RuleFinding{
 			Path:            path,
+			Scope:           scope,
 			Lines:           9999,
 			EstimatedTokens: int(fi.Size() / 4),
 			Status:          "CRIT",
-			Advice:          "File exceeds 1MB ceiling. Extreme context penalty.",
+			Advice:          fmt.Sprintf("%s: File exceeds 1MB ceiling. Extreme context penalty.", ruleFindingLabel(path, scope)),
 		})
 		rep.Score -= 25
 		return true
@@ -189,18 +203,20 @@ func checkRuleFile(path string, rep *AuditReport, seen map[string]bool) bool {
 
 	finding := RuleFinding{
 		Path:            path,
+		Scope:           scope,
 		Lines:           lineCount,
 		EstimatedTokens: tokens,
 		Status:          "PASS",
 	}
 
+	label := ruleFindingLabel(path, scope)
 	if lineCount > 300 {
 		finding.Status = "CRIT"
-		finding.Advice = fmt.Sprintf("Rule file exceeds 300 lines (%d lines, ~%d tok). High initial context tax.", lineCount, tokens)
+		finding.Advice = fmt.Sprintf("%s: Rule file exceeds 300 lines (%d lines, ~%d tok). High initial context tax.", label, lineCount, tokens)
 		rep.Score -= 15
 	} else if lineCount > 150 {
 		finding.Status = "WARN"
-		finding.Advice = fmt.Sprintf("Rule file is moderately large (%d lines, ~%d tok). Consider keeping under 150 lines.", lineCount, tokens)
+		finding.Advice = fmt.Sprintf("%s: Rule file is moderately large (%d lines, ~%d tok). Consider keeping under 150 lines.", label, lineCount, tokens)
 		rep.Score -= 5
 	}
 
@@ -315,6 +331,14 @@ func scanMCPConfigFile(path, client string, rep *AuditReport, seen map[string]bo
 	}
 }
 
+func ruleFindingLabel(path, scope string) string {
+	label := filepath.Base(path)
+	if scope != "" {
+		label += " (" + scope + ")"
+	}
+	return label
+}
+
 func computeGradeAndRecommendations(rep *AuditReport) {
 	if rep.Score < 0 {
 		rep.Score = 0
@@ -338,13 +362,15 @@ func computeGradeAndRecommendations(rep *AuditReport) {
 		rep.Grade = "F"
 	}
 
-	// Build recommendations
+	// Build recommendations. Every rule recommendation carries the same
+	// path/scope label as the finding so duplicate basenames stay addressable.
 	var recs []string
 	for _, rf := range rep.RulesFindings {
+		label := ruleFindingLabel(rf.Path, rf.Scope)
 		if rf.Status == "CRIT" {
-			recs = append(recs, fmt.Sprintf("Critical: %s is %d lines (~%d tok). Split into specialized skills or trim to <150 lines.", filepath.Base(rf.Path), rf.Lines, rf.EstimatedTokens))
+			recs = append(recs, fmt.Sprintf("Critical: %s is %d lines (~%d tok). Split into specialized skills or trim to <150 lines.", label, rf.Lines, rf.EstimatedTokens))
 		} else if rf.Status == "WARN" {
-			recs = append(recs, fmt.Sprintf("Warning: %s is %d lines (~%d tok). Prune stale rules to save context budget.", filepath.Base(rf.Path), rf.Lines, rf.EstimatedTokens))
+			recs = append(recs, fmt.Sprintf("Warning: %s is %d lines (~%d tok). Prune stale rules to save context budget.", label, rf.Lines, rf.EstimatedTokens))
 		}
 	}
 
