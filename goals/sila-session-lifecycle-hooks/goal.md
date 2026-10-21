@@ -2,7 +2,9 @@
 
 **Priority**: P0
 **Program**: Sila Utilisation Program
-**Implementation surface**: Command Code lifecycle config plus Sila hook bridge
+**Implementation surface**: Command Code host lifecycle config; Sila core bridge is upstream
+**Upstream ownership**: Sila core changes belong to `harness-session-memory-bridge`, `active-lifecycle-hook-bridge`, and `project-onboarding` in `sila-cli`.
+**Legacy surface note**: Command Code lifecycle config plus Sila hook bridge
 
 ## Goal Description
 Install and verify session lifecycle hooks so each Command Code session automatically runs the Sila start and close loop. The hook layer is the enforcement point that turns the AGENTS prose into a real preflight and handoff.
@@ -14,11 +16,14 @@ Install and verify session lifecycle hooks so each Command Code session automati
 - The skipped start loop is the direct cause of the memory and persona gaps.
 
 ## Dependencies & Execution Order
-- **Mode**: Dependent (requires prerequisite goals)
-- **Depends On**: sila-command-code-adapter
+- **Mode**: Independent (disjoint, parallelizable)
+- **Depends On**: none
 - **Sequence**: 301
 - **Shape**: ship
 - **Tier**: roadmap
+
+## Upstream Ownership
+This goal is a Thermal adoption layer. It does not implement Sila core changes. Sila CLI owns `harness-session-memory-bridge`, `active-lifecycle-hook-bridge`, and `project-onboarding` in `sila-cli`.
 
 ## Files to Touch
 - `.commandcode/config.json`
@@ -59,6 +64,7 @@ Install and verify session lifecycle hooks so each Command Code session automati
 - No secret, prompt body, token, or private path may be written into evidence.
 
 ## Scope Boundary
+- Do not implement Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, or goal-engine changes here; consume the upstream Sila CLI goals.
 - Do not implement the adapter rule generator here.
 - Do not change Sila store schema unless the hook contract requires a new event field.
 - Do not auto-sync on every tool call; only at defined lifecycle points.

@@ -3,7 +3,7 @@
 ## Execution Steps
 - [ ] **Task 1 — Baseline and reproduction**: Build the missing-event matrix from the program goals and a no-op session. Acceptance: Evidence contains command transcripts and a standalone `Verdict: PASS` only after the gap is reproduced.
 - [ ] **Task 2 — Contract and failure modes**: Write the interface contract, state machine, and explicit failure modes for the goal before editing implementation files. Acceptance: A reviewer can answer what happens on missing Sila, stale wiring, missing MCP, timeout, duplicate event, and partial write.
-- [ ] **Task 3 — Core implementation**: Implement the harness happy path first, then add the failure matrix and CI gate. Acceptance: The declared paths change; unrelated product code and unrelated goals are untouched.
+- [ ] **Task 3 — Thermal adoption implementation**: Build the consumer harness against released upstream Sila features; do not modify Sila core. Acceptance: The declared paths change; unrelated product code and unrelated goals are untouched.
 - [ ] **Task 4 — Positive-path tests**: Add table-driven unit tests and at least one integration test for the expected path. Acceptance: Tests fail before the implementation and pass after it; no skips hide missing behavior.
 - [ ] **Task 5 — Negative-path and recovery tests**: Exercise absent tools, stale state, duplicate calls, timeouts, and rollback paths. Acceptance: Failures are explicit, non-zero where appropriate, and leave no partial or corrupted state.
 - [ ] **Task 6 — Command Code integration**: Wire the behavior into a real or hermetic Command Code session, not only a Go unit test. Acceptance: The session artifact proves the surface was actually invoked and not merely documented.

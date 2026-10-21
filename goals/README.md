@@ -27,12 +27,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 128
-- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 12
+- **Total Goals**: 119
+- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 2
 - 🟢 **Implemented**: 114 (4 verified 📜, 22 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 127 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 518/644 completed (80%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 118 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 518/563 completed (92%)
 
 ---
 
@@ -40,20 +40,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`sila-fact-ledger-integrity`](sila-fact-ledger-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#299)` | - | Sila Fact Ledger Integrity — Investigate and remediate the hash-chain mismatches reported by sila facts verif... | `/goal goals/sila-fact-ledger-integrity/goal.md` |
-| [`sila-command-code-adapter`](sila-command-code-adapter/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#300)` | - | Sila Command Code Adapter — Create a first-class Command Code adapter for Sila. The adapter must write the f... | `/goal goals/sila-command-code-adapter/goal.md` |
-| [`sila-session-lifecycle-hooks`](sila-session-lifecycle-hooks/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#301)` | Prereqs: sila-command-code-adapter | Sila Session Lifecycle Hooks — Install and verify session lifecycle hooks so each Command Code session automati... | `/goal goals/sila-session-lifecycle-hooks/goal.md` |
-| [`sila-mcp-surface-parity`](sila-mcp-surface-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#303)` | Prereqs: sila-command-code-adapter | Sila Mcp Surface Parity — Close the gap between Sila CLI capabilities and the MCP tools visible to Command... | `/goal goals/sila-mcp-surface-parity/goal.md` |
-| [`sila-mandatory-preflight-gate`](sila-mandatory-preflight-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#302)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-fact-ledger-integrity | Sila Mandatory Preflight Gate — Make Sila preflight a hard gate before any code edit. The gate must produce a si... | `/goal goals/sila-mandatory-preflight-gate/goal.md` |
-| [`sila-persona-audit-workflows`](sila-persona-audit-workflows/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#305)` | Prereqs: sila-command-code-adapter, sila-mcp-surface-parity | Sila Persona Audit Workflows — Define when Command Code should use Sila personas, hires, reports, and audits, a... | `/goal goals/sila-persona-audit-workflows/goal.md` |
-| [`sila-onboarding-doctor-enforcement`](sila-onboarding-doctor-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#309)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-fact-ledger-integrity | Sila Onboarding Doctor Enforcement — Make Sila onboarding health fail-closed. `sila onboard check --strict` currently... | `/goal goals/sila-onboarding-doctor-enforcement/goal.md` |
-| [`sila-nine-verb-memory-protocol`](sila-nine-verb-memory-protocol/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#304)` | Prereqs: sila-mandatory-preflight-gate, sila-mcp-surface-parity | Sila Nine Verb Memory Protocol — Turn the nine-verb Sila memory protocol into explicit, testable trigger moments.... | `/goal goals/sila-nine-verb-memory-protocol/goal.md` |
-| [`sila-project-skill-authoring`](sila-project-skill-authoring/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#306)` | Prereqs: sila-command-code-adapter, sila-mcp-surface-parity, sila-persona-audit-workflows | Sila Project Skill Authoring — Create and govern Thermal-specific Sila skills for the repeated workflows this r... | `/goal goals/sila-project-skill-authoring/goal.md` |
-| [`sila-goal-evidence-certification`](sila-goal-evidence-certification/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#307)` | Prereqs: sila-mandatory-preflight-gate, sila-nine-verb-memory-protocol, sila-fact-ledger-integrity | Sila Goal Evidence Certification — Make goal completion evidence-based. Every delivered goal must have reproducible... | `/goal goals/sila-goal-evidence-certification/goal.md` |
-| [`sila-goal-claim-lifecycle-hygiene`](sila-goal-claim-lifecycle-hygiene/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#308)` | Prereqs: sila-mandatory-preflight-gate, sila-goal-evidence-certification | Sila Goal Claim Lifecycle Hygiene — Make goal claims and attribution honest. The goal removes forced claims, resolve... | `/goal goals/sila-goal-claim-lifecycle-hygiene/goal.md` |
-| [`sila-utilization-scorecard`](sila-utilization-scorecard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#310)` | Prereqs: sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement | Sila Utilization Scorecard — Define and measure "100% Sila utilisation" without turning it into command-count... | `/goal goals/sila-utilization-scorecard/goal.md` |
-| [`sila-feedback-continuous-improvement`](sila-feedback-continuous-improvement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#311)` | Prereqs: sila-utilization-scorecard | Sila Feedback Continuous Improvement — Turn Sila feedback into a closed loop. The goal starts with `fb_heal-contract-pr... | `/goal goals/sila-feedback-continuous-improvement/goal.md` |
-| [`sila-command-code-e2e-conformance`](sila-command-code-e2e-conformance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#312)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-mandatory-preflight-gate, sila-mcp-surface-parity, sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement, sila-utilization-scorecard, sila-feedback-continuous-improvement, sila-fact-ledger-integrity | Sila Command Code E2E Conformance — Prove the whole utilisation program in a hermetic Command Code session. The harn... | `/goal goals/sila-command-code-e2e-conformance/goal.md` |
+| [`sila-mandatory-preflight-gate`](sila-mandatory-preflight-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#300)` | - | Sila Mandatory Preflight Gate — Make Sila preflight a hard gate before any code edit. The gate must produce a si... | `/goal goals/sila-mandatory-preflight-gate/goal.md` |
+| [`sila-session-lifecycle-hooks`](sila-session-lifecycle-hooks/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#301)` | - | Sila Session Lifecycle Hooks — Install and verify session lifecycle hooks so each Command Code session automati... | `/goal goals/sila-session-lifecycle-hooks/goal.md` |
+| [`sila-project-skill-authoring`](sila-project-skill-authoring/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#302)` | - | Sila Project Skill Authoring — Create and govern Thermal-specific Sila skills for the repeated workflows this r... | `/goal goals/sila-project-skill-authoring/goal.md` |
+| [`sila-utilization-scorecard`](sila-utilization-scorecard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#303)` | Prereqs: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring | Sila Utilization Scorecard — Define and measure "100% Sila utilisation" without turning it into command-count... | `/goal goals/sila-utilization-scorecard/goal.md` |
+| [`sila-command-code-e2e-conformance`](sila-command-code-e2e-conformance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#304)` | Prereqs: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring, sila-utilization-scorecard | Sila Command Code E2E Conformance — Prove the whole utilisation program in a hermetic Command Code session. The harn... | `/goal goals/sila-command-code-e2e-conformance/goal.md` |
 
 ---
 

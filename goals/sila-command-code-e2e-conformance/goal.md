@@ -2,7 +2,9 @@
 
 **Priority**: P1
 **Program**: Sila Utilisation Program
-**Implementation surface**: Hermetic Command Code + Sila conformance harness
+**Implementation surface**: Thermal consumer conformance; Sila core conformance is upstream
+**Upstream ownership**: Sila core changes belong to `harness-session-memory-bridge`, `mcp-continuity-9verb-and-tier0-parity`, `trigger-contract-full-surface-routing`, and the Sila CLI conformance goals.
+**Legacy surface note**: Hermetic Command Code + Sila conformance harness
 
 ## Goal Description
 Prove the whole utilisation program in a hermetic Command Code session. The harness must exercise the adapter, hooks, preflight, MCP, nine verbs, persona/audit selection, skill authoring, goal evidence, claim hygiene, onboarding, scorecard, and feedback, and fail on any silent skip.
@@ -14,10 +16,13 @@ Prove the whole utilisation program in a hermetic Command Code session. The harn
 
 ## Dependencies & Execution Order
 - **Mode**: Dependent (requires prerequisite goals)
-- **Depends On**: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-mandatory-preflight-gate, sila-mcp-surface-parity, sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement, sila-utilization-scorecard, sila-feedback-continuous-improvement, sila-fact-ledger-integrity
-- **Sequence**: 312
+- **Depends On**: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring, sila-utilization-scorecard
+- **Sequence**: 304
 - **Shape**: ship
 - **Tier**: roadmap
+
+## Upstream Ownership
+This goal is a Thermal adoption layer. It does not implement Sila core changes. Sila CLI owns `harness-session-memory-bridge`, `mcp-continuity-9verb-and-tier0-parity`, `trigger-contract-full-surface-routing`, and the Sila CLI conformance goals.
 
 ## Files to Touch
 - `scripts/sila-command-code-e2e.sh`
@@ -54,6 +59,7 @@ Prove the whole utilisation program in a hermetic Command Code session. The harn
 - No secret, prompt body, token, or private path may be written into evidence.
 
 ## Scope Boundary
+- Do not implement Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, or goal-engine changes here; consume the upstream Sila CLI goals.
 - Do not weaken assertions to make the harness pass.
 - Do not touch real user config or remote refs.
 - Do not replace the simulated user gate; add this as a Sila-specific gate.

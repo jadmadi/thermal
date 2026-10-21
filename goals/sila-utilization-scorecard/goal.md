@@ -2,7 +2,9 @@
 
 **Priority**: P1
 **Program**: Sila Utilisation Program
-**Implementation surface**: Session ledger, CLI report, and Command Code scorecard
+**Implementation surface**: Thermal session measurement; Sila doctor/utilization gate is upstream
+**Upstream ownership**: Sila core changes belong to `doctor-mcp-and-trigger-utilization-gate`, `memory-adoption-observability`, and `cross-agent-benchmark-scorecard` in `sila-cli`.
+**Legacy surface note**: Session ledger, CLI report, and Command Code scorecard
 
 ## Goal Description
 Define and measure "100% Sila utilisation" without turning it into command-count theater. The scorecard compares expected trigger moments to actual verb/tool calls, records skip reasons, and reports coverage by Sila family.
@@ -14,10 +16,13 @@ Define and measure "100% Sila utilisation" without turning it into command-count
 
 ## Dependencies & Execution Order
 - **Mode**: Dependent (requires prerequisite goals)
-- **Depends On**: sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement
-- **Sequence**: 310
+- **Depends On**: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring
+- **Sequence**: 303
 - **Shape**: ship
 - **Tier**: roadmap
+
+## Upstream Ownership
+This goal is a Thermal adoption layer. It does not implement Sila core changes. Sila CLI owns `doctor-mcp-and-trigger-utilization-gate`, `memory-adoption-observability`, and `cross-agent-benchmark-scorecard` in `sila-cli`.
 
 ## Files to Touch
 - `scripts/sila-scorecard.sh`
@@ -55,6 +60,7 @@ Define and measure "100% Sila utilisation" without turning it into command-count
 - No secret, prompt body, token, or private path may be written into evidence.
 
 ## Scope Boundary
+- Do not implement Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, or goal-engine changes here; consume the upstream Sila CLI goals.
 - Do not reward optional commands that add no value.
 - Do not store prompt contents or secrets.
 - Do not make the score a vanity metric.

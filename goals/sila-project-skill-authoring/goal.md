@@ -2,7 +2,9 @@
 
 **Priority**: P1
 **Program**: Sila Utilisation Program
-**Implementation surface**: Project skills, Sila skill governor, Command Code discovery
+**Implementation surface**: Thermal-specific project skills; Sila skill governor is upstream
+**Upstream ownership**: Sila core changes belong to `global-and-workspace-sila-skill-provisioning` and `trigger-contract-full-surface-routing` in `sila-cli`.
+**Legacy surface note**: Project skills, Sila skill governor, Command Code discovery
 
 ## Goal Description
 Create and govern Thermal-specific Sila skills for the repeated workflows this repo actually needs: Sila preflight, goal execution, release verification, and output-gallery maintenance. The goal includes token-cost assessment, preview/apply/rollback, and Command Code discovery.
@@ -13,11 +15,14 @@ Create and govern Thermal-specific Sila skills for the repeated workflows this r
 - Skill authoring exists in Sila but is invisible in AGENTS and MCP.
 
 ## Dependencies & Execution Order
-- **Mode**: Dependent (requires prerequisite goals)
-- **Depends On**: sila-command-code-adapter, sila-mcp-surface-parity, sila-persona-audit-workflows
-- **Sequence**: 306
+- **Mode**: Independent (disjoint, parallelizable)
+- **Depends On**: none
+- **Sequence**: 302
 - **Shape**: ship
 - **Tier**: roadmap
+
+## Upstream Ownership
+This goal is a Thermal adoption layer. It does not implement Sila core changes. Sila CLI owns `global-and-workspace-sila-skill-provisioning` and `trigger-contract-full-surface-routing` in `sila-cli`.
 
 ## Files to Touch
 - `.agents/skills/`
@@ -56,6 +61,7 @@ Create and govern Thermal-specific Sila skills for the repeated workflows this r
 - No secret, prompt body, token, or private path may be written into evidence.
 
 ## Scope Boundary
+- Do not implement Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, or goal-engine changes here; consume the upstream Sila CLI goals.
 - Do not create a skill for a one-off task.
 - Do not duplicate AGENTS wholesale.
 - Do not auto-apply skills without preview.

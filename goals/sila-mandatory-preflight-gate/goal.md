@@ -2,7 +2,9 @@
 
 **Priority**: P0
 **Program**: Sila Utilisation Program
-**Implementation surface**: Command Code preflight gate and /goal bootstrap
+**Implementation surface**: Thermal agent enforcement layer; Sila core is upstream
+**Upstream ownership**: Sila core changes belong to `harness-session-memory-bridge`, `trigger-contract-full-surface-routing`, `facts-ledger-integrity-campaign`, and `doctor-mcp-and-trigger-utilization-gate` in `sila-cli`.
+**Legacy surface note**: Command Code preflight gate and /goal bootstrap
 
 ## Goal Description
 Make Sila preflight a hard gate before any code edit. The gate must produce a signed session artifact and be integrated into the `/goal` launch path, so an agent cannot treat Sila as optional without an explicit recorded override.
@@ -13,11 +15,14 @@ Make Sila preflight a hard gate before any code edit. The gate must produce a si
 - The agent edited files before any `salam`, `heal`, or `prime` call.
 
 ## Dependencies & Execution Order
-- **Mode**: Dependent (requires prerequisite goals)
-- **Depends On**: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-fact-ledger-integrity
-- **Sequence**: 302
+- **Mode**: Independent (disjoint, parallelizable)
+- **Depends On**: none
+- **Sequence**: 300
 - **Shape**: ship
 - **Tier**: roadmap
+
+## Upstream Ownership
+This goal is a Thermal adoption layer. It does not implement Sila core changes. Sila CLI owns `harness-session-memory-bridge`, `trigger-contract-full-surface-routing`, `facts-ledger-integrity-campaign`, and `doctor-mcp-and-trigger-utilization-gate` in `sila-cli`.
 
 ## Files to Touch
 - `scripts/sila-preflight.sh`
@@ -56,6 +61,7 @@ Make Sila preflight a hard gate before any code edit. The gate must produce a si
 - No secret, prompt body, token, or private path may be written into evidence.
 
 ## Scope Boundary
+- Do not implement Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, or goal-engine changes here; consume the upstream Sila CLI goals.
 - Do not weaken the gate for convenience.
 - Do not make the gate depend on network access.
 - Do not duplicate the goal-claim rules owned by the claim-hygiene goal.

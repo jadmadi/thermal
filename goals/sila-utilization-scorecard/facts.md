@@ -9,6 +9,11 @@
 - `sila prime` surfaces an active handoff and `fact_c831b36c`, a prior bot-attribution lesson, proving the skipped preflight had concrete value.
 - The current ledger is 114 goals, 518/518 tasks, but only 4 verified, 22 stale, and 88 unverified.
 
+## Upstream Goal Ownership
+- This goal is Thermal adoption only.
+- Sila core owner: `doctor-mcp-and-trigger-utilization-gate`, `memory-adoption-observability`, and `cross-agent-benchmark-scorecard` in `sila-cli`.
+- Do not duplicate or re-register those upstream goals here.
+
 ## Architectural Invariants
 - Every required trigger has an auditable outcome.
 - Skip reasons are first-class fields.

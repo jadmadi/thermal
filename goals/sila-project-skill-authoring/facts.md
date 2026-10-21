@@ -9,6 +9,11 @@
 - `sila prime` surfaces an active handoff and `fact_c831b36c`, a prior bot-attribution lesson, proving the skipped preflight had concrete value.
 - The current ledger is 114 goals, 518/518 tasks, but only 4 verified, 22 stale, and 88 unverified.
 
+## Upstream Goal Ownership
+- This goal is Thermal adoption only.
+- Sila core owner: `global-and-workspace-sila-skill-provisioning` and `trigger-contract-full-surface-routing` in `sila-cli`.
+- Do not duplicate or re-register those upstream goals here.
+
 ## Architectural Invariants
 - Every project skill has a trigger and an owner.
 - A skill can be removed without breaking the repo.

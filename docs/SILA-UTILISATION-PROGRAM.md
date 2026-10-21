@@ -2,82 +2,95 @@
 
 **Status**: planning only. No implementation is claimed.
 
+## Scope correction
+
+The first draft registered fourteen goals in `thermal-streak`. That was the wrong registry boundary. Most of those goals describe Sila core behavior and already have richer goals in the Sila CLI project (`sila-cli`, `/mnt/Jad/github/lab/sila/cli`). They were removed from the Thermal registry so this repository tracks only Thermal adoption work.
+
+**Sila CLI owns** the adapter, MCP surface, trigger contract, persona/audit routing, skill provisioning, fact ledger, goal engine, onboarding/doctor, scorecard, and feedback mechanics.
+
+**Thermal owns** the consumer integration: mandatory preflight, Command Code host hooks, Thermal-specific project skills, a Thermal scorecard, and a consumer conformance harness.
+
 ## Governing thought
 
-100% Sila utilisation does not mean running every Sila command in every session. It means every required Sila moment has a trigger, an invocation, an outcome, and evidence, and every optional surface is available without ceremony. The current gap is a Command Code integration gap, not a Sila capability gap.
+100% Sila utilisation does not mean running every Sila command in every session. It means every required Sila moment has a trigger, an invocation, an outcome, and evidence, and every optional surface is available without ceremony. The core capability gap is upstream in Sila CLI; the Thermal gap is enforcement and adoption.
 
 ## Definition of 100% utilisation
 
-A session reaches 100% when all of the following are true:
+A Thermal session reaches 100% when all of the following are true:
 
-1. **Integrity**: `sila facts verify` is green, or the failure is quarantined with a recorded recovery decision.
+1. **Integrity**: upstream `facts-ledger-integrity-campaign` is green, or its failure is quarantined with a recorded recovery decision.
 2. **Lifecycle**: session-start runs heal/prime/goals-ready, and session-end runs handoff/sync.
-3. **Preflight**: no implementation edit occurs before a fresh preflight artifact exists.
+3. **Preflight**: no implementation edit occurs before a fresh Thermal preflight artifact exists.
 4. **Memory**: recall is consulted before guessing; memo, lesson, and case are recorded at their trigger moments; facts verify runs before completion.
 5. **Goals**: one claim, one session, dependency-correct sequencing, complete plan tasks, exact goal attribution, and zero unverified delivered goals.
 6. **Review**: persona/audit use is selected only when a task needs it, and reports are read and linked.
-7. **Skills**: repeated workflows are captured as project skills with measured cost and rollback.
-8. **Health**: heal, agents check, onboard check --strict, doctor, and hook status are green.
+7. **Skills**: repeated Thermal workflows are captured as project skills with measured cost and rollback.
+8. **Health**: upstream heal/agents/onboard/doctor gates are green and the Thermal preflight refuses to proceed when they are not.
 9. **Feedback**: feedback is triaged, linked, and resolved; public sharing is explicit.
 10. **Scorecard**: expected versus actual trigger coverage is recorded, with skip reasons and evidence.
 11. **Non-ceremony**: a skipped optional verb with a reason is better than an empty invocation.
 
-## Goal graph
+## Thermal adoption goals (registered here)
 
 | Seq | Goal | Surface | Depends on |
 |---:|---|---|---|
-| 299 | `sila-fact-ledger-integrity` | Sila knowledge store | none |
-| 300 | `sila-command-code-adapter` | Sila core plus AGENTS/MCP | none |
-| 301 | `sila-session-lifecycle-hooks` | Command Code + Sila hook bridge | adapter |
-| 302 | `sila-mandatory-preflight-gate` | preflight and `/goal` | adapter, hooks, fact ledger |
-| 303 | `sila-mcp-surface-parity` | Sila MCP | adapter |
-| 304 | `sila-nine-verb-memory-protocol` | AGENTS, skills, evidence | preflight, MCP |
-| 305 | `sila-persona-audit-workflows` | personas/audits | adapter, MCP |
-| 306 | `sila-project-skill-authoring` | skills | adapter, MCP, personas |
-| 307 | `sila-goal-evidence-certification` | goals and evidence | preflight, memory |
-| 308 | `sila-goal-claim-lifecycle-hygiene` | claims and attribution | preflight, certification |
-| 309 | `sila-onboarding-doctor-enforcement` | health and CI | adapter, hooks, fact ledger |
-| 310 | `sila-utilization-scorecard` | session measurement | memory, personas, skills, evidence, claims, health |
-| 311 | `sila-feedback-continuous-improvement` | feedback loop | scorecard |
-| 312 | `sila-command-code-e2e-conformance` | hermetic conformance | all of the above |
+| 300 | `sila-mandatory-preflight-gate` | Thermal preflight and `/goal` enforcement | none |
+| 301 | `sila-session-lifecycle-hooks` | Command Code host lifecycle config | none |
+| 302 | `sila-project-skill-authoring` | Thermal-specific project skills | none |
+| 303 | `sila-utilization-scorecard` | Thermal session measurement | preflight, hooks, skills |
+| 304 | `sila-command-code-e2e-conformance` | Thermal consumer conformance | preflight, hooks, skills, scorecard |
 
-## Execution waves
+These five goals must not change Sila core CLI, MCP, store, hook-bridge, persona, skill-governor, goal-engine, or fact-ledger code. They consume upstream releases.
 
-1. **Integrity and foundation**: fact ledger integrity, adapter, and MCP parity.
-2. **Enforcement**: lifecycle hooks, mandatory preflight, onboarding/doctor.
-3. **Practice**: nine verbs, personas/audits, project skills.
-4. **Proof**: goal evidence/certification and claim hygiene.
-5. **Measurement and closure**: scorecard, feedback, end-to-end conformance.
+## Upstream Sila CLI ownership
 
-## Coverage matrix
+These goals already exist in `sila-cli`; they are not duplicated here.
 
-| Sila family | Goal owner | Required trigger |
-|---|---|---|
-| Fact ledger integrity | fact ledger integrity | every verification |
-| Continuity: salam, heal, prime, handoff, sync | adapter, hooks, preflight | session start/end |
-| Knowledge: recall, doc, memo, lesson, case, facts | nine-verb protocol | debugging, integration, decisions, fixes, completion |
-| Roadmap: goals, claims, evidence, certification | evidence, claim hygiene | every goal |
-| Personas, audits, reports | persona/audit workflows | scoped review only |
-| Skill authoring | project skills | repeated workflow |
-| Quality gates: gate, doctor, onboard | onboarding/doctor | preflight and CI |
-| Feedback | feedback loop | issue/tip/idea |
-| Measurement | scorecard | every session |
+| Upstream goal | Owns |
+|---|---|
+| `facts-ledger-integrity-campaign` | Fact-chain audit, classification, and safe recovery |
+| `harness-session-memory-bridge` | Core session-start/session-end hook bridge |
+| `active-lifecycle-hook-bridge` | Harness lifecycle adapters |
+| `mcp-continuity-9verb-and-tier0-parity` | MCP continuity surface and tier-0 parity |
+| `mcp-specialist-and-temporal-tool-parity` | Persona, standup, domain-learning, and blast-radius MCP tools |
+| `trigger-contract-full-surface-routing` | Nine-verb and specialist command routing |
+| `prime-briefing-cases-and-capability-discovery` | Prime briefing cases and capability discovery |
+| `workflow-router-full-surface-taxonomy` | Workflow router coverage |
+| `doctor-mcp-and-trigger-utilization-gate` | Doctor/MCP utilisation diagnostics |
+| `global-and-workspace-sila-skill-provisioning` | Global and workspace Sila skill provisioning |
+| `memory-protocol-goal-contract` | Memory protocol in goal templates and certification |
+| `memory-verb-cli-consistency` | Memo/lesson/case/note CLI consistency |
+| `onboard-check-contract` | Onboarding strictness and repair contract |
+| `project-onboarding` | Harness onboarding and supported hooks |
+| `agents-sync-atomic-project-writes` | Atomic rule generation and size ceilings |
+| `agents-check-revision-visibility` | Rule drift and revision visibility |
+| `cross-agent-benchmark-scorecard` | Cross-agent empirical scorecard |
+
+**Known upstream gap**: there is no exact `command-code-adapter` goal in `sila-cli` yet. If the adapter remains unowned, register it in `sila-cli`, not in Thermal.
+
+## Execution order
+
+1. **Upstream first**: repair `facts-ledger-integrity-campaign`, then `harness-session-memory-bridge`, `mcp-continuity-9verb-and-tier0-parity`, `trigger-contract-full-surface-routing`, `doctor-mcp-and-trigger-utilization-gate`, and `global-and-workspace-sila-skill-provisioning`.
+2. **Thermal enforcement**: `sila-mandatory-preflight-gate` and `sila-session-lifecycle-hooks`.
+3. **Thermal practice**: `sila-project-skill-authoring`.
+4. **Thermal proof**: `sila-utilization-scorecard` and `sila-command-code-e2e-conformance`.
 
 ## Baseline evidence
 
-- `sila salam`: heal pending; no ready goals at the start of the gap analysis.
-- `sila heal --dry-run`: AGENTS.md would be updated.
+- Sila CLI: **361 goals**, 327 implemented and verified, 7 ready, 32 pending; the CLI working tree already has modified/untracked goals for trigger, MCP, doctor, skill, and fact-ledger work.
+- Thermal after scope correction: **119 goals**, 5 pending, 3 ready, 2 blocked, 518/563 tasks completed.
+- `sila heal --dry-run`: AGENTS.md wiring still pending.
 - `sila onboard check --strict`: 11 pass, 1 warn on Agent rules.
 - `sila agents check`: hash-sync pass, not full protocol coverage.
 - `sila skills list`: no project skills.
 - `sila persona` exposes a 31-persona registry; `sila audit` exposes web, ui, squad, and gap.
-- `sila feedback` contains `fb_heal-contract-protocol`.
-- `sila facts verify` reports 539 active hash-chain violations across 25,110 blocks and exits 1; the first divergent block is 12 (`fact_6a93ccbe`), and the full transcript belongs in the fact-ledger goal evidence.
-- 114 goals, 518/518 tasks, 4 verified, 22 stale, 88 unverified.
+- `sila facts verify`: 539 violations across 25,110 blocks, exit 1; first divergence at block 12 (`fact_6a93ccbe`).
+- Feedback: `fb_heal-contract-protocol` (adapter/preflight gap), `fb_verify-integrity-store` (ledger), and a correction tip.
 
 ## Non-goals
 
+- Do not duplicate Sila CLI goals in the Thermal registry.
 - Do not run every Sila command as a checkbox.
 - Do not create audit or persona theater.
-- Do not weaken test or evidence gates to declare success.
+- Do not weaken evidence or certification gates.
 - Do not make public feedback or remote pushes without explicit consent.
