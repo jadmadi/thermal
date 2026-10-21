@@ -27,24 +27,11 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 119
-- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
-- ⛔ **Blocked on Prerequisites**: 2
+- **Total Goals**: 114
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
 - 🟢 **Implemented**: 114 (4 verified 📜, 22 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 118 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 518/563 completed (92%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`sila-mandatory-preflight-gate`](sila-mandatory-preflight-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#300)` | - | Sila Mandatory Preflight Gate — Make Sila preflight a hard gate before any code edit. The gate must produce a si... | `/goal goals/sila-mandatory-preflight-gate/goal.md` |
-| [`sila-session-lifecycle-hooks`](sila-session-lifecycle-hooks/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#301)` | - | Sila Session Lifecycle Hooks — Install and verify session lifecycle hooks so each Command Code session automati... | `/goal goals/sila-session-lifecycle-hooks/goal.md` |
-| [`sila-project-skill-authoring`](sila-project-skill-authoring/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#302)` | - | Sila Project Skill Authoring — Create and govern Thermal-specific Sila skills for the repeated workflows this r... | `/goal goals/sila-project-skill-authoring/goal.md` |
-| [`sila-utilization-scorecard`](sila-utilization-scorecard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#303)` | Prereqs: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring | Sila Utilization Scorecard — Define and measure "100% Sila utilisation" without turning it into command-count... | `/goal goals/sila-utilization-scorecard/goal.md` |
-| [`sila-command-code-e2e-conformance`](sila-command-code-e2e-conformance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#304)` | Prereqs: sila-mandatory-preflight-gate, sila-session-lifecycle-hooks, sila-project-skill-authoring, sila-utilization-scorecard | Sila Command Code E2E Conformance — Prove the whole utilisation program in a hermetic Command Code session. The harn... | `/goal goals/sila-command-code-e2e-conformance/goal.md` |
+- 🎯 **By Tier**: 1 immediate (Tier 1), 113 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 518/518 completed (100%)
 
 ---
 
