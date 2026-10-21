@@ -27,11 +27,33 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 114
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 114 (19 verified 📜, 7 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 113 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 518/518 completed (100%)
+- **Total Goals**: 128
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- ⛔ **Blocked on Prerequisites**: 12
+- 🟢 **Implemented**: 114 (4 verified 📜, 22 stale ⚠️, 88 unverified)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 127 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 518/644 completed (80%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`sila-fact-ledger-integrity`](sila-fact-ledger-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#299)` | - | Sila Fact Ledger Integrity — Investigate and remediate the hash-chain mismatches reported by sila facts verif... | `/goal goals/sila-fact-ledger-integrity/goal.md` |
+| [`sila-command-code-adapter`](sila-command-code-adapter/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#300)` | - | Sila Command Code Adapter — Create a first-class Command Code adapter for Sila. The adapter must write the f... | `/goal goals/sila-command-code-adapter/goal.md` |
+| [`sila-session-lifecycle-hooks`](sila-session-lifecycle-hooks/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#301)` | Prereqs: sila-command-code-adapter | Sila Session Lifecycle Hooks — Install and verify session lifecycle hooks so each Command Code session automati... | `/goal goals/sila-session-lifecycle-hooks/goal.md` |
+| [`sila-mcp-surface-parity`](sila-mcp-surface-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#303)` | Prereqs: sila-command-code-adapter | Sila Mcp Surface Parity — Close the gap between Sila CLI capabilities and the MCP tools visible to Command... | `/goal goals/sila-mcp-surface-parity/goal.md` |
+| [`sila-mandatory-preflight-gate`](sila-mandatory-preflight-gate/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#302)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-fact-ledger-integrity | Sila Mandatory Preflight Gate — Make Sila preflight a hard gate before any code edit. The gate must produce a si... | `/goal goals/sila-mandatory-preflight-gate/goal.md` |
+| [`sila-persona-audit-workflows`](sila-persona-audit-workflows/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#305)` | Prereqs: sila-command-code-adapter, sila-mcp-surface-parity | Sila Persona Audit Workflows — Define when Command Code should use Sila personas, hires, reports, and audits, a... | `/goal goals/sila-persona-audit-workflows/goal.md` |
+| [`sila-onboarding-doctor-enforcement`](sila-onboarding-doctor-enforcement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#309)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-fact-ledger-integrity | Sila Onboarding Doctor Enforcement — Make Sila onboarding health fail-closed. `sila onboard check --strict` currently... | `/goal goals/sila-onboarding-doctor-enforcement/goal.md` |
+| [`sila-nine-verb-memory-protocol`](sila-nine-verb-memory-protocol/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#304)` | Prereqs: sila-mandatory-preflight-gate, sila-mcp-surface-parity | Sila Nine Verb Memory Protocol — Turn the nine-verb Sila memory protocol into explicit, testable trigger moments.... | `/goal goals/sila-nine-verb-memory-protocol/goal.md` |
+| [`sila-project-skill-authoring`](sila-project-skill-authoring/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#306)` | Prereqs: sila-command-code-adapter, sila-mcp-surface-parity, sila-persona-audit-workflows | Sila Project Skill Authoring — Create and govern Thermal-specific Sila skills for the repeated workflows this r... | `/goal goals/sila-project-skill-authoring/goal.md` |
+| [`sila-goal-evidence-certification`](sila-goal-evidence-certification/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#307)` | Prereqs: sila-mandatory-preflight-gate, sila-nine-verb-memory-protocol, sila-fact-ledger-integrity | Sila Goal Evidence Certification — Make goal completion evidence-based. Every delivered goal must have reproducible... | `/goal goals/sila-goal-evidence-certification/goal.md` |
+| [`sila-goal-claim-lifecycle-hygiene`](sila-goal-claim-lifecycle-hygiene/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#308)` | Prereqs: sila-mandatory-preflight-gate, sila-goal-evidence-certification | Sila Goal Claim Lifecycle Hygiene — Make goal claims and attribution honest. The goal removes forced claims, resolve... | `/goal goals/sila-goal-claim-lifecycle-hygiene/goal.md` |
+| [`sila-utilization-scorecard`](sila-utilization-scorecard/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#310)` | Prereqs: sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement | Sila Utilization Scorecard — Define and measure "100% Sila utilisation" without turning it into command-count... | `/goal goals/sila-utilization-scorecard/goal.md` |
+| [`sila-feedback-continuous-improvement`](sila-feedback-continuous-improvement/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#311)` | Prereqs: sila-utilization-scorecard | Sila Feedback Continuous Improvement — Turn Sila feedback into a closed loop. The goal starts with `fb_heal-contract-pr... | `/goal goals/sila-feedback-continuous-improvement/goal.md` |
+| [`sila-command-code-e2e-conformance`](sila-command-code-e2e-conformance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#312)` | Prereqs: sila-command-code-adapter, sila-session-lifecycle-hooks, sila-mandatory-preflight-gate, sila-mcp-surface-parity, sila-nine-verb-memory-protocol, sila-persona-audit-workflows, sila-project-skill-authoring, sila-goal-evidence-certification, sila-goal-claim-lifecycle-hygiene, sila-onboarding-doctor-enforcement, sila-utilization-scorecard, sila-feedback-continuous-improvement, sila-fact-ledger-integrity | Sila Command Code E2E Conformance — Prove the whole utilisation program in a hermetic Command Code session. The harn... | `/goal goals/sila-command-code-e2e-conformance/goal.md` |
 
 ---
 
@@ -39,117 +61,117 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Mode | Shape | Verification | Task / Ref | Commit |
 | :--- | :---: | :--- | :---: | :--- | :--- |
-| [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d1b68ab` |
-| [`governance-foundations`](governance-foundations/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `332ad26` |
-| [`tiered-precommit-fastpath`](tiered-precommit-fastpath/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `1b5a3c8` |
-| [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `bee76ff` |
-| [`version-migration-guide`](version-migration-guide/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `12d9833` |
-| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ecc9a92` |
-| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `09eb367` |
-| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `86d6ebb` |
-| [`live-polling-cpu-budget`](live-polling-cpu-budget/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b71d464` |
-| [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d2cd4a2` |
-| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d182cf9` |
-| [`reasoning-effort-telemetry`](reasoning-effort-telemetry/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0f3f533` |
-| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `198772e` |
-| [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c00ef02` |
-| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `56ec02b` |
-| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `26a20ae` |
-| [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `259d1e0` |
-| [`live-baseline-separation`](live-baseline-separation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
-| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `6713335` |
-| [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `81901a8` |
-| [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `0d42b32` |
-| [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e2cdc72` |
-| [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `78b5d70` |
-| [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `cd5600c` |
-| [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `de16cf9` |
-| [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `95321d8` |
-| [`release-provenance-verification`](release-provenance-verification/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `5fd9958` |
-| [`output-formatting-primitives`](output-formatting-primitives/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a8efc3a` |
-| [`help-supported-tools-and-flags`](help-supported-tools-and-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7aec97d` |
-| [`heatmap-month-label-overlap`](heatmap-month-label-overlap/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `6b834b8` |
-| [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c9ee829` |
-| [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cf43a37` |
-| [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e087bf4` |
-| [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `eb9aeb4` |
-| [`ard-capability-manifest`](ard-capability-manifest/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `dbbb856` |
-| [`auth-md-agent-registration`](auth-md-agent-registration/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `8483316` |
-| [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fa4c8f9` |
-| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d39ef40` |
-| [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2c387fb` |
-| [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `15d2ffb` |
-| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `70143cb` |
-| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c53c32b` |
-| [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `769b9d6` |
-| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `135b22e` |
-| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `9be2513` |
-| [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `dceba19` |
-| [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ad2d523` |
-| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f375fdf` |
-| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `98772b5` |
+| [`charting-dep-spike`](charting-dep-spike/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `31fdf3e` |
+| [`governance-foundations`](governance-foundations/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `644303c` |
+| [`tiered-precommit-fastpath`](tiered-precommit-fastpath/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e6fc9a8` |
+| [`repo-alignment-and-security`](repo-alignment-and-security/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `4ce10ff` |
+| [`version-migration-guide`](version-migration-guide/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e64b8f0` |
+| [`devin-model-attribution`](devin-model-attribution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e1c75b1` |
+| [`unpriceable-token-sources`](unpriceable-token-sources/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `42bb6bb` |
+| [`jsonl-line-ceilings`](jsonl-line-ceilings/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f6d44cc` |
+| [`live-polling-cpu-budget`](live-polling-cpu-budget/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `76e442f` |
+| [`web-telemetry-parity`](web-telemetry-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `6251e5d` |
+| [`devin-cache-source-isolation`](devin-cache-source-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e120350` |
+| [`reasoning-effort-telemetry`](reasoning-effort-telemetry/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `4da74c0` |
+| [`codex-sandboxed-receipts`](codex-sandboxed-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `aabfe19` |
+| [`markdown-pr-receipts`](markdown-pr-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `50eccc4` |
+| [`session-fork-tree-analytics`](session-fork-tree-analytics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2d2b582` |
+| [`terminal-statusline-helper`](terminal-statusline-helper/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a0123ca` |
+| [`agent-readiness-audit`](agent-readiness-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `695d71c` |
+| [`live-baseline-separation`](live-baseline-separation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2d66157` |
+| [`receipt-evidence-integrity`](receipt-evidence-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `fe2efdc` |
+| [`workload-replay`](workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9a58fb7` |
+| [`setup-health-audit`](setup-health-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `b56e2e1` |
+| [`ingestion-performance-baseline`](ingestion-performance-baseline/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `0086194` |
+| [`directory-scan-incremental-cache`](directory-scan-incremental-cache/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `b252697` |
+| [`test-env-isolation`](test-env-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `3fbc0b6` |
+| [`replay-against-plan-resolution`](replay-against-plan-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e03a7f9` |
+| [`docs-page-claim-parity`](docs-page-claim-parity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `431ede5` |
+| [`release-provenance-verification`](release-provenance-verification/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `83c8251` |
+| [`output-formatting-primitives`](output-formatting-primitives/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `06568f3` |
+| [`help-supported-tools-and-flags`](help-supported-tools-and-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `630ccfa` |
+| [`heatmap-month-label-overlap`](heatmap-month-label-overlap/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `60cb42a` |
+| [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
+| [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
+| [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
+| [`agpl-dual-licensing`](agpl-dual-licensing/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `41caac9` |
+| [`ard-capability-manifest`](ard-capability-manifest/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `980ca1f` |
+| [`auth-md-agent-registration`](auth-md-agent-registration/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d203c1c` |
+| [`cache-efficiency-metrics`](cache-efficiency-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d6d8235` |
+| [`claude-message-dedupe`](claude-message-dedupe/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `9671a0b` |
+| [`cli-daily-update-check`](cli-daily-update-check/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a53141b` |
+| [`cli-upgrade-file-integrity`](cli-upgrade-file-integrity/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2c13a20` |
+| [`cross-platform-ci-matrix`](cross-platform-ci-matrix/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `972b37f` |
+| [`database-loader-iteration-safety`](database-loader-iteration-safety/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `1cecbb5` |
+| [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `4ce6090` |
+| [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6f7117f` |
+| [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `8ed687f` |
+| [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `4777f76` |
+| [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `45060c2` |
+| [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2a2185a` |
+| [`license-strategy-and-enforcement`](license-strategy-and-enforcement/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `278d1d3` |
 | [`live-grid-turns-truncation`](live-grid-turns-truncation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
-| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9f08e2d` |
+| [`live-speed-fractional-display`](live-speed-fractional-display/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `20461a4` |
 | [`live-tracker-delta-clamping`](live-tracker-delta-clamping/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
 | [`live-tracker-midnight-drift`](live-tracker-midnight-drift/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Audit Receipt | `70ad214cdaad7c65a1971f1ad57bcc8cf74e4adc` |
-| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e3b825b` |
-| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c4fffb` |
-| [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `3de20b6` |
-| [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7350bf` |
-| [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e460d4a` |
-| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `0efc97b` |
-| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `598c3d1` |
-| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `cebda93` |
-| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `b8fac89` |
-| [`retire-dashboard-tui`](retire-dashboard-tui/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `618f284` |
-| [`retire-token-yield`](retire-token-yield/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `d516b38` |
-| [`retire-web-server`](retire-web-server/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a853b07` |
-| [`retire-work-receipts`](retire-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cc28819` |
-| [`retire-workload-replay`](retire-workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `97c2200` |
-| [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e657745` |
-| [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `fd5ca83` |
-| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `8e3d3e9` |
-| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `78b8258` |
-| [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7557bf9` |
-| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a2467d7` |
-| [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `8c9847d` |
-| [`token-yield-metrics`](token-yield-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ef10ceb` |
-| [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f720e57` |
-| [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ebc550a` |
-| [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `02f3ef6` |
-| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e30bd4d` |
-| [`zed-editor-loader`](zed-editor-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9b6a3ef` |
-| [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a059d01` |
-| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9a82384` |
-| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9fa6245` |
-| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2842f1a` |
-| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `79bbd75` |
-| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `17b6b59` |
-| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `dd3ab4f` |
-| [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `305f589` |
-| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `d162bf1` |
-| [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `752569e` |
-| [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `fbaff74` |
-| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `8c7402c` |
-| [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7593030` |
-| [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e288c50` |
-| [`chart-scale-order-and-top-contract`](chart-scale-order-and-top-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b92b6a` |
-| [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `472c5a6` |
-| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `85af7be` |
-| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cee5b3b` |
-| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3bd8d0a` |
-| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `1f71cd2` |
-| [`live-flame-scale-contract`](live-flame-scale-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c5d85c0` |
-| [`live-ticker-rollup-and-cost-sort`](live-ticker-rollup-and-cost-sort/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6b424c5` |
+| [`live-tracker-phantom-bursts`](live-tracker-phantom-bursts/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6ab164c` |
+| [`loader-bounded-concurrency`](loader-bounded-concurrency/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `33e9005` |
+| [`markdown-for-agents`](markdown-for-agents/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `a6f415b` |
+| [`mcp-server-card`](mcp-server-card/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `16d05c2` |
+| [`model-identity-and-alias-resolution`](model-identity-and-alias-resolution/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `536d8a2` |
+| [`multi-target-cross-compile-ci-gate`](multi-target-cross-compile-ci-gate/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `3b1279f` |
+| [`platform-native-data-directories`](platform-native-data-directories/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `cdd1711` |
+| [`purge-bot-contributors`](purge-bot-contributors/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `d3fc320` |
+| [`report-period-totals`](report-period-totals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `9eb30ce` |
+| [`retire-dashboard-tui`](retire-dashboard-tui/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `6789fc6` |
+| [`retire-token-yield`](retire-token-yield/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `eda8f0f` |
+| [`retire-web-server`](retire-web-server/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `35f9fc6` |
+| [`retire-work-receipts`](retire-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `4f085a9` |
+| [`retire-workload-replay`](retire-workload-replay/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `f7b96f1` |
+| [`rfc9727-api-catalog`](rfc9727-api-catalog/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `49a1d15` |
+| [`robots-content-signals`](robots-content-signals/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `c71ec00` |
+| [`sila-onboarding`](sila-onboarding/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `22b2530` |
+| [`slsa3-release-provenance`](slsa3-release-provenance/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `47ba67d` |
+| [`stateless-telemetry-sharing`](stateless-telemetry-sharing/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `de9bbdb` |
+| [`streak-parsing-defensive-guards`](streak-parsing-defensive-guards/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `e3cf52c` |
+| [`telemetry-and-ui-audit`](telemetry-and-ui-audit/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `97b6631` |
+| [`token-yield-metrics`](token-yield-metrics/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0b773e6` |
+| [`tui-dense-finops-grid`](tui-dense-finops-grid/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `8fe7e6d` |
+| [`verifiable-work-receipts`](verifiable-work-receipts/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `ea09db0` |
+| [`webmcp-browser-tools`](webmcp-browser-tools/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `2ec434c` |
+| [`windows-sqlite-uri-path-normalization`](windows-sqlite-uri-path-normalization/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `6a8fa87` |
+| [`zed-editor-loader`](zed-editor-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e59d54b` |
+| [`charting-analytics`](charting-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `bec2a9d` |
+| [`community-covenant-neutrality`](community-covenant-neutrality/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `079ff1f` |
+| [`trust-ladder-and-succession`](trust-ladder-and-succession/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6679528` |
+| [`cli-staged-deprecation-and-upgrade`](cli-staged-deprecation-and-upgrade/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `311e1a1` |
+| [`pricing-catalog-coverage`](pricing-catalog-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `cce1ebe` |
+| [`jsonl-scan-diagnostics`](jsonl-scan-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7d84d9a` |
+| [`receipt-accounting-coverage`](receipt-accounting-coverage/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `fe4d2ba` |
+| [`live-metric-parity`](live-metric-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a655e01` |
+| [`localhost-request-boundary`](localhost-request-boundary/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `ad78cfe` |
+| [`codex-incremental-rollout-cache`](codex-incremental-rollout-cache/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ef07150` |
+| [`live-second-bucket-accounting`](live-second-bucket-accounting/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `72f9e10` |
+| [`chatgpt-rolling-burst-replay`](chatgpt-rolling-burst-replay/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `21ba55f` |
+| [`live-ticker-unit-and-cost-clarity`](live-ticker-unit-and-cost-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2d66157` |
+| [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a279a5f` |
+| [`chart-scale-order-and-top-contract`](chart-scale-order-and-top-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `0cfdd5f` |
+| [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9ae5494` |
+| [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
+| [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
+| [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |
+| [`hermetic-verification-gates`](hermetic-verification-gates/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `b4f045d` |
+| [`live-flame-scale-contract`](live-flame-scale-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `36eccea` |
+| [`live-ticker-rollup-and-cost-sort`](live-ticker-rollup-and-cost-sort/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4c5dd1b` |
 | [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Audit Receipt | `c610c97fc84bf0d0b18416a5c137f01b758757db` |
-| [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `2be3081` |
-| [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `095d165` |
-| [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `50faef3` |
-| [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `43c146e` |
-| [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `be1e45f` |
-| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7b0813c` |
-| [`statusline-and-share-scope-contract`](statusline-and-share-scope-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `0dd1f4d` |
-| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `25163db` |
-| [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `80b3e4f` |
-| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a5e6a9d` |
-| [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `de17df6` |
+| [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7fe97c8` |
+| [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3b7cb85` |
+| [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `f662fef` |
+| [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c849d30` |
+| [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `ed0143c` |
+| [`release-communication-and-changelog`](release-communication-and-changelog/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e4e7857` |
+| [`statusline-and-share-scope-contract`](statusline-and-share-scope-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `f0fc71e` |
+| [`charting-flags-docs-release`](charting-flags-docs-release/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c994d87` |
+| [`distribution-coverage-foundation`](distribution-coverage-foundation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `266557c` |
+| [`output-gallery-regression-contract`](output-gallery-regression-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `6920439` |
+| [`html-docs-features-and-analytics`](html-docs-features-and-analytics/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c1da729` |
