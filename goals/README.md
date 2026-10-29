@@ -27,11 +27,40 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 121
+- **Total Goals**: 134
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 121 (5 verified 📜, 28 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 120 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 542/542 completed (100%)
+- 🔵 **In Progress (Claimed)**: 1
+- ⛔ **Blocked on Prerequisites**: 2
+- 🟢 **Implemented**: 121 (4 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 542/608 completed (89%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@command-code` | Implementing strict parser foundation first | 0s ago |
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#242)` | - | Never swallow -h/--help and add command-scoped help — Priority: P0 (discoverability, safety-adjacent). Help is the first thing a new u... | `/goal goals/cli-help-interception-and-scoped-help/goal.md` |
+| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#243)` | - | Make thermal upgrade previewable, scriptable, and non-destructive by default — Priority: P0 (safety). `thermal upgrade` is the only command that mutates the us... | `/goal goals/cli-upgrade-nondestructive-safety-flags/goal.md` |
+| [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#246)` | - | Make --db scope explicit and turn raw SQLite failures into actionable errors — Priority: P0 (scope and trust). `--db` is documented as "Override database/data ... | `/goal goals/cli-db-override-scope-and-errors/goal.md` |
+| [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#247)` | - | Replace the empty-state dead end with a per-source inventory and next steps — Priority: P1 (activation). On a machine with no supported agent data, the defaul... | `/goal goals/cli-first-run-source-inventory/goal.md` |
+| [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#248)` | - | Define machine-clean non-TTY stdout, exit codes, and silent statusline degradation — Priority: P1 (automation and prompt integration). Two command surfaces break the... | `/goal goals/cli-nontty-and-statusline-output-contract/goal.md` |
+| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#249)` | - | Make every surface fit the terminal width or refuse with a clear minimum-width message — Priority: P1 (terminal citizenship). Thermal renders fixed-width box art regardl... | `/goal goals/cli-terminal-width-adaptation/goal.md` |
+| [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
+| [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
+| [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#253)` | - | Name denominators and intervals and remove run-on or zero-noise report prose — Priority: P2 (output clarity). The analytics commands are numerically correct bu... | `/goal goals/cli-analytics-and-audit-prose-clarity/goal.md` |
+| [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#254)` | - | Give -v, -V, --version, and --verbose one unambiguous contract — Priority: P1 (discoverability). `-v` is context-dependent: it prints the version... | `/goal goals/cli-version-verbose-flag-contract/goal.md` |
+| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#245)` | Prereqs: cli-argument-parser-strictness | Classify unknown commands, tools, and extra positionals with actionable suggestions — Priority: P1 (error empathy). Every unrecognized positional is currently funnell... | `/goal goals/cli-unknown-token-diagnostics/goal.md` |
+| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#250)` | Prereqs: cli-argument-parser-strictness | Give --top one documented contract and make every remediation hint valid — Priority: P1 (consistency). `--top` has three incompatible stories. The help say... | `/goal goals/cli-top-flag-contract/goal.md` |
 
 ---
 
@@ -72,7 +101,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sqlite-engine-security-upgrade`](sqlite-engine-security-upgrade/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
-| [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `674bca0` |
+| [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
