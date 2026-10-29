@@ -228,7 +228,7 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 	rows := [][2]string{
 		{"Active days", fmt.Sprintf("%d", rep.Days)},
 		{"Total", metric(rep.Total)},
-		{"Mean", metric(rep.Mean)},
+		{"Mean / active day", metric(rep.Mean)},
 		{"Median", metric(rep.Median)},
 		{"p90", metric(rep.P90)},
 		{"Max", metric(rep.Max)},
@@ -241,7 +241,10 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		rows = append([][2]string{rows[0], {"Costed days", costed}}, rows[1:]...)
 	}
 	for _, row := range rows {
-		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(row[0], 12)), row[1]))
+		sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(row[0], 20)), row[1]))
+	}
+	for _, line := range WrapText(fmt.Sprintf("Basis: %d active days", rep.Days), ContentWidth()-4) {
+		sb.WriteString("  " + dim(line) + "\n")
 	}
 
 	maxWeekdayMean := 0.0
@@ -366,7 +369,12 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		if width < 48 {
 			histBarWidth = 0
 		}
+		omittedBins := 0
 		for _, b := range rep.Histogram {
+			if b.Count == 0 {
+				omittedBins++
+				continue
+			}
 			bar := chartBar(float64(b.Count), float64(maxCount), histBarWidth, colors)
 			rangeLabel := fmt.Sprintf("%s — %s", metric(b.From), metric(b.To))
 			countLabel := fmt.Sprintf("%d", b.Count)
@@ -383,6 +391,15 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 				))
 			}
 		}
+		if omittedBins > 0 {
+			binWord := "bins"
+			if omittedBins == 1 {
+				binWord = "bin"
+			}
+			for _, line := range WrapText(fmt.Sprintf("%d empty %s omitted.", omittedBins, binWord), ContentWidth()-4) {
+				sb.WriteString("  " + dim(line) + "\n")
+			}
+		}
 	}
 
 	topLimit := 5
@@ -390,14 +407,6 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		topLimit = len(rep.TopDays)
 	}
 	displayedTopDays := rep.TopDays[:topLimit]
-
-	allDisplayedAreOutliers := len(displayedTopDays) > 0
-	for _, td := range displayedTopDays {
-		if td.Value <= rep.OutlierThreshold {
-			allDisplayedAreOutliers = false
-			break
-		}
-	}
 
 	if len(rep.TopDays) > 0 {
 		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Top days")))
@@ -411,32 +420,32 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 	}
 
 	if len(rep.Outliers) > 0 {
-		header := fmt.Sprintf("Outliers above %s (median + 2 MAD)", metric(rep.OutlierThreshold))
-		text := header
-		if allDisplayedAreOutliers {
-			if len(rep.Outliers) > topLimit {
-				extra := len(rep.Outliers) - topLimit
-				text = fmt.Sprintf("%s: all %d top days above, plus %d more", header, topLimit, extra)
-			} else if topLimit == 1 {
-				text = fmt.Sprintf("%s: top day above", header)
-			} else {
-				text = fmt.Sprintf("%s: all %d top days above", header, topLimit)
-			}
+		shown := len(rep.Outliers)
+		if shown > 5 {
+			shown = 5
 		}
+		dayWord := "days"
+		if len(rep.Outliers) == 1 {
+			dayWord = "day"
+		}
+		text := fmt.Sprintf("Outliers: %d %s above %s (median + 2 MAD); top %d shown.",
+			len(rep.Outliers), dayWord, metric(rep.OutlierThreshold), shown)
 		for _, line := range WrapText(text, ContentWidth()-4) {
-			sb.WriteString("\n  " + dim(line))
+			sb.WriteString("  " + dim(line) + "\n")
 		}
-		if !allDisplayedAreOutliers {
-			for i, d := range rep.Outliers {
-				if i == 5 {
-					break
-				}
-				sb.WriteString(fmt.Sprintf("\n  %s %s", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
+		for _, line := range WrapText("MAD = median absolute deviation.", ContentWidth()-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		for i, d := range rep.TopDays {
+			if i == 5 {
+				break
 			}
+			if d.Value <= rep.OutlierThreshold {
+				continue
+			}
+			sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
 		}
-		sb.WriteString("\n")
 	}
-
 	if rep.Estimated {
 		for _, line := range WrapText("Cost mixes recorded values with estimates from models.dev list prices.", ContentWidth()-4) {
 			sb.WriteString("\n  " + dim(line))
@@ -490,15 +499,16 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		badgeColor = faint
 	}
 
-	trajectoryLine := fmt.Sprintf("Trajectory: [%s]  Calendar window: [%d days · %s to %s]  Daily Mean: ≈%s",
-		badgeColor(badge),
-		len(rep.Points),
-		rep.FirstDay,
-		rep.LastDay,
-		highlight(metric(rep.Mean)),
-	)
-	for _, line := range WrapText(trajectoryLine, ContentWidth()-4) {
-		sb.WriteString("  " + line + "\n")
+	trajectoryLines := []string{
+		fmt.Sprintf("Trajectory: [%s]", badgeColor(badge)),
+		fmt.Sprintf("Calendar window: %d days · %s to %s", len(rep.Points), rep.FirstDay, rep.LastDay),
+		fmt.Sprintf("Mean / calendar day: ≈%s", highlight(metric(rep.Mean))),
+		fmt.Sprintf("Basis: %d calendar days", len(rep.Points)),
+	}
+	for _, line := range trajectoryLines {
+		for _, wrapped := range WrapText(line, ContentWidth()-4) {
+			sb.WriteString("  " + wrapped + "\n")
+		}
 	}
 	sb.WriteString("\n")
 
@@ -508,15 +518,16 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 	rows := [][2]string{
 		{"Range", fmt.Sprintf("%s to %s", rep.FirstDay, rep.LastDay)},
 		{"Days", fmt.Sprintf("%d", len(rep.Points))},
-		{"Mean", metric(rep.Mean)},
+		{"Mean / calendar day", metric(rep.Mean)},
 		{"Slope", fmt.Sprintf("%s per day", signedValue(rep.Slope, rep.Metric))},
 		{"Direction", dir},
 	}
 
 	var cardLines []string
 	for _, row := range rows {
-		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight(row[0], 12)), row[1]))
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight(row[0], 20)), row[1]))
 	}
+	cardLines = append(cardLines, fmt.Sprintf(" %s %d calendar days", dim(thermal.PadRight("Basis:", 20)), len(rep.Points)))
 
 	// Sparkline if we have points
 	if len(rep.Points) > 1 {
@@ -592,8 +603,8 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		p := rep.Projection
 		cardLines = append(cardLines, strings.Repeat("─", innerWidth))
 		cardLines = append(cardLines, " "+dim(fmt.Sprintf("Projection to %s (%d days)", p.To, p.Days)))
-		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Expected", 12)), metric(p.Expected)))
-		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Band", 12)),
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Point estimate", 20)), metric(p.Expected)))
+		cardLines = append(cardLines, fmt.Sprintf(" %s %s", dim(thermal.PadRight("Band (95% residual)", 20)),
 			fmt.Sprintf("%s to %s", metric(p.Low), metric(p.High))))
 	}
 
@@ -607,6 +618,11 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		BorderColor: theme.Border,
 		Width:       CardWidthFor(cardWidth),
 	}))
+	if rep.Projection != nil {
+		for _, line := range WrapText("Method: least-squares fit; band = ±1.96 residual SD, clamped at 0.", cardWidth-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+	}
 
 	// Actionable Insights section (like audit)
 	sb.WriteString("\n  Actionable Insights:\n")

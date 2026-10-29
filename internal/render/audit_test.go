@@ -41,7 +41,7 @@ func TestRenderAudit_PathsScoreAndLongNames(t *testing.T) {
 		"CLAUDE.md (repo root)",
 		"CLAUDE.md (~/.claude)",
 		"Score components: rules -30 · MCP -12 · readiness -0",
-		"Biggest win: Warning:",
+		"Biggest win: Address",
 		"PASS  Tool Databases    ",
 		"a-very-long-mcp-server-…",
 	} {
@@ -113,5 +113,22 @@ func TestRenderAudit_NoColor(t *testing.T) {
 	}
 	if decoded.Score != 90 {
 		t.Errorf("expected decoded score 90, got %d", decoded.Score)
+	}
+}
+
+func TestAuditBiggestWinLine(t *testing.T) {
+	rep := audit.AuditReport{
+		Score: 58, Grade: "D", RulePenalty: 30, MCPPenalty: 12,
+		Recommendations: []string{"Critical: AGENTS.md (~/.agents) is 343 lines (~5641 tok). Split into specialized skills."},
+	}
+	out := RenderAudit(rep, true)
+	if !strings.Contains(out, "Biggest win: Address AGENTS.md") {
+		t.Fatalf("biggest-win line missing or not verb-led:\n%s", out)
+	}
+	if strings.Contains(out, "Biggest win: Critical:") {
+		t.Fatalf("biggest-win line still splices Critical:\n%s", out)
+	}
+	if !strings.Contains(out, "Score components:") || !strings.Contains(out, "Largest penalty:") {
+		t.Fatalf("audit components/penalty lines missing:\n%s", out)
 	}
 }

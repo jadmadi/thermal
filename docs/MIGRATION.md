@@ -22,6 +22,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Reports Drop Columns Below 80 and Live Refuses Below 60](#changed-width-contract)
   - [Changed: Leaderboard States Its Ranking, Legend, and Cost Arithmetic](#changed-leaderboard-ranking-legend)
   - [Changed: Project and Model Totals Use Distinct-Day Denominators](#changed-total-row-semantics)
+  - [Changed: Analytics Denominators and Audit Prose](#changed-analytics-prose)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -517,6 +518,43 @@ thermal models --json | jq '.totals | {activeDays, modelDays, toolCount}'
 
 **Escape hatch**:
 Totals stay full-window under `--top`; per-project and per-model details remain in `data`.
+
+---
+
+### Changed: Analytics Denominators and Audit Prose
+<a id="changed-analytics-prose"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'Daily Mean|Biggest win: Critical|all [0-9]+ top days above' .`
+- **Detection signal**: `thermal stats --no-color` now shows `Mean / active day` and `Basis: N active days`; `thermal trend --no-color` shows `Mean / calendar day` and `Basis: N calendar days`; audit prints `Score components:`, `Largest penalty:`, and `Biggest win: Address …` on separate lines.
+
+**What changed and why**:
+`stats` and `trend` both labelled a value `Mean`, but stats divided by active days while trend divided by calendar days, so the same data could show values four times apart with no explanation. The labels and JSON now carry `meanBasis` (`active-day`/`calendar-day`), trend includes `activeDays`, and the projection exposes `bandMethod:"residual-sd-1.96"`. Outlier prose is one sentence plus a MAD definition; empty histogram bins are omitted with a count; audit splits its score components, largest penalty, and verb-led biggest win, and defines PASS/WARN/CRIT.
+
+**Before / After**:
+```bash
+# Before
+Mean                 242.7M
+Biggest win: Critical: AGENTS.md ...
+Outliers above 226.1M (median + 2 MAD): all 5 top days above, plus 22 more
+
+# After
+Mean / active day    242.7M
+Basis: 97 active days
+Outliers: 29 days above 227.1M (median + 2 MAD); top 5 shown.
+MAD = median absolute deviation.
+Biggest win: Address AGENTS.md ...
+```
+
+**The fix**:
+Use the basis labels or JSON:
+```bash
+thermal stats --json | jq '.meanBasis'
+thermal trend --json | jq '{meanBasis, activeDays, band: .projection.bandMethod}'
+```
+
+**Escape hatch**:
+The underlying values are unchanged; only the denominator labels and prose are new. `--json` carries the machine-readable basis.
 
 ---
 

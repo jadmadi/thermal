@@ -21,11 +21,12 @@ type TrendOptions struct {
 // Projection is the month-end estimate from the fitted trend. Low and High
 // form an approximate 95 percent band from the residual spread.
 type Projection struct {
-	To       string  `json:"to"`
-	Days     int     `json:"days"`
-	Expected float64 `json:"expected"`
-	Low      float64 `json:"low"`
-	High     float64 `json:"high"`
+	To         string  `json:"to"`
+	Days       int     `json:"days"`
+	Expected   float64 `json:"expected"`
+	Low        float64 `json:"low"`
+	High       float64 `json:"high"`
+	BandMethod string  `json:"bandMethod"`
 }
 
 // TrendReport is the payload behind thermal trend. Points include quiet days
@@ -37,6 +38,8 @@ type TrendReport struct {
 	Slope      float64     `json:"slopePerDay"`
 	Intercept  float64     `json:"intercept"`
 	Mean       float64     `json:"mean"`
+	MeanBasis  string      `json:"meanBasis"`
+	ActiveDays int         `json:"activeDays"`
 	FirstDay   string      `json:"firstDay"`
 	LastDay    string      `json:"lastDay"`
 	Projection *Projection `json:"projection,omitempty"`
@@ -70,7 +73,7 @@ func AggregateTrend(days []DailyRow, opts TrendOptions, pricer Pricer) TrendRepo
 		byDay[day.Day] += float64(day.Tokens)
 	}
 
-	rep := TrendReport{Type: "trend", Metric: metric, Estimated: estimated}
+	rep := TrendReport{Type: "trend", Metric: metric, Estimated: estimated, MeanBasis: "calendar-day"}
 	if len(byDay) == 0 {
 		return rep
 	}
@@ -93,6 +96,9 @@ func AggregateTrend(days []DailyRow, opts TrendOptions, pricer Pricer) TrendRepo
 		v := byDay[day]
 		rep.Points = append(rep.Points, DayValue{Day: day, Value: v})
 		rep.Mean += v
+		if v > 0 {
+			rep.ActiveDays++
+		}
 	}
 	rep.Mean /= float64(len(rep.Points))
 
@@ -171,10 +177,11 @@ func projectMonthEnd(rep TrendReport, n float64, now time.Time) (Projection, boo
 		low = 0
 	}
 	return Projection{
-		To:       monthEnd.Format("2006-01-02"),
-		Days:     days,
-		Expected: expected,
-		Low:      low,
-		High:     high,
+		To:         monthEnd.Format("2006-01-02"),
+		Days:       days,
+		Expected:   expected,
+		Low:        low,
+		High:       high,
+		BandMethod: "residual-sd-1.96",
 	}, true
 }

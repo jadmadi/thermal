@@ -316,6 +316,13 @@ sum their rows; `activeDays` is the distinct calendar-day count and `toolCount`
 is the distinct tool count. The footer names `per project`/`per model` and the
 distinct-day denominator so the two day counts cannot be confused.
 
+Analytics name their denominators: `stats` reports `Mean / active day` with
+`Basis: N active days`, while `trend` reports `Mean / calendar day` with
+`Basis: N calendar days`. The trend projection labels its `Point estimate` and
+`95% residual` band and explains the least-squares method and zero clamp; audit
+splits score components, largest penalty, and a verb-led biggest win, and
+defines PASS/WARN/CRIT.
+
 ![Thermal weekly report](docs/pages/shot-weekly.webp)
 
 Daily, weekly, and monthly tables list token-bearing periods only: days with

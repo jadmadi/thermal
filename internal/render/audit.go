@@ -84,17 +84,30 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 			largestPenalty = penalty
 		}
 	}
-	explanation := fmt.Sprintf("Score components: rules -%d · MCP -%d · readiness -%d. Largest: %s.",
-		rep.RulePenalty, rep.MCPPenalty, rep.ReadinessPenalty, largest)
+	componentsLine := fmt.Sprintf("Score components: rules -%d · MCP -%d · readiness -%d.",
+		rep.RulePenalty, rep.MCPPenalty, rep.ReadinessPenalty)
+	for _, line := range WrapText(componentsLine, cardWidth-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
+	for _, line := range WrapText("Largest penalty: "+largest+".", cardWidth-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
 	if len(rep.Recommendations) > 0 {
-		explanation += " Biggest win: " + rep.Recommendations[0]
-	}
-	explanationWidth := cardWidth
-	if cardWidth < 80 {
-		explanationWidth = cardWidth - 4
-	}
-	for _, line := range WrapText(explanation, explanationWidth) {
-		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+		rec := rep.Recommendations[0]
+		for _, candidate := range rep.Recommendations {
+			if strings.Contains(candidate, "AGENTS.md") {
+				rec = candidate
+				break
+			}
+		}
+		rec = strings.TrimSpace(rec)
+		for _, prefix := range []string{"Critical:", "Warning:", "WARN:", "CRIT:"} {
+			rec = strings.TrimSpace(strings.TrimPrefix(rec, prefix))
+		}
+		win := "Biggest win: Address " + rec
+		for _, line := range WrapText(win, cardWidth-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
 	}
 	sb.WriteString("\n")
 
@@ -148,6 +161,9 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
 	}))
+	for _, line := range WrapText("Legend: PASS = no action; WARN = moderate context tax; CRIT = high (>300 lines or >1MB).", cardWidth-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
 	sb.WriteString("\n")
 
 	// 2. MCP Servers

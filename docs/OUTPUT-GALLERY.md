@@ -1,7 +1,7 @@
 # Thermal Output Gallery
 
 > Generated from a fixed fixture by `scripts/output_gallery.sh`. Capture
-> `2026-10-29T22:10:40Z` · fixture `d57ba0c803e5f33a7cc895a83f7bd040aea5e332c8e2a94bc512992d89e44155` · `thermal dev (built from source)`.
+> `2026-10-29T22:17:23Z` · fixture `80f750c4cfe71c85221196cb6f723b81187a93d3e5d41714c0a7bbb6f62f26d0` · `thermal dev (built from source)`.
 > Fixed data date: 2026-01-15. Text is `NO_COLOR=1`; non-TTY default width is
 > 100. Width sections use a PTY at 80/120. The live TUI block is synthetic and
 > labeled; the other text blocks are captured from the same fixture run.
@@ -38,7 +38,7 @@
 | trend (tokens) | mean 759700 | — | — | — | — | calendar | n/a (tokens) |
 | trend (cost) | mean 1.7546 | — | — | — | — | calendar | total |
 | share | 759700 | 1.75 | 0.0046 | 1.7546 | 1/— | all · all time (1 active day) | recorded+estimated |
-| live | — | — | — | — | — | today snapshot (live, 2026-10-30T01:10:40.790587648+03:00) | recorded+estimated |
+| live | — | — | — | — | — | today snapshot (live, 2026-10-30T01:17:23.912307107+03:00) | recorded+estimated |
 
 Allowed equalities are checked by `scripts/output_gallery_gate.sh`: leaderboard
 estimated equals daily estimated, projects total equals daily total, models
@@ -398,12 +398,13 @@ Token stats:
 
   Thermal · stats · tokens
 
-  Active days  1
-  Total        759.7K
-  Mean         759.7K
-  Median       759.7K
-  p90          759.7K
-  Max          759.7K
+  Active days          1
+  Total                759.7K
+  Mean / active day    759.7K
+  Median               759.7K
+  p90                  759.7K
+  Max                  759.7K
+  Basis: 1 active days
 
   Weekday profile
   Thursday        759.7K  ████████████████     1 day
@@ -418,16 +419,8 @@ Token stats:
   Cache hit rate: 87.0% of prompt tokens read from cache
 
   Distribution
-          0 — 76.0K  ························     0
-     76.0K — 151.9K  ························     0
-    151.9K — 227.9K  ························     0
-    227.9K — 303.9K  ························     0
-    303.9K — 379.9K  ························     0
-    379.9K — 455.8K  ························     0
-    455.8K — 531.8K  ························     0
-    531.8K — 607.8K  ························     0
-    607.8K — 683.7K  ························     0
     683.7K — 759.7K  ████████████████████████     1
+  9 empty bins omitted.
 
   Top days
   2026-01-15       759.7K
@@ -439,28 +432,21 @@ Cost stats:
 
   Thermal · stats · cost
 
-  Active days  1
-  Costed days  1
-  Total        $1.75
-  Mean         $1.75
-  Median       $1.75
-  p90          $1.75
-  Max          $1.75
+  Active days          1
+  Costed days          1
+  Total                $1.75
+  Mean / active day    $1.75
+  Median               $1.75
+  p90                  $1.75
+  Max                  $1.75
+  Basis: 1 active days
 
   Weekday profile
   Thursday         $1.75  ████████████████     1 day
 
   Distribution
-     $0.00 — $0.18  ························     0
-     $0.18 — $0.35  ························     0
-     $0.35 — $0.53  ························     0
-     $0.53 — $0.70  ························     0
-     $0.70 — $0.88  ························     0
-     $0.88 — $1.05  ························     0
-     $1.05 — $1.23  ························     0
-     $1.23 — $1.40  ························     0
-     $1.40 — $1.58  ························     0
      $1.58 — $1.75  ████████████████████████     1
+  9 empty bins omitted.
 
   Top days
   2026-01-15        $1.75
@@ -476,16 +462,19 @@ Token trend:
 
   Thermal · trend · tokens
 
-  Trajectory: [FLAT → steady state] Calendar window: [1 days · 2026-01-15 to 2026-01-15] Daily
-  Mean: ≈759.7K
+  Trajectory: [FLAT → steady state]
+  Calendar window: 1 days · 2026-01-15 to 2026-01-15
+  Mean / calendar day: ≈759.7K
+  Basis: 1 calendar days
 
-  ╭─ Activity Trend ────────────── tokens ─╮
-  │  Range        2026-01-15 to 2026-01-15 │
-  │  Days         1                        │
-  │  Mean         759.7K                   │
-  │  Slope        0 per day                │
-  │  Direction    flat                     │
-  ╰────────────────────────────────────────╯
+  ╭─ Activity Trend ────────────────────── tokens ─╮
+  │  Range                2026-01-15 to 2026-01-15 │
+  │  Days                 1                        │
+  │  Mean / calendar day  759.7K                   │
+  │  Slope                0 per day                │
+  │  Direction            flat                     │
+  │  Basis:               1 calendar days          │
+  ╰────────────────────────────────────────────────╯
 
   Actionable Insights:
   • Workload is holding steady at ≈759.7K daily with consistent utilization.
@@ -497,16 +486,19 @@ Cost trend:
 
   Thermal · trend · cost
 
-  Trajectory: [FLAT → steady state] Calendar window: [1 days · 2026-01-15 to 2026-01-15] Daily
-  Mean: ≈$1.75
+  Trajectory: [FLAT → steady state]
+  Calendar window: 1 days · 2026-01-15 to 2026-01-15
+  Mean / calendar day: ≈$1.75
+  Basis: 1 calendar days
 
-  ╭─ Activity Trend ──────────────── cost ─╮
-  │  Range        2026-01-15 to 2026-01-15 │
-  │  Days         1                        │
-  │  Mean         $1.75                    │
-  │  Slope        $0.00 per day            │
-  │  Direction    flat                     │
-  ╰────────────────────────────────────────╯
+  ╭─ Activity Trend ──────────────────────── cost ─╮
+  │  Range                2026-01-15 to 2026-01-15 │
+  │  Days                 1                        │
+  │  Mean / calendar day  $1.75                    │
+  │  Slope                $0.00 per day            │
+  │  Direction            flat                     │
+  │  Basis:               1 calendar days          │
+  ╰────────────────────────────────────────────────╯
 
   Actionable Insights:
   • Workload is holding steady at ≈$1.75 daily with consistent utilization.
@@ -532,8 +524,8 @@ Cost trend:
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.886551e0.TI9RbvIwEI…zMv2Xi4cT2Pm8B79yziRTGhFxHH8GAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.f88af1ee.TI9RbsMgEE…51uv204jWDW8x78QikhL2kppZzn3wEA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -554,8 +546,10 @@ The full URL is in [the share JSON appendix](#full-share-json).
   Thermal · audit · local setup & context health
 
   Score: [95/100 · Grade A+]  Context Tax: ≈344 tokens / turn (Rules: ≈344 tok, MCP: ≈0 tok)
-  Score components: rules -5 · MCP -0 · readiness -0. Largest: rule files. Biggest win: Warning:
-  AGENTS.md (repo root) is 160 lines (~333 tok). Prune stale rules to save context budget.
+  Score components: rules -5 · MCP -0 · readiness -0.
+  Largest penalty: rule files.
+  Biggest win: Address AGENTS.md (repo root) is 160 lines (~333 tok). Prune stale rules to
+  save context budget.
 
   ╭─ Instruction & Rule Files ────────────────────────────────────────────────── rule overhead ─╮
   │  PASS  CLAUDE.md (repo root)              2 lines  ≈7 tok                                   │
@@ -564,6 +558,7 @@ The full URL is in [the share JSON appendix](#full-share-json).
   │  ────────────────────────────────────────────────────────────────────────────────────────── │
   │  Legend: [WARN] >150 lines (moderate context tax)                                           │
   ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
+  Legend: PASS = no action; WARN = moderate context tax; CRIT = high (>300 lines or >1MB).
 
   ╭─ MCP Server Registrations ── schema tax ─╮
   │  No MCP servers configured.              │
@@ -941,12 +936,13 @@ stats, share, statusline) are captured at both widths.
 
   Thermal · stats · tokens
 
-  Active days  1
-  Total        759.7K
-  Mean         759.7K
-  Median       759.7K
-  p90          759.7K
-  Max          759.7K
+  Active days          1
+  Total                759.7K
+  Mean / active day    759.7K
+  Median               759.7K
+  p90                  759.7K
+  Max                  759.7K
+  Basis: 1 active days
 
   Weekday profile
   Thursday        759.7K  ████████████████     1 day
@@ -961,16 +957,8 @@ stats, share, statusline) are captured at both widths.
   Cache hit rate: 87.0% of prompt tokens read from cache
 
   Distribution
-          0 — 76.0K  ························     0
-     76.0K — 151.9K  ························     0
-    151.9K — 227.9K  ························     0
-    227.9K — 303.9K  ························     0
-    303.9K — 379.9K  ························     0
-    379.9K — 455.8K  ························     0
-    455.8K — 531.8K  ························     0
-    531.8K — 607.8K  ························     0
-    607.8K — 683.7K  ························     0
     683.7K — 759.7K  ████████████████████████     1
+  9 empty bins omitted.
 
   Top days
   2026-01-15       759.7K
@@ -982,12 +970,13 @@ stats, share, statusline) are captured at both widths.
 
   Thermal · stats · tokens
 
-  Active days  1
-  Total        759.7K
-  Mean         759.7K
-  Median       759.7K
-  p90          759.7K
-  Max          759.7K
+  Active days          1
+  Total                759.7K
+  Mean / active day    759.7K
+  Median               759.7K
+  p90                  759.7K
+  Max                  759.7K
+  Basis: 1 active days
 
   Weekday profile
   Thursday        759.7K  ████████████████     1 day
@@ -1002,16 +991,8 @@ stats, share, statusline) are captured at both widths.
   Cache hit rate: 87.0% of prompt tokens read from cache
 
   Distribution
-          0 — 76.0K  ························     0
-     76.0K — 151.9K  ························     0
-    151.9K — 227.9K  ························     0
-    227.9K — 303.9K  ························     0
-    303.9K — 379.9K  ························     0
-    379.9K — 455.8K  ························     0
-    455.8K — 531.8K  ························     0
-    531.8K — 607.8K  ························     0
-    607.8K — 683.7K  ························     0
     683.7K — 759.7K  ████████████████████████     1
+  9 empty bins omitted.
 
   Top days
   2026-01-15       759.7K
@@ -1035,8 +1016,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.88655…4cT2Pm8B79yziRTGhFxHH8GAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.f88af…4jWDW8x78QikhL2kppZzn3wEA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud
     storage. No file paths, repository roots, or prompt telemetry encoded.
@@ -1060,8 +1041,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.886551e0.TI9RbvIwEI…zMv2Xi4cT2Pm8B79yziRTGhFxHH8GAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.14f42e32.TI9RbsMgEE…zvdfttwHsGs5z34hVJCXtJSSjnPvwMA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -1113,22 +1094,22 @@ at four decimal places by `cmd/thermal/json.go`.
 ### Envelope types and timestamps
 
 ```text
-leaderboard      leaderboard    2026-10-29T22:10:40Z
-daily            daily          2026-10-29T22:10:40Z
-weekly           weekly         2026-10-29T22:10:40Z
-monthly          monthly        2026-10-29T22:10:40Z
-projects         projects       2026-10-29T22:10:40Z
-models           models         2026-10-29T22:10:40Z
-mix              mix            2026-10-29T22:10:40Z
-stats-token      stats          2026-10-29T22:10:40Z
-stats-cost       stats          2026-10-29T22:10:40Z
-trend-token      trend          2026-10-29T22:10:40Z
-trend-cost       trend          2026-10-29T22:10:40Z
-share            share          2026-10-29T22:10:40Z
-audit            audit          2026-10-30T01:10:40.781359998+03:00
-changelog        changelog      2026-10-29T22:10:40Z
-live             live           2026-10-30T01:10:40.790587648+03:00
-version          version        2026-10-29T22:10:40Z
+leaderboard      leaderboard    2026-10-29T22:17:23Z
+daily            daily          2026-10-29T22:17:23Z
+weekly           weekly         2026-10-29T22:17:23Z
+monthly          monthly        2026-10-29T22:17:23Z
+projects         projects       2026-10-29T22:17:23Z
+models           models         2026-10-29T22:17:23Z
+mix              mix            2026-10-29T22:17:23Z
+stats-token      stats          2026-10-29T22:17:23Z
+stats-cost       stats          2026-10-29T22:17:23Z
+trend-token      trend          2026-10-29T22:17:23Z
+trend-cost       trend          2026-10-29T22:17:23Z
+share            share          2026-10-29T22:17:23Z
+audit            audit          2026-10-30T01:17:23.903737607+03:00
+changelog        changelog      2026-10-29T22:17:23Z
+live             live           2026-10-30T01:17:23.912307107+03:00
+version          version        2026-10-29T22:17:23Z
 ```
 
 ## Validation cases
@@ -1197,7 +1178,7 @@ exit 0
 
 ```json
 {
-  "generatedAt": "2026-10-29T22:10:40Z",
+  "generatedAt": "2026-10-29T22:17:23Z",
   "snapshot": {
     "activeDays": 1,
     "coverage": "recorded+estimated",
@@ -1214,16 +1195,16 @@ exit 0
     "recordedCost": 1.75,
     "scope": "all",
     "streakBasis": "token-active",
-    "t": 1793311840,
+    "t": 1793312243,
     "tool": "all",
     "totalCost": 1.7546,
     "totalTokens": 759700,
     "v": 1,
     "window": "all time (1 active day)"
   },
-  "token": "v1.886551e0.TI9RbvIwEISvEu3T_6sOWgNuih_b3qC9gGWvqIXxVvYCQih3r-I0lMcZfzOzvsEZrFYgYPWw22y0ftmiAmFOYMGlBAqq52-6q0vMgS-z7CQeqfunO-clnqkL7vp_Ckghd3h1NVawIHyg3M8EKPCnUijLR2PaduK8p_rozPC7u9YmhcWlz6mmgh3MbkBUUMhzCRTeuE7HrwajgKrEo5PFxBXi1pjfgj-weZ7PVNx--thS9XTPg4LQ1m-wxvVzj7rXZtkeFRw5UGrPPrlToH6zMv2Xi4cT2Pm8B79yziRTGhFxHH8GAA",
+  "token": "v1.f88af1ee.TI9RbsMgEESvYu1Xq-II7FArfLa9QXsBBKsUhbAVrB1Fke9eGddpPmd4M7PcYAKjBDAYNRz6XnXdvhfARBEM2BhBQHH0g3d1CcnTZZUNhzM2T6qxjsOEjbfX5yXAGe3pzZZQwADTCVO7EiDAjTlj4s_K1O1I6Yjl0VnhD3stVTKxjV9LTQEz6MMgpYCMjrJH_05lOX43aAFYOJwtb6bcSbnX-q_gH6yeowmzPS4f26pe7nkQ4Ov6DTrZvbZStUpv27OAM3mM9dlFO3ps-51uv204jWDW8x78QikhL2kppZzn3wEA",
   "type": "share",
-  "url": "https://jadmadi.net/project/thermal/share#v1.886551e0.TI9RbvIwEISvEu3T_6sOWgNuih_b3qC9gGWvqIXxVvYCQih3r-I0lMcZfzOzvsEZrFYgYPWw22y0ftmiAmFOYMGlBAqq52-6q0vMgS-z7CQeqfunO-clnqkL7vp_Ckghd3h1NVawIHyg3M8EKPCnUijLR2PaduK8p_rozPC7u9YmhcWlz6mmgh3MbkBUUMhzCRTeuE7HrwajgKrEo5PFxBXi1pjfgj-weZ7PVNx--thS9XTPg4LQ1m-wxvVzj7rXZtkeFRw5UGrPPrlToH6zMv2Xi4cT2Pm8B79yziRTGhFxHH8GAA"
+  "url": "https://jadmadi.net/project/thermal/share#v1.f88af1ee.TI9RbsMgEESvYu1Xq-II7FArfLa9QXsBBKsUhbAVrB1Fke9eGddpPmd4M7PcYAKjBDAYNRz6XnXdvhfARBEM2BhBQHH0g3d1CcnTZZUNhzM2T6qxjsOEjbfX5yXAGe3pzZZQwADTCVO7EiDAjTlj4s_K1O1I6Yjl0VnhD3stVTKxjV9LTQEz6MMgpYCMjrJH_05lOX43aAFYOJwtb6bcSbnX-q_gH6yeowmzPS4f26pe7nkQ4Ov6DTrZvbZStUpv27OAM3mM9dlFO3ps-51uv204jWDW8x78QikhL2kppZzn3wEA"
 }
 ```
 
@@ -1231,7 +1212,7 @@ exit 0
 
 - Home: fixed temp fixture (removed after generation)
 - Date: 2026-01-15
-- Hash: `d57ba0c803e5f33a7cc895a83f7bd040aea5e332c8e2a94bc512992d89e44155`
+- Hash: `80f750c4cfe71c85221196cb6f723b81187a93d3e5d41714c0a7bbb6f62f26d0`
 - Reports: codewhale 750,000 tokens/$1.75 recorded; Claude 9,700 tokens;
   Agy 12 steps; two projects; two models.
 

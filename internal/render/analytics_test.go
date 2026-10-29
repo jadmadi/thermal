@@ -4,6 +4,7 @@
 package render
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -92,7 +93,7 @@ func TestRenderStats_SummaryAndHistogram(t *testing.T) {
 	}
 	rep.OutlierThreshold = 50
 	out := RenderStats(rep, true)
-	for _, want := range []string{"stats", "Active days", "Median", "p90", "Monday", "Distribution", "█", "Top days", "Outliers above", "2026-09-11"} {
+	for _, want := range []string{"stats", "Active days", "Median", "p90", "Monday", "Distribution", "█", "Top days", "Outliers:", "2026-09-11"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("expected %q in output:\n%s", want, out)
 		}
@@ -171,5 +172,59 @@ func TestRenderTrend_FallingAndEmpty(t *testing.T) {
 	}
 	if out := RenderTrend(thermal.TrendReport{Type: "trend", Metric: "tokens"}, true); !strings.Contains(out, "No activity") {
 		t.Errorf("expected empty notice:\n%s", out)
+	}
+}
+
+func TestStatsBasisLabel(t *testing.T) {
+	rep := thermal.StatsReport{Type: "stats", Metric: "tokens", Days: 4, Total: 100, Mean: 25}
+	out := RenderStats(rep, true)
+	if !strings.Contains(out, "Mean / active day") || !strings.Contains(out, "Basis: 4 active days") {
+		t.Fatalf("stats basis label missing:\n%s", out)
+	}
+}
+
+func TestTrendBasisLabel(t *testing.T) {
+	rep := thermal.TrendReport{
+		Type: "trend", Metric: "tokens", Mean: 10, ActiveDays: 4,
+		FirstDay: "2026-01-01", LastDay: "2026-01-10",
+	}
+	for i := 0; i < 10; i++ {
+		rep.Points = append(rep.Points, thermal.DayValue{Day: fmt.Sprintf("2026-01-%02d", i+1), Value: 0})
+	}
+	out := RenderTrend(rep, true)
+	if !strings.Contains(out, "Mean / calendar day") || !strings.Contains(out, "Basis: 10 calendar days") {
+		t.Fatalf("trend basis label missing:\n%s", out)
+	}
+}
+
+func TestOutlierSentence(t *testing.T) {
+	rep := thermal.StatsReport{Type: "stats", Metric: "tokens", Days: 30, Total: 1000, Mean: 33}
+	for i := 0; i < 27; i++ {
+		rep.Outliers = append(rep.Outliers, thermal.DayValue{Day: fmt.Sprintf("2026-09-%02d", i+1), Value: 100})
+	}
+	rep.OutlierThreshold = 50
+	out := RenderStats(rep, true)
+	if !strings.Contains(out, "Outliers: 27 days above 50 (median + 2 MAD); top 5 shown.") {
+		t.Fatalf("outlier sentence missing:\n%s", out)
+	}
+	if strings.Contains(out, "all 5 top days above, plus") {
+		t.Fatalf("run-on outlier sentence remains:\n%s", out)
+	}
+}
+
+func TestHistogramOmitsEmptyBins(t *testing.T) {
+	rep := thermal.StatsReport{
+		Type: "stats", Metric: "tokens", Days: 1, Total: 100, Mean: 100,
+		Histogram: []thermal.HistogramBin{
+			{From: 0, To: 10, Count: 0},
+			{From: 90, To: 100, Count: 1},
+		},
+	}
+	out := RenderStats(rep, true)
+	if !strings.Contains(out, "1 empty bin omitted.") {
+		t.Fatalf("empty-bin disclosure missing:\n%s", out)
+	}
+	if strings.Contains(out, " 0 — 10 ") {
+		t.Fatalf("zero-count bin still rendered:\n%s", out)
 	}
 }

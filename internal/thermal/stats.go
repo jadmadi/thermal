@@ -62,6 +62,7 @@ type StatsReport struct {
 	CostedDays       int               `json:"costedDays,omitempty"`
 	Total            float64           `json:"total"`
 	Mean             float64           `json:"mean"`
+	MeanBasis        string            `json:"meanBasis"`
 	Median           float64           `json:"median"`
 	P90              float64           `json:"p90"`
 	Max              float64           `json:"max"`
@@ -160,6 +161,7 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 		Estimated:  estimated,
 		Days:       len(activeDays),
 		CostedDays: len(costedDays),
+		MeanBasis:  "active-day",
 	}
 	if metric == "tokens" {
 		compTotal := uncachedInput + output + reasoning + cacheRead + cacheWrite

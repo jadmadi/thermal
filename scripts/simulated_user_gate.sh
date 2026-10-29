@@ -720,6 +720,72 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9m. Analytics & Audit Prose:${RESET}"
+stats_out=$("${BIN_PATH}" stats --no-color --offline 2>/dev/null)
+trend_out=$("${BIN_PATH}" trend --no-color --offline 2>/dev/null)
+audit_out=$("${BIN_PATH}" audit --no-color 2>/dev/null)
+stats_json=$("${BIN_PATH}" stats --json --offline 2>/dev/null)
+trend_json=$("${BIN_PATH}" trend --json --offline 2>/dev/null)
+stats_ok=1
+echo "${stats_out}" | grep -q 'Mean / active day' || stats_ok=0
+echo "${stats_out}" | grep -q 'Basis:' || stats_ok=0
+if [[ "$(echo "${stats_json}" | jq '.outliers | length')" -gt 0 ]]; then
+    echo "${stats_out}" | grep -q 'Outliers:' || stats_ok=0
+    echo "${stats_out}" | grep -q 'MAD = median absolute deviation' || stats_ok=0
+    echo "${stats_out}" | grep -q 'all 5 top days above' && stats_ok=0
+fi
+if [[ "${stats_ok}" -eq 1 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} stats names the active-day basis and outlier sentence"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} stats prose drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+trend_ok=1
+echo "${trend_out}" | grep -q 'Mean / calendar day' || trend_ok=0
+echo "${trend_out}" | grep -q 'Basis:' || trend_ok=0
+if [[ "$(echo "${trend_json}" | jq '.projection != null')" == "true" ]]; then
+    echo "${trend_out}" | grep -q 'Point estimate' || trend_ok=0
+    echo "${trend_out}" | grep -q '95%' || trend_ok=0
+    echo "${trend_out}" | grep -q 'residual' || trend_ok=0
+    echo "${trend_out}" | grep -q 'clamped at 0' || trend_ok=0
+fi
+if [[ "${trend_ok}" -eq 1 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} trend names the calendar-day basis and residual band"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} trend prose drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if echo "${audit_out}" | grep -q 'Score components:' && echo "${audit_out}" | grep -q 'Largest penalty:' && echo "${audit_out}" | grep -q 'Biggest win: Address' && ! echo "${audit_out}" | grep -q 'Biggest win: Critical' && echo "${audit_out}" | grep -q 'Legend: PASS = no action; WARN = moderate context tax; CRIT = high'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} audit splits components, penalty, and biggest win"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} audit prose drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+json_ok=1
+echo "${stats_json}" | jq -e '.meanBasis=="active-day"' >/dev/null 2>&1 || json_ok=0
+echo "${trend_json}" | jq -e '.meanBasis=="calendar-day" and (.activeDays|type)=="number"' >/dev/null 2>&1 || json_ok=0
+if [[ "$(echo "${trend_json}" | jq '.projection != null')" == "true" ]]; then
+    echo "${trend_json}" | jq -e '.projection.bandMethod=="residual-sd-1.96"' >/dev/null 2>&1 || json_ok=0
+fi
+if [[ "${json_ok}" -eq 1 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} stats/trend JSON carry basis and band metadata"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} analytics JSON basis metadata drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5
