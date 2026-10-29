@@ -26,6 +26,7 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 	byModel := make(map[string]*ModelRow)
 	activeDays := make(map[string]map[string]bool)
 	toolSets := make(map[string]map[string]bool)
+	globalDays := make(map[string]bool)
 	var order []string
 	var totalDayTokens int64
 
@@ -54,6 +55,7 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 				row.CacheRead += counts.CacheRead
 				row.CacheWrite += counts.CacheWrite
 				row.Tokens += counts.Total()
+				globalDays[day.Day] = true
 
 				if activeDays[model] == nil {
 					activeDays[model] = make(map[string]bool)
@@ -132,6 +134,7 @@ func AggregateModels(batches []ToolDays, opts ModelOptions, pricer Pricer) Model
 	}
 
 	total := sumModels(rows)
+	total.Days = len(globalDays)
 	if totalDayTokens > total.Tokens {
 		total.UnattributedTokens = totalDayTokens - total.Tokens
 	}
@@ -179,7 +182,7 @@ func sumModels(rows []ModelRow) ModelRow {
 		total.CacheRead += row.CacheRead
 		total.CacheWrite += row.CacheWrite
 		total.Tokens += row.Tokens
-		total.Days += row.Days
+		total.ModelDays += row.Days
 		total.Cost += row.Cost
 		if total.FirstDay == "" || (row.FirstDay != "" && row.FirstDay < total.FirstDay) {
 			total.FirstDay = row.FirstDay
@@ -200,6 +203,7 @@ func sumModels(rows []ModelRow) ModelRow {
 	}
 	sort.Strings(total.Tools)
 	sort.Strings(total.MissingPricing)
+	total.ToolCount = len(total.Tools)
 	if len(total.MissingPricing) == 0 {
 		total.MissingPricing = nil
 	}

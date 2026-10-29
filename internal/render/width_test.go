@@ -135,15 +135,29 @@ func TestColumnDropOrder(t *testing.T) {
 	}
 
 	proj60 := RenderProjectsAt(projects, 0, true, 60)
+	projHeader := ""
+	for _, line := range strings.Split(proj60, "\n") {
+		if strings.Contains(line, "Project") && strings.Contains(line, "Tokens") {
+			projHeader = line
+			break
+		}
+	}
 	for _, absent := range []string{"Tools", "P-Days", "Last"} {
-		if strings.Contains(proj60, absent) {
-			t.Errorf("projects at 60 should drop %q:\n%s", absent, proj60)
+		if strings.Contains(projHeader, absent) {
+			t.Errorf("projects at 60 should drop %q from the table:\n%s", absent, projHeader)
 		}
 	}
 	model60 := RenderModelsAt(models, 0, true, 60)
+	modelHeader := ""
+	for _, line := range strings.Split(model60, "\n") {
+		if strings.Contains(line, "Model") && strings.Contains(line, "Tokens") {
+			modelHeader = line
+			break
+		}
+	}
 	for _, absent := range []string{"Tools", "M-Days", "Last"} {
-		if strings.Contains(model60, absent) {
-			t.Errorf("models at 60 should drop %q:\n%s", absent, model60)
+		if strings.Contains(modelHeader, absent) {
+			t.Errorf("models at 60 should drop %q from the table:\n%s", absent, modelHeader)
 		}
 	}
 }

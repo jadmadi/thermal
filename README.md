@@ -311,6 +311,11 @@ models, and changelog. Totals always describe the full window. `--top 0` shows
 all rows; an absent changelog `--top` keeps the three-release default. Charts
 state `chart shows X of Y` and suggest a valid `--top Y`.
 
+Project and model totals are additive: tokens, cost, and project-days/model-days
+sum their rows; `activeDays` is the distinct calendar-day count and `toolCount`
+is the distinct tool count. The footer names `per project`/`per model` and the
+distinct-day denominator so the two day counts cannot be confused.
+
 ![Thermal weekly report](docs/pages/shot-weekly.webp)
 
 Daily, weekly, and monthly tables list token-bearing periods only: days with

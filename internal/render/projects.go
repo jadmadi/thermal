@@ -147,16 +147,16 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 			padRight("", rWidth),
 			padRight("Total", projectWidth),
 			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-			padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
+			padLeft(totalCostText(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost)), numberWidth),
 		}
 	} else {
 		cells = []string{
 			padRight("", rWidth),
 			padRight("Total", projectWidth),
-			padRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
+			padRight(totalToolsCell(totals.ToolCount, toolsWidth), toolsWidth),
 			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-			padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
-			padLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
+			padLeft(totalCostText(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost)), numberWidth),
+			padLeft(projectDaysCell(totals.ProjectDays, daysWidth), daysWidth),
 			padRight(totals.LastDay, lastWidth),
 		}
 	}
@@ -181,6 +181,9 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		BorderColor: theme.Border,
 	}))
 
+	for _, line := range WrapText(fmt.Sprintf("Tools are counted per project; P-Days are project-days (%d); distinct calendar days are %d.", totals.ProjectDays, totals.ActiveDays), width-4) {
+		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+	}
 	footLimit := width - 4
 	if totals.EstimatedCost > 0 {
 		note := fmt.Sprintf("Total = %s recorded + %s estimated from pricing data.", formatCost(totals.StoredCost), formatEstimatedCost(totals.EstimatedCost))
@@ -380,4 +383,25 @@ func toolsCell(tools []string, width int) string {
 		cell += fmt.Sprintf(" +%d", len(tools)-used)
 	}
 	return cell
+}
+
+func totalToolsCell(count, width int) string {
+	if count <= 0 {
+		return strings.Repeat(" ", width)
+	}
+	return padRight(fmt.Sprintf("%d tools", count), width)
+}
+
+func projectDaysCell(days, width int) string {
+	if days <= 0 {
+		return strings.Repeat(" ", width)
+	}
+	return padLeft(fmt.Sprintf("%d", days), width)
+}
+
+func totalCostText(text string) string {
+	if text == "—" {
+		return "$0.00"
+	}
+	return text
 }

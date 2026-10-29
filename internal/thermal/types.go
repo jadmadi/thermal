@@ -339,6 +339,8 @@ type ProjectRow struct {
 	Tokens         int64            `json:"totalTokens"`
 	Turns          int              `json:"turns"`
 	ActiveDays     int              `json:"activeDays"`
+	ProjectDays    int              `json:"projectDays,omitempty"`
+	ToolCount      int              `json:"toolCount,omitempty"`
 	FirstDay       string           `json:"firstDay,omitempty"`
 	LastDay        string           `json:"lastDay,omitempty"`
 	StoredCost     float64          `json:"storedCost"`
@@ -387,6 +389,8 @@ type ModelRow struct {
 	Tokens             int64          `json:"totalTokens"`
 	UnattributedTokens int64          `json:"unattributedTokens"`
 	Days               int            `json:"activeDays"`
+	ModelDays          int            `json:"modelDays,omitempty"`
+	ToolCount          int            `json:"toolCount,omitempty"`
 	FirstDay           string         `json:"firstDay,omitempty"`
 	LastDay            string         `json:"lastDay,omitempty"`
 	Cost               float64        `json:"estimatedCost"`

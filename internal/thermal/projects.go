@@ -18,6 +18,7 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 	byKey := make(map[string]*ProjectRow)
 	activeSets := make(map[string]map[string]bool)
 	toolSets := make(map[string]map[string]bool)
+	globalDays := make(map[string]bool)
 
 	for _, day := range days {
 		t, ok := ParseDay(day.Day)
@@ -48,6 +49,7 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 			row.LastDay = day.Day
 		}
 		if day.Turns > 0 {
+			globalDays[day.Day] = true
 			if activeSets[day.Project] == nil {
 				activeSets[day.Project] = make(map[string]bool)
 			}
@@ -127,7 +129,9 @@ func AggregateProjects(days []ProjectDay, opts ProjectOptions, pricer Pricer) Pr
 		}
 	}
 
-	return ProjectReport{Type: "projects", Rows: rows, Totals: sumProjects(rows), CostBasis: CostBasisTotal}
+	total := sumProjects(rows)
+	total.ActiveDays = len(globalDays)
+	return ProjectReport{Type: "projects", Rows: rows, Totals: total, CostBasis: CostBasisTotal}
 }
 
 // RecordedCostDaysForResults returns the tool/day pairs whose daily row already
@@ -203,7 +207,7 @@ func sumProjects(rows []ProjectRow) ProjectRow {
 		total.Cache += row.Cache
 		total.Tokens += row.Tokens
 		total.Turns += row.Turns
-		total.ActiveDays += row.ActiveDays
+		total.ProjectDays += row.ActiveDays
 		total.StoredCost += row.StoredCost
 		total.EstimatedCost += row.EstimatedCost
 		total.UnattributedTokens += row.UnattributedTokens
@@ -238,6 +242,7 @@ func sumProjects(rows []ProjectRow) ProjectRow {
 	}
 	sort.Strings(total.Tools)
 	sort.Strings(total.MissingPricing)
+	total.ToolCount = len(total.Tools)
 	total.Cost = total.StoredCost + total.EstimatedCost
 	if len(total.MissingPricing) == 0 {
 		total.MissingPricing = nil

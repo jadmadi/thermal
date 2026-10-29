@@ -649,6 +649,77 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9l. Report Total-Row Semantics:${RESET}"
+proj_text=$("${BIN_PATH}" projects --no-color --offline 2>/dev/null)
+proj_line=$(echo "${proj_text}" | grep 'Total' | head -1)
+if echo "${proj_line}" | grep -qE '[0-9]+ tools' && ! echo "${proj_line}" | grep -q '·' && ! echo "${proj_line}" | grep -q '+[0-9]'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} projects total row has no cross-project tool list"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} projects total row still enumerates tools: ${proj_line}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if echo "${proj_text}" | grep -q 'per project' && echo "${proj_text}" | grep -q 'distinct calendar days'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} projects footer names project-days and distinct days"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} projects day-denominator footer missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" models --no-color --offline 2>/dev/null | grep -q 'per model' && "${BIN_PATH}" models --no-color --offline 2>/dev/null | grep -q 'distinct calendar days'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} models footer names model-days and distinct days"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} models day-denominator footer missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+proj_json=$("${BIN_PATH}" projects --json --offline 2>/dev/null)
+model_json=$("${BIN_PATH}" models --json --offline 2>/dev/null)
+if echo "${proj_json}" | jq -e '.totals.projectDays and .totals.toolCount and (.totals.activeDays <= .totals.projectDays)' >/dev/null 2>&1 &&    echo "${model_json}" | jq -e '.totals.modelDays and .totals.toolCount and (.totals.activeDays <= .totals.modelDays)' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} project/model totals expose distinct-day and tool metadata"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} total JSON metadata drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" projects --top 3 --json --offline 2>/dev/null | jq -S '.totals' >"${TMPDIR:-/tmp}/totals-top.json" &&    echo "${proj_json}" | jq -S '.totals' >"${TMPDIR:-/tmp}/totals-all.json" && cmp -s "${TMPDIR:-/tmp}/totals-top.json" "${TMPDIR:-/tmp}/totals-all.json"; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --top leaves totals full-window"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --top changed project totals"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+daily_json=$("${BIN_PATH}" daily --json --offline 2>/dev/null)
+if echo "${daily_json}" | jq -e '(.data|map(.totalTokens)|add) == .totals.totalTokens and ((.data|map(.cost)|add) - .totals.cost | fabs < 0.01)' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} daily totals equal the sum of rows"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} daily totals are not additive"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+mix_json=$("${BIN_PATH}" mix --json --offline 2>/dev/null)
+if echo "${mix_json}" | jq -e '(.data|map(.total)|add) == .total and (((.series|map(.share)|add) - 1) | fabs < 0.01)' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} mix total equals row volume and shares sum to 1"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} mix totals drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

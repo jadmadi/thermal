@@ -21,6 +21,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Non-TTY `live` Exit Code and Silent Statusline Degradation](#changed-nontty-statusline-contract)
   - [Changed: Reports Drop Columns Below 80 and Live Refuses Below 60](#changed-width-contract)
   - [Changed: Leaderboard States Its Ranking, Legend, and Cost Arithmetic](#changed-leaderboard-ranking-legend)
+  - [Changed: Project and Model Totals Use Distinct-Day Denominators](#changed-total-row-semantics)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -484,6 +485,38 @@ thermal --json | jq '.ranking, .costBasis, .unpricedModels'
 
 **Escape hatch**:
 `--no-estimate` states `estimation disabled` and makes `shown` equal `recorded`. `--sort tokens`/`--sort cost` change the named ranking.
+
+---
+
+### Changed: Project and Model Totals Use Distinct-Day Denominators
+<a id="changed-total-row-semantics"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'P-Days|M-Days|projectDays|modelDays|tools total|Total +[A-Z]' .`
+- **Detection signal**: `thermal projects --no-color` no longer prints `Agy · CMD +10` in the total row; it prints `N tools`, and the footer states `P-Days are project-days (N); distinct calendar days are M`. `thermal projects --json` now has `.totals.projectDays`, `.totals.toolCount`, and distinct `.totals.activeDays`; models has `.totals.modelDays` and `.totals.toolCount`.
+
+**What changed and why**:
+The projects total row summed per-project tool names and per-project active days, so a 13-tool machine printed `Agy · CMD +10` and `505` project-days next to a leaderboard that honestly said `96` calendar days. The totals now contain only additive values: tokens, cost, and project-days/model-days are sums; `activeDays` is the distinct calendar-day count; `toolCount` is the distinct tool count. The footer names the denominator so the two numbers cannot be confused. `--top` still caps rows only; totals are full-window.
+
+**Before / After**:
+```bash
+# Before: non-additive tool list and ambiguous day sum
+Total   Agy · CMD +10   23.7B   ~$505    505
+
+# After: additive columns with named denominators
+Total   12 tools        23.7B   ~$505    507
+Tools are counted per project; P-Days are project-days (507); distinct calendar days are 129.
+```
+
+**The fix**:
+Use the explicit metadata:
+```bash
+thermal projects --json | jq '.totals | {activeDays, projectDays, toolCount}'
+thermal models --json | jq '.totals | {activeDays, modelDays, toolCount}'
+```
+
+**Escape hatch**:
+Totals stay full-window under `--top`; per-project and per-model details remain in `data`.
 
 ---
 

@@ -141,3 +141,27 @@ func TestProjectLabelFallsBackToTail(t *testing.T) {
 		t.Errorf("displayNames = %q, want the last segment", got)
 	}
 }
+
+func TestTotalRowBlankCells(t *testing.T) {
+	rep := thermal.ProjectReport{
+		Type: "projects",
+		Rows: []thermal.ProjectRow{{Project: "alpha", Tokens: 100, ActiveDays: 1, Tools: []string{"OpenCode"}}},
+		Totals: thermal.ProjectRow{
+			Project: "Total", Tokens: 100, ProjectDays: 0, ToolCount: 0, Cost: 0,
+		},
+	}
+	out := RenderProjectsAt(rep, 0, true, 120)
+	totalLine := ""
+	for _, line := range strings.Split(out, "\n") {
+		if strings.Contains(line, "Total") {
+			totalLine = line
+			break
+		}
+	}
+	if totalLine == "" {
+		t.Fatalf("no total row:\n%s", out)
+	}
+	if strings.Contains(totalLine, "—") {
+		t.Fatalf("blank total cells must be spaces, not em dashes: %q", totalLine)
+	}
+}

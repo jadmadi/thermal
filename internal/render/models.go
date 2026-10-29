@@ -157,16 +157,16 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 			padRight("", rWidth),
 			padRight("Total", modelWidth),
 			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-			padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
+			padLeft(totalCostText(formatCostOrDashValue(totals.Cost, true)), numberWidth),
 		}
 	} else {
 		totalCells = []string{
 			padRight("", rWidth),
 			padRight("Total", modelWidth),
-			padRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
+			padRight(totalToolsCell(totals.ToolCount, modelToolsWidth), modelToolsWidth),
 			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-			padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
-			padLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
+			padLeft(totalCostText(formatCostOrDashValue(totals.Cost, true)), numberWidth),
+			padLeft(modelDaysCell(totals.ModelDays, daysWidth), daysWidth),
 			padRight(totals.LastDay, lastWidth),
 		}
 	}
@@ -191,6 +191,9 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		BorderColor: theme.Border,
 	}))
 
+	for _, line := range WrapText(fmt.Sprintf("Tools are counted per model; M-Days are model-days (%d); distinct calendar days are %d.", totals.ModelDays, totals.Days), width-4) {
+		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+	}
 	footLimit := width - 4
 	if totals.Cost > 0 {
 		for _, wl := range WrapText("Cost is estimated from models.dev list prices; recorded session cost is not attributable to one model.", footLimit) {
@@ -265,4 +268,11 @@ func formatModelBreakdown(row thermal.ModelRow, indent int, colors bool, st Styl
 	}
 
 	return lines
+}
+
+func modelDaysCell(days, width int) string {
+	if days <= 0 {
+		return strings.Repeat(" ", width)
+	}
+	return padLeft(fmt.Sprintf("%d", days), width)
 }
