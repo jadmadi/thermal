@@ -22,6 +22,7 @@ Every `--json` surface is an object. The table below is the contract used by
 | `live --json --stream` | `snapshot` / `event` | `timestamp` | `snapshot` / `event` |
 | `share` | `share` | `generatedAt` | `url`, `token`, `snapshot` |
 | `version --json` | `version` | `generatedAt` | `version`, `commit`, `date` |
+| `upgrade --check --json` / `upgrade --json` | `upgrade` | — | `action`, `current`, `latest`, `asset`, `target`, `mutated`, `migration`, `error` |
 
 `audit` and `live` keep their existing `timestamp` fields because those are the
 observation times; every other envelope uses `generatedAt`. `live --json

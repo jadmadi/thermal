@@ -331,6 +331,20 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9d. Upgrade Safety (No Network):${RESET}"
+run_check "Upgrade rejects unknown flag" 2 error "${BIN_PATH}" upgrade --quiet
+run_check "Upgrade JSON requires yes" 3 error "${BIN_PATH}" upgrade --json
+upgrade_json=$("${BIN_PATH}" upgrade --json 2>/dev/null || true)
+if echo "${upgrade_json}" | jq -e '.action=="declined" and .mutated==false' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} upgrade --json emits a declined object without mutating"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} upgrade --json did not emit a declined object"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

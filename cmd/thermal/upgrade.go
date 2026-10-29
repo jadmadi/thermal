@@ -48,135 +48,6 @@ var (
 	downloadClient = &http.Client{Timeout: 120 * time.Second}
 )
 
-// runUpgrade checks for a newer release and self-replaces the binary.
-func runUpgrade() int {
-	fmt.Printf("  thermal %s  checking for updates...\n", version.String())
-
-	current := strings.TrimPrefix(version.Version, "v")
-
-	// Fetch latest release from GitHub API.
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPI, nil)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot create request: %v\n", err)
-		return 1
-	}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot reach GitHub API: %v\n", err)
-		return 1
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		fmt.Fprintf(os.Stderr, "  error: GitHub API returned %s\n", resp.Status)
-		return 1
-	}
-
-	var release githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot parse release info: %v\n", err)
-		return 1
-	}
-
-	latest := strings.TrimPrefix(release.TagName, "v")
-
-	if current == "dev" {
-		fmt.Printf("  current: dev (built from source)\n")
-		fmt.Printf("  latest:  %s\n", release.TagName)
-	} else if current == latest {
-		fmt.Printf("  already up to date — %s\n", release.TagName)
-		_ = saveUpdateCache(updateCache{CheckedAt: time.Now().UTC(), LatestVersion: release.TagName})
-		return 0
-	} else {
-		fmt.Printf("  update available: %s → %s\n", "v"+current, release.TagName)
-	}
-
-	// Find the matching asset for this OS/arch.
-	assetName, downloadURL, err := findAsset(release.Assets)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  error: %v\n", err)
-		fmt.Fprintf(os.Stderr, "  download manually: %s\n", release.HTMLURL)
-		return 1
-	}
-
-	fmt.Printf("  downloading %s...\n", assetName)
-
-	// Download the archive.
-	tmpDir, err := os.MkdirTemp("", "thermal-upgrade-*")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot create temp dir: %v\n", err)
-		return 1
-	}
-	defer os.RemoveAll(tmpDir)
-
-	archivePath := filepath.Join(tmpDir, assetName)
-	if err := downloadFile(downloadURL, archivePath); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: download failed: %v\n", err)
-		return 1
-	}
-
-	// Extract the binary from the archive.
-	binaryPath := filepath.Join(tmpDir, "thermal")
-	if err := extractBinary(archivePath, assetName, binaryPath); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: extraction failed: %v\n", err)
-		return 1
-	}
-
-	// Make it executable (in case extraction lost the mode).
-	if err := os.Chmod(binaryPath, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot chmod: %v\n", err)
-		return 1
-	}
-
-	// Find the current binary path.
-	currentBin, err := os.Executable()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot find current binary: %v\n", err)
-		return 1
-	}
-
-	// Resolve symlinks.
-	currentBin, err = filepath.EvalSymlinks(currentBin)
-	if err != nil {
-		currentBin, _ = os.Executable()
-	}
-
-	// Atomic swap: write to a temp file next to the target, then rename.
-	oldPath := currentBin + ".old"
-	tmpPath := currentBin + ".new"
-
-	// Copy the new binary to tmpPath.
-	if err := copyFile(binaryPath, tmpPath); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot write new binary: %v\n", err)
-		return 1
-	}
-	if err := os.Chmod(tmpPath, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "  error: cannot chmod: %v\n", err)
-		return 1
-	}
-
-	// Rename current → old, new → current.
-	_ = os.Remove(oldPath)
-	os.Rename(currentBin, oldPath)
-	if err := os.Rename(tmpPath, currentBin); err != nil {
-		// Try to restore.
-		os.Rename(oldPath, currentBin)
-		fmt.Fprintf(os.Stderr, "  error: cannot replace binary: %v\n", err)
-		return 1
-	}
-
-	// Clean up the old binary (best-effort — may fail on Windows if locked).
-	_ = os.Remove(oldPath)
-
-	printUpgradeSuccess(os.Stdout, current, release.TagName)
-	_ = saveUpdateCache(updateCache{CheckedAt: time.Now().UTC(), LatestVersion: release.TagName})
-	return 0
-}
-
 // isBreakingUpgrade reports whether upgrading from current to latest crosses a major
 // boundary (in 1.x+) or a minor boundary (in 0.x.y), indicating potential breaking changes.
 func isBreakingUpgrade(current, latest string) bool {
@@ -249,6 +120,14 @@ func findAsset(assets []asset) (string, string, error) {
 
 // downloadFile downloads a URL to a local path with a generous timeout for slower networks.
 func downloadFile(url, dest string) error {
+	return downloadFileWith(downloadClient, url, dest)
+}
+
+// downloadFileWith is the injectable form used by the upgrade state machine.
+func downloadFileWith(client *http.Client, url, dest string) error {
+	if client == nil {
+		client = http.DefaultClient
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
@@ -257,7 +136,7 @@ func downloadFile(url, dest string) error {
 		return err
 	}
 
-	resp, err := downloadClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

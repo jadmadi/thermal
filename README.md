@@ -143,10 +143,22 @@ CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o thermal ./cmd/thermal
 If you installed via binary or `go install`:
 
 ```bash
+# Preview without downloading or mutating
+thermal upgrade --check
+thermal upgrade --dry-run
+
+# Upgrade interactively, or confirm non-interactively
 thermal upgrade
+thermal upgrade --yes
 ```
 
-This checks GitHub for a newer release, downloads the matching binary for your OS/arch, and atomically replaces the running binary. Upgrading across minor versions? Consult **[docs/MIGRATION.md](docs/MIGRATION.md)** for breaking changes, retired aliases, and JSON schema updates.
+`--check` reports current/latest/update availability without downloading.
+`--dry-run` resolves the asset and target without downloading. A mutation
+requires a terminal confirmation or `--yes`; non-interactive mutation without
+`--yes` exits `3`. `--json` emits exactly one object on stdout. A failed
+download, extraction, or rename leaves the existing binary intact. Upgrading
+across minor versions? Consult **[docs/MIGRATION.md](docs/MIGRATION.md)** for
+breaking changes, retired aliases, and JSON schema updates.
 
 Thermal also checks for newer releases in the background once a day (cached in `~/.cache/thermal/update.json`) and prints an update reminder to stderr during interactive terminal sessions when a new release is available. You can opt out at any time with `--no-update-check` or by setting `THERMAL_NO_UPDATE_CHECK=1`.
 

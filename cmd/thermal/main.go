@@ -51,6 +51,9 @@ func parseArgs() thermal.Options {
 		printVersion(hasJSONFlag(os.Args[1:]))
 		os.Exit(0)
 	}
+	if upgradeRequested(os.Args[1:]) {
+		os.Exit(runUpgrade(os.Args[1:], os.Stdout, os.Stderr))
+	}
 	if len(os.Args) == 2 && os.Args[1] == "--license" {
 		emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", os.Getenv("NO_COLOR") != "")
 		runLicense(thermal.Options{})
@@ -347,7 +350,7 @@ func main() {
 	// Subcommands that don't go through the normal tool flow.
 	switch opts.Tool {
 	case "upgrade":
-		os.Exit(runUpgrade())
+		os.Exit(runUpgrade([]string{"upgrade"}, os.Stdout, os.Stderr))
 	case "dashboard":
 		fmt.Fprintln(os.Stderr, "thermal: the interactive dashboard has been retired in favor of 'thermal live' and static report commands.")
 		fmt.Fprintln(os.Stderr, "  Interactive monitoring: thermal live")

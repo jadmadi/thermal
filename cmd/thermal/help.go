@@ -292,16 +292,23 @@ var commandHelps = map[string]render.CommandHelp{
 	},
 	"upgrade": {
 		Title:   "upgrade",
-		Usage:   "thermal upgrade",
+		Usage:   "thermal upgrade [options]",
 		Summary: "Self-upgrade thermal to the latest release",
 		Description: []string{
-			"Replaces the running binary with the latest release. Help is always side-effect free; preview flags and confirmation are documented in docs/CLI-UX-HARDENING-PROGRAM.md.",
+			"Replaces the running binary with the latest release. --check and --dry-run never download or mutate; a mutation requires a terminal confirmation or --yes.",
+			"Non-interactive mutation without --yes exits 3. --json emits exactly one object on stdout.",
 		},
 		Flags: []render.HelpFlag{
+			{"--check", "Report current, latest, and update availability; no mutation"},
+			{"--dry-run", "Resolve the asset and target; no download or mutation"},
+			{"--json", "Emit one upgrade JSON object on stdout"},
+			{"--yes", "Confirm mutation without a prompt (required for non-TTY)"},
+			{"--force", "Reinstall the same version or downgrade to the latest release"},
 			{"-h, --help", "Show this page without upgrading"},
 		},
-		Examples: []string{"thermal upgrade", "thermal upgrade --help"},
-		JSON:     "not supported yet",
+		Examples: []string{"thermal upgrade --check", "thermal upgrade --dry-run --json", "thermal upgrade --yes"},
+		JSON:     "keys: type, action, current, latest, asset, target, mutated, migration, error",
+		Note:     "A failed download, extraction, or rename leaves the existing binary intact.",
 		Related:  []string{"thermal version", "thermal changelog"},
 	},
 	"version": {

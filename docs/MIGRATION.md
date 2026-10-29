@@ -13,6 +13,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Strict Argument Parsing and Usage Exit Codes](#changed-strict-argument-parsing)
   - [Changed: Help Is Intercepted and Command-Scoped](#changed-help-precedence)
   - [Changed: `-v` Means Verbose; Use `-V` or `--version`](#changed-version-verbose-flags)
+  - [Changed: Upgrade Preview, Confirmation, and Exit Codes](#changed-upgrade-safety)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -198,6 +199,41 @@ thermal -V --json
 
 **Escape hatch**:
 `thermal version` remains the long-form command and always prints metadata.
+
+---
+
+### Changed: Upgrade Preview, Confirmation, and Exit Codes
+<a id="changed-upgrade-safety"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal +upgrade([[:space:]]|$)' .`
+- **Detection signal**: `thermal upgrade </dev/null` now exits `3` with `thermal: refusing to replace the binary without a terminal; re-run with --yes or use --check`; it no longer upgrades.
+
+**What changed and why**:
+`thermal upgrade` used to download and replace the binary immediately and ignored every flag, so `--help`, `--check`, `--dry-run`, and `--json` all authorized a real upgrade. The command now parses its own flags, rejects unknown flags with exit `2`, and separates preview from mutation. `--check` and `--dry-run` never download or mutate; a mutation requires a TTY confirmation or `--yes`; non-interactive mutation without `--yes` exits `3`. `--json` emits one object on stdout, and a failed download, extraction, or rename leaves the existing binary intact.
+
+**Before / After**:
+```bash
+# Before: every flag authorized a real replacement
+thermal upgrade --dry-run
+
+# After: preview only, no download
+thermal upgrade --dry-run
+thermal upgrade --check --json
+
+# After: explicit non-interactive mutation
+thermal upgrade --yes
+```
+
+**The fix**:
+Add `--yes` to automated upgrades, or use `--check`/`--dry-run` when the goal is inspection:
+```bash
+thermal upgrade --check
+thermal upgrade --yes
+```
+
+**Escape hatch**:
+`--check` and `--dry-run` are always read-only. Failed upgrades leave the original binary in place, and the previous binary is restored if the final rename fails.
 
 ---
 
