@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 10 (8 independent ⚡, 2 unblocked 🔗)
-- 🟢 **Implemented**: 124 (7 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 9 (7 independent ⚡, 2 unblocked 🔗)
+- 🟢 **Implemented**: 125 (8 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 557/608 completed (91%)
+- 📋 **Execution Tasks Progress**: 562/608 completed (92%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#243)` | - | Make thermal upgrade previewable, scriptable, and non-destructive by default — Priority: P0 (safety). `thermal upgrade` is the only command that mutates the us... | `/goal goals/cli-upgrade-nondestructive-safety-flags/goal.md` |
 | [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#246)` | - | Make --db scope explicit and turn raw SQLite failures into actionable errors — Priority: P0 (scope and trust). `--db` is documented as "Override database/data ... | `/goal goals/cli-db-override-scope-and-errors/goal.md` |
 | [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#247)` | - | Replace the empty-state dead end with a per-source inventory and next steps — Priority: P1 (activation). On a machine with no supported agent data, the defaul... | `/goal goals/cli-first-run-source-inventory/goal.md` |
 | [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#248)` | - | Define machine-clean non-TTY stdout, exit codes, and silent statusline degradation — Priority: P1 (automation and prompt integration). Two command surfaces break the... | `/goal goals/cli-nontty-and-statusline-output-contract/goal.md` |
@@ -91,6 +90,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
 | [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e86a107` |
+| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `c0e4087` |
 | [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
 | [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |

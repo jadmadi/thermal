@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-upgrade-nondestructive-safety-flags",
+  "certified_at": "2026-10-29T20:42:28.230227323Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-upgrade-nondestructive-safety-flags/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "c0e4087c91102848873e2375ceb83a6d11f1bcfe",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
