@@ -6,6 +6,7 @@ package audit
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -307,6 +308,9 @@ func TestAuditDatabaseReadabilityClaim(t *testing.T) {
 	})
 
 	t.Run("unreadable path discloses limits", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("permission mode 0000 read denial is not enforced by Windows filesystem ACLs")
+		}
 		if os.Geteuid() == 0 {
 			t.Skip("permission bits are not enforced for root")
 		}

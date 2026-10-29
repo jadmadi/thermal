@@ -186,7 +186,7 @@ func TestLoadMuseData_SessionJSONL(t *testing.T) {
 		t.Fatalf("expected 1 project day, got %d", len(projects))
 	}
 	p := projects[0]
-	if p.Project != "/workspace/my-project" {
+	if filepath.ToSlash(p.Project) != "/workspace/my-project" {
 		t.Errorf("expected project '/workspace/my-project', got %q", p.Project)
 	}
 	if p.Tokens != expectedTotal || p.Turns != 3 || p.Cost != 0 {
@@ -251,10 +251,10 @@ func TestLoadMuseData_Hybrid(t *testing.T) {
 	foundLive := false
 	foundLegacy := false
 	for _, p := range projects {
-		if p.Project == "/workspace/live" {
+		if filepath.ToSlash(p.Project) == "/workspace/live" {
 			foundLive = true
 		}
-		if p.Project == "/workspace/legacy" {
+		if filepath.ToSlash(p.Project) == "/workspace/legacy" {
 			foundLegacy = true
 		}
 	}
