@@ -28,19 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 130 (13 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 131 (14 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 587/608 completed (96%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@command-code` | Implementing width-aware reports, help, and TUI guard | 0s ago |
+- 📋 **Execution Tasks Progress**: 592/608 completed (97%)
 
 ---
 
@@ -98,6 +89,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `4d97260` |
 | [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `964cf9e` |
 | [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a352e43` |
+| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a936195` |
 | [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
