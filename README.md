@@ -236,6 +236,14 @@ validated once, and Thermal never silently falls back to a different window:
   are identified as paths and pointed at `--db`; report words used in the tool
   slot are named as report commands.
 
+### First run
+
+If no agent data is found, Thermal prints a stat-only inventory of all 15
+sources with `found`, `empty`, `missing`, `unreadable`, or `wrong-shape`
+states, plus the next step. Run `thermal sources` at any time; `thermal sources
+--json` returns the same 15-entry inventory for automation. The inventory never
+reads database rows, transcripts, prompts, or project names.
+
 ## Reports
 
 Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:

@@ -17,6 +17,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: `--db` Requires One Tool and Validates the Path](#changed-db-scope)
   - [Changed: Unknown Commands and Tools Exit 2 with Suggestions](#changed-unknown-token-diagnostics)
   - [Changed: `--top` Caps Leaderboard and Period Rows](#changed-top-contract)
+  - [Added: `thermal sources` and an Actionable Empty State](#added-sources-inventory)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -339,6 +340,41 @@ Use `--top N` on the supported commands; use `--top 0` for all rows. Remove `--t
 
 **Escape hatch**:
 `--json` remains available for the full payload on supported commands; chart footers always suggest a valid `--top` value.
+
+---
+
+### Added: `thermal sources` and an Actionable Empty State
+<a id="added-sources-inventory"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rn 'no supported tool data found' .`
+- **Detection signal**: `HOME=$(mktemp -d) thermal` now prints `Thermal · sources · 15 supported tools` with a `found/empty/missing/unreadable/wrong-shape` table, and `HOME=$(mktemp -d) thermal --json` emits a `type:"sources"` object on stdout with exit `1`.
+
+**What changed and why**:
+The empty state used to be one line (`thermal: no supported tool data found`) with no paths, states, or next steps. Thermal now prints a stat-only inventory of all 15 supported sources: expected file or directory, state, and a next action. `thermal sources` exposes the same inventory at any time and exits `0`; `thermal sources --json` is the machine-readable form with 15 stable entries. The inventory reads path metadata only — no database, transcript, prompt, or session content is opened.
+
+**Before / After**:
+```bash
+# Before
+thermal
+thermal: no supported tool data found
+
+# After
+thermal
+Thermal · sources · 15 supported tools
+TOOL ... PATH ... STATE ... DETAIL
+...
+Next: run one prompt in any supported tool, then re-run thermal.
+
+# Script form (exit 0)
+thermal sources --json | jq '.summary'
+```
+
+**The fix**:
+Use `thermal sources --json` when a script needs an exit-0 inventory. Treat `thermal --json` on an empty machine as a structured no-data signal (`type:"sources"`, exit `1`).
+
+**Escape hatch**:
+`thermal sources` always exits `0` once it can produce the inventory; the human empty-state table still exits `1` so a data check remains meaningful.
 
 ---
 

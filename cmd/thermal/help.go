@@ -261,6 +261,23 @@ var commandHelps = map[string]render.CommandHelp{
 		JSON:     "keys: type, snapshot, url, generatedAt",
 		Related:  []string{"thermal statusline", "thermal daily"},
 	},
+	"sources": {
+		Title:   "sources",
+		Usage:   "thermal sources [options]",
+		Summary: "Stat-only inventory of supported data sources",
+		Description: []string{
+			"Lists each supported tool's expected file or directory and whether it is found, empty, missing, unreadable, or the wrong shape.",
+			"Reads only path metadata: no database, transcript, or prompt is opened. This command always exits 0 when it can produce the inventory.",
+		},
+		Flags: []render.HelpFlag{
+			{"--json", "Emit the sources JSON object"},
+			{"--no-color", "Disable ANSI colors"},
+			{"--verbose", "Show additional diagnostics on stderr"},
+		},
+		Examples: []string{"thermal sources", "thermal sources --json"},
+		JSON:     "keys: type, generatedAt, home, summary, sources",
+		Related:  []string{"thermal audit", "thermal --help"},
+	},
 	"audit": {
 		Title:   "audit",
 		Usage:   "thermal audit [options]",

@@ -125,6 +125,7 @@ func RenderHelp(noColor bool) string {
 			Title: "Diagnostics & Utilities:",
 			Items: []HelpItem{
 				{Name: "help", Desc: "Global help or one command's help page (e.g. thermal help daily)"},
+				{Name: "sources", Desc: "Stat-only inventory of supported data sources"},
 				{Name: "audit", Desc: "Audit local agent instruction files & MCP context tax"},
 				{Name: "changelog", Desc: "Show release history, newly added commands & arguments"},
 				{Name: "upgrade", Desc: "Self-upgrade thermal to the latest release"},
@@ -200,7 +201,7 @@ func RenderHelp(noColor bool) string {
 			Title: "Ranking & Analytics Options:",
 			Items: []HelpItem{
 				{Name: "--sort <field>", Desc: "Leaderboard: streak|tokens|cost; projects: tokens|cost|days|recent; models: tokens|cost"},
-				{Name: "--top <N>", Desc: "Cap table rows to top N items (default: all)"},
+				{Name: "--top <N>", Desc: "Cap rows: leaderboard, daily, weekly, monthly, projects, models, changelog (0 = all)"},
 				{Name: "--metric <field>", Desc: "Analytics metric: tokens or cost (default: tokens)"},
 				{Name: "--by <tool|model>", Desc: "Mix breakdown dimension (default: tool)"},
 				{Name: "--grain <grain>", Desc: "Mix window: day, week, or month (default: week)"},

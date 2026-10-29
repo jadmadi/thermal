@@ -418,6 +418,54 @@ else
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
+
+echo -e "\n${BOLD}9h. Source Inventory & First Run:${RESET}"
+run_check "Sources inventory" 0 text "${BIN_PATH}" sources --no-color
+run_check "Sources JSON" 0 json "${BIN_PATH}" sources --json
+if "${BIN_PATH}" sources --json | jq -e '.type=="sources" and (.sources|length)==15' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} sources JSON has 15 stable entries"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} sources JSON shape drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if ! "${BIN_PATH}" sources --no-color | grep -q 'gate request'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} sources does not leak session content"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} sources leaked session content"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+empty_source_home=$(mktemp -d)
+empty_source_out=$(HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
+    HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" 2>&1 >/dev/null || true)
+if echo "${empty_source_out}" | grep -q 'Thermal · sources' && echo "${empty_source_out}" | grep -q 'missing'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} empty first run prints the source inventory"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} empty first run did not print the inventory"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+empty_source_json=$(HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
+    HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" --json 2>/dev/null || true)
+if echo "${empty_source_json}" | jq -e '.type=="sources" and .summary.found==0' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} empty thermal --json emits a sources object"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} empty thermal --json did not emit sources"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+rm -rf "${empty_source_home}"
 chart_top=$("${BIN_PATH}" daily --chart --top 5 --no-color 2>/dev/null)
 if ! echo "${chart_top}" | grep -q 'raise --top'; then
     echo -e "  ${GREEN}✔ [PASS]${RESET} chart footer does not suggest invalid --top remediation"

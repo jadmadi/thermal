@@ -66,7 +66,7 @@ type tokenDiagnostic struct {
 
 var diagnosticCommandNames = []string{
 	"daily", "weekly", "monthly", "projects", "models", "stats", "mix", "trend",
-	"live", "statusline", "prompt", "status", "share", "audit", "changelog",
+	"live", "statusline", "prompt", "status", "share", "sources", "audit", "changelog",
 	"upgrade", "version", "license", "help",
 }
 

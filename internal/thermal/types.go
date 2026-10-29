@@ -247,6 +247,62 @@ type Report struct {
 	CostBasis CostBasis   `json:"costBasis,omitempty"`
 }
 
+// SourceState is the metadata-only state of one agent data source.
+type SourceState string
+
+const (
+	SourceFound      SourceState = "found"
+	SourceEmpty      SourceState = "empty"
+	SourceMissing    SourceState = "missing"
+	SourceUnreadable SourceState = "unreadable"
+	SourceWrongShape SourceState = "wrong-shape"
+	SourceUnknown    SourceState = "unknown"
+)
+
+// SourceInfo describes one supported tool's expected local data source. It is
+// populated with stat/ReadDir metadata only; no file contents are read.
+type SourceInfo struct {
+	Tool        string      `json:"tool"`
+	Name        string      `json:"name"`
+	Alias       string      `json:"alias,omitempty"`
+	Path        string      `json:"path"`
+	DisplayPath string      `json:"displayPath"`
+	Shape       string      `json:"shape"`
+	State       SourceState `json:"state"`
+	Detail      string      `json:"detail,omitempty"`
+	Modified    string      `json:"modified,omitempty"`
+}
+
+// SourceSummary counts inventory states for the summary line and JSON.
+type SourceSummary struct {
+	Total      int `json:"total"`
+	Found      int `json:"found"`
+	Empty      int `json:"empty"`
+	Missing    int `json:"missing"`
+	Unreadable int `json:"unreadable"`
+	WrongShape int `json:"wrongShape"`
+}
+
+// SummarizeSources counts each source state.
+func SummarizeSources(items []SourceInfo) SourceSummary {
+	summary := SourceSummary{Total: len(items)}
+	for _, item := range items {
+		switch item.State {
+		case SourceFound:
+			summary.Found++
+		case SourceEmpty:
+			summary.Empty++
+		case SourceMissing:
+			summary.Missing++
+		case SourceUnreadable:
+			summary.Unreadable++
+		case SourceWrongShape:
+			summary.WrongShape++
+		}
+	}
+	return summary
+}
+
 // ProjectDay is one day of usage attributed to one project directory. Loaders
 // emit these for tools that record where a session ran. Tokens is the total
 // recorded by the source; the type fields are disjoint and add up to it. Tool

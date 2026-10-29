@@ -31,7 +31,12 @@ type ToolData struct {
 }
 
 func AllTools() map[thermal.Tool]ToolInfo {
-	home := thermal.HomeDir()
+	return AllToolsForHome(thermal.HomeDir())
+}
+
+// AllToolsForHome is the injectable registry used by inventory tests. The
+// production AllTools wrapper resolves the real home once.
+func AllToolsForHome(home string) map[thermal.Tool]ToolInfo {
 	tools := map[thermal.Tool]ToolInfo{
 		thermal.ToolMiMoCode: func() ToolInfo {
 			db, dir := probePlatformDataPath(home, "mimocode", "mimocode.db")

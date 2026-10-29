@@ -146,7 +146,7 @@ func topApplies(report, tool string) bool {
 		return false
 	case "":
 		switch strings.ToLower(tool) {
-		case "audit", "share", "live", "statusline", "prompt", "status", "web", "serve", "license", "version", "upgrade", "dashboard":
+		case "audit", "share", "sources", "live", "statusline", "prompt", "status", "web", "serve", "license", "version", "upgrade", "dashboard":
 			return false
 		}
 		return true
@@ -229,7 +229,7 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 
 	if opts.Report == "" {
-		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "web" || opts.Tool == "serve" || opts.Tool == "changelog" || opts.Tool == "live" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
+		if opts.Tool == "audit" || opts.Tool == "share" || opts.Tool == "sources" || opts.Tool == "web" || opts.Tool == "serve" || opts.Tool == "changelog" || opts.Tool == "live" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
@@ -385,6 +385,9 @@ func main() {
 		retireReceiptCommand()
 	case "yield":
 		retireYieldCommand()
+	case "sources":
+		runSources(opts)
+		return
 	case "audit":
 		runAudit(opts)
 		return
@@ -516,8 +519,7 @@ func main() {
 		}
 
 		if len(results) == 0 {
-			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
-			os.Exit(1)
+			os.Exit(printEmptyInventory(opts, ""))
 		}
 
 		if opts.JSON {
@@ -676,8 +678,7 @@ func loadUsage(opts thermal.Options) usageSet {
 			})
 		}
 		if len(set.days) == 0 && len(set.projects) == 0 {
-			fmt.Fprintf(os.Stderr, "thermal: no supported tool data found\n")
-			os.Exit(1)
+			os.Exit(printEmptyInventory(opts, opts.Report))
 		}
 		return set
 	}
@@ -1404,7 +1405,7 @@ func (c *liveCollector) Collect() ([]thermal.ToolResult, []thermal.ProjectDay, e
 	}
 
 	if len(results) == 0 && len(c.cache) == 0 {
-		return nil, nil, fmt.Errorf("no supported tool data found")
+		return nil, nil, errNoData
 	}
 
 	return results, projects, nil
@@ -1435,6 +1436,9 @@ func runLive(opts thermal.Options) {
 		}
 		results, projects, err := pollFn()
 		if err != nil {
+			if errors.Is(err, errNoData) {
+				os.Exit(printEmptyInventory(opts, "live"))
+			}
 			printLoadError(err, opts.Verbose)
 			os.Exit(1)
 		}

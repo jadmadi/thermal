@@ -494,7 +494,7 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	if showLicense {
 		opts.Tool = "license"
 	}
-	if opts.DBPath != "" && (opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "") {
+	if opts.DBPath != "" && (opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "" || opts.Tool == "sources") {
 		return opts, &usageError{
 			Message: "--db applies to one tool; add --tool <name>",
 			Example: "thermal --tool opencode --db <path> daily",
