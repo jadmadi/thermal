@@ -34,10 +34,11 @@ const chartRowCap = 12
 // positive top follows the table's --top limit first, then the chart cap.
 func chartRowsFor(n, top int) (int, int) {
 	shown := n
-	if top > 0 && top < shown {
-		shown = top
-	}
-	if shown > chartRowCap {
+	if top > 0 {
+		if top < shown {
+			shown = top
+		}
+	} else if shown > chartRowCap {
 		shown = chartRowCap
 	}
 	if shown < 0 {
@@ -58,14 +59,20 @@ func chartMetricLabel(v float64, metric string) string {
 	return thermal.CompactNumber(int64(v)) + " tok"
 }
 
-// omittedLine prints the tail summary so a capped chart never looks like the
-// whole picture.
-func omittedLine(omitted int, colors bool) string {
+// chartFooter prints the tail summary and a valid remediation. The suggested
+// --top value always refers to the full row count, so raising it widens both
+// the table and the chart.
+func chartFooter(shown, total, top int, colors bool) string {
+	if total <= 0 {
+		return ""
+	}
+	omitted := total - shown
 	if omitted <= 0 {
 		return ""
 	}
+	hint := fmt.Sprintf("chart shows %d of %d; use --top %d for all", shown, total, total)
 	return fmt.Sprintf("  %s\n", theme.Border.Sprint(colors,
-		fmt.Sprintf("… and %d more rows (raise --top to see them in the table)", omitted)))
+		fmt.Sprintf("… and %d more rows (%s)", omitted, hint)))
 }
 
 // chartWidth is the space a bar may occupy. It subtracts the indent, the label
@@ -158,7 +165,7 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, top,
 		names = thermal.ProjectDisplayNames(paths)
 	}
 
-	shown, omitted := chartRowsFor(len(rep.Rows), top)
+	shown, _ := chartRowsFor(len(rep.Rows), top)
 	if shown == 0 {
 		return ""
 	}
@@ -187,7 +194,7 @@ func RenderProjectChart(rep thermal.ProjectReport, names map[string]string, top,
 			chartBar(float64(row.Tokens), maxVal, barW, colors),
 			thermal.PadLeft(thermal.CompactNumber(row.Tokens)+" tok", 10)))
 	}
-	b.WriteString(omittedLine(omitted, colors))
+	b.WriteString(chartFooter(shown, len(rep.Rows), top, colors))
 	return b.String()
 }
 
@@ -200,7 +207,7 @@ func RenderModelChart(rep thermal.ModelReport, top, width int, noColor bool) str
 	labelW := 28
 	barW := chartWidth(width, labelW)
 
-	shown, omitted := chartRowsFor(len(rep.Rows), top)
+	shown, _ := chartRowsFor(len(rep.Rows), top)
 	if shown == 0 {
 		return ""
 	}
@@ -226,12 +233,14 @@ func RenderModelChart(rep thermal.ModelReport, top, width int, noColor bool) str
 			thermal.PadLeft(thermal.CompactNumber(row.Tokens), 8),
 			thermal.PadLeft(cost, 9)))
 	}
-	b.WriteString(omittedLine(omitted, colors))
+	b.WriteString(chartFooter(shown, len(rep.Rows), top, colors))
 	return b.String()
 }
 
 // RenderPeriodChart prints bars for token or cost totals under a period report.
-func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor bool) string {
+// totalRows is the full window row count before the table's --top cap, so the
+// footer can suggest a valid widening value.
+func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor bool, top, totalRows int) string {
 	if len(rep.Rows) == 0 {
 		return ""
 	}
@@ -248,7 +257,7 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 
 	// The chart follows the table's own order, so a reader never has to work
 	// out whether the bars are in a different sequence from the rows above.
-	shown, omitted := chartRows(len(rep.Rows))
+	shown, _ := chartRowsFor(len(rep.Rows), top)
 	if shown == 0 {
 		return ""
 	}
@@ -287,6 +296,9 @@ func RenderPeriodChart(rep thermal.Report, metric string, width int, noColor boo
 			chartBar(values[i], maxVal, barW, colors),
 			thermal.PadLeft(value, 10)))
 	}
-	b.WriteString(omittedLine(omitted, colors))
+	if totalRows <= 0 {
+		totalRows = len(rep.Rows)
+	}
+	b.WriteString(chartFooter(shown, totalRows, top, colors))
 	return b.String()
 }

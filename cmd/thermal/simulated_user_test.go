@@ -267,7 +267,7 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 		expectedMsg  string
 		expectedCode int
 	}{
-		{[]string{"weekly", "--top", "5"}, "--top", 2},
+		{[]string{"stats", "--top", "5"}, "--top does not apply", 2},
 		{[]string{"replay"}, "subscription replay simulation has been retired", 1},
 		{[]string{"yield"}, "token yield efficiency reporting has been retired", 1},
 		{[]string{"daily", "--last", "-5"}, "--last must be at least 1", 2},

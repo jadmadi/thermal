@@ -104,7 +104,7 @@ func TestChartRowCap(t *testing.T) {
 // so bars never appear in a different sequence from the rows above them.
 func TestChartFollowsTableOrder(t *testing.T) {
 	rep := periodRep(4)
-	asc := RenderPeriodChart(rep, "tokens", 100, true)
+	asc := RenderPeriodChart(rep, "tokens", 100, true, 0, len(rep.Rows))
 	firstLine := ""
 	for _, line := range strings.Split(asc, "\n") {
 		if strings.Contains(line, "█") || strings.Contains(line, "·") {
@@ -121,7 +121,7 @@ func TestChartFollowsTableOrder(t *testing.T) {
 	for i := len(rep.Rows) - 1; i >= 0; i-- {
 		rev.Rows = append(rev.Rows, rep.Rows[i])
 	}
-	revOut := RenderPeriodChart(rev, "tokens", 100, true)
+	revOut := RenderPeriodChart(rev, "tokens", 100, true, 0, len(rev.Rows))
 	revFirst := ""
 	for _, line := range strings.Split(revOut, "\n") {
 		if strings.Contains(line, "█") || strings.Contains(line, "·") {
@@ -204,12 +204,12 @@ func TestChartEmptyReport(t *testing.T) {
 	if got := RenderProjectChart(thermal.ProjectReport{}, nil, 0, 100, true); got != "" {
 		t.Errorf("empty report produced:\n%s", got)
 	}
-	if got := RenderPeriodChart(thermal.Report{}, "tokens", 100, true); got != "" {
+	if got := RenderPeriodChart(thermal.Report{}, "tokens", 100, true, 0, 0); got != "" {
 		t.Errorf("empty period report produced:\n%s", got)
 	}
 	var zero thermal.Report
 	zero.Rows = append(zero.Rows, thermal.PeriodRow{Period: "2026-09-18"})
-	if got := RenderPeriodChart(zero, "tokens", 100, true); got != "" {
+	if got := RenderPeriodChart(zero, "tokens", 100, true, 0, 1); got != "" {
 		t.Errorf("all-zero report produced:\n%s", got)
 	}
 }

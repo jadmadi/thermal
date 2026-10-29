@@ -137,6 +137,31 @@ func parseCompactFloat(raw string) (float64, error) {
 	return v, nil
 }
 
+// topApplies reports whether --top has a row-cap meaning for a command.
+func topApplies(report, tool string) bool {
+	switch strings.ToLower(report) {
+	case "daily", "weekly", "monthly", "projects", "models", "changelog":
+		return true
+	case "stats", "mix", "trend", "live", "statusline", "prompt", "status", "audit", "share", "web", "serve":
+		return false
+	case "":
+		switch strings.ToLower(tool) {
+		case "audit", "share", "live", "statusline", "prompt", "status", "web", "serve", "license", "version", "upgrade", "dashboard":
+			return false
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func topRejection(command string) error {
+	if command == "" {
+		command = "leaderboard"
+	}
+	return fmt.Errorf("--top does not apply to the %s command\n  it applies to: leaderboard, daily, weekly, monthly, projects, models, changelog\n  run thermal %s --help for accepted flags", command, command)
+}
+
 // validateReportFlags rejects report options that would otherwise be silently
 // ignored, and checks the values themselves. Sort defaults depend on the
 // command: the leaderboard ranks by streak, projects and models by tokens.
@@ -208,14 +233,14 @@ func validateReportFlags(opts thermal.Options) error {
 			if opts.Chart || opts.Breakdown || opts.Since != "" || opts.Until != "" {
 				return fmt.Errorf("report options do not apply to the %s command", opts.Tool)
 			}
+			if opts.TopSet && !topApplies("", opts.Tool) {
+				return topRejection(opts.Tool)
+			}
 			return nil
 		}
 		// Leaderboard flags. Sort is optional here and means streak when unset.
 		if sortKey != "" && sortKey != "streak" && sortKey != "tokens" && sortKey != "cost" {
 			return fmt.Errorf("--sort must be streak, tokens, or cost for the leaderboard")
-		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top only applies to the projects and models commands")
 		}
 		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
@@ -235,8 +260,8 @@ func validateReportFlags(opts thermal.Options) error {
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the statusline command")
 		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top does not apply to the statusline command")
+		if opts.TopSet {
+			return topRejection("statusline")
 		}
 		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
@@ -251,8 +276,8 @@ func validateReportFlags(opts thermal.Options) error {
 		if opts.Breakdown || opts.Chart {
 			return fmt.Errorf("--breakdown and --chart do not apply to the live command")
 		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top does not apply to the live command")
+		if opts.TopSet {
+			return topRejection("live")
 		}
 		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
@@ -286,8 +311,8 @@ func validateReportFlags(opts thermal.Options) error {
 		if sortKey != "" {
 			return fmt.Errorf("--sort does not apply to the analytics commands")
 		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top only applies to the projects and models commands")
+		if opts.TopSet {
+			return topRejection(opts.Report)
 		}
 		switch metricKey {
 		case "tokens", "cost":
@@ -316,9 +341,6 @@ func validateReportFlags(opts thermal.Options) error {
 	default:
 		if sortKey != "" {
 			return fmt.Errorf("--sort only applies to the leaderboard, projects, and models")
-		}
-		if opts.Top != 0 {
-			return fmt.Errorf("--top only applies to the projects and models commands")
 		}
 		if metricKey != "tokens" || byKey != "tool" || grainKey != "week" {
 			return fmt.Errorf("--metric, --by, and --grain only apply to the trend, mix, and stats commands")
@@ -367,14 +389,7 @@ func main() {
 		runAudit(opts)
 		return
 	case "changelog":
-		limit := opts.Top
-		if limit == 0 && opts.Last > 0 {
-			limit = opts.Last
-		}
-		if limit == 0 {
-			limit = 3
-		}
-		runChangelog(opts, limit)
+		runChangelog(opts, changelogLimit(opts))
 		return
 	case "live":
 		runLive(opts)
@@ -423,14 +438,7 @@ func main() {
 		case "audit":
 			runAudit(opts)
 		case "changelog":
-			limit := opts.Top
-			if limit == 0 && opts.Last > 0 {
-				limit = opts.Last
-			}
-			if limit == 0 {
-				limit = 3
-			}
-			runChangelog(opts, limit)
+			runChangelog(opts, changelogLimit(opts))
 		case "share":
 			runShare(opts)
 		case "web", "serve":
@@ -513,11 +521,11 @@ func main() {
 		}
 
 		if opts.JSON {
-			writeJSON(leaderboardJSONPayload(results, time.Now()))
+			writeJSON(leaderboardJSONPayload(results, time.Now(), opts.Top))
 			return
 		}
 
-		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort, !opts.NoEstimate))
+		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort, !opts.NoEstimate, opts.Top))
 		return
 	}
 
@@ -786,6 +794,10 @@ func runReport(opts thermal.Options) {
 
 	rep := thermal.Aggregate(set.days, thermal.Grain(opts.Report), aggOpts, newPricer(opts))
 	rep.Tool = set.toolName
+	fullRows := len(rep.Rows)
+	if opts.Top > 0 && len(rep.Rows) > opts.Top {
+		rep.Rows = rep.Rows[:opts.Top]
+	}
 
 	if opts.JSON {
 		type jsonReport struct {
@@ -802,13 +814,13 @@ func runReport(opts thermal.Options) {
 	if opts.Breakdown {
 		fmt.Print(render.RenderReportBreakdown(rep, opts.NoColor))
 		if opts.Chart {
-			fmt.Print(render.RenderPeriodChart(rep, opts.Sort, reportWidth(), opts.NoColor))
+			fmt.Print(render.RenderPeriodChart(rep, opts.Sort, reportWidth(), opts.NoColor, opts.Top, fullRows))
 		}
 		return
 	}
 	fmt.Print(render.RenderReport(rep, opts.NoColor))
 	if opts.Chart {
-		fmt.Print(render.RenderPeriodChart(rep, "tokens", reportWidth(), opts.NoColor))
+		fmt.Print(render.RenderPeriodChart(rep, "tokens", reportWidth(), opts.NoColor, opts.Top, fullRows))
 	}
 }
 
@@ -1103,6 +1115,18 @@ func runAudit(opts thermal.Options) {
 		return
 	}
 	fmt.Print(render.RenderAudit(rep, opts.NoColor))
+}
+
+// changelogLimit distinguishes an absent --top (default three) from an
+// explicit --top 0 (all releases).
+func changelogLimit(opts thermal.Options) int {
+	if opts.TopSet {
+		return opts.Top
+	}
+	if opts.Last > 0 {
+		return opts.Last
+	}
+	return 3
 }
 
 // runChangelog outputs release history and new features.

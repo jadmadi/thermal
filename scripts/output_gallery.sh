@@ -117,7 +117,7 @@ capture_json version version
 # Validation cases.
 capture_exit validation-report-flag --since 2026-01-01
 capture_exit validation-mix-chart mix --chart
-capture_exit validation-daily-top daily --top 2
+capture_exit validation-stats-top stats --top 2
 capture_exit validation-chart-daily daily --chart
 capture_width width80-help 80 --help
 capture_width width120-help 120 --help
@@ -511,12 +511,12 @@ exit $(cat "${TMP}/validation-mix-chart.code")
 $(cat "${TMP}/validation-mix-chart.txt")
 \`\`\`
 
-### --top on daily is rejected
+### --top on stats is rejected
 
 \`\`\`text
-$ thermal daily --top 2
-exit $(cat "${TMP}/validation-daily-top.code")
-$(cat "${TMP}/validation-daily-top.txt")
+$ thermal stats --top 2
+exit $(cat "${TMP}/validation-stats-top.code")
+$(cat "${TMP}/validation-stats-top.txt")
 \`\`\`
 
 ### --chart on daily succeeds

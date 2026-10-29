@@ -80,6 +80,7 @@ var commandHelps = map[string]render.CommandHelp{
 			"Reads local session data read-only. Days with no classified tokens, cost, or model attribution are omitted.",
 		},
 		Flags: withFlags(
+			render.HelpFlag{"--top <N>", "Cap period rows (0 = all)"},
 			render.HelpFlag{"--breakdown", "Show per-model rows under each period"},
 			render.HelpFlag{"--chart", "Print a bar chart under the table"},
 		),
@@ -95,6 +96,7 @@ var commandHelps = map[string]render.CommandHelp{
 			"Folds daily rows into calendar weeks. The week start follows --start-of-week.",
 		},
 		Flags: withFlags(
+			render.HelpFlag{"--top <N>", "Cap period rows (0 = all)"},
 			render.HelpFlag{"--start-of-week <day>", "First day of week (sunday-saturday, default sunday)"},
 			render.HelpFlag{"--breakdown", "Show per-model rows under each period"},
 			render.HelpFlag{"--chart", "Print a bar chart under the table"},
@@ -111,6 +113,7 @@ var commandHelps = map[string]render.CommandHelp{
 			"Folds daily rows into calendar months, with optional per-model rows.",
 		},
 		Flags: withFlags(
+			render.HelpFlag{"--top <N>", "Cap period rows (0 = all)"},
 			render.HelpFlag{"--breakdown", "Show per-model rows under each period"},
 			render.HelpFlag{"--chart", "Print a bar chart under the table"},
 		),

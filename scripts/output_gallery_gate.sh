@@ -179,7 +179,7 @@ set +e
 root_code=$?
 (cd "${WORK}" && "${BIN}" mix --chart --offline >/dev/null 2>&1)
 mix_code=$?
-(cd "${WORK}" && "${BIN}" daily --top 2 --offline >/dev/null 2>&1)
+(cd "${WORK}" && "${BIN}" stats --top 2 --offline >/dev/null 2>&1)
 top_code=$?
 (cd "${WORK}" && "${BIN}" daily --chart --offline >/dev/null 2>&1)
 daily_code=$?

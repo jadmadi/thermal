@@ -16,6 +16,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Upgrade Preview, Confirmation, and Exit Codes](#changed-upgrade-safety)
   - [Changed: `--db` Requires One Tool and Validates the Path](#changed-db-scope)
   - [Changed: Unknown Commands and Tools Exit 2 with Suggestions](#changed-unknown-token-diagnostics)
+  - [Changed: `--top` Caps Leaderboard and Period Rows](#changed-top-contract)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -305,6 +306,39 @@ Use the suggested command/tool, or run `thermal --help` for the vocabulary. Scri
 
 **Escape hatch**:
 There is no compatibility mode. `thermal --help` and scoped help remain the authoritative vocabularies.
+
+---
+
+### Changed: `--top` Caps Leaderboard and Period Rows
+<a id="changed-top-contract"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal[^|;]*--top' .`
+- **Detection signal**: `thermal daily --top 5` now exits `0` with five period rows, and `thermal stats --top 5` exits `2` with `thermal: --top does not apply to the stats command` followed by the valid command set.
+
+**What changed and why**:
+`--top` was accepted only on projects, models, and changelog, while the help described it as a general row cap and chart footers told readers to raise it on commands that rejected it. The flag now has one applicability table: leaderboard, daily, weekly, monthly, projects, models, and changelog. `--top 0` means all rows; an absent changelog `--top` keeps the three-release default. Tables, charts, and JSON data use the same cap, totals still describe the full window, and chart footers state `chart shows X of Y; use --top Y for all`.
+
+**Before / After**:
+```bash
+# Before: rejected on daily, accepted on changelog, recommended by charts
+thermal daily --top 5
+thermal: --top only applies to the projects and models commands
+
+# After: five rows, full-window totals
+thermal daily --top 5
+
+# After: rejecting commands name the valid set
+thermal stats --top 5
+thermal: --top does not apply to the stats command
+  it applies to: leaderboard, daily, weekly, monthly, projects, models, changelog
+```
+
+**The fix**:
+Use `--top N` on the supported commands; use `--top 0` for all rows. Remove `--top` from stats/mix/trend/audit/share/live/statusline invocations.
+
+**Escape hatch**:
+`--json` remains available for the full payload on supported commands; chart footers always suggest a valid `--top` value.
 
 ---
 

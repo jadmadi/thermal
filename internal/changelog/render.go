@@ -38,11 +38,15 @@ func RenderChangelog(rep ChangelogReport, noColor bool) string {
 	}
 
 	shown := len(rep.Releases)
-	sb.WriteString(fmt.Sprintf("  Current: %s  ·  Showing %d of %d releases\n\n",
-		highlight(curVer),
+	header := fmt.Sprintf("  Current: %s  ·  Showing %d of %d releases",
+		rep.CurrentVersion,
 		shown,
 		rep.TotalReleases,
-	))
+	)
+	if shown < rep.TotalReleases {
+		header += fmt.Sprintf("  ·  thermal changelog --top %d for all", rep.TotalReleases)
+	}
+	sb.WriteString(header + "\n\n")
 
 	if len(rep.Releases) == 0 {
 		sb.WriteString("  " + faint("No changelog entries found.") + "\n\n")

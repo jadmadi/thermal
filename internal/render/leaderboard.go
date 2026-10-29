@@ -76,7 +76,11 @@ func fireEmoji(streak int) string {
 // RenderLeaderboard prints the ranked tools. When estimate is false the frame
 // adds a line stating the recorded cost total, because the Cost column only
 // ever shows what a tool recorded and a reader should not have to add it up.
-func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool) string {
+func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool, topN ...int) string {
+	top := 0
+	if len(topN) > 0 {
+		top = topN[0]
+	}
 	st := NewStyle(noColor)
 	colors := st.Colors
 	highlight := st.Highlight
@@ -133,6 +137,14 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	}
 	rankBy(tokenResults)
 	rankBy(activityResults)
+	if top > 0 {
+		if len(tokenResults) > top {
+			tokenResults = tokenResults[:top]
+		}
+		if len(activityResults) > top {
+			activityResults = activityResults[:top]
+		}
+	}
 
 	maxTokenStreak := 0
 	for _, r := range tokenResults {

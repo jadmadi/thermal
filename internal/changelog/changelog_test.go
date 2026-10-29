@@ -123,6 +123,24 @@ func TestGetReport(t *testing.T) {
 	}
 }
 
+func TestRenderChangelogTopAffordance(t *testing.T) {
+	rep := GetReport(1)
+	if rep.TotalReleases < 2 {
+		t.Skip("need at least two releases")
+	}
+	out := RenderChangelog(rep, true)
+	if !strings.Contains(out, "thermal changelog --top") {
+		t.Fatalf("capped changelog missing --top affordance:\n%s", out)
+	}
+	if !strings.Contains(out, "for all") {
+		t.Fatalf("capped changelog missing 'for all':\n%s", out)
+	}
+	all := GetReport(0)
+	if len(all.Releases) != all.TotalReleases {
+		t.Fatalf("GetReport(0) returned %d of %d releases", len(all.Releases), all.TotalReleases)
+	}
+}
+
 func TestParseStripsGoalTokensAndDeduplicatesReleases(t *testing.T) {
 	raw := `# Changelog
 

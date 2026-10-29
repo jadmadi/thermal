@@ -260,6 +260,11 @@ thermal weekly --order asc --start-of-week monday
 thermal weekly --json
 ```
 
+`--top N` caps rows on the leaderboard, daily, weekly, monthly, projects,
+models, and changelog. Totals always describe the full window. `--top 0` shows
+all rows; an absent changelog `--top` keeps the three-release default. Charts
+state `chart shows X of Y` and suggest a valid `--top Y`.
+
 ![Thermal weekly report](docs/pages/shot-weekly.webp)
 
 Daily, weekly, and monthly tables list token-bearing periods only: days with

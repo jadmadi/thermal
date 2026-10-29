@@ -42,6 +42,28 @@ func TestRenderLeaderboard_CommandCodeIsTokenWarrior(t *testing.T) {
 	}
 }
 
+func TestLeaderboardTopCapsEachCategory(t *testing.T) {
+	results := []thermal.ToolResult{
+		{Tool: thermal.ToolOpenCode, Name: "oc-1", CurrentStreak: 5, LongestStreak: 5, ActiveDays: 5, TotalActivity: 5000},
+		{Tool: thermal.ToolCodex, Name: "codex-1", CurrentStreak: 4, LongestStreak: 4, ActiveDays: 4, TotalActivity: 4000},
+		{Tool: thermal.ToolClaude, Name: "claude-1", CurrentStreak: 3, LongestStreak: 3, ActiveDays: 3, TotalActivity: 3000},
+		{Tool: thermal.ToolAgy, Name: "agy-1", CurrentStreak: 5, LongestStreak: 5, ActiveDays: 5, TotalActivity: 500},
+		{Tool: thermal.ToolDroid, Name: "droid-1", CurrentStreak: 4, LongestStreak: 4, ActiveDays: 4, TotalActivity: 400},
+		{Tool: thermal.ToolMuse, Name: "muse-1", CurrentStreak: 3, LongestStreak: 3, ActiveDays: 3, TotalActivity: 300},
+	}
+	out := RenderLeaderboard(results, 52, true, "", true, 2)
+	for _, want := range []string{"oc-1", "codex-1", "agy-1", "droid-1"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("top-2 leaderboard missing %q:\n%s", want, out)
+		}
+	}
+	for _, notWant := range []string{"claude-1", "muse-1"} {
+		if strings.Contains(out, notWant) {
+			t.Errorf("top-2 leaderboard should omit %q:\n%s", notWant, out)
+		}
+	}
+}
+
 func TestRenderLeaderboardSortKeys(t *testing.T) {
 	// steady leads on streak, whale leads on tokens, pricey leads on cost.
 	results := []thermal.ToolResult{

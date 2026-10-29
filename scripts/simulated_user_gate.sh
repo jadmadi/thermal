@@ -398,8 +398,48 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9g. --top Contract:${RESET}"
+run_check "Leaderboard top" 0 text "${BIN_PATH}" --top 5 --no-color
+run_check "Daily top" 0 text "${BIN_PATH}" daily --top 5 --no-color
+run_check "Changelog top" 0 text "${BIN_PATH}" changelog --top 5 --no-color
+run_check "Stats top rejected" 2 error "${BIN_PATH}" stats --top 5
+top_all=$("${BIN_PATH}" daily --json 2>/dev/null)
+top_five=$("${BIN_PATH}" daily --top 5 --json 2>/dev/null)
+full_len=$(echo "${top_all}" | jq '.data | length')
+expected_len="${full_len}"
+if [[ "${expected_len}" -gt 5 ]]; then expected_len=5; fi
+if [[ "$(echo "${top_five}" | jq '.data | length')" -eq "${expected_len}" ]] && \
+   [[ "$(echo "${top_five}" | jq -S '.totals')" == "$(echo "${top_all}" | jq -S '.totals')" ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} daily --top caps data and preserves totals"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} daily --top row count or totals drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+chart_top=$("${BIN_PATH}" daily --chart --top 5 --no-color 2>/dev/null)
+if ! echo "${chart_top}" | grep -q 'raise --top'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} chart footer does not suggest invalid --top remediation"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} chart footer still says raise --top"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" changelog --no-color | grep -q 'thermal changelog --top'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} capped changelog states how to show all releases"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} capped changelog has no affordance"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
-run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
+run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 

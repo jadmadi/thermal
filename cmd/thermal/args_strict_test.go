@@ -123,7 +123,7 @@ func TestParseArgsStrictInvalid(t *testing.T) {
 		{"bad order", []string{"daily", "--order", "sideways"}, []string{"--order", "asc or desc"}},
 		{"bad weekday", []string{"daily", "--start-of-week", "funday"}, []string{"--start-of-week", "weekday"}},
 		{"retired format", []string{"daily", "--format", "md"}, []string{"retired"}},
-		{"top on daily", []string{"daily", "--top", "5"}, []string{"--top", "only applies"}},
+		{"top on stats", []string{"stats", "--top", "5"}, []string{"--top does not apply"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

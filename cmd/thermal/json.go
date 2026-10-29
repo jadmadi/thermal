@@ -83,7 +83,11 @@ func writeReportJSON(v interface{}) {
 	writeJSON(v)
 }
 
-func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time) map[string]interface{} {
+func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time, topN ...int) map[string]interface{} {
+	top := 0
+	if len(topN) > 0 {
+		top = topN[0]
+	}
 	type leaderboardTotals struct {
 		Tools         int     `json:"tools"`
 		ActiveDays    int     `json:"activeDays"`
@@ -109,10 +113,14 @@ func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time) map[str
 	}
 	totals.ActiveDays = len(active)
 	totals.Cost = totals.RecordedCost + totals.EstimatedCost
+	display := results
+	if top > 0 && len(display) > top {
+		display = display[:top]
+	}
 	return map[string]interface{}{
 		"type":        "leaderboard",
 		"generatedAt": now.UTC().Format(time.RFC3339),
-		"results":     results,
+		"results":     display,
 		"totals":      totals,
 	}
 }
