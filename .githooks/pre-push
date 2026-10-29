@@ -9,6 +9,8 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 CHECK_SCRIPT="${REPO_ROOT}/scripts/check.sh"
 
+trap 'rm -f "${REPO_ROOT}/thermal" 2>/dev/null || true' EXIT
+
 if [ -x "${CHECK_SCRIPT}" ]; then
     exec "${CHECK_SCRIPT}" --pre-push
 else
