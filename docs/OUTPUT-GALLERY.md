@@ -1,7 +1,7 @@
 # Thermal Output Gallery
 
 > Generated from a fixed fixture by `scripts/output_gallery.sh`. Capture
-> `2026-10-29T20:14:39Z` · fixture `be7a2205036c2190165d7cf4bc2f2605b52317d1a3cf2ce5e69e4fb6f586448e` · `thermal dev (built from source)`.
+> `2026-10-29T20:25:33Z` · fixture `4fcb5ac3c546eca2acfe5393b2d935a6b3b3ea51a5328dec718d1f21aacbdda3` · `thermal dev (built from source)`.
 > Fixed data date: 2026-01-15. Text is `NO_COLOR=1`; non-TTY default width is
 > 100. Width sections use a PTY at 80/120. The live TUI block is synthetic and
 > labeled; the other text blocks are captured from the same fixture run.
@@ -38,7 +38,7 @@
 | trend (tokens) | mean 759700 | — | — | — | — | calendar | n/a (tokens) |
 | trend (cost) | mean 1.7546 | — | — | — | — | calendar | total |
 | share | 759700 | 1.75 | 0.0046 | 1.7546 | 1/— | all · all time (1 active day) | recorded+estimated |
-| live | — | — | — | — | — | today snapshot (live, 2026-10-29T23:14:39.476476569+03:00) | recorded+estimated |
+| live | — | — | — | — | — | today snapshot (live, 2026-10-29T23:25:33.855871572+03:00) | recorded+estimated |
 
 Allowed equalities are checked by `scripts/output_gallery_gate.sh`: leaderboard
 estimated equals daily estimated, projects total equals daily total, models
@@ -57,6 +57,7 @@ and share token/cost fields use one window.
     thermal [options]                    All-tool leaderboard & streak heatmap
     thermal [command] [options]          Analytics, audit, and utility commands
     thermal [tool] [report] [options]    Scoped report (e.g. opencode weekly)
+    thermal help [command]               Global help or one command's help page
 
   Dashboards & Views:
     live           Real-time token burn monitor with velocity, flame & sparkline
@@ -76,6 +77,7 @@ and share token/cost fields use one window.
     trend          Daily trend fit with month-end volume & spend projection
 
   Diagnostics & Utilities:
+    help           Global help or one command's help page (e.g. thermal help daily)
     audit          Audit local agent instruction files & MCP context tax
     changelog      Show release history, newly added commands & arguments
     upgrade        Self-upgrade thermal to the latest release
@@ -85,6 +87,8 @@ and share token/cost fields use one window.
   Common Examples:
     thermal                            All-tool leaderboard & streak heatmap
     thermal opencode weekly --chart    Weekly breakdown with terminal bar chart
+    thermal daily --help               Scoped help for the daily report
+    thermal help daily                 Same page via the help command
     thermal stats                      Daily distribution and token composition
     thermal audit                      Audit instruction files & MCP context tax
     thermal changelog --top 5          View latest new features & arguments
@@ -124,7 +128,7 @@ and share token/cost fields use one window.
     --json                 Output structured JSON (never launches a terminal UI)
     --no-color             Disable all ANSI escape sequences
     --verbose, -v          Output diagnostic warnings to stderr
-    -h, --help             Show this help manual
+    -h, --help             Show global or command-scoped help
 
   Supported Tools:
     Token Warriors:    OpenCode · Devin · Codex · Claude · ZCode · Grok · MiMoCode (mimo) ·
@@ -508,8 +512,8 @@ Cost trend:
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.5df17d8a.TI9RbvMgEI…3G91-2XAawCznPfiFUyKZ04iI0_QzAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.0bc8e666.TI9RbvMgEI…PY73X7ZcBrBrOc9-IVTIlnSiIjz_DMA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -718,6 +722,7 @@ stats, share, statusline) are captured at both widths.
     thermal [options]                    All-tool leaderboard & streak heatmap
     thermal [command] [options]          Analytics, audit, and utility commands
     thermal [tool] [report] [options]    Scoped report (e.g. opencode weekly)
+    thermal help [command]               Global help or one command's help page
 
   Dashboards & Views:
     live           Real-time token burn monitor with velocity, flame & sparkline
@@ -738,6 +743,8 @@ stats, share, statusline) are captured at both widths.
     trend          Daily trend fit with month-end volume & spend projection
 
   Diagnostics & Utilities:
+    help           Global help or one command's help page (e.g. thermal help
+                   daily)
     audit          Audit local agent instruction files & MCP context tax
     changelog      Show release history, newly added commands & arguments
     upgrade        Self-upgrade thermal to the latest release
@@ -747,6 +754,8 @@ stats, share, statusline) are captured at both widths.
   Common Examples:
     thermal                            All-tool leaderboard & streak heatmap
     thermal opencode weekly --chart    Weekly breakdown with terminal bar chart
+    thermal daily --help               Scoped help for the daily report
+    thermal help daily                 Same page via the help command
     thermal stats                      Daily distribution and token composition
     thermal audit                      Audit instruction files & MCP context tax
     thermal changelog --top 5          View latest new features & arguments
@@ -791,7 +800,7 @@ stats, share, statusline) are captured at both widths.
     --json                 Output structured JSON (never launches a terminal UI)
     --no-color             Disable all ANSI escape sequences
     --verbose, -v          Output diagnostic warnings to stderr
-    -h, --help             Show this help manual
+    -h, --help             Show global or command-scoped help
 
   Supported Tools:
     Token Warriors:    OpenCode · Devin · Codex · Claude · ZCode · Grok ·
@@ -813,6 +822,7 @@ stats, share, statusline) are captured at both widths.
     thermal [options]                    All-tool leaderboard & streak heatmap
     thermal [command] [options]          Analytics, audit, and utility commands
     thermal [tool] [report] [options]    Scoped report (e.g. opencode weekly)
+    thermal help [command]               Global help or one command's help page
 
   Dashboards & Views:
     live           Real-time token burn monitor with velocity, flame & sparkline
@@ -832,6 +842,7 @@ stats, share, statusline) are captured at both widths.
     trend          Daily trend fit with month-end volume & spend projection
 
   Diagnostics & Utilities:
+    help           Global help or one command's help page (e.g. thermal help daily)
     audit          Audit local agent instruction files & MCP context tax
     changelog      Show release history, newly added commands & arguments
     upgrade        Self-upgrade thermal to the latest release
@@ -841,6 +852,8 @@ stats, share, statusline) are captured at both widths.
   Common Examples:
     thermal                            All-tool leaderboard & streak heatmap
     thermal opencode weekly --chart    Weekly breakdown with terminal bar chart
+    thermal daily --help               Scoped help for the daily report
+    thermal help daily                 Same page via the help command
     thermal stats                      Daily distribution and token composition
     thermal audit                      Audit instruction files & MCP context tax
     thermal changelog --top 5          View latest new features & arguments
@@ -880,7 +893,7 @@ stats, share, statusline) are captured at both widths.
     --json                 Output structured JSON (never launches a terminal UI)
     --no-color             Disable all ANSI escape sequences
     --verbose, -v          Output diagnostic warnings to stderr
-    -h, --help             Show this help manual
+    -h, --help             Show global or command-scoped help
 
   Supported Tools:
     Token Warriors:    OpenCode · Devin · Codex · Claude · ZCode · Grok · MiMoCode (mimo) ·
@@ -991,8 +1004,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.5df17…XAawCznPfiFUyKZ04iI0_QzAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.0bc8e…ZcBrBrOc9-IVTIlnSiIjz_DMA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud
     storage. No file paths, repository roots, or prompt telemetry encoded.
@@ -1016,8 +1029,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.5df17d8a.TI9RbvMgEI…3G91-2XAawCznPfiFUyKZ04iI0_QzAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.0bc8e666.TI9RbvMgEI…PY73X7ZcBrBrOc9-IVTIlnSiIjz_DMA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -1069,22 +1082,22 @@ at four decimal places by `cmd/thermal/json.go`.
 ### Envelope types and timestamps
 
 ```text
-leaderboard      leaderboard    2026-10-29T20:14:39Z
-daily            daily          2026-10-29T20:14:39Z
-weekly           weekly         2026-10-29T20:14:39Z
-monthly          monthly        2026-10-29T20:14:39Z
-projects         projects       2026-10-29T20:14:39Z
-models           models         2026-10-29T20:14:39Z
-mix              mix            2026-10-29T20:14:39Z
-stats-token      stats          2026-10-29T20:14:39Z
-stats-cost       stats          2026-10-29T20:14:39Z
-trend-token      trend          2026-10-29T20:14:39Z
-trend-cost       trend          2026-10-29T20:14:39Z
-share            share          2026-10-29T20:14:39Z
-audit            audit          2026-10-29T23:14:39.467923856+03:00
-changelog        changelog      2026-10-29T20:14:39Z
-live             live           2026-10-29T23:14:39.476476569+03:00
-version          version        2026-10-29T20:14:39Z
+leaderboard      leaderboard    2026-10-29T20:25:33Z
+daily            daily          2026-10-29T20:25:33Z
+weekly           weekly         2026-10-29T20:25:33Z
+monthly          monthly        2026-10-29T20:25:33Z
+projects         projects       2026-10-29T20:25:33Z
+models           models         2026-10-29T20:25:33Z
+mix              mix            2026-10-29T20:25:33Z
+stats-token      stats          2026-10-29T20:25:33Z
+stats-cost       stats          2026-10-29T20:25:33Z
+trend-token      trend          2026-10-29T20:25:33Z
+trend-cost       trend          2026-10-29T20:25:33Z
+share            share          2026-10-29T20:25:33Z
+audit            audit          2026-10-29T23:25:33.847390494+03:00
+changelog        changelog      2026-10-29T20:25:33Z
+live             live           2026-10-29T23:25:33.855871572+03:00
+version          version        2026-10-29T20:25:33Z
 ```
 
 ## Validation cases
@@ -1150,7 +1163,7 @@ exit 0
 
 ```json
 {
-  "generatedAt": "2026-10-29T20:14:39Z",
+  "generatedAt": "2026-10-29T20:25:33Z",
   "snapshot": {
     "activeDays": 1,
     "coverage": "recorded+estimated",
@@ -1167,16 +1180,16 @@ exit 0
     "recordedCost": 1.75,
     "scope": "all",
     "streakBasis": "token-active",
-    "t": 1793304879,
+    "t": 1793305533,
     "tool": "all",
     "totalCost": 1.7546,
     "totalTokens": 759700,
     "v": 1,
     "window": "all time (1 active day)"
   },
-  "token": "v1.5df17d8a.TI9RbvMgEISvYu3T_6s4Wiehbnhse4P2AghWKQphK1g7iiLfvTKu0zzO8M3McoMRTKdAwHT9YbfD_Ut_UCDMEQzYGEFBcfxNd3UJyfNlkY2EMzX_usY6CSM13l7_zwHJZE-vtoQCBoRPlNqFAAVuyJmSfFSmbkdORyqPzgK_22upUlhs_JxrCpheH3pEBZkcZ0_-jct8_KbXCqhIOFtZTdwg7rX-LfgDq-d4pGyP88fWqqd7HhT4un6DLW6fW-zaTq_bk4Ize4r12UU7eGp3G91-2XAawCznPfiFUyKZ04iI0_QzAA",
+  "token": "v1.0bc8e666.TI9RbvMgEISvYu3T_6s4WselVnhse4P2AghWKQphK1g7iiLfvTKu0zzO8M3McoMJTKdAwHTDoe9R675XIMwRDNgYQUFx_E13dQnJ82WVjYQzNf-6xjoJEzXeXv8vAclkT6-2hAIGhE-U2pUABW7MmZJ8VKZuR05HKo_OCr_ba6lSWGz8XGoKmEEfBkQFmRxnT_6Ny3L8btAKqEg4W9lM3CE-a_1b8AdWz_FE2R6Xj21VT_c8KPB1_QZ73L-02LWd3rZnBWf2FOuzi3b01PY73X7ZcBrBrOc9-IVTIlnSiIjz_DMA",
   "type": "share",
-  "url": "https://jadmadi.net/project/thermal/share#v1.5df17d8a.TI9RbvMgEISvYu3T_6s4Wiehbnhse4P2AghWKQphK1g7iiLfvTKu0zzO8M3McoMRTKdAwHT9YbfD_Ut_UCDMEQzYGEFBcfxNd3UJyfNlkY2EMzX_usY6CSM13l7_zwHJZE-vtoQCBoRPlNqFAAVuyJmSfFSmbkdORyqPzgK_22upUlhs_JxrCpheH3pEBZkcZ0_-jct8_KbXCqhIOFtZTdwg7rX-LfgDq-d4pGyP88fWqqd7HhT4un6DLW6fW-zaTq_bk4Ize4r12UU7eGp3G91-2XAawCznPfiFUyKZ04iI0_QzAA"
+  "url": "https://jadmadi.net/project/thermal/share#v1.0bc8e666.TI9RbvMgEISvYu3T_6s4WselVnhse4P2AghWKQphK1g7iiLfvTKu0zzO8M3McoMJTKdAwHTDoe9R675XIMwRDNgYQUFx_E13dQnJ82WVjYQzNf-6xjoJEzXeXv8vAclkT6-2hAIGhE-U2pUABW7MmZJ8VKZuR05HKo_OCr_ba6lSWGz8XGoKmEEfBkQFmRxnT_6Ny3L8btAKqEg4W9lM3CE-a_1b8AdWz_FE2R6Xj21VT_c8KPB1_QZ73L-02LWd3rZnBWf2FOuzi3b01PY73X7ZcBrBrOc9-IVTIlnSiIjz_DMA"
 }
 ```
 
@@ -1184,7 +1197,7 @@ exit 0
 
 - Home: fixed temp fixture (removed after generation)
 - Date: 2026-01-15
-- Hash: `be7a2205036c2190165d7cf4bc2f2605b52317d1a3cf2ce5e69e4fb6f586448e`
+- Hash: `4fcb5ac3c546eca2acfe5393b2d935a6b3b3ea51a5328dec718d1f21aacbdda3`
 - Reports: codewhale 750,000 tokens/$1.75 recorded; Claude 9,700 tokens;
   Agy 12 steps; two projects; two models.
 

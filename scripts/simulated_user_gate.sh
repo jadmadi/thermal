@@ -269,6 +269,33 @@ run_check "Changelog command text" 0 text "${BIN_PATH}" changelog --no-color
 run_check "Changelog top 1" 0 text "${BIN_PATH}" changelog --top 1 --no-color
 run_check "Changelog JSON output" 0 json "${BIN_PATH}" changelog --json
 
+echo -e "\n${BOLD}9b. Scoped Help & Precedence:${RESET}"
+run_check "Daily scoped help" 0 text "${BIN_PATH}" daily --help
+run_check "Help daily" 0 text "${BIN_PATH}" help daily
+run_check "Daily help no color" 0 text "${BIN_PATH}" daily --help --no-color
+run_check "Live scoped help" 0 text "${BIN_PATH}" live --help
+run_check "Upgrade scoped help" 0 text "${BIN_PATH}" upgrade --help
+run_check "Version scoped help" 0 text "${BIN_PATH}" version --help
+run_check "Unknown help token" 1 error "${BIN_PATH}" help nope
+if cmp -s <("${BIN_PATH}" daily --help) <("${BIN_PATH}" help daily); then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} daily --help and help daily are identical"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} daily --help and help daily differ"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" daily --help | grep -q 'Daily Usage'; then
+    echo -e "  ${RED}✖ [FAIL]${RESET} daily --help leaked a data table"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${GREEN}✔ [PASS]${RESET} daily --help does not execute the report"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

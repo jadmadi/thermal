@@ -45,6 +45,9 @@ func usage() string {
 }
 
 func parseArgs() thermal.Options {
+	if verb, tool, unknown, help := resolveHelpTarget(os.Args[1:]); help {
+		os.Exit(printHelpFor(verb, tool, unknown, noColorFromArgs(os.Args[1:])))
+	}
 	if len(os.Args) == 2 {
 		arg := os.Args[1]
 		if arg == "-h" || arg == "--help" || arg == "help" {

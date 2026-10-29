@@ -77,6 +77,7 @@ func RenderHelp(noColor bool) string {
 		{"thermal [options]", "All-tool leaderboard & streak heatmap"},
 		{"thermal [command] [options]", "Analytics, audit, and utility commands"},
 		{"thermal [tool] [report] [options]", "Scoped report (e.g. opencode weekly)"},
+		{"thermal help [command]", "Global help or one command's help page"},
 	}
 	for _, u := range usageItems {
 		padded := padStyled(cmdName(u.cmd), len(u.cmd), 36)
@@ -123,6 +124,7 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "Diagnostics & Utilities:",
 			Items: []HelpItem{
+				{Name: "help", Desc: "Global help or one command's help page (e.g. thermal help daily)"},
 				{Name: "audit", Desc: "Audit local agent instruction files & MCP context tax"},
 				{Name: "changelog", Desc: "Show release history, newly added commands & arguments"},
 				{Name: "upgrade", Desc: "Self-upgrade thermal to the latest release"},
@@ -157,6 +159,8 @@ func RenderHelp(noColor bool) string {
 	}{
 		{"thermal", "All-tool leaderboard & streak heatmap"},
 		{"thermal opencode weekly --chart", "Weekly breakdown with terminal bar chart"},
+		{"thermal daily --help", "Scoped help for the daily report"},
+		{"thermal help daily", "Same page via the help command"},
 		{"thermal stats", "Daily distribution and token composition"},
 		{"thermal audit", "Audit instruction files & MCP context tax"},
 		{"thermal changelog --top 5", "View latest new features & arguments"},
@@ -223,7 +227,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--json", Desc: "Output structured JSON (never launches a terminal UI)"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},
 				{Name: "--verbose, -v", Desc: "Output diagnostic warnings to stderr"},
-				{Name: "-h, --help", Desc: "Show this help manual"},
+				{Name: "-h, --help", Desc: "Show global or command-scoped help"},
 			},
 		},
 	}
@@ -279,6 +283,110 @@ func RenderHelp(noColor bool) string {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
 	}
 	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// HelpFlag is one flag row in a command-scoped help page.
+type HelpFlag struct {
+	Name string
+	Desc string
+}
+
+// CommandHelp is the content of a command-scoped help page.
+type CommandHelp struct {
+	Title       string
+	Usage       string
+	Summary     string
+	Description []string
+	Flags       []HelpFlag
+	Examples    []string
+	JSON        string
+	Note        string
+	Related     []string
+}
+
+// RenderCommandHelp renders a plain, width-safe command help page. It never
+// reads data, writes files, opens a TUI, or touches the network.
+func RenderCommandHelp(p CommandHelp) string {
+	const maxWidth = 80
+	var sb strings.Builder
+
+	sb.WriteString("\n")
+	if p.Summary != "" {
+		sb.WriteString(fmt.Sprintf("  Thermal · %s · %s\n\n", p.Title, p.Summary))
+	} else {
+		sb.WriteString(fmt.Sprintf("  Thermal · %s\n\n", p.Title))
+	}
+
+	sb.WriteString("  Usage:\n")
+	for _, line := range WrapText(p.Usage, maxWidth-4) {
+		sb.WriteString("    " + line + "\n")
+	}
+	sb.WriteString("\n")
+
+	if len(p.Description) > 0 {
+		sb.WriteString("  Description:\n")
+		for _, para := range p.Description {
+			for _, line := range WrapText(para, maxWidth-4) {
+				sb.WriteString("    " + line + "\n")
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(p.Flags) > 0 {
+		sb.WriteString("  Flags:\n")
+		const nameWidth = 24
+		for _, f := range p.Flags {
+			prefix := fmt.Sprintf("    %-*s ", nameWidth, f.Name)
+			avail := maxWidth - len(prefix)
+			if avail < 20 {
+				avail = 20
+			}
+			for i, line := range WrapText(f.Desc, avail) {
+				if i == 0 {
+					sb.WriteString(prefix + line + "\n")
+				} else {
+					sb.WriteString(strings.Repeat(" ", len(prefix)) + line + "\n")
+				}
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(p.Examples) > 0 {
+		sb.WriteString("  Examples:\n")
+		for _, ex := range p.Examples {
+			for _, line := range WrapText(ex, maxWidth-4) {
+				sb.WriteString("    " + line + "\n")
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	if p.JSON != "" {
+		sb.WriteString("  JSON:\n")
+		for _, line := range WrapText(p.JSON, maxWidth-4) {
+			sb.WriteString("    " + line + "\n")
+		}
+		sb.WriteString("\n")
+	}
+
+	if p.Note != "" {
+		for _, line := range WrapText("Note: "+p.Note, maxWidth-4) {
+			sb.WriteString("  " + line + "\n")
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(p.Related) > 0 {
+		sb.WriteString("  See also:\n")
+		for _, line := range WrapText(strings.Join(p.Related, " · "), maxWidth-4) {
+			sb.WriteString("    " + line + "\n")
+		}
+		sb.WriteString("\n")
+	}
 
 	return sb.String()
 }

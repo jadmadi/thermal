@@ -11,6 +11,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
 - [Upgrading to v0.22.0](#upgrading-to-v0220)
   - [Changed: Strict Argument Parsing and Usage Exit Codes](#changed-strict-argument-parsing)
+  - [Changed: Help Is Intercepted and Command-Scoped](#changed-help-precedence)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -133,6 +134,35 @@ thermal daily --last 7 --json
 
 **Escape hatch**:
 There is no silent fallback. To request all time, omit `--last`; to scope a report, pass `--since`/`--until`. Scripts should treat exit `2` as a usage error and exit `1` as a data or semantic error.
+
+---
+
+### Changed: Help Is Intercepted and Command-Scoped
+<a id="changed-help-precedence"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal [a-z-]+ +--help' .`
+- **Detection signal**: `thermal daily --help` now prints `Thermal · daily · Daily token volume and cost breakdown` and exits `0`; it no longer prints the daily table.
+
+**What changed and why**:
+Help used to be honoured only when it was the sole argument. After a command word, `--help` was ignored and the command executed; `thermal live --help` opened the TUI and `thermal upgrade --help` replaced the binary. Help is now intercepted before dispatch, wins over validation and execution, and prints a page scoped to the command or tool. `thermal help <command>` is equivalent to `thermal <command> --help`.
+
+**Before / After**:
+```bash
+# Before: daily --help rendered data; upgrade --help upgraded
+thermal daily --help
+thermal upgrade --help
+
+# After: exit 0, read-only scoped pages
+thermal daily --help
+thermal help daily
+```
+
+**The fix**:
+Remove `--help` from data pipelines and use `--json` for machine output. Use `thermal <command> --help` or `thermal help <command>` to inspect accepted flags.
+
+**Escape hatch**:
+None is needed; help is always read-only. `--` does not disable help, and a help request wins over an invalid flag.
 
 ---
 

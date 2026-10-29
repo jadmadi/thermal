@@ -1,19 +1,19 @@
 # Plan: Never swallow -h/--help and add command-scoped help
 
 ## Execution Steps
-- [ ] **Phase 1 — Inventory and command registry**: Enumerate every dispatch case, `isReportWord` value, flag, alias, and JSON envelope currently implemented. Create `cmd/thermal/help.go` with the `commandSpec` table and a parity test that fails when a dispatch case or report word has no spec. Acceptance: `go test ./cmd/thermal -run TestCommandSpecParity` passes; adding a fake verb without a spec fails.
+- [x] **Phase 1 — Inventory and command registry**: Enumerate every dispatch case, `isReportWord` value, flag, alias, and JSON envelope currently implemented. Create `cmd/thermal/help.go` with the `commandSpec` table and a parity test that fails when a dispatch case or report word has no spec. Acceptance: `go test ./cmd/thermal -run TestCommandSpecParity` passes; adding a fake verb without a spec fails.
   - Inventory inputs: `cmd/thermal/main.go` dispatch switch, `isReportWord`, `validateReportFlags`, `flag.*Var` registrations, `internal/render/help.go`.
   - Include aliases: `prompt`, `status`, `mimo`, `oc`, `cmd`, `whale`, `zc`, `ccode`, `dsh`, `deepseek`, `hermes`, `nous`.
   - Include retired verbs and their retirement messages.
-- [ ] **Phase 2 — Global interception and precedence**: Add a raw-argv help scan before `flag.Parse()` and before dispatch. Implement the precedence table (help > version > validation > execution). Resolve the context (global, verb, tool, tool+verb, help-about-help, unknown). Acceptance: `TestHelpInterceptionMatrix` covers all negative cases in `goal.md` and passes.
+- [x] **Phase 2 — Global interception and precedence**: Add a raw-argv help scan before `flag.Parse()` and before dispatch. Implement the precedence table (help > version > validation > execution). Resolve the context (global, verb, tool, tool+verb, help-about-help, unknown). Acceptance: `TestHelpInterceptionMatrix` covers all negative cases in `goal.md` and passes.
   - Replace the `len(os.Args)==2` special case with the general resolver.
   - Ensure `--json`, `--no-color`, `--verbose`, and positional order do not change the outcome.
   - Ensure `--help` after `--` is still honoured (document if not).
-- [ ] **Phase 3 — Scoped renderer and side-effect isolation**: Implement `RenderCommandHelp` with the page anatomy, width-aware wrapping, and color rules. Short-circuit before `loadUsage`, `pricing.Load`, `runUpgrade`, `runLive`, and cache writes. Acceptance: `TestHelpHasNoSideEffects` passes with a temp HOME and a read-only cache; `thermal upgrade --help` leaves a disposable copy's md5 unchanged.
+- [x] **Phase 3 — Scoped renderer and side-effect isolation**: Implement `RenderCommandHelp` with the page anatomy, width-aware wrapping, and color rules. Short-circuit before `loadUsage`, `pricing.Load`, `runUpgrade`, `runLive`, and cache writes. Acceptance: `TestHelpHasNoSideEffects` passes with a temp HOME and a read-only cache; `thermal upgrade --help` leaves a disposable copy's md5 unchanged.
   - Add a `helpOnly` early return in `main()` before the upgrade/live/statusline cases.
   - Guard `runUpgrade` so it cannot be called from a help path.
   - Add PTY byte assertions for the absence of alternate-screen sequences.
-- [ ] **Phase 4 — Tests, gate, docs, and closure**: Add golden pages at 80/120 columns, the simulated-user-gate help section, README/MIGRATION/project.jsonc updates, and close the goal.
+- [x] **Phase 4 — Tests, gate, docs, and closure**: Add golden pages at 80/120 columns, the simulated-user-gate help section, README/MIGRATION/project.jsonc updates, and close the goal.
   - AC commands from `goal.md` are executed and recorded in `evidence.md`.
   - `CGO_ENABLED=0 go test -race ./...` and `./scripts/simulated_user_gate.sh` pass.
   - Commit with `feat(cli): intercept help globally and add command-scoped help pages (goals/cli-help-interception-and-scoped-help/goal.md)`.
@@ -41,4 +41,4 @@
 - Do not revert the side-effect fixes for `upgrade --help` and `live --help`; those are safety regressions.
 
 ## Phase 5 — Attribution & Registry Closure
-- [ ] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-help-interception-and-scoped-help/plan.md`; (2) commit with `(goals/cli-help-interception-and-scoped-help/goal.md)` using a `feat(cli):` subject; (3) certify via `sila goals certify cli-help-interception-and-scoped-help --evidence=goals/cli-help-interception-and-scoped-help/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.
+- [x] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-help-interception-and-scoped-help/plan.md`; (2) commit with `(goals/cli-help-interception-and-scoped-help/goal.md)` using a `feat(cli):` subject; (3) certify via `sila goals certify cli-help-interception-and-scoped-help --evidence=goals/cli-help-interception-and-scoped-help/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.
