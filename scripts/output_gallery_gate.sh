@@ -93,7 +93,7 @@ check_contains "help includes Zed" "Zed"
 check_contains "help includes MiMoCode alias" "MiMoCode (mimo)"
 check_contains "help includes DSH alias" "DeepSeek DSH (dsh)"
 check_contains "validation no-report command" "thermal --since 2026-01-01"
-check_contains "validation no-report exit 1" "exit 1"
+check_contains "validation no-report exit 2" "exit 2"
 check_contains "chart scale names largest charted row" "largest charted row"
 check_contains "chart keeps table order" "repo-b"
 check_contains "live synthetic has token units" "tok/m"
@@ -184,7 +184,7 @@ top_code=$?
 (cd "${WORK}" && "${BIN}" daily --chart --offline >/dev/null 2>&1)
 daily_code=$?
 set -e
-if [[ "${root_code}" -eq 1 && "${mix_code}" -eq 1 && "${top_code}" -eq 1 && "${daily_code}" -eq 0 ]]; then
+if [[ "${root_code}" -eq 2 && "${mix_code}" -eq 2 && "${top_code}" -eq 2 && "${daily_code}" -eq 0 ]]; then
   printf '  ✔ validation exits are stable\n'
 else
   printf '  ✘ validation exit drift: %s/%s/%s/%s\n' "${root_code}" "${mix_code}" "${top_code}" "${daily_code}"

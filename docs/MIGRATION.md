@@ -9,6 +9,8 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 ## Table of Contents
 - [Staged Deprecations (v0.14.0)](#staged-deprecations-v0140)
   - [Deprecated: `--license` CLI Flag](#deprecated---license-cli-flag)
+- [Upgrading to v0.22.0](#upgrading-to-v0220)
+  - [Changed: Strict Argument Parsing and Usage Exit Codes](#changed-strict-argument-parsing)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -99,6 +101,40 @@ thermal hermes weekly
 
 **Escape hatch**:
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
+
+## Upgrading to v0.22.0
+
+### Changed: Strict Argument Parsing and Usage Exit Codes
+<a id="changed-strict-argument-parsing"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal[^|;]*--(last|weeks|top|interval)[ =]([^0-9-]|$)' .`
+- **Detection signal**: A command that previously returned a full report with exit `0` now prints `thermal: --last wants a whole number of days, got "abc"` and exits `2`.
+
+**What changed and why**:
+Thermal used Go's `flag` parser only until the first positional and a hand-rolled scanner after it; the scanner silently ignored invalid numeric values and unknown flags. A typo such as `daily --last abc` rendered the all-time report with exit `0`, and `opencode --tool codex` silently chose the positional. The parser now accepts flags in any position, validates every value exactly once, rejects contradictory arguments, and exits `2` for usage errors. `--last` must be at least `1`, `--since` may not be after `--until`, `--tool` may not conflict with a positional tool, and unknown flags are rejected with a nearest-match suggestion.
+
+**Before / After**:
+```bash
+# Before: silently all-time, exit 0
+thermal daily --last abc
+
+# After: exit 2, no report
+thermal: --last wants a whole number of days, got "abc"
+  example: thermal daily --last 7
+```
+
+**The fix**:
+Use a valid value or remove the flag:
+```bash
+thermal daily --last 7
+thermal daily --last 7 --json
+```
+
+**Escape hatch**:
+There is no silent fallback. To request all time, omit `--last`; to scope a report, pass `--since`/`--until`. Scripts should treat exit `2` as a usage error and exit `1` as a data or semantic error.
+
+---
 
 ## Upgrading to v0.20.1
 

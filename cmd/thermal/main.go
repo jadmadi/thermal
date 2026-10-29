@@ -5,7 +5,7 @@ package main
 
 import (
 	"context"
-	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -70,261 +70,27 @@ func parseArgs() thermal.Options {
 		}
 	}
 
-	var opts thermal.Options
-	flag.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, devin, agy, command-code, codewhale, zcode, grok, muse, claude, droid, dsh, hermes, zed")
-	flag.StringVar(&opts.DBPath, "db", "", "Override database/data path")
-	flag.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
-	flag.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
-	flag.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
-	flag.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
-	flag.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
-	flag.StringVar(&opts.Sort, "sort", "", "Ranking: streak|tokens|cost for the leaderboard, tokens|cost|days|recent for projects, tokens|cost for models")
-	flag.IntVar(&opts.Top, "top", 0, "Project or model rows to print, 0 for all")
-	flag.StringVar(&opts.Metric, "metric", "tokens", "Analytics metric: tokens or cost")
-	flag.StringVar(&opts.By, "by", "tool", "Mix dimension: tool or model")
-	flag.StringVar(&opts.Grain, "grain", "week", "Mix bucket size: day, week, or month")
-	flag.BoolVar(&opts.Breakdown, "breakdown", false, "Show per-model rows in reports")
-	flag.BoolVar(&opts.Chart, "chart", false, "Print bar rows under report tables")
-	flag.StringVar(&opts.StartOfWeek, "start-of-week", "sunday", "Week start day: sunday-saturday")
-	flag.BoolVar(&opts.Offline, "offline", false, "Use cached pricing only, never fetch")
-	flag.BoolVar(&opts.NoEstimate, "no-estimate", false, "Recorded cost only, no pricing estimates")
-	flag.BoolVar(&opts.NoUpdateCheck, "no-update-check", false, "Disable daily automatic update check")
-	flag.DurationVar(&opts.Interval, "interval", time.Second, "Polling interval for live monitor (default: 1s)")
-	var flameCeilingRaw string
-	flag.StringVar(&flameCeilingRaw, "flame-ceiling", "", "Live flame ceiling in active units per minute (e.g. 9M or 60)")
-	flag.BoolVar(&opts.Stream, "stream", false, "Stream continuous NDJSON live events (live verb)")
-	flag.BoolVar(&opts.Stream, "follow", false, "Stream continuous NDJSON live events (live verb shorthand)")
-	flag.BoolVar(&opts.Stream, "f", false, "Stream continuous NDJSON live events (live verb shorthand)")
-	flag.BoolVar(&opts.Fresh, "fresh", false, "Bypass cached statusline data; live sessions always start at launch")
-	var showLicense bool
-	flag.BoolVar(&showLicense, "license", false, "Show license, dual-licensing & commercial terms")
-	flag.StringVar(&opts.Format, "format", "text", "Output format: text or json")
-	flag.BoolVar(&opts.Nerd, "nerd", false, "Use Nerd Font glyphs in statusline")
-	flag.BoolVar(&opts.Plain, "plain", false, "Plain text output without glyphs or icons")
-	flag.BoolVar(&opts.JSON, "json", false, "Output JSON instead of the terminal UI")
-	flag.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
-	flag.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
-	flag.BoolVar(&opts.Verbose, "v", false, "Enable verbose warning diagnostics on stderr (shorthand)")
-	flag.BoolVar(&opts.Verbose, "d", false, "Enable verbose warning diagnostics on stderr (shorthand)")
-	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, usage())
+	opts, err := parseArgsFrom(os.Args[1:])
+	if err == nil {
+		return opts
 	}
-	flag.Parse()
-	if showLicense {
-		opts.Tool = "license"
+	if errors.Is(err, errHelpRequested) {
+		fmt.Print(usage())
+		os.Exit(0)
 	}
-
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "flame-ceiling" {
-			opts.FlameCeilingSet = true
-		}
-	})
-
-	remaining := flag.Args()
-	var positionals []string
-	for i := 0; i < len(remaining); i++ {
-		arg := remaining[i]
-		if !strings.HasPrefix(arg, "-") {
-			positionals = append(positionals, arg)
-			continue
-		}
-
-		name, inline := arg, ""
-		hasInline := false
-		if eq := strings.Index(arg, "="); eq >= 0 {
-			name = arg[:eq]
-			inline = arg[eq+1:]
-			hasInline = true
-		}
-		takeValue := func() (string, bool) {
-			if hasInline {
-				return inline, true
-			}
-			if i+1 < len(remaining) {
-				next := remaining[i+1]
-				// Accept negative numbers so --last -1 reaches validation
-				// instead of being silently ignored.
-				if !strings.HasPrefix(next, "-") || isNegativeNumber(next) {
-					i++
-					return next, true
-				}
-			}
-			return "", false
-		}
-
-		switch name {
-		case "--no-color":
-			opts.NoColor = true
-		case "--json":
-			opts.JSON = true
-		case "--license":
-			opts.Tool = "license"
-		case "--breakdown":
-			opts.Breakdown = true
-		case "--chart":
-			opts.Chart = true
-		case "--dense", "--distribution", "--dist", "--sparse":
-			fmt.Fprintln(os.Stderr, "thermal: the dense FinOps grid and distribution aliases have been retired.")
-			fmt.Fprintln(os.Stderr, "  thermal stats now prints the distribution report; use thermal live for real-time monitoring.")
-			os.Exit(1)
-		case "--offline":
-			opts.Offline = true
-		case "--no-estimate":
-			opts.NoEstimate = true
-		case "--verbose", "-v", "-d":
-			opts.Verbose = true
-		case "--port", "--host", "--open", "--no-open":
-			fmt.Fprintln(os.Stderr, "thermal: the embedded web server has been retired; web flags are no longer supported.")
-			fmt.Fprintln(os.Stderr, "  For headless telemetry and streaming: thermal live --json --stream")
-			os.Exit(1)
-		case "--no-update-check":
-			opts.NoUpdateCheck = true
-		case "--weeks":
-			if v, ok := takeValue(); ok {
-				if n, err := strconv.Atoi(v); err == nil {
-					opts.Weeks = n
-				}
-			}
-		case "--db":
-			if v, ok := takeValue(); ok {
-				opts.DBPath = v
-			}
-		case "--tool":
-			if v, ok := takeValue(); ok {
-				opts.Tool = v
-			}
-		case "--since":
-			if v, ok := takeValue(); ok {
-				opts.Since = v
-			}
-		case "--until":
-			if v, ok := takeValue(); ok {
-				opts.Until = v
-			}
-		case "--last":
-			if v, ok := takeValue(); ok {
-				if n, err := strconv.Atoi(v); err == nil {
-					opts.Last = n
-				}
-			}
-		case "--order":
-			if v, ok := takeValue(); ok {
-				opts.Order = v
-			}
-		case "--sort":
-			if v, ok := takeValue(); ok {
-				opts.Sort = v
-			}
-		case "--top":
-			if v, ok := takeValue(); ok {
-				if n, err := strconv.Atoi(v); err == nil {
-					opts.Top = n
-				}
-			}
-		case "--metric":
-			if v, ok := takeValue(); ok {
-				opts.Metric = v
-			}
-		case "--by":
-			if v, ok := takeValue(); ok {
-				opts.By = v
-			}
-		case "--grain":
-			if v, ok := takeValue(); ok {
-				opts.Grain = v
-			}
-		case "--start-of-week":
-			if v, ok := takeValue(); ok {
-				opts.StartOfWeek = v
-			}
-		case "--against", "--compare":
-			fmt.Fprintln(os.Stderr, "thermal: subscription replay simulation has been retired; --against and --compare are no longer supported.")
-			fmt.Fprintln(os.Stderr, "  For monthly volume and model pricing: thermal monthly, thermal models")
-			os.Exit(1)
-		case "--interval":
-			if v, ok := takeValue(); ok {
-				if d, err := time.ParseDuration(v); err == nil {
-					opts.Interval = d
-				} else if sec, err := strconv.ParseFloat(v, 64); err == nil {
-					opts.Interval = time.Duration(sec * float64(time.Second))
-				}
-			}
-		case "--flame-ceiling":
-			v, ok := takeValue()
-			if !ok {
-				fmt.Fprintln(os.Stderr, "thermal: --flame-ceiling requires a value")
-				os.Exit(1)
-			}
-			flameCeilingRaw = v
-			opts.FlameCeilingSet = true
-		case "--stream", "--follow", "-f":
-			opts.Stream = true
-		case "--fresh", "-fresh", "--zero":
-			opts.Fresh = true
-		case "--format":
-			if v, ok := takeValue(); ok {
-				opts.Format = v
-			}
-		case "--nerd":
-			opts.Nerd = true
-		case "--plain":
-			opts.Plain = true
-		}
-	}
-
-	if flameCeilingRaw != "" {
-		v, err := parseCompactFloat(flameCeilingRaw)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "thermal: invalid --flame-ceiling %q: %v\n", flameCeilingRaw, err)
-			os.Exit(1)
-		}
-		opts.FlameCeiling = v
-		opts.FlameCeilingSet = true
-	}
-
-	opts.Format = strings.ToLower(strings.TrimSpace(opts.Format))
-	if opts.Format == "" {
-		opts.Format = "text"
-	}
-	if opts.JSON && (opts.Format == "md" || opts.Format == "markdown") {
-		fmt.Fprintf(os.Stderr, "thermal: --json cannot be combined with --format %s\n", opts.Format)
+	var retired *retiredError
+	if errors.As(err, &retired) {
+		fmt.Fprintf(os.Stderr, "thermal: %s\n", retired.Message)
 		os.Exit(1)
 	}
-	if opts.JSON {
-		opts.Format = "json"
-	} else if opts.Format == "json" {
-		opts.JSON = true
+	var usageErr *usageError
+	if errors.As(err, &usageErr) {
+		printUsageError(os.Stderr, usageErr)
+		os.Exit(2)
 	}
-
-	if len(positionals) > 0 {
-		if isReportWord(positionals[0]) {
-			opts.Report = strings.ToLower(positionals[0])
-			if len(positionals) > 1 {
-				opts.Tool = positionals[1]
-			}
-		} else {
-			opts.Tool = positionals[0]
-			if len(positionals) > 1 && isReportWord(positionals[1]) {
-				opts.Report = strings.ToLower(positionals[1])
-			}
-		}
-	}
-
-	if opts.Report == "statusline" || opts.Report == "prompt" || opts.Report == "status" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
-		opts.NoUpdateCheck = true
-	}
-
-	if err := validateReportFlags(opts); err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
-		os.Exit(1)
-	}
-
-	if opts.Weeks < 4 || opts.Weeks > 104 {
-		fmt.Fprintf(os.Stderr, "thermal: --weeks must be between 4 and 104\n")
-		os.Exit(1)
-	}
-
-	return opts
+	fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+	os.Exit(2)
+	return thermal.Options{}
 }
 
 func isReportWord(s string) bool {
@@ -403,8 +169,8 @@ func validateReportFlags(opts thermal.Options) error {
 		return fmt.Errorf("--format must be text or json")
 	}
 
-	if opts.Last < 0 {
-		return fmt.Errorf("--last cannot be negative")
+	if opts.Last < 0 || (opts.LastSet && opts.Last == 0) {
+		return fmt.Errorf("--last must be at least 1")
 	}
 	if opts.Top < 0 {
 		return fmt.Errorf("--top cannot be negative")
@@ -420,12 +186,19 @@ func validateReportFlags(opts thermal.Options) error {
 	}
 	if opts.Since != "" {
 		if _, ok := thermal.ParseDay(opts.Since); !ok {
-			return fmt.Errorf("--since must be YYYY-MM-DD or YYYYMMDD")
+			return fmt.Errorf("--since must be YYYY-MM-DD or YYYYMMDD, got %q", opts.Since)
 		}
 	}
 	if opts.Until != "" {
 		if _, ok := thermal.ParseDay(opts.Until); !ok {
-			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD")
+			return fmt.Errorf("--until must be YYYY-MM-DD or YYYYMMDD, got %q", opts.Until)
+		}
+	}
+	if opts.Since != "" && opts.Until != "" {
+		start, startOK := thermal.ParseDay(opts.Since)
+		end, endOK := thermal.ParseDay(opts.Until)
+		if startOK && endOK && start.After(end) {
+			return fmt.Errorf("--since %s is after --until %s; did you mean --since %s --until %s?", opts.Since, opts.Until, opts.Until, opts.Since)
 		}
 	}
 
@@ -776,7 +549,7 @@ func main() {
 		tool, ok = loaders.ResolveTool(opts.Tool)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
-			os.Exit(1)
+			os.Exit(2)
 		}
 	}
 	tools := loaders.AllTools()
@@ -923,7 +696,7 @@ func loadUsage(opts thermal.Options) usageSet {
 	tool, ok := loaders.ResolveTool(opts.Tool)
 	if !ok {
 		fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
-		os.Exit(1)
+		os.Exit(2)
 	}
 	info := loaders.AllTools()[tool]
 	data, err := loaders.LoadToolData(tool, info, opts.DBPath)

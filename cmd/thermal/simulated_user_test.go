@@ -259,16 +259,18 @@ func TestSimulatedUser_Analytics(t *testing.T) {
 	}
 }
 
-// 7. Validation Negative Tests: Incorrect flags produce exit code 1 with clear, descriptive messages.
+// 7. Validation Negative Tests: incorrect flags use the documented exit code
+// and a clear, descriptive message (2 for usage, 1 for retired commands).
 func TestSimulatedUser_ValidationErrors(t *testing.T) {
 	testCases := []struct {
-		args        []string
-		expectedMsg string
+		args         []string
+		expectedMsg  string
+		expectedCode int
 	}{
-		{[]string{"weekly", "--top", "5"}, "--top only applies to the projects and models commands"},
-		{[]string{"replay"}, "subscription replay simulation has been retired"},
-		{[]string{"yield"}, "token yield efficiency reporting has been retired"},
-		{[]string{"daily", "--last", "-5"}, "--last cannot be negative"},
+		{[]string{"weekly", "--top", "5"}, "--top", 2},
+		{[]string{"replay"}, "subscription replay simulation has been retired", 1},
+		{[]string{"yield"}, "token yield efficiency reporting has been retired", 1},
+		{[]string{"daily", "--last", "-5"}, "--last must be at least 1", 2},
 	}
 
 	for _, tc := range testCases {
@@ -276,8 +278,8 @@ func TestSimulatedUser_ValidationErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			stdout, stderr, code := runSim(t, tc.args...)
 			combined := stdout + stderr
-			if code != 1 {
-				t.Errorf("expected exit code 1 for args %v, got %d. Output: %s", tc.args, code, combined)
+			if code != tc.expectedCode {
+				t.Errorf("expected exit code %d for args %v, got %d. Output: %s", tc.expectedCode, tc.args, code, combined)
 			}
 			if !strings.Contains(combined, tc.expectedMsg) {
 				t.Errorf("expected error message containing %q, got: %s", tc.expectedMsg, combined)

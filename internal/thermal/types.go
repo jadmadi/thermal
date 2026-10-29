@@ -39,6 +39,7 @@ type Options struct {
 	Since           string // YYYY-MM-DD or YYYYMMDD
 	Until           string
 	Last            int
+	LastSet         bool   // whether --last was explicitly provided
 	Order           string // "asc" or "desc", default "desc"
 	Breakdown       bool
 	Chart           bool          // print bar rows under report tables
@@ -48,6 +49,7 @@ type Options struct {
 	NoUpdateCheck   bool          // disable daily automatic update check
 	Sort            string        // tokens, cost, days, recent; default tokens
 	Top             int           // project rows to print, 0 means all
+	TopSet          bool          // whether --top was explicitly provided
 	Metric          string        // tokens or cost; analytics verbs
 	By              string        // tool or model; mix verb
 	Grain           string        // day, week, month; mix verb

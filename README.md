@@ -199,6 +199,17 @@ thermal --sort tokens   # biggest token consumers first
 thermal --sort cost     # biggest recorded spend first
 ```
 
+### Argument validation
+
+Flags may appear before, between, or after command words. Every value is
+validated once, and Thermal never silently falls back to a different window:
+
+- `--last` must be at least 1; omit it or use `--since`/`--until` for all time.
+- `--since` may not be after `--until`.
+- A positional tool may not conflict with `--tool`.
+- Unknown flags and invalid values exit `2` with a one-line explanation and an
+  example; data and semantic failures exit `1`.
+
 ## Reports
 
 Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:

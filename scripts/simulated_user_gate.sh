@@ -269,9 +269,9 @@ run_check "Changelog command text" 0 text "${BIN_PATH}" changelog --no-color
 run_check "Changelog top 1" 0 text "${BIN_PATH}" changelog --top 1 --no-color
 run_check "Changelog JSON output" 0 json "${BIN_PATH}" changelog --json
 
-echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 1 & Helpful Messages):${RESET}"
-run_check "Rejects --top on weekly report" 1 error "${BIN_PATH}" weekly --top 5
-run_check "Rejects negative --last" 1 error "${BIN_PATH}" daily --last -5
+echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
+run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
+run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
