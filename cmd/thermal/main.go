@@ -716,28 +716,6 @@ func printToolWarningsTo(w io.Writer, toolName string, warnings []string, verbos
 	}
 }
 
-// printToolConfigWarning surfaces a non-fatal config-override fallback only
-// with --verbose, so normal output stays quiet.
-func printToolConfigWarning(info loaders.ToolInfo, verbose bool) {
-	if !verbose || info.Warning == "" {
-		return
-	}
-	fmt.Fprintf(os.Stderr, "thermal: warning: %s: %s\n", info.Name, info.Warning)
-}
-
-// printLoadError prints the user-facing loader error and, with --verbose, the
-// raw driver error behind a --db path.
-func printLoadError(err error, verbose bool) {
-	fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
-	if !verbose {
-		return
-	}
-	var dbErr *loaders.DBPathError
-	if errors.As(err, &dbErr) && dbErr.Err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: verbose: %v\n", dbErr.Err)
-	}
-}
-
 func usedLicenseFlag() bool {
 	for _, a := range os.Args[1:] {
 		if a == "--license" || a == "-license" || strings.HasPrefix(a, "--license=") || strings.HasPrefix(a, "-license=") {
