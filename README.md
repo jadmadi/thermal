@@ -212,12 +212,22 @@ thermal --verbose
 thermal --no-color
 ```
 
-The leaderboard ranks by contribution streak. To rank by volume instead:
+The leaderboard ranks by contribution streak and says so: `Ranked by current
+streak · all time`. A legend defines `Strk` (current streak), `Best` (longest
+streak), `Days` (active days), and the cost markers (`$` recorded, `~$`
+estimated, `≥$` partial known, `—` unpriced, `≈` approximate). The footer
+states `recorded + estimated = shown`, and unpriced models are listed with
+their volume.
+
+To rank by volume instead:
 
 ```bash
 thermal --sort tokens   # biggest token consumers first
 thermal --sort cost     # biggest recorded spend first
 ```
+
+JSON consumers get explicit metadata:
+`thermal --json | jq '.ranking, .costBasis, .unpricedModels'`.
 
 ### Argument validation
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -88,6 +89,13 @@ func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time, topN ..
 	if len(topN) > 0 {
 		top = topN[0]
 	}
+	return leaderboardJSONPayloadWithMeta(results, now, "", true, top)
+}
+
+func leaderboardJSONPayloadWithMeta(results []thermal.ToolResult, now time.Time, sortKey string, estimate bool, top int) map[string]interface{} {
+	if sortKey == "" {
+		sortKey = "streak"
+	}
 	type leaderboardTotals struct {
 		Tools         int     `json:"tools"`
 		ActiveDays    int     `json:"activeDays"`
@@ -117,10 +125,53 @@ func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time, topN ..
 	if top > 0 && len(display) > top {
 		display = display[:top]
 	}
+
+	unpriced := make(map[string]int64)
+	if estimate {
+		for _, r := range results {
+			for _, m := range r.MissingPricing {
+				unpriced[m] += r.Summary.ModelBreakdown[m]
+			}
+		}
+	}
+	unpricedModels := make([]map[string]any, 0, len(unpriced))
+	names := make([]string, 0, len(unpriced))
+	for name := range unpriced {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		unpricedModels = append(unpricedModels, map[string]any{"name": name, "tokens": unpriced[name]})
+	}
+
+	recorded := round4(totals.RecordedCost)
+	estimated := round4(totals.EstimatedCost)
+	shown := round4(recorded + estimated)
+	if !estimate {
+		estimated = 0
+		shown = recorded
+	}
+	rankingOrder := "desc"
 	return map[string]interface{}{
 		"type":        "leaderboard",
 		"generatedAt": now.UTC().Format(time.RFC3339),
-		"results":     display,
-		"totals":      totals,
+		"window":      "all-time",
+		"ranking": map[string]any{
+			"key":   sortKey,
+			"order": rankingOrder,
+		},
+		"costBasis": map[string]any{
+			"recorded":           recorded,
+			"estimated":          estimated,
+			"shown":              shown,
+			"estimationDisabled": !estimate,
+		},
+		"unpricedModels": unpricedModels,
+		"results":        display,
+		"totals":         totals,
 	}
+}
+
+func round4(v float64) float64 {
+	return math.Round(v*math.Pow10(4)) / math.Pow10(4)
 }

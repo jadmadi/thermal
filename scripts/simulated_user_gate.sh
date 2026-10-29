@@ -596,6 +596,59 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9k. Leaderboard Self-Documentation:${RESET}"
+lead_out=$("${BIN_PATH}" --no-color --offline 2>/dev/null)
+lead_json=$("${BIN_PATH}" --json --offline 2>/dev/null)
+lead_checks=0
+for want in "Ranked by current streak · all time" "Strk = current streak" "Best = longest streak" "Days = active days" "Cost: \$" "recorded +" "estimated =" "shown"; do
+    if echo "${lead_out}" | grep -qF -- "${want}"; then lead_checks=$((lead_checks + 1)); fi
+done
+if [[ "${lead_checks}" -ge 7 ]] && echo "${lead_out}" | grep -qE '\$[0-9.]+ recorded \+ (estimation disabled|~?\$[0-9.]+ estimated) = .* shown'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} leaderboard caption, legend, and cost arithmetic"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} leaderboard self-documentation is incomplete (${lead_checks}/7)"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" --sort tokens --no-color --offline | grep -q 'Ranked by tokens'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --sort tokens changes the named ranking"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --sort tokens caption missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" --no-estimate --no-color --offline | grep -q 'estimation disabled'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --no-estimate states estimation disabled"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --no-estimate disclosure missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if echo "${lead_json}" | jq -e '.window=="all-time" and .ranking.key=="streak" and .ranking.order=="desc" and ((.costBasis.recorded + .costBasis.estimated - .costBasis.shown) | fabs < 0.0001) and (.unpricedModels|type=="array")' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} leaderboard JSON ranking and cost basis"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} leaderboard JSON metadata drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if [[ "$(COLUMNS=80 "${BIN_PATH}" --no-color --offline | awk 'length>80' | wc -l)" -eq 0 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} leaderboard fits 80 columns"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} leaderboard exceeds 80 columns"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

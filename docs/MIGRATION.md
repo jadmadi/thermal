@@ -20,6 +20,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Added: `thermal sources` and an Actionable Empty State](#added-sources-inventory)
   - [Changed: Non-TTY `live` Exit Code and Silent Statusline Degradation](#changed-nontty-statusline-contract)
   - [Changed: Reports Drop Columns Below 80 and Live Refuses Below 60](#changed-width-contract)
+  - [Changed: Leaderboard States Its Ranking, Legend, and Cost Arithmetic](#changed-leaderboard-ranking-legend)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -448,6 +449,41 @@ Set `--width 100` (or `COLUMNS=100`) for the full layout, use fewer columns for 
 
 **Escape hatch**:
 `--json` is byte-stable regardless of width. `--width 100` restores the full report layout in a narrow terminal.
+
+---
+
+### Changed: Leaderboard States Its Ranking, Legend, and Cost Arithmetic
+<a id="changed-leaderboard-ranking-legend"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'Recorded cost:|Estimated:|No pricing for:|Strk|Best|Days' .`
+- **Detection signal**: `thermal --no-color` now starts with `Ranked by current streak · all time`, includes a `Strk/Best/Days` and cost-marker legend, and ends with `Cost: $X recorded + ~$Y estimated = ~$Z shown`. The old `Recorded cost:` and `No pricing for:` lines are gone.
+
+**What changed and why**:
+The leaderboard ranked by streak but never said so, and its `Strk`/`Best`/`Days` headers and `$`/`~$`/`—`/`≥$` cost markers were undocumented. A reader could not tell whether a row was ranked by tokens or streak, or why an `~$` value differed from a report total. The caption now names the ranking and window, the legend defines every header and marker, the footer states recorded + estimated = shown, and unpriced models are named with their volume. The JSON envelope adds `window`, `ranking`, `costBasis`, and `unpricedModels`.
+
+**Before / After**:
+```bash
+# Before: ranking and legend implicit
+thermal
+# ... Strk Best Days ... ~$ ...
+
+# After: self-documenting
+thermal
+Ranked by current streak · all time
+Legend: Strk = current streak · Best = longest streak · Days = active days
+Cost: $243.90 recorded + ~$261.50 estimated = ~$505.39 shown
+Unpriced models: atria-dawn-preview (2.5K tok)
+```
+
+**The fix**:
+Text consumers can keep parsing the table, or switch to the JSON fields:
+```bash
+thermal --json | jq '.ranking, .costBasis, .unpricedModels'
+```
+
+**Escape hatch**:
+`--no-estimate` states `estimation disabled` and makes `shown` equal `recorded`. `--sort tokens`/`--sort cost` change the named ranking.
 
 ---
 

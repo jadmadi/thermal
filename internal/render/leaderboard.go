@@ -167,6 +167,18 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("  %s  %s\n\n", highlight("THERMAL"), dim("— Don't break the streak.")))
 
+	sortLabel := "current streak"
+	switch strings.ToLower(sortKey) {
+	case "tokens":
+		sortLabel = "tokens"
+	case "cost":
+		sortLabel = "cost"
+	}
+	for _, line := range WrapText(fmt.Sprintf("Ranked by %s · all time", sortLabel), width-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
+	sb.WriteString("\n")
+
 	if len(tokenResults) > 0 {
 		var tokenLines []string
 		tokenHeaders := []string{"#", "Tool", "Strk", "Best", "Days", "Tokens", "Cost"}
@@ -389,7 +401,19 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			BorderColor: theme.Border,
 		}))
 		sb.WriteString("\n")
+		for _, line := range WrapText("Activity counts are steps and messages, not comparable to token totals.", width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		sb.WriteString("\n")
 	}
+
+	for _, line := range WrapText("Legend: Strk = current streak · Best = longest streak · Days = active days", width-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
+	for _, line := range WrapText("        Cost: "+CostLegendText(), width-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
+	sb.WriteString("\n")
 
 	allResults := append(tokenResults, activityResults...)
 	if len(allResults) > 0 {
@@ -410,11 +434,10 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		}
 	}
 
-	// Cost provenance: distinguish recorded cost from estimated cost.
-	var recorded float64
-	var estimated float64
-	recording := 0
-	estimating := 0
+	// Cost provenance: one arithmetic line so the reader never has to add up
+	// recorded and estimated values in their head.
+	var recorded, estimated float64
+	recording, estimating := 0, 0
 	for _, r := range results {
 		if r.Summary.Cost > 0 {
 			recorded += r.Summary.Cost
@@ -425,60 +448,56 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			estimating++
 		}
 	}
+	shown := recorded + estimated
+	costLine := fmt.Sprintf("Cost: %s recorded + %s estimated = %s shown", formatCost(recorded), formatEstimatedCost(estimated), formatEstimatedCost(shown))
+	if !estimate {
+		costLine = fmt.Sprintf("Cost: %s recorded + estimation disabled = %s shown", formatCost(recorded), formatCost(recorded))
+	}
 	if recording > 0 || estimating > 0 {
-		var parts []string
-		if recording > 0 {
-			parts = append(parts, fmt.Sprintf("Recorded cost: %s from %d tools.", formatCost(recorded), recording))
+		for _, line := range WrapText(costLine, width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
 		}
-		if estimate {
-			if estimating > 0 {
-				parts = append(parts, fmt.Sprintf("Estimated: %s across %d tools (~ prefix).", formatEstimatedCost(estimated), estimating))
-			} else {
-				parts = append(parts, "Reports estimate the rest from pricing data; the leaderboard does not.")
-			}
-		} else {
-			parts = append(parts, "Estimates are off. Reports would show the same figure.")
+	} else {
+		for _, line := range WrapText("Cost: $0.00 recorded + $0.00 estimated = $0.00 shown", width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
 		}
-		for _, line := range WrapText(strings.Join(parts, " "), width-4) {
-			sb.WriteString("\n  " + dim(line))
-		}
-		sb.WriteString("\n")
 	}
 
-	var allMissing []string
 	var totalUnattr int64
+	unpriced := make(map[string]int64)
 	if estimate {
 		for _, r := range results {
 			totalUnattr += r.UnattributedTokens
 			for _, m := range r.MissingPricing {
-				found := false
-				for _, ex := range allMissing {
-					if ex == m {
-						found = true
-						break
-					}
-				}
-				if !found {
-					allMissing = append(allMissing, m)
-				}
+				unpriced[m] += r.Summary.ModelBreakdown[m]
 			}
 		}
 	}
 	if note := unpriceableNote(totalUnattr); note != "" {
 		for _, line := range WrapText(note, width-4) {
-			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+			sb.WriteString("  " + dim(line) + "\n")
 		}
 	}
-	if len(allMissing) > 0 {
-		models := allMissing
-		if len(models) > 4 {
-			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
+	if len(unpriced) > 0 {
+		names := make([]string, 0, len(unpriced))
+		for name := range unpriced {
+			names = append(names, name)
 		}
-		note := "No pricing for: " + strings.Join(models, ", ")
+		sort.Strings(names)
+		parts := make([]string, 0, 4)
+		for i, name := range names {
+			if i == 4 {
+				parts = append(parts, fmt.Sprintf("+%d more", len(names)-4))
+				break
+			}
+			parts = append(parts, fmt.Sprintf("%s (%s tok)", name, thermal.CompactNumber(unpriced[name])))
+		}
+		note := "Unpriced models: " + strings.Join(parts, ", ")
 		for _, line := range WrapText(note, width-4) {
-			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+			sb.WriteString("  " + dim(line) + "\n")
 		}
 	}
+	sb.WriteString("\n")
 
 	for _, line := range WrapText("Keep the heat going. Don't break the streak.", width-4) {
 		sb.WriteString("  " + dim(line) + "\n")

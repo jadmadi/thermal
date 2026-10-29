@@ -1,20 +1,20 @@
 # Plan: Self-document the leaderboard ranking key, column abbreviations, and cost markers
 
 ## Execution Steps
-- [ ] **Phase 1 — Ranking caption and window**: Add `rankingCaption(sortKey)` and the all-time window line; render it above the first table; add the activity caption/unit warning. Acceptance: `TestLeaderboardCaption` passes for unset/tokens/cost and the activity table.
+- [x] **Phase 1 — Ranking caption and window**: Add `rankingCaption(sortKey)` and the all-time window line; render it above the first table; add the activity caption/unit warning. Acceptance: `TestLeaderboardCaption` passes for unset/tokens/cost and the activity table.
   - Default: `Ranked by current streak · all time · --sort tokens|cost to change`.
   - `--sort tokens`: `Ranked by tokens · all time · …`.
   - `--sort cost`: `Ranked by cost (recorded + estimated) · all time · …`.
   - Activity: `Ranked by current streak · activity mixes steps and messages; compare within a unit`.
-- [ ] **Phase 2 — Legend and cost footer**: Extract the shared cost-marker constant, add the legend, replace the footer with the explicit sum, and add the unpriced-model/unattributed lines. Acceptance: `TestLeaderboardLegend`, `TestCostFooterArithmetic`, `TestUnpricedModels`, and `TestLegendParityWithLive` pass.
+- [x] **Phase 2 — Legend and cost footer**: Extract the shared cost-marker constant, add the legend, replace the footer with the explicit sum, and add the unpriced-model/unattributed lines. Acceptance: `TestLeaderboardLegend`, `TestCostFooterArithmetic`, `TestUnpricedModels`, and `TestLegendParityWithLive` pass.
   - Recorded-only, estimated-only, mixed, overlapping, `--no-estimate`.
   - One/many/none unpriced models.
   - No `No pricing for:` string.
-- [ ] **Phase 3 — JSON metadata**: Add `window`, `ranking`, `costBasis`, `unpricedModels`, and `unattributedTokens` to the leaderboard envelope. Acceptance: `TestLeaderboardJSONRanking` and the JSON schema snapshot pass; existing keys unchanged.
+- [x] **Phase 3 — JSON metadata**: Add `window`, `ranking`, `costBasis`, `unpricedModels`, and `unattributedTokens` to the leaderboard envelope. Acceptance: `TestLeaderboardJSONRanking` and the JSON schema snapshot pass; existing keys unchanged.
   - `ranking.key` matches the effective sort.
   - `costBasis.shown` equals recorded + estimated within rounding.
   - Top 10 unpriced models + count.
-- [ ] **Phase 4 — Width, gate, docs, and closure**: Coordinate the final layout with `cli-terminal-width-adaptation`, add the simulated-user-gate section, README/MIGRATION/project.jsonc, and close the goal.
+- [x] **Phase 4 — Width, gate, docs, and closure**: Coordinate the final layout with `cli-terminal-width-adaptation`, add the simulated-user-gate section, README/MIGRATION/project.jsonc, and close the goal.
   - `CGO_ENABLED=0 go test -race ./...` and `./scripts/simulated_user_gate.sh` pass.
   - Commit with `feat(render): document leaderboard ranking and cost markers (goals/cli-leaderboard-ranking-and-legend/goal.md)`.
   - Certify with `sila goals certify cli-leaderboard-ranking-and-legend --evidence=goals/cli-leaderboard-ranking-and-legend/evidence.md`.
@@ -43,4 +43,4 @@
 - Never restore `No pricing for:` without the volume and marker definition.
 
 ## Phase 5 — Attribution & Registry Closure
-- [ ] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-leaderboard-ranking-and-legend/plan.md`; (2) commit with `(goals/cli-leaderboard-ranking-and-legend/goal.md)` using a `feat(render):` subject; (3) certify via `sila goals certify cli-leaderboard-ranking-and-legend --evidence=goals/cli-leaderboard-ranking-and-legend/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.
+- [x] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-leaderboard-ranking-and-legend/plan.md`; (2) commit with `(goals/cli-leaderboard-ranking-and-legend/goal.md)` using a `feat(render):` subject; (3) certify via `sila goals certify cli-leaderboard-ranking-and-legend --evidence=goals/cli-leaderboard-ranking-and-legend/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.

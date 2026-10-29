@@ -1,7 +1,7 @@
 # Thermal Output Gallery
 
 > Generated from a fixed fixture by `scripts/output_gallery.sh`. Capture
-> `2026-10-29T21:58:57Z` · fixture `b23f222c2164b632e6520da53a5a84c0bd615a412e2b37676e464c65949f8ee4` · `thermal dev (built from source)`.
+> `2026-10-29T22:05:25Z` · fixture `b3df633e733bb807997ffbc04629f819c14cd9fe34b3690991941ec0aa00a021` · `thermal dev (built from source)`.
 > Fixed data date: 2026-01-15. Text is `NO_COLOR=1`; non-TTY default width is
 > 100. Width sections use a PTY at 80/120. The live TUI block is synthetic and
 > labeled; the other text blocks are captured from the same fixture run.
@@ -38,7 +38,7 @@
 | trend (tokens) | mean 759700 | — | — | — | — | calendar | n/a (tokens) |
 | trend (cost) | mean 1.7546 | — | — | — | — | calendar | total |
 | share | 759700 | 1.75 | 0.0046 | 1.7546 | 1/— | all · all time (1 active day) | recorded+estimated |
-| live | — | — | — | — | — | today snapshot (live, 2026-10-30T00:58:57.808134412+03:00) | recorded+estimated |
+| live | — | — | — | — | — | today snapshot (live, 2026-10-30T01:05:25.632276674+03:00) | recorded+estimated |
 
 Allowed equalities are checked by `scripts/output_gallery_gate.sh`: leaderboard
 estimated equals daily estimated, projects total equals daily total, models
@@ -149,6 +149,8 @@ and share token/cost fields use one window.
 
   THERMAL  — Don't break the streak.
 
+  Ranked by current streak · all time
+
   ╭─ Token Warriors ────────────────────────────────────── tokens & spend ─╮
   │    #  Tool              Strk    Best    Days       Tokens         Cost │
   │  ───────────────────────────────────────────────────────────────────── │
@@ -162,10 +164,16 @@ and share token/cost fields use one window.
   │   1.  Agy                 1d      1d      1d       12 step │
   ╰────────────────────────────────────────────────────────────╯
 
-  >> codewhale is on fire with a 1-day streak!
+  Activity counts are steps and messages, not comparable to token totals.
 
-  Recorded cost: $1.75 from 1 tools. Estimated: ~$0.0046 across 1 tools (~ prefix).
+  Legend: Strk = current streak · Best = longest streak · Days = active days
+  Cost: $ recorded · ~$ estimated · ≥$ partial known · — unpriced · ≈ approximate · $0.00
+  recorded zero
+
+  >> codewhale is on fire with a 1-day streak!
+  Cost: $1.75 recorded + ~$0.0046 estimated = ~$1.75 shown
   12 tokens have no model recorded, so no price is applied to them.
+
   Keep the heat going. Don't break the streak.
 ```
 
@@ -520,7 +528,7 @@ Cost trend:
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
+  https://jadmadi.net/project/thermal/share#v1.8209b985.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
   … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
@@ -1023,7 +1031,7 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.b4e36…GYQKznffgF0oJeU1LKeWy_AwA
+  https://jadmadi.net/project/thermal/share#v1.8209b…GYQKznffgF0oJeU1LKeWy_AwA
   … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud
@@ -1048,7 +1056,7 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
+  https://jadmadi.net/project/thermal/share#v1.8209b985.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
   … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
@@ -1101,22 +1109,22 @@ at four decimal places by `cmd/thermal/json.go`.
 ### Envelope types and timestamps
 
 ```text
-leaderboard      leaderboard    2026-10-29T21:58:57Z
-daily            daily          2026-10-29T21:58:57Z
-weekly           weekly         2026-10-29T21:58:57Z
-monthly          monthly        2026-10-29T21:58:57Z
-projects         projects       2026-10-29T21:58:57Z
-models           models         2026-10-29T21:58:57Z
-mix              mix            2026-10-29T21:58:57Z
-stats-token      stats          2026-10-29T21:58:57Z
-stats-cost       stats          2026-10-29T21:58:57Z
-trend-token      trend          2026-10-29T21:58:57Z
-trend-cost       trend          2026-10-29T21:58:57Z
-share            share          2026-10-29T21:58:57Z
-audit            audit          2026-10-30T00:58:57.799954673+03:00
-changelog        changelog      2026-10-29T21:58:57Z
-live             live           2026-10-30T00:58:57.808134412+03:00
-version          version        2026-10-29T21:58:57Z
+leaderboard      leaderboard    2026-10-29T22:05:25Z
+daily            daily          2026-10-29T22:05:25Z
+weekly           weekly         2026-10-29T22:05:25Z
+monthly          monthly        2026-10-29T22:05:25Z
+projects         projects       2026-10-29T22:05:25Z
+models           models         2026-10-29T22:05:25Z
+mix              mix            2026-10-29T22:05:25Z
+stats-token      stats          2026-10-29T22:05:25Z
+stats-cost       stats          2026-10-29T22:05:25Z
+trend-token      trend          2026-10-29T22:05:25Z
+trend-cost       trend          2026-10-29T22:05:25Z
+share            share          2026-10-29T22:05:25Z
+audit            audit          2026-10-30T01:05:25.623713037+03:00
+changelog        changelog      2026-10-29T22:05:25Z
+live             live           2026-10-30T01:05:25.632276674+03:00
+version          version        2026-10-29T22:05:25Z
 ```
 
 ## Validation cases
@@ -1185,7 +1193,7 @@ exit 0
 
 ```json
 {
-  "generatedAt": "2026-10-29T21:58:57Z",
+  "generatedAt": "2026-10-29T22:05:25Z",
   "snapshot": {
     "activeDays": 1,
     "coverage": "recorded+estimated",
@@ -1202,16 +1210,16 @@ exit 0
     "recordedCost": 1.75,
     "scope": "all",
     "streakBasis": "token-active",
-    "t": 1793311137,
+    "t": 1793311525,
     "tool": "all",
     "totalCost": 1.7546,
     "totalTokens": 759700,
     "v": 1,
     "window": "all time (1 active day)"
   },
-  "token": "v1.b4e36473.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeU6noBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA",
+  "token": "v1.8209b985.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeUPmoBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA",
   "type": "share",
-  "url": "https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeU6noBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA"
+  "url": "https://jadmadi.net/project/thermal/share#v1.8209b985.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeUPmoBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA"
 }
 ```
 
@@ -1219,7 +1227,7 @@ exit 0
 
 - Home: fixed temp fixture (removed after generation)
 - Date: 2026-01-15
-- Hash: `b23f222c2164b632e6520da53a5a84c0bd615a412e2b37676e464c65949f8ee4`
+- Hash: `b3df633e733bb807997ffbc04629f819c14cd9fe34b3690991941ec0aa00a021`
 - Reports: codewhale 750,000 tokens/$1.75 recorded; Claude 9,700 tokens;
   Agy 12 steps; two projects; two models.
 

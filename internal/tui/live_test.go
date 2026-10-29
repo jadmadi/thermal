@@ -13,6 +13,7 @@ import (
 	"charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
@@ -1091,5 +1092,12 @@ func TestLiveTUI_GaugeBracketWidthAlignment(t *testing.T) {
 				t.Errorf("width %d: flame bracket visual width %d != spark bracket visual width %d", w, flameGaugeW, sparkGaugeW)
 			}
 		})
+	}
+}
+
+func TestLiveHelpUsesSharedCostLegend(t *testing.T) {
+	m := NewLiveModel(nil, time.Second, "", false)
+	if !strings.Contains(m.renderHelp(), render.CostLegendText()) {
+		t.Fatalf("live help does not use the shared cost legend:\n%s", m.renderHelp())
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jadmadi/thermal/internal/loaders"
+	"github.com/jadmadi/thermal/internal/render"
 	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 )
@@ -656,7 +657,7 @@ func (m LiveModel) renderHelp() string {
 		"    Rolling 60s    Second-by-second activity sparkline across the past minute",
 		"    Event Ticker   Separate TOKENS/STEPS columns; TOOL×N groups N bursts",
 		"    Ticker Marks   * = older than 60s; ! = over 3x the visible median",
-		"    Costs          ~ = estimated; — = unpriced; ≥ = partial known; $0.00 = recorded zero",
+		"    Costs          " + render.CostLegendText(),
 		"",
 		theme.Secondary.SprintBold(colors, "  Headless & Status Bar Automation:"),
 		"    thermal live --fresh           Accepted for compatibility; sessions always start at launch",

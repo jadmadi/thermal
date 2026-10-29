@@ -580,7 +580,7 @@ func main() {
 		}
 
 		if opts.JSON {
-			writeJSON(leaderboardJSONPayload(results, time.Now(), opts.Top))
+			writeJSON(leaderboardJSONPayloadWithMeta(results, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top))
 			return
 		}
 
