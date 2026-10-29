@@ -1,0 +1,24 @@
+{
+  "goal_slug": "changelog-integrity-and-cwd-isolation",
+  "certified_at": "2026-10-29T18:59:26.91123682Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/changelog-integrity-and-cwd-isolation/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "674bca03b3ec3e4d60b1e0f725491d3a773574eb",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
