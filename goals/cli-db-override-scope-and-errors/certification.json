@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-db-override-scope-and-errors",
+  "certified_at": "2026-10-29T20:50:34.310486805Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-db-override-scope-and-errors/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "4d97260b1f2c558cb12047fc1de9b8a5349b6e2a",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
