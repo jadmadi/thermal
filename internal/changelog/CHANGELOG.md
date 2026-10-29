@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/jadmadi/thermal/compare/v0.20.1...v0.21.0) (2026-10-29)
+
+### Features
+
+* **pricing:** add cost provenance reconciliation, model pricing disclosures, and subscription usage labeling
+* **loaders/muse:** add Muse token and project day ingestion from session JSONL records
+* **loaders/sqlite:** enforce schema object validation, 256MB mmap limits, 60s query timeouts, and 64MB store ceilings
+
+### Bug Fixes
+
+* **test:** normalize Windows project path assertions and handle read-only file ACLs in audit tests
+* **ci:** bump Go baseline to 1.27.3 to resolve crypto/x509 GO-2026-6809 in govulncheck
+
 ## [0.20.1](https://github.com/jadmadi/thermal/compare/v0.20.0...v0.20.1) (2026-10-14)
 
 
