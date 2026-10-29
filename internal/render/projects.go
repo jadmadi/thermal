@@ -384,24 +384,3 @@ func toolsCell(tools []string, width int) string {
 	}
 	return cell
 }
-
-func totalToolsCell(count, width int) string {
-	if count <= 0 {
-		return strings.Repeat(" ", width)
-	}
-	return padRight(fmt.Sprintf("%d tools", count), width)
-}
-
-func projectDaysCell(days, width int) string {
-	if days <= 0 {
-		return strings.Repeat(" ", width)
-	}
-	return padLeft(fmt.Sprintf("%d", days), width)
-}
-
-func totalCostText(text string) string {
-	if text == "—" {
-		return "$0.00"
-	}
-	return text
-}

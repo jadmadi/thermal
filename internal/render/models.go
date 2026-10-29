@@ -269,10 +269,3 @@ func formatModelBreakdown(row thermal.ModelRow, indent int, colors bool, st Styl
 
 	return lines
 }
-
-func modelDaysCell(days, width int) string {
-	if days <= 0 {
-		return strings.Repeat(" ", width)
-	}
-	return padLeft(fmt.Sprintf("%d", days), width)
-}
