@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-nontty-and-statusline-output-contract",
+  "certified_at": "2026-10-29T21:32:48.007122323Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-nontty-and-statusline-output-contract/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "a352e43a811eb2224935bbe2e314f34bcbe44a82",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}

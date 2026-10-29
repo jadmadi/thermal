@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 129 (12 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 130 (13 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 582/608 completed (95%)
+- 📋 **Execution Tasks Progress**: 587/608 completed (96%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#248)` | - | Define machine-clean non-TTY stdout, exit codes, and silent statusline degradation — Priority: P1 (automation and prompt integration). Two command surfaces break the... | `/goal goals/cli-nontty-and-statusline-output-contract/goal.md` |
 | [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#249)` | - | Make every surface fit the terminal width or refuse with a clear minimum-width message — Priority: P1 (terminal citizenship). Thermal renders fixed-width box art regardl... | `/goal goals/cli-terminal-width-adaptation/goal.md` |
 | [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
 | [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
@@ -90,6 +89,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
 | [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `4d97260` |
 | [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `964cf9e` |
+| [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a352e43` |
 | [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
