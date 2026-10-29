@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 3 (3 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 131 (14 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 2 (2 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 132 (15 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 592/608 completed (97%)
+- 📋 **Execution Tasks Progress**: 597/608 completed (98%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
 | [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
 | [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#253)` | - | Name denominators and intervals and remove run-on or zero-noise report prose — Priority: P2 (output clarity). The analytics commands are numerically correct bu... | `/goal goals/cli-analytics-and-audit-prose-clarity/goal.md` |
 
@@ -90,6 +89,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `964cf9e` |
 | [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a352e43` |
 | [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a936195` |
+| [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `17ab978` |
 | [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
