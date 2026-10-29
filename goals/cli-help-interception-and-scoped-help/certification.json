@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-help-interception-and-scoped-help",
+  "certified_at": "2026-10-29T20:28:18.554099831Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-help-interception-and-scoped-help/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "e86a1077bf01ba13a72576045eba575a2f02d303",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}

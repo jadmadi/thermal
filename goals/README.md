@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 12 (10 independent ⚡, 2 unblocked 🔗)
-- 🟢 **Implemented**: 122 (5 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 11 (9 independent ⚡, 2 unblocked 🔗)
+- 🟢 **Implemented**: 123 (6 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 547/608 completed (89%)
+- 📋 **Execution Tasks Progress**: 552/608 completed (90%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#242)` | - | Never swallow -h/--help and add command-scoped help — Priority: P0 (discoverability, safety-adjacent). Help is the first thing a new u... | `/goal goals/cli-help-interception-and-scoped-help/goal.md` |
 | [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#243)` | - | Make thermal upgrade previewable, scriptable, and non-destructive by default — Priority: P0 (safety). `thermal upgrade` is the only command that mutates the us... | `/goal goals/cli-upgrade-nondestructive-safety-flags/goal.md` |
 | [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#246)` | - | Make --db scope explicit and turn raw SQLite failures into actionable errors — Priority: P0 (scope and trust). `--db` is documented as "Override database/data ... | `/goal goals/cli-db-override-scope-and-errors/goal.md` |
 | [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#247)` | - | Replace the empty-state dead end with a per-source inventory and next steps — Priority: P1 (activation). On a machine with no supported agent data, the defaul... | `/goal goals/cli-first-run-source-inventory/goal.md` |
@@ -92,6 +91,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
+| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e86a107` |
 | [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
