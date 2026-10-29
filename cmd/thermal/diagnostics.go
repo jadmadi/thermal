@@ -35,6 +35,12 @@ func printLoadError(err error, verbose bool) {
 	}
 }
 
+// unknownToolError carries the unresolved token so the caller can render a
+// slot-aware diagnostic instead of a generic loader error.
+type unknownToolError struct{ Token string }
+
+func (e *unknownToolError) Error() string { return "unknown tool: " + e.Token }
+
 type tokenSlot int
 
 const (
