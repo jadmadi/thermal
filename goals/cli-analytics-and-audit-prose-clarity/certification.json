@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-analytics-and-audit-prose-clarity",
+  "certified_at": "2026-10-29T22:19:37.589857432Z",
+  "certified_by": "sila-auditor",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-analytics-and-audit-prose-clarity/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "6353e55b3d6a3db16cef63187f951e88a31ebad6",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
