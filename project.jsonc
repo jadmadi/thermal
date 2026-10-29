@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-29-23-47",
+  "lastEdit": "26-10-29-23-54",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -96,6 +96,7 @@
     "Unambiguous identity flags: -V/--version print build metadata, -v/--verbose enable diagnostics, and -v never changes meaning by argv position",
     "Safe self-update: --check/--dry-run preview without downloading or mutating, --yes confirms non-interactive upgrades, --json emits one object, and failed renames leave the binary intact",
     "Scope-honest --db: requires one tool, validates file/directory shape and SQLite headers, never falls back to defaults, and translates driver errors with raw detail behind --verbose",
+    "Slot-aware unknown-token diagnostics: command typos suggest the nearest command, wrong-slot report words are named, path-like tokens point at --db, and unknown tools list valid sources",
     "Platform-native application data directory discovery and cross-platform SQLite URI path normalization",
     "Global configuration overrides via ~/.config/thermal/thermal.config (INI/JSON) for custom tool and database paths"
   ],

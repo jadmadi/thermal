@@ -371,6 +371,33 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9f. Unknown-Token Diagnostics:${RESET}"
+run_check "Typo command" 2 error "${BIN_PATH}" today
+run_check "Wrong-slot report" 2 error "${BIN_PATH}" stats weekly
+run_check "Path token" 2 error "${BIN_PATH}" projects /tmp
+run_check "Unknown tool" 2 error "${BIN_PATH}" --tool nope
+run_check "Valid tool still works" 0 text "${BIN_PATH}" agy --no-color
+typo_out=$("${BIN_PATH}" today 2>&1 >/dev/null || true)
+if echo "${typo_out}" | grep -q 'did you mean: thermal daily?' && ! echo "${typo_out}" | grep -q 'unknown tool'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} typo is labeled as a command with a suggestion"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} typo diagnostic is not slot-aware"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+path_out=$("${BIN_PATH}" projects /tmp 2>&1 >/dev/null || true)
+if echo "${path_out}" | grep -q 'looks like a path' && echo "${path_out}" | grep -q -- '--db'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} path token is explained with --db guidance"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} path token diagnostic is missing --db guidance"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

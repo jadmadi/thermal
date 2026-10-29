@@ -457,6 +457,11 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	}
 
 	if len(positionals) > 0 {
+		for _, p := range positionals {
+			if strings.TrimSpace(p) == "" {
+				return opts, &usageError{Message: "empty argument is not a command or tool"}
+			}
+		}
 		if len(positionals) > 2 {
 			return opts, &usageError{Message: fmt.Sprintf("unexpected argument %q", positionals[2])}
 		}

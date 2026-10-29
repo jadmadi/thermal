@@ -355,6 +355,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "thermal: the interactive dashboard has been retired in favor of 'thermal live' and static report commands.")
 		fmt.Fprintln(os.Stderr, "  Interactive monitoring: thermal live")
 		fmt.Fprintln(os.Stderr, "  Historical breakdown:   thermal, thermal projects, thermal stats")
+		fmt.Fprintln(os.Stderr, "  See also: thermal live")
 		os.Exit(1)
 	case "replay":
 		retireReplayCommand()
@@ -527,8 +528,7 @@ func main() {
 		var ok bool
 		tool, ok = loaders.ResolveTool(opts.Tool)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
-			os.Exit(2)
+			os.Exit(printUnknownToken(opts.Tool))
 		}
 	}
 	tools := loaders.AllTools()
@@ -676,8 +676,7 @@ func loadUsage(opts thermal.Options) usageSet {
 
 	tool, ok := loaders.ResolveTool(opts.Tool)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "thermal: unknown tool: %s\n", opts.Tool)
-		os.Exit(2)
+		os.Exit(printUnknownToken(opts.Tool))
 	}
 	info := loaders.AllTools()[tool]
 	printToolConfigWarning(info, opts.Verbose)

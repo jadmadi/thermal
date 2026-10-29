@@ -15,6 +15,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: `-v` Means Verbose; Use `-V` or `--version`](#changed-version-verbose-flags)
   - [Changed: Upgrade Preview, Confirmation, and Exit Codes](#changed-upgrade-safety)
   - [Changed: `--db` Requires One Tool and Validates the Path](#changed-db-scope)
+  - [Changed: Unknown Commands and Tools Exit 2 with Suggestions](#changed-unknown-token-diagnostics)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -271,6 +272,39 @@ thermal --tool codex --db ~/.codex daily
 
 **Escape hatch**:
 Omit `--db` to use the default paths. `--verbose` prints the raw driver error beneath the user-facing message.
+
+---
+
+### Changed: Unknown Commands and Tools Exit 2 with Suggestions
+<a id="changed-unknown-token-diagnostics"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'unknown tool:|unknown command:' .`
+- **Detection signal**: `thermal today` now exits `2` with `thermal: unknown command "today"` and `did you mean: thermal daily?`; it no longer prints `unknown tool: today` with exit `1`.
+
+**What changed and why**:
+Every unrecognized positional used to be treated as a tool, so a command typo (`today`), a report word in the wrong slot (`stats weekly`), and a path (`projects /tmp`) all produced `thermal: unknown tool: …` with no suggestion. The CLI now classifies the token, suggests the nearest command or tool, names the wrong slot explicitly, and recognizes path-like tokens. Unknown commands/tools, wrong-slot tokens, paths, and empty tokens exit `2`; retired verbs keep exit `1`.
+
+**Before / After**:
+```bash
+# Before
+thermal today
+thermal: unknown tool: today
+
+# After
+thermal today
+thermal: unknown command "today"
+  did you mean: thermal daily?
+  Valid commands: daily, weekly, monthly, projects, models, stats, mix, trend,
+  live, statusline, share, audit, changelog, upgrade, version, license
+  run thermal --help for the command list
+```
+
+**The fix**:
+Use the suggested command/tool, or run `thermal --help` for the vocabulary. Scripts should treat any non-zero exit as failure and not parse stderr.
+
+**Escape hatch**:
+There is no compatibility mode. `thermal --help` and scoped help remain the authoritative vocabularies.
 
 ---
 

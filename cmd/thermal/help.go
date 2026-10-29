@@ -422,6 +422,7 @@ var helpSynonyms = map[string]string{
 	"today":     "daily",
 	"yesterday": "daily",
 	"week":      "weekly",
+	"weak":      "weekly",
 	"month":     "monthly",
 	"repo":      "projects",
 	"project":   "projects",

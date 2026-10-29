@@ -232,6 +232,9 @@ validated once, and Thermal never silently falls back to a different window:
 - `-h`/`--help` is intercepted anywhere: `thermal daily --help` and
   `thermal help daily` print the same scoped page and never run the command.
   `live --help` and `upgrade --help` are always safe.
+- Unknown commands and tools exit `2` with a nearest-match suggestion. Paths
+  are identified as paths and pointed at `--db`; report words used in the tool
+  slot are named as report commands.
 
 ## Reports
 
