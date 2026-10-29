@@ -1,0 +1,7 @@
+{
+  "goal_slug": "changelog-integrity-and-cwd-isolation",
+  "patch_id": "5dd5b640e7ca35bd0d375138007e495944dd7cd5",
+  "base_ref": "main",
+  "recorded_at": "2026-10-29T18:58:29.554415682Z",
+  "certified_by": "initial-certification"
+}

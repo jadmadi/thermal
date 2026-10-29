@@ -27,11 +27,20 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 120
+- **Total Goals**: 121
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 120 (10 verified 📜, 22 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 119 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 539/539 completed (100%)
+- 🔵 **In Progress (Claimed)**: 1
+- 🟢 **Implemented**: 120 (4 verified 📜, 28 stale ⚠️, 88 unverified)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 120 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 539/542 completed (99%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@agent` | in progress | 0s ago |
 
 ---
 
@@ -69,9 +78,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`output-formatting-primitives`](output-formatting-primitives/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `06568f3` |
 | [`help-supported-tools-and-flags`](help-supported-tools-and-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `630ccfa` |
 | [`heatmap-month-label-overlap`](heatmap-month-label-overlap/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `60cb42a` |
-| [`sqlite-engine-security-upgrade`](sqlite-engine-security-upgrade/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
-| [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
-| [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
+| [`sqlite-engine-security-upgrade`](sqlite-engine-security-upgrade/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
+| [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
+| [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
@@ -138,8 +147,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`output-report-totals-reconciliation`](output-report-totals-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `a279a5f` |
 | [`chart-scale-order-and-top-contract`](chart-scale-order-and-top-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `0cfdd5f` |
 | [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9ae5494` |
-| [`sqlite-loader-resource-bounds`](sqlite-loader-resource-bounds/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
-| [`pricing-catalog-and-partial-model-provenance`](pricing-catalog-and-partial-model-provenance/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
+| [`sqlite-loader-resource-bounds`](sqlite-loader-resource-bounds/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
+| [`pricing-catalog-and-partial-model-provenance`](pricing-catalog-and-partial-model-provenance/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |
@@ -149,7 +158,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`promise-claim-evidence`](promise-claim-evidence/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Audit Receipt | `c610c97fc84bf0d0b18416a5c137f01b758757db` |
 | [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7fe97c8` |
 | [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3b7cb85` |
-| [`cost-provenance-display-and-reconciliation`](cost-provenance-display-and-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
+| [`cost-provenance-display-and-reconciliation`](cost-provenance-display-and-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `f662fef` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c849d30` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `ed0143c` |

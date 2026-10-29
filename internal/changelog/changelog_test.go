@@ -5,6 +5,8 @@ package changelog
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -118,5 +120,81 @@ func TestGetReport(t *testing.T) {
 	}
 	if len(rep.Releases) > 3 {
 		t.Errorf("expected at most 3 releases with limit=3, got %d", len(rep.Releases))
+	}
+}
+
+func TestParseStripsGoalTokensAndDeduplicatesReleases(t *testing.T) {
+	raw := `# Changelog
+
+## [0.21.0](https://github.com/jadmadi/thermal/compare/v0.20.1...v0.21.0) (2026-10-29)
+
+### Features
+
+* **pricing:** add cost provenance reconciliation (goals/cost-provenance-display-and-reconciliation/goal.md) [goal: cost-provenance-display-and-reconciliation] ([a7034d1](https://github.com/jadmadi/thermal/commit/a7034d1))
+* **live:** separate baseline carry-in (goals/live-baseline-separation/goal.md) (goals/live-ticker-unit-and-cost-clarity/goal.md)
+
+## [0.21.0](https://github.com/jadmadi/thermal/compare/v0.20.1...v0.21.0) (2026-10-29)
+
+### Features
+
+* **duplicate:** should be skipped because 0.21.0 was already parsed
+`
+	releases, err := Parse(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(releases) != 1 {
+		t.Fatalf("expected 1 deduplicated release, got %d", len(releases))
+	}
+	for _, feat := range releases[0].Features {
+		if strings.Contains(feat, "goals/") || strings.Contains(feat, "[goal:") {
+			t.Errorf("expected goal tokens stripped from bullet, got %q", feat)
+		}
+		if strings.Contains(feat, "duplicate:") {
+			t.Errorf("expected duplicate release block to be skipped, got %q", feat)
+		}
+	}
+}
+
+func TestLoadContentIgnoresWorkingDirectoryChangelog(t *testing.T) {
+	origWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origWD) }()
+
+	tmpDir := t.TempDir()
+	hijack := "# Changelog\n\n## [99.99.99] (2099-01-01)\n\n### Features\n\n* **hijack:** foreign repo changelog\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "CHANGELOG.md"), []byte(hijack), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+
+	content := LoadContent()
+	if strings.Contains(content, "99.99.99") || strings.Contains(content, "foreign repo changelog") {
+		t.Errorf("LoadContent() read CHANGELOG.md from working directory instead of embedded changelog")
+	}
+}
+
+func TestEmbeddedChangelogCleanliness(t *testing.T) {
+	releases, err := Parse(LoadContent())
+	if err != nil {
+		t.Fatalf("unexpected error parsing embedded changelog: %v", err)
+	}
+	seen := make(map[string]bool)
+	for _, rel := range releases {
+		if seen[rel.Version] {
+			t.Errorf("duplicate release version %q in embedded changelog", rel.Version)
+		}
+		seen[rel.Version] = true
+		allBullets := append(append(append([]string{}, rel.Features...), rel.Fixes...), rel.Breaking...)
+		allBullets = append(allBullets, rel.Other...)
+		for _, b := range allBullets {
+			if strings.Contains(b, "goals/") || strings.Contains(b, "[goal:") {
+				t.Errorf("release %s bullet contains leaked goal token: %q", rel.Version, b)
+			}
+		}
 	}
 }

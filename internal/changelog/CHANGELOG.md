@@ -48,13 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **build:** verify multi-target cross-compilation release gate (goals/multi-target-cross-compile-ci-gate/goal.md) ([0efc97b](https://github.com/jadmadi/thermal/commit/0efc97b89ebf630046b0582cadc9f206f0eecf06))
-* **ci:** verify cross-platform operating system test matrix (goals/cross-platform-ci-matrix/goal.md) ([70143cb](https://github.com/jadmadi/thermal/commit/70143cb1e136afa996437d24099928bc4d478f53))
-* **docs:** update documentation parity and simulated human user audit for 15 tools (goals/docs-parity-and-human-simulation/goal.md) ([135b22e](https://github.com/jadmadi/thermal/commit/135b22ef673c49bfea8a32c646ff0fa0d7b13200))
-* **gate:** ensure hermetic verification and release gate semantic parity (goals/hermetic-verification-gates/goal.md) ([1f71cd2](https://github.com/jadmadi/thermal/commit/1f71cd20bd10c90faf05dcabc22c16bcf5423f2b))
-* **git:** verify zero bot contributor attribution in git history (goals/purge-bot-contributors/goal.md) ([cebda93](https://github.com/jadmadi/thermal/commit/cebda9375d156912adf81a950f5a5ec84aa2455c))
-* **loaders:** ingest Zed editor assistant threads and tokens (goals/zed-editor-loader/goal.md) ([9b6a3ef](https://github.com/jadmadi/thermal/commit/9b6a3ef15721bfbbebec4b537a4ebbdc84f00476))
-* **sila:** complete Sila onboarding and strict verification (goals/sila-onboarding/goal.md) ([8e3d3e9](https://github.com/jadmadi/thermal/commit/8e3d3e9afc72d6f3049f316b5e235795c85f068f))
+* **build:** verify multi-target cross-compilation release gate ([0efc97b](https://github.com/jadmadi/thermal/commit/0efc97b89ebf630046b0582cadc9f206f0eecf06))
+* **ci:** verify cross-platform operating system test matrix ([70143cb](https://github.com/jadmadi/thermal/commit/70143cb1e136afa996437d24099928bc4d478f53))
+* **docs:** update documentation parity and simulated human user audit for 15 tools ([135b22e](https://github.com/jadmadi/thermal/commit/135b22ef673c49bfea8a32c646ff0fa0d7b13200))
+* **gate:** ensure hermetic verification and release gate semantic parity ([1f71cd2](https://github.com/jadmadi/thermal/commit/1f71cd20bd10c90faf05dcabc22c16bcf5423f2b))
+* **git:** verify zero bot contributor attribution in git history ([cebda93](https://github.com/jadmadi/thermal/commit/cebda9375d156912adf81a950f5a5ec84aa2455c))
+* **loaders:** ingest Zed editor assistant threads and tokens ([9b6a3ef](https://github.com/jadmadi/thermal/commit/9b6a3ef15721bfbbebec4b537a4ebbdc84f00476))
+* **sila:** complete Sila onboarding and strict verification ([8e3d3e9](https://github.com/jadmadi/thermal/commit/8e3d3e9afc72d6f3049f316b5e235795c85f068f))
 
 ## [0.18.0](https://github.com/jadmadi/thermal/compare/v0.17.0...v0.18.0) (2026-10-03)
 
@@ -88,13 +88,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **audit:** add repository AGENTS.md readiness and agent hygiene check (goals/agent-readiness-audit/goal.md) ([259d1e0](https://github.com/jadmadi/thermal/commit/259d1e0b408a11f160ddd956dc6220bbfe11b13d))
-* **cli:** add instant shell statusline and prompt composable helper (goals/terminal-statusline-helper/goal.md) ([26a20ae](https://github.com/jadmadi/thermal/commit/26a20ae6c7dbf6c66ac2df486ad41d091dd060a0))
-* **models:** add reasoning effort breakdown & cognitive intensity telemetry (goals/reasoning-effort-telemetry/goal.md) ([0f3f533](https://github.com/jadmadi/thermal/commit/0f3f533f91307842a0461583e519ac4b01359c03))
-* **receipt:** extract Codex sandboxed test runs and exit codes (goals/codex-sandboxed-receipts/goal.md) ([198772e](https://github.com/jadmadi/thermal/commit/198772efb99c05aea1eb00864adfb08c0ebbfe63))
-* **render:** add PR-ready markdown output for receipt and yield (goals/markdown-pr-receipts/goal.md) ([c00ef02](https://github.com/jadmadi/thermal/commit/c00ef02ff312df8df8bdfa8ad01af79135aefa13))
-* **replay:** add ChatGPT 5-hour rolling burst modeling (goals/chatgpt-rolling-burst-replay/goal.md) ([b0759e0](https://github.com/jadmadi/thermal/commit/b0759e00379cd9efc4c0d5b519957ce726a270ee))
-* **yield:** analyze session fork lineage and branch churn in code delta yield (goals/session-fork-tree-analytics/goal.md) ([56ec02b](https://github.com/jadmadi/thermal/commit/56ec02bf8efeb8b952eb4ea7fbde80d4f2e8ae4c))
+* **audit:** add repository AGENTS.md readiness and agent hygiene check ([259d1e0](https://github.com/jadmadi/thermal/commit/259d1e0b408a11f160ddd956dc6220bbfe11b13d))
+* **cli:** add instant shell statusline and prompt composable helper ([26a20ae](https://github.com/jadmadi/thermal/commit/26a20ae6c7dbf6c66ac2df486ad41d091dd060a0))
+* **models:** add reasoning effort breakdown & cognitive intensity telemetry ([0f3f533](https://github.com/jadmadi/thermal/commit/0f3f533f91307842a0461583e519ac4b01359c03))
+* **receipt:** extract Codex sandboxed test runs and exit codes ([198772e](https://github.com/jadmadi/thermal/commit/198772efb99c05aea1eb00864adfb08c0ebbfe63))
+* **render:** add PR-ready markdown output for receipt and yield ([c00ef02](https://github.com/jadmadi/thermal/commit/c00ef02ff312df8df8bdfa8ad01af79135aefa13))
+* **replay:** add ChatGPT 5-hour rolling burst modeling ([b0759e0](https://github.com/jadmadi/thermal/commit/b0759e00379cd9efc4c0d5b519957ce726a270ee))
+* **yield:** analyze session fork lineage and branch churn in code delta yield ([56ec02b](https://github.com/jadmadi/thermal/commit/56ec02bf8efeb8b952eb4ea7fbde80d4f2e8ae4c))
 
 
 ### Bug Fixes
@@ -106,74 +106,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **analytics:** shared chart analytics, distribution stats and trend projections (goals/charting-analytics/goal.md) ([a059d01](https://github.com/jadmadi/thermal/commit/a059d0190a5f99b7ed5ec5efa231d91fe8e1ee62))
+* **analytics:** shared chart analytics, distribution stats and trend projections ([a059d01](https://github.com/jadmadi/thermal/commit/a059d0190a5f99b7ed5ec5efa231d91fe8e1ee62))
 * **changelog:** add interactive changelog command with top filtering and JSON export ([bacde98](https://github.com/jadmadi/thermal/commit/bacde988c6bad71f7a19f6db2b6dfb412ebe48c5))
-* **chart:** support --chart flag across reports, document dashboard and conventions (goals/charting-flags-docs-release/goal.md) ([25163db](https://github.com/jadmadi/thermal/commit/25163dbac85f1ea23d03c89bbc5eea307822b2ab))
-* **check:** introduce fast-path pre-commit mode with package tests & diff sentry (goals/tiered-precommit-fastpath/goal.md) ([1b5a3c8](https://github.com/jadmadi/thermal/commit/1b5a3c88bb640c146c1a41236ab4636073cee6a1))
-* **ci:** add OpenSSF SLSA Level 3 build provenance and verification runbook (goals/slsa3-release-provenance/goal.md) ([78b8258](https://github.com/jadmadi/thermal/commit/78b82584a94f2e64ebec1e40c239892647d46d9d))
-* **cli:** add staged deprecation warnings & upgrade migration alerts (goals/cli-staged-deprecation-and-upgrade/goal.md) ([2842f1a](https://github.com/jadmadi/thermal/commit/2842f1a839026349543a10d6a2172b62b20ecef3))
-* **cli:** add stateless zero-database url sharing engine (goals/stateless-telemetry-sharing/goal.md) ([7557bf9](https://github.com/jadmadi/thermal/commit/7557bf99aceef2d40792072847c44e36bc33c993))
-* **cli:** add thermal audit command for local setup and context health (goals/setup-health-audit/goal.md) ([8afd798](https://github.com/jadmadi/thermal/commit/8afd798a12491a19e7f572160f511241e9902fec))
-* **cli:** add thermal receipt command for verifiable work outcomes (goals/verifiable-work-receipts/goal.md) ([ebc550a](https://github.com/jadmadi/thermal/commit/ebc550afe6ee44437d2e6d019af1ba3f0066a453))
-* **cli:** add thermal serve embedded local web dashboard and telemetry APIs (goals/embedded-web-dashboard/goal.md) ([dceba19](https://github.com/jadmadi/thermal/commit/dceba19f4aa0651c1b7c5443f54046ba2cb14711))
-* **cli:** add thermal yield command for code output delta telemetry (goals/token-yield-metrics/goal.md) ([ef10ceb](https://github.com/jadmadi/thermal/commit/ef10cebcf9f112c1f8fa23d7009743716067ee50))
-* **contributing:** establish contributor onboarding path, preflight check & retention loop (goals/contributor-onboarding/goal.md) ([3bd8d0a](https://github.com/jadmadi/thermal/commit/3bd8d0a3e92d9de0c78c8dc34a0c15b284ed1d04))
-* **devin:** project sessions.model onto DailyRow and ProjectDay for accurate model attribution (goals/devin-model-attribution/goal.md) ([ecc9a92](https://github.com/jadmadi/thermal/commit/ecc9a920ec460ea8e3035ca0665680bef168f886))
-* **distribution:** configure homebrew tap, installer script, agent docs & distribution runbook (goals/distribution-coverage-foundation/goal.md) ([80b3e4f](https://github.com/jadmadi/thermal/commit/80b3e4fe566c7b106d14d868615e363ce9dbe2b9))
-* **docs:** establish canonical migration guide & governance gate (goals/version-migration-guide/goal.md) ([12d9833](https://github.com/jadmadi/thermal/commit/12d98338458d89935843468c03df287be753cd22))
-* **governance:** establish Written Solo Authority model and scope defense (goals/governance-foundations/goal.md) ([332ad26](https://github.com/jadmadi/thermal/commit/332ad262b176f427d2a3535c7db686ba082fa41d))
-* **governance:** implement staged trust ladder, succession runbook & absence factor checks (goals/trust-ladder-and-succession/goal.md) ([9fa6245](https://github.com/jadmadi/thermal/commit/9fa62450d31d8814910e5cd05ce857d3d8665647))
-* **license:** add Community Reciprocity Covenant and license CLI metadata (goals/community-covenant-neutrality/goal.md) ([9a82384](https://github.com/jadmadi/thermal/commit/9a8238472f7d5c2b51d455117143bc3681cf972d))
-* **license:** AGPL-3.0 relicensing, commercial dual-licensing & contributor gating (goals/agpl-dual-licensing/goal.md) ([eb9aeb4](https://github.com/jadmadi/thermal/commit/eb9aeb4e79cf31307d979813e5c2a47ed6d35dee))
-* **license:** harden licensing architecture, CI enforcement & SPDX headers (goals/license-strategy-and-enforcement/goal.md) ([98772b5](https://github.com/jadmadi/thermal/commit/98772b519955e1ec8ec0a0dbde1a8897dbfa98f3))
+* **chart:** support --chart flag across reports, document dashboard and conventions ([25163db](https://github.com/jadmadi/thermal/commit/25163dbac85f1ea23d03c89bbc5eea307822b2ab))
+* **check:** introduce fast-path pre-commit mode with package tests & diff sentry ([1b5a3c8](https://github.com/jadmadi/thermal/commit/1b5a3c88bb640c146c1a41236ab4636073cee6a1))
+* **ci:** add OpenSSF SLSA Level 3 build provenance and verification runbook ([78b8258](https://github.com/jadmadi/thermal/commit/78b82584a94f2e64ebec1e40c239892647d46d9d))
+* **cli:** add staged deprecation warnings & upgrade migration alerts ([2842f1a](https://github.com/jadmadi/thermal/commit/2842f1a839026349543a10d6a2172b62b20ecef3))
+* **cli:** add stateless zero-database url sharing engine ([7557bf9](https://github.com/jadmadi/thermal/commit/7557bf99aceef2d40792072847c44e36bc33c993))
+* **cli:** add thermal audit command for local setup and context health ([8afd798](https://github.com/jadmadi/thermal/commit/8afd798a12491a19e7f572160f511241e9902fec))
+* **cli:** add thermal receipt command for verifiable work outcomes ([ebc550a](https://github.com/jadmadi/thermal/commit/ebc550afe6ee44437d2e6d019af1ba3f0066a453))
+* **cli:** add thermal serve embedded local web dashboard and telemetry APIs ([dceba19](https://github.com/jadmadi/thermal/commit/dceba19f4aa0651c1b7c5443f54046ba2cb14711))
+* **cli:** add thermal yield command for code output delta telemetry ([ef10ceb](https://github.com/jadmadi/thermal/commit/ef10cebcf9f112c1f8fa23d7009743716067ee50))
+* **contributing:** establish contributor onboarding path, preflight check & retention loop ([3bd8d0a](https://github.com/jadmadi/thermal/commit/3bd8d0a3e92d9de0c78c8dc34a0c15b284ed1d04))
+* **devin:** project sessions.model onto DailyRow and ProjectDay for accurate model attribution ([ecc9a92](https://github.com/jadmadi/thermal/commit/ecc9a920ec460ea8e3035ca0665680bef168f886))
+* **distribution:** configure homebrew tap, installer script, agent docs & distribution runbook ([80b3e4f](https://github.com/jadmadi/thermal/commit/80b3e4fe566c7b106d14d868615e363ce9dbe2b9))
+* **docs:** establish canonical migration guide & governance gate ([12d9833](https://github.com/jadmadi/thermal/commit/12d98338458d89935843468c03df287be753cd22))
+* **governance:** establish Written Solo Authority model and scope defense ([332ad26](https://github.com/jadmadi/thermal/commit/332ad262b176f427d2a3535c7db686ba082fa41d))
+* **governance:** implement staged trust ladder, succession runbook & absence factor checks ([9fa6245](https://github.com/jadmadi/thermal/commit/9fa62450d31d8814910e5cd05ce857d3d8665647))
+* **license:** add Community Reciprocity Covenant and license CLI metadata ([9a82384](https://github.com/jadmadi/thermal/commit/9a8238472f7d5c2b51d455117143bc3681cf972d))
+* **license:** AGPL-3.0 relicensing, commercial dual-licensing & contributor gating ([eb9aeb4](https://github.com/jadmadi/thermal/commit/eb9aeb4e79cf31307d979813e5c2a47ed6d35dee))
+* **license:** harden licensing architecture, CI enforcement & SPDX headers ([98772b5](https://github.com/jadmadi/thermal/commit/98772b519955e1ec8ec0a0dbde1a8897dbfa98f3))
 * **live:** attribute resumed session projects, seed today's baseline, and track activity units ([f463509](https://github.com/jadmadi/thermal/commit/f46350990e48357b9d3b26c508de50108402b552))
-* **loaders:** add DeepSeek harness (dsh) loader and registry (goals/dsh-loader/goal.md) ([9be2513](https://github.com/jadmadi/thermal/commit/9be2513404ae96090832cc4feef74259c65fc179))
-* **loaders:** add Nous Hermes agent ingestion loader for state.db (goals/hermes-loader/goal.md) ([ad2d523](https://github.com/jadmadi/thermal/commit/ad2d5238e2866fade6b359adb7a8704a8d6964ef))
-* **loaders:** report truncated JSONL scans via Summary.Warnings to verbose stderr (goals/jsonl-scan-diagnostics/goal.md) ([17b6b59](https://github.com/jadmadi/thermal/commit/17b6b595f3fca038b5d20ec32bf78bdba0b9c8c2))
+* **loaders:** add DeepSeek harness (dsh) loader and registry ([9be2513](https://github.com/jadmadi/thermal/commit/9be2513404ae96090832cc4feef74259c65fc179))
+* **loaders:** add Nous Hermes agent ingestion loader for state.db ([ad2d523](https://github.com/jadmadi/thermal/commit/ad2d5238e2866fade6b359adb7a8704a8d6964ef))
+* **loaders:** report truncated JSONL scans via Summary.Warnings to verbose stderr ([17b6b59](https://github.com/jadmadi/thermal/commit/17b6b595f3fca038b5d20ec32bf78bdba0b9c8c2))
 * **loaders:** support unified Antigravity hub and OpenCode model breakdowns ([2afb9f8](https://github.com/jadmadi/thermal/commit/2afb9f8d1ec5bc87524783f2b5f98e1216d28546))
-* **models:** declare canonical model identities and router alias normalization (goals/model-identity-and-alias-resolution/goal.md) ([e460d4a](https://github.com/jadmadi/thermal/commit/e460d4a769928c28117e2b8b7908be79ceb2bf78))
-* **pricing:** catalog coverage and tier suffix lookup for tool-native model variants (goals/pricing-catalog-coverage/goal.md) ([79bbd75](https://github.com/jadmadi/thermal/commit/79bbd7543fc59c4a5d5df841d9e3e420bb01c672))
-* **release:** adapt changelog-writing standards and configure release-please sections (goals/release-communication-and-changelog/goal.md) ([7b0813c](https://github.com/jadmadi/thermal/commit/7b0813ccd44e14d2dd5056f2f5907740dd5f7d78))
-* **release:** script legacy release retirement & document AGPL-3.0 release line (goals/purge-legacy-mit-releases/goal.md) ([cee5b3b](https://github.com/jadmadi/thermal/commit/cee5b3bd8e74d0bb4fb49118b81c437517d1ce76))
+* **models:** declare canonical model identities and router alias normalization ([e460d4a](https://github.com/jadmadi/thermal/commit/e460d4a769928c28117e2b8b7908be79ceb2bf78))
+* **pricing:** catalog coverage and tier suffix lookup for tool-native model variants ([79bbd75](https://github.com/jadmadi/thermal/commit/79bbd7543fc59c4a5d5df841d9e3e420bb01c672))
+* **release:** adapt changelog-writing standards and configure release-please sections ([7b0813c](https://github.com/jadmadi/thermal/commit/7b0813ccd44e14d2dd5056f2f5907740dd5f7d78))
+* **release:** script legacy release retirement & document AGPL-3.0 release line ([cee5b3b](https://github.com/jadmadi/thermal/commit/cee5b3bd8e74d0bb4fb49118b81c437517d1ce76))
 * **render:** establish unified terminal design tokens, adaptive cards, and text wrapping ([a8e65d7](https://github.com/jadmadi/thermal/commit/a8e65d774952b1e656183a59b4be1d4645f7272f))
-* **replay:** simulate historical developer workloads against subscription limits and model cards (goals/workload-replay/goal.md) ([1ca92ed](https://github.com/jadmadi/thermal/commit/1ca92edc4c508c65679e75fb7950f2c89b3bafcc))
-* **repo:** establish code ownership, maintainers, security policy & PR lifecycle (goals/repo-alignment-and-security/goal.md) ([bee76ff](https://github.com/jadmadi/thermal/commit/bee76ff55e8a2e1d6ef384d24bf9c30bb0249b36))
-* **report:** verify weekly and monthly period totals and table formatting parity (goals/report-period-totals/goal.md) ([b8fac89](https://github.com/jadmadi/thermal/commit/b8fac89012194436ef29dbde37fb1e5dcc4b0f83))
-* **server:** make web totals match canonical reports and support collection options (goals/web-telemetry-parity/goal.md) ([d2cd4a2](https://github.com/jadmadi/thermal/commit/d2cd4a2e67cc803f19291749ad151496c494802b))
-* **server:** reject untrusted host authorities and cross-site requests at telemetry API (goals/localhost-request-boundary/goal.md) ([d162bf1](https://github.com/jadmadi/thermal/commit/d162bf1f679b436e6b9cab2c158c46705b536765))
-* **stats:** expose disjoint token composition and cache hit rate metrics (goals/cache-efficiency-metrics/goal.md) ([fa4c8f9](https://github.com/jadmadi/thermal/commit/fa4c8f9c0de80b6c5b92cebb61b590598b23b60b))
-* **tui:** add high-density 9-box finops grid and activity taxonomy view (goals/tui-dense-finops-grid/goal.md) ([f720e57](https://github.com/jadmadi/thermal/commit/f720e5798584a1e4360059243dd98bfa6df472ba))
-* **tui:** bubble tea v2 application shell and overview dashboard (goals/tui-shell-overview/goal.md) ([85af7be](https://github.com/jadmadi/thermal/commit/85af7bef073805878594fbadb14611f6bdfc07ac))
+* **replay:** simulate historical developer workloads against subscription limits and model cards ([1ca92ed](https://github.com/jadmadi/thermal/commit/1ca92edc4c508c65679e75fb7950f2c89b3bafcc))
+* **repo:** establish code ownership, maintainers, security policy & PR lifecycle ([bee76ff](https://github.com/jadmadi/thermal/commit/bee76ff55e8a2e1d6ef384d24bf9c30bb0249b36))
+* **report:** verify weekly and monthly period totals and table formatting parity ([b8fac89](https://github.com/jadmadi/thermal/commit/b8fac89012194436ef29dbde37fb1e5dcc4b0f83))
+* **server:** make web totals match canonical reports and support collection options ([d2cd4a2](https://github.com/jadmadi/thermal/commit/d2cd4a2e67cc803f19291749ad151496c494802b))
+* **server:** reject untrusted host authorities and cross-site requests at telemetry API ([d162bf1](https://github.com/jadmadi/thermal/commit/d162bf1f679b436e6b9cab2c158c46705b536765))
+* **stats:** expose disjoint token composition and cache hit rate metrics ([fa4c8f9](https://github.com/jadmadi/thermal/commit/fa4c8f9c0de80b6c5b92cebb61b590598b23b60b))
+* **tui:** add high-density 9-box finops grid and activity taxonomy view ([f720e57](https://github.com/jadmadi/thermal/commit/f720e5798584a1e4360059243dd98bfa6df472ba))
+* **tui:** bubble tea v2 application shell and overview dashboard ([85af7be](https://github.com/jadmadi/thermal/commit/85af7bef073805878594fbadb14611f6bdfc07ac))
 * **tui:** elevate codeburn-inspired 9-box FinOps grid & dashboard dense view ([88c24d5](https://github.com/jadmadi/thermal/commit/88c24d510ae8bab65a32ec190f399fd022bbcf36))
-* **tui:** interactive projects ranking view and drill-down detail (goals/tui-projects-view/goal.md) ([50faef3](https://github.com/jadmadi/thermal/commit/50faef37cace029df5f9b3d6284708715324cf79))
-* **tui:** interactive statistical distribution, weekday cadence and outlier view (goals/tui-stats-view/goal.md) ([be1e45f](https://github.com/jadmadi/thermal/commit/be1e45fed317b7dfd1db2b709190448d431f8281))
-* **tui:** interactive tool and model mix share views with switching metrics (goals/tui-mix-models-views/goal.md) ([43c146e](https://github.com/jadmadi/thermal/commit/43c146e37b2ae87872bea77da5eb51f307e538a4))
-* **tui:** spike ntcharts v2 against stock charm stack and record findings (goals/charting-dep-spike/goal.md) ([d1b68ab](https://github.com/jadmadi/thermal/commit/d1b68ab84f9e297fdfd81edb688ff4dccfc1ae91))
+* **tui:** interactive projects ranking view and drill-down detail ([50faef3](https://github.com/jadmadi/thermal/commit/50faef37cace029df5f9b3d6284708715324cf79))
+* **tui:** interactive statistical distribution, weekday cadence and outlier view ([be1e45f](https://github.com/jadmadi/thermal/commit/be1e45fed317b7dfd1db2b709190448d431f8281))
+* **tui:** interactive tool and model mix share views with switching metrics ([43c146e](https://github.com/jadmadi/thermal/commit/43c146e37b2ae87872bea77da5eb51f307e538a4))
+* **tui:** spike ntcharts v2 against stock charm stack and record findings ([d1b68ab](https://github.com/jadmadi/thermal/commit/d1b68ab84f9e297fdfd81edb688ff4dccfc1ae91))
 
 
 ### Bug Fixes
 
-* **claude:** deduplicate assistant messages by message id and report in summary warnings (goals/claude-message-dedupe/goal.md) ([d39ef40](https://github.com/jadmadi/thermal/commit/d39ef406b54d0196ac716ee5443b45b103c02195))
-* **live:** align token burn, turn counts, and cache rates with canonical metrics (goals/live-metric-parity/goal.md) ([305f589](https://github.com/jadmadi/thermal/commit/305f589714a8b40ef8cf0a870ad2b3ab84422ed8))
-* **live:** decouple display cadence and cache unchanged sources to bound 100ms CPU (goals/live-polling-cpu-budget/goal.md) ([b71d464](https://github.com/jadmadi/thermal/commit/b71d46487fd4f1a535aed1f6b4d0a2a047ca58cf))
-* **loaders:** enforce SQLite rows iteration error inspection and document standard (goals/database-loader-iteration-safety/goal.md) ([c53c32b](https://github.com/jadmadi/thermal/commit/c53c32b0b241ceaeb3b52707b059d46d931c7ad8))
+* **claude:** deduplicate assistant messages by message id and report in summary warnings ([d39ef40](https://github.com/jadmadi/thermal/commit/d39ef406b54d0196ac716ee5443b45b103c02195))
+* **live:** align token burn, turn counts, and cache rates with canonical metrics ([305f589](https://github.com/jadmadi/thermal/commit/305f589714a8b40ef8cf0a870ad2b3ab84422ed8))
+* **live:** decouple display cadence and cache unchanged sources to bound 100ms CPU ([b71d464](https://github.com/jadmadi/thermal/commit/b71d46487fd4f1a535aed1f6b4d0a2a047ca58cf))
+* **loaders:** enforce SQLite rows iteration error inspection and document standard ([c53c32b](https://github.com/jadmadi/thermal/commit/c53c32b0b241ceaeb3b52707b059d46d931c7ad8))
 * **loaders:** ignore empty WAL and volatile SHM locks in Devin source identity ([31b7b84](https://github.com/jadmadi/thermal/commit/31b7b84d1a23ff12ea5ab1d3ce5edcf18fdf8b25))
-* **loaders:** isolate Devin cache by source database and validate freshness (goals/devin-cache-source-isolation/goal.md) ([d182cf9](https://github.com/jadmadi/thermal/commit/d182cf9e0f7134733ce94b92725e19a3115087a0))
-* **loaders:** raise JSONL scanner line ceiling to 32 MiB for large transcripts (goals/jsonl-line-ceilings/goal.md) ([86d6ebb](https://github.com/jadmadi/thermal/commit/86d6ebb1d2624e9b3c8efd7ae6ba7d6d32cfe810))
-* **receipt:** preserve recorded usage, deduplicate messages, and disclose partial coverage (goals/receipt-accounting-coverage/goal.md) ([dd3ab4f](https://github.com/jadmadi/thermal/commit/dd3ab4f987b51f7fe6868af1a70164d1625a4455))
-* **receipt:** require observed command results and drop uncompleted invocations (goals/receipt-evidence-integrity/goal.md) ([7a8ce91](https://github.com/jadmadi/thermal/commit/7a8ce91cd22fd928cccd8a75d1470bea36591707))
+* **loaders:** isolate Devin cache by source database and validate freshness ([d182cf9](https://github.com/jadmadi/thermal/commit/d182cf9e0f7134733ce94b92725e19a3115087a0))
+* **loaders:** raise JSONL scanner line ceiling to 32 MiB for large transcripts ([86d6ebb](https://github.com/jadmadi/thermal/commit/86d6ebb1d2624e9b3c8efd7ae6ba7d6d32cfe810))
+* **receipt:** preserve recorded usage, deduplicate messages, and disclose partial coverage ([dd3ab4f](https://github.com/jadmadi/thermal/commit/dd3ab4f987b51f7fe6868af1a70164d1625a4455))
+* **receipt:** require observed command results and drop uncompleted invocations ([7a8ce91](https://github.com/jadmadi/thermal/commit/7a8ce91cd22fd928cccd8a75d1470bea36591707))
 * **server:** bypass local disk presence check when synthetic loader is injected ([8e47085](https://github.com/jadmadi/thermal/commit/8e47085a1750a54bb8ffbb46f95a32af6c167628))
-* **telemetry:** audit pricing estimates, dsh tool naming, isActivityOnly filtering, and stats UI (goals/telemetry-and-ui-audit/goal.md) ([8c9847d](https://github.com/jadmadi/thermal/commit/8c9847db412ee0669f5257e153ec888220487722))
-* **thermal:** guard streak computation against malformed dates and invalid calendar tokens (goals/streak-parsing-defensive-guards/goal.md) ([a2467d7](https://github.com/jadmadi/thermal/commit/a2467d79c51d6c35bb89c9726c39e008b0e25eba))
-* **thermal:** separate activity steps from token totals and fix model attribution (goals/unpriceable-token-sources/goal.md) ([09eb367](https://github.com/jadmadi/thermal/commit/09eb367a96fc928ea6f8fada48a8fb09eb3cafcc))
-* **upgrade:** check file close errors and deduplicate archive extraction (goals/cli-upgrade-file-integrity/goal.md) ([15d2ffb](https://github.com/jadmadi/thermal/commit/15d2ffb0a8eccfb5f40ffc31c1cd9b9549fc0cc4))
+* **telemetry:** audit pricing estimates, dsh tool naming, isActivityOnly filtering, and stats UI ([8c9847d](https://github.com/jadmadi/thermal/commit/8c9847db412ee0669f5257e153ec888220487722))
+* **thermal:** guard streak computation against malformed dates and invalid calendar tokens ([a2467d7](https://github.com/jadmadi/thermal/commit/a2467d79c51d6c35bb89c9726c39e008b0e25eba))
+* **thermal:** separate activity steps from token totals and fix model attribution ([09eb367](https://github.com/jadmadi/thermal/commit/09eb367a96fc928ea6f8fada48a8fb09eb3cafcc))
+* **upgrade:** check file close errors and deduplicate archive extraction ([15d2ffb](https://github.com/jadmadi/thermal/commit/15d2ffb0a8eccfb5f40ffc31c1cd9b9549fc0cc4))
 
 
 ### Performance Improvements
 
-* **loaders:** add incremental rollout transcript caching and delta parser for codex (goals/codex-incremental-rollout-cache/goal.md) ([752569e](https://github.com/jadmadi/thermal/commit/752569efa1dec1d86c802d4809ff42c5e80923d6))
-* **loaders:** establish end-to-end ingestion performance baseline and benchmark suite (goals/ingestion-performance-baseline/goal.md) ([e2a569f](https://github.com/jadmadi/thermal/commit/e2a569f035ce3405f06bd2c2a3e3e653d41bdf98))
-* **render:** preallocate leaderboard slices capacity and add allocation benchmark (goals/leaderboard-slice-preallocation/goal.md) ([f375fdf](https://github.com/jadmadi/thermal/commit/f375fdf4a93adfed1375dac534ffa002e19fb997))
+* **loaders:** add incremental rollout transcript caching and delta parser for codex ([752569e](https://github.com/jadmadi/thermal/commit/752569efa1dec1d86c802d4809ff42c5e80923d6))
+* **loaders:** establish end-to-end ingestion performance baseline and benchmark suite ([e2a569f](https://github.com/jadmadi/thermal/commit/e2a569f035ce3405f06bd2c2a3e3e653d41bdf98))
+* **render:** preallocate leaderboard slices capacity and add allocation benchmark ([f375fdf](https://github.com/jadmadi/thermal/commit/f375fdf4a93adfed1375dac534ffa002e19fb997))
 
 ## [0.14.0](https://github.com/jadmadi/thermal/compare/v0.13.0...v0.14.0) (2026-09-22)
 
@@ -203,7 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-* **replay:** implement thermal replay simulation against subscriptions and APIs (`thermal replay`) (goals/workload-replay/goal.md) ([4f7ff02](https://github.com/jadmadi/thermal/commit/4f7ff02f5e7710deabc5454265330bcbee35057a))
+* **replay:** implement thermal replay simulation against subscriptions and APIs (`thermal replay`) ([4f7ff02](https://github.com/jadmadi/thermal/commit/4f7ff02f5e7710deabc5454265330bcbee35057a))
 * **testing:** add automated simulated user release gate and update gitignore ([b5651df](https://github.com/jadmadi/thermal/commit/b5651df195f1702078d233ba9fb3d4c5ea98c29c))
 
 
@@ -211,27 +211,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **testing:** ensure simulated user tests use dynamic timestamps and isolated home environment ([2c578a0](https://github.com/jadmadi/thermal/commit/2c578a0fd86e035939805ecd1a7612005d70502e))
 
-## [Unreleased]
-
-### Features
-
-* **changelog:** add release history and features viewer command (`thermal changelog --top <N>`)
-* **audit:** add local context health and rule tax audit command (`thermal audit`)
-* **replay:** simulate historical developer workloads against subscription tiers and API models (`thermal replay --against <plan>`)
-* **yield:** measure code delta velocity and token yield efficiency (`thermal yield --sort lines|yield`)
-* **receipt:** evaluate verifiable test and linter outcomes (`thermal receipt --sort verified`)
-* **share:** generate zero-database stateless compressed URL cards (`thermal share`)
-* **formatting:** enforce MD013 terminal line-length bounds and hanging indent word wrapping across all views
-
 ## [0.11.0](https://github.com/jadmadi/thermal/compare/v0.10.0...v0.11.0) (2026-09-21)
 
 
 ### Features
 
-* **analytics,render:** expose disjoint token composition and cache efficiency metrics (goals/cache-efficiency-metrics/goal.md) ([6e070bd](https://github.com/jadmadi/thermal/commit/6e070bd87108f8b6994d5adaeba7e5cff1d4cc48))
-* **loaders:** add Nous Hermes agent loader and registry (goals/hermes-loader/goal.md) ([9e90d01](https://github.com/jadmadi/thermal/commit/9e90d017e24a4a4cdd04bcdd9b32f166a824b941))
+* **analytics,render:** expose disjoint token composition and cache efficiency metrics ([6e070bd](https://github.com/jadmadi/thermal/commit/6e070bd87108f8b6994d5adaeba7e5cff1d4cc48))
+* **loaders:** add Nous Hermes agent loader and registry ([9e90d01](https://github.com/jadmadi/thermal/commit/9e90d017e24a4a4cdd04bcdd9b32f166a824b941))
 * **loaders:** add prompt-level turn deduplication to Grok loader ([e589226](https://github.com/jadmadi/thermal/commit/e5892265a86dd65f07b7ab1dfb5df6e34543bab8))
-* **loaders:** implement message-level deduplication in Claude Code loader (goals/claude-message-dedupe/goal.md) ([104ba23](https://github.com/jadmadi/thermal/commit/104ba23a39bdaacfe4d16e9e34d4dbbe2ed61da8))
+* **loaders:** implement message-level deduplication in Claude Code loader ([104ba23](https://github.com/jadmadi/thermal/commit/104ba23a39bdaacfe4d16e9e34d4dbbe2ed61da8))
 
 ## [0.10.0](https://github.com/jadmadi/thermal/compare/v0.9.1...v0.10.0) (2026-09-21)
 
@@ -240,16 +228,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **docs:** polish layout, motion choreography, and window chrome in html docs ([d9ab799](https://github.com/jadmadi/thermal/commit/d9ab7997b7c5e56be42354f858ac69f72ebc3161))
 * **docs:** switch canonical site domain to thermal.jadmadi.net ([a1c9c4d](https://github.com/jadmadi/thermal/commit/a1c9c4dd5002a62b4954ee3a820a5817b9d0fc43))
-* **loaders:** add DeepSeek harness (dsh) loader and registry (goals/dsh-loader/goal.md) ([414a815](https://github.com/jadmadi/thermal/commit/414a8151615119ca3f043a8beafe8a67f9bfb194))
-* **loaders:** report JSONL scans that stop early via Summary.Warnings (goals/jsonl-scan-diagnostics/goal.md) ([247bb80](https://github.com/jadmadi/thermal/commit/247bb80b2a49ceb455beb3cb76d650a5f43bb8f1))
+* **loaders:** add DeepSeek harness (dsh) loader and registry ([414a815](https://github.com/jadmadi/thermal/commit/414a8151615119ca3f043a8beafe8a67f9bfb194))
+* **loaders:** report JSONL scans that stop early via Summary.Warnings ([247bb80](https://github.com/jadmadi/thermal/commit/247bb80b2a49ceb455beb3cb76d650a5f43bb8f1))
 * **pricing:** map tier variants to the base model, and classify the rest ([b361693](https://github.com/jadmadi/thermal/commit/b361693abb24a963f62b5fc0769288dd9322b5ac))
-* **render,analytics:** telemetry accuracy, pricing estimates, and stats UI polish (goals/telemetry-and-ui-audit/goal.md) ([662f25a](https://github.com/jadmadi/thermal/commit/662f25a3e9c761f4369cd20425e75c268299dbee))
-* **sila:** complete sila onboarding and wire repository (goals/sila-onboarding/goal.md) ([92ea6ee](https://github.com/jadmadi/thermal/commit/92ea6ee123cb044818dab401ce450f59e83617d3))
+* **render,analytics:** telemetry accuracy, pricing estimates, and stats UI polish ([662f25a](https://github.com/jadmadi/thermal/commit/662f25a3e9c761f4369cd20425e75c268299dbee))
+* **sila:** complete sila onboarding and wire repository ([92ea6ee](https://github.com/jadmadi/thermal/commit/92ea6ee123cb044818dab401ce450f59e83617d3))
 
 
 ### Bug Fixes
 
-* **loaders:** raise JSONL line ceilings to 32 MiB (goals/jsonl-line-ceilings/goal.md) ([ada5b52](https://github.com/jadmadi/thermal/commit/ada5b526722e6f20b3b8281a65b574d616ab7170))
+* **loaders:** raise JSONL line ceilings to 32 MiB ([ada5b52](https://github.com/jadmadi/thermal/commit/ada5b526722e6f20b3b8281a65b574d616ab7170))
 
 ## [0.9.1](https://github.com/jadmadi/thermal/compare/v0.9.0...v0.9.1) (2026-09-20)
 
@@ -287,11 +275,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 * **analytics:** add mix, stats, and trend verbs ([#22](https://github.com/jadmadi/thermal/issues/22)) ([9c28a0a](https://github.com/jadmadi/thermal/commit/9c28a0af26a610ebaff49a8b02cc9635e8120e85))
-* **docs:** add author links, schema, FAQ, and crawler files to the docs site (goals/report-period-totals/goal.md) ([ccc7bc1](https://github.com/jadmadi/thermal/commit/ccc7bc1226aba6dc183de09f35dfa4358d31d2ab))
+* **docs:** add author links, schema, FAQ, and crawler files to the docs site ([ccc7bc1](https://github.com/jadmadi/thermal/commit/ccc7bc1226aba6dc183de09f35dfa4358d31d2ab))
 * **docs:** docs site, corrected report totals, and Pages publishing ([7a470d1](https://github.com/jadmadi/thermal/commit/7a470d15c49c290cbe27f9b631e62d11185a60e6))
 * **reports:** --chart, dashboard docs, and the rules ([656db32](https://github.com/jadmadi/thermal/commit/656db32151827d2a6afa84160dd5d49201d40574))
 * **reports:** add --chart, document the dashboard, and record the rules ([1cb2f50](https://github.com/jadmadi/thermal/commit/1cb2f501825abb429f30940eb3da20e8fa715567))
-* **reports:** keep token-bearing periods only, grain-independent totals (goals/report-period-totals/goal.md) ([9c27be4](https://github.com/jadmadi/thermal/commit/9c27be46c625036754c9637b447bbe85d43372fd))
+* **reports:** keep token-bearing periods only, grain-independent totals ([9c27be4](https://github.com/jadmadi/thermal/commit/9c27be46c625036754c9637b447bbe85d43372fd))
 * **tui:** add the dashboard shell and Overview view ([050f4a5](https://github.com/jadmadi/thermal/commit/050f4a5bcf2cf4f27f08a42807f6b233285720d5))
 * **tui:** add the Mix and Models views ([6a591f8](https://github.com/jadmadi/thermal/commit/6a591f8d72fb895bf374d50f98acf929792d073c))
 * **tui:** add the Projects view with drill-down ([e15056f](https://github.com/jadmadi/thermal/commit/e15056f8cf5c4c4c40c1bbe38bec0b279b45683c))
@@ -306,8 +294,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **cost:** show the recorded and estimated split everywhere the total appears ([b76b9a5](https://github.com/jadmadi/thermal/commit/b76b9a538ea1c0ad6bf6b0507ebe825c7b019226))
 * **cost:** show the recorded and estimated split everywhere the total appears ([66a7466](https://github.com/jadmadi/thermal/commit/66a74664fab3b6d5b6d58912da62ad340e3cbc11))
-* **pages:** move the JSON reference inside the reports section and reindent it (goals/report-period-totals/goal.md) ([c9c6af8](https://github.com/jadmadi/thermal/commit/c9c6af80892ec4f8fa0e1a284db251ee1e7f3abe))
-* **tools:** drop the ambiguous cc alias and point tool links at their sites (goals/report-period-totals/goal.md) ([2a81533](https://github.com/jadmadi/thermal/commit/2a81533383ea852f0f274f205a2aa47133a86c02))
+* **pages:** move the JSON reference inside the reports section and reindent it ([c9c6af8](https://github.com/jadmadi/thermal/commit/c9c6af80892ec4f8fa0e1a284db251ee1e7f3abe))
+* **tools:** drop the ambiguous cc alias and point tool links at their sites ([2a81533](https://github.com/jadmadi/thermal/commit/2a81533383ea852f0f274f205a2aa47133a86c02))
 * **tui:** keep the cursor on screen and the frame inside the terminal ([b1df32b](https://github.com/jadmadi/thermal/commit/b1df32bae06bf0eaec9a45db9c6a59ac309a0e78))
 * **tui:** keep the cursor on screen and the frame inside the terminal ([0619190](https://github.com/jadmadi/thermal/commit/0619190fa2bba9f8486274318687771c36ab11ff))
 
@@ -346,7 +334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
-* **agy:** read live antigravity-cli transcripts for step activity ([#4](https://github.com/jadmadi/thermal/issues/4)) ([c7f4fa6](https://github.com/jadmadi/thermal/commit/c7f4fa631d5020dc2647644a7bfd26b3ae5ea3d3))
+* **agy:** read live antigravity-cli transcripts for step activity ([#4](https://github.com/jadmadi/thermal/issues/4)) ([c7f4fa6](https://github.com/jadmadi/thermal/commit/c7f4fa631d5020dc2647647bfd26b3ae5ea3d3))
 
 ## [0.2.2](https://github.com/jadmadi/thermal/compare/v0.2.1...v0.2.2) (2026-09-12)
 
@@ -371,54 +359,6 @@ Documentation and repository chores only; no user-facing changes. Tagged outside
 ### Bug Fixes
 
 * update author name in readme ([19e2c54](https://github.com/jadmadi/thermal/commit/19e2c5448949c306a7cb65b815aa3ac2f17031cd))
-
-## [Unreleased]
-
-### Added
-
-- **`build.sh` build automation script** — versatile build script supporting `--release` (`-ldflags="-s -w" -trimpath`), `--dev`, and `--upx` modes, cross-compilation (`--target` and `--all`), and detailed `--help` documentation explaining build trade-offs and binary sizes.
-- **`--verbose` / `-v` diagnostic flag** — outputs non-fatal tool loading failures, missing databases, and parsing warnings directly to `os.Stderr`.
-- **`thermal upgrade` command** — self-upgrade by checking GitHub Releases, downloading the matching binary for your OS/arch, and atomically replacing the running executable.
-- **`thermal version` command** — prints version, commit hash, and build date (injected via ldflags at build time).
-- **`internal/version` package** — build-time version embedding via `-ldflags`.
-- **Token Warriors / Activity Hunters split** — the leaderboard now separates tools with real token consumption data from tools that only track activity (messages, steps). Tools are auto-categorized based on whether token data is available.
-- **Cost column** in the leaderboard for tools that track cost (OpenCode, MiMoCode, codewhale). Sub-cent formatting shows costs like `$0.0032`.
-- **Devin loader** — extracts real token metrics from `message_nodes.metadata.metrics` (input, output, cache, reasoning tokens), session duration from `sessions` table, and engagement from `prompt_history`. Devin moved from Activity Hunters to Token Warriors.
-- **Codex loader rewrite** — reads `state_5.sqlite` (`threads.tokens_used`, `model`, `source`, `reasoning_effort`, `agent_role`, session duration) as the primary source, supplements with rollout JSONL for the input/output/reasoning/cache token breakdown. Codex moved from Activity Hunters to Token Warriors.
-- **codewhale loader rewrite** — extracts `metadata.total_tokens`, `metadata.cost.session_cost_usd`, `metadata.model`, `metadata.mode`, and `metadata.cumulative_turn_secs` from session JSON files. codewhale moved from Activity Hunters to Token Warriors.
-- **OpenCode loader rewrite** — leverages pre-aggregated `session.tokens_*` columns, `cost`, `agent`, and `summary_additions/deletions/files` for faster and more comprehensive data extraction.
-- **MiMoCode loader** — aggregates from `message.data.tokens` and surfaces `session.summary_additions/deletions/files` and agent distribution.
-- **Agy loader rewrite** — reads `overview.txt` from all brain sessions (was only reading `transcript.jsonl` from 1 of 14 sessions). Now surfaces 304 steps across 14 sessions instead of 57 steps from 1 session. Extracts model info from `transcript.jsonl` USER_SETTINGS_CHANGE events.
-- **Session duration tracking** — `LongestSessionMs` field added to Summary, surfaced in dashboard for all tools that have session timestamps.
-- **Model breakdown** — `ModelBreakdown` field shows which models were used per tool (e.g., Codex: gpt-5.4-mini:6, gpt-5.4:1).
-- **Agent/source breakdown** — `AgentBreakdown` field shows source distribution (e.g., Codex: cli:7, vscode:3, exec:1).
-- **Lines added/deleted and files touched** — `LinesAdded`, `LinesDeleted`, `FilesTouched` fields added to Summary for tools that track code diffs (OpenCode, MiMoCode).
-- **Progress bar** — new `internal/render/progress.go` for loading indicator, hardened with `atomic.Bool` and `sync.Once` for thread safety.
-- **Session cache** — `internal/loaders/cache.go` for caching loader results.
-- **GitHub Actions release workflow** and **GoReleaser config** for cross-platform binary builds with version injection.
-
-### Performance & Optimization
-
-- **Devin SQLite database optimization** — added incremental delta scanning (`row_id > c.MaxRowID`), memory-mapped I/O (`PRAGMA mmap_size`), and byte-string pre-filtering (`chat_message LIKE '%"assistant"%'`), reducing query times on large (7GB+) databases from ~11s down to `< 2ms`.
-- **SQLite memory-mapped I/O across all loaders** — `LoadOpenCodeData` and `LoadMiMoCodeData` benefit from `PRAGMA cache_size = -64000` and `PRAGMA mmap_size = 30GB` alongside raw string pre-filters.
-- **Parallel multi-worker loaders** — `internal/loaders/agy.go`, `commandcode.go`, and `codex.go` use bounded parallel worker pools (limit of 8 concurrent workers) to scan multi-file directories and JSONL rollouts simultaneously.
-- **Binary size reduction** — configured `-trimpath` and `-ldflags="-s -w"` in `.goreleaser.yml` and `build.sh` to strip DWARF symbol tables and host filepaths, reducing release binaries from ~15MB to ~9.8MB (35% reduction).
-
-### Changed
-
-- **Leaderboard format** — now split into two sections (Token Warriors, Activity Hunters) with a Cost column. Old format was a single flat list.
-- **Tool registry architecture (`DataSubdir`)** — refactored tool registry path resolution (`internal/loaders/registry.go`) to use clean `DataSubdir` property mappings instead of hardcoded switch cases.
-- **README** — updated supported tools table, leaderboard example, build instructions (`build.sh`), and How It Works section to reflect the new data sources, metrics, and optimizations.
-- **`.goreleaser.yml`** — added `-trimpath` and ldflags (`-s -w`) to inject version, commit, and date into the binary while minimizing size.
-
-### Fixed
-
-- **Daylight Saving Time (DST) streak accuracy** — replaced 24-hour time subtraction (`24*time.Hour`) in streak logic (`internal/thermal/streak.go`) with calendar date arithmetic (`AddDate(0, 0, 1)`) to guarantee accuracy during spring-forward (23h) and fall-back (25h) transitions. Ensured strictly ascending quartile thresholds.
-- **Self-upgrader network and decompression guards** — hardened `thermal upgrade` (`cmd/thermal/upgrade.go`) with package-wide 30-second HTTP timeouts, context propagation across requests, exact OS/arch asset checking, and `io.LimitReader(tr, 250*1024*1024)` decompression limits against disk starvation attacks.
-- **Codex token over-counting (260x)** — the old parser summed ALL cumulative `total_token_usage` values from every `token_count` event in every rollout file, producing 11.6B instead of the correct 43.9M. The new loader uses `state_5.sqlite` as the source of truth and only reads the LAST `token_count` event per rollout file for the breakdown.
-- **command-code session inflation** — the old glob `*.jsonl` matched 115 files (54 sessions + 54 checkpoints + 7 hooks-audit), inflating counts to 61 sessions and 6,303 messages. Now correctly filters to 54 sessions and 5,614 messages.
-- **Agy session under-counting** — the old loader only read `transcript.jsonl` (1 of 14 sessions = 57 steps). Now reads `overview.txt` from all 14 sessions (304 steps).
-- **SQLite NULL handling** — Codex `state_5.sqlite` has NULL values in `model`, `reasoning_effort`, and `agent_role` columns. Switched to `sql.NullString` to avoid scan errors.
 
 ## [v0.1.0] - 2026-06-12
 

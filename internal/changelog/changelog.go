@@ -6,7 +6,6 @@ package changelog
 import (
 	"bufio"
 	_ "embed"
-	"os"
 	"regexp"
 	"strings"
 
@@ -35,8 +34,9 @@ type ChangelogReport struct {
 }
 
 var (
-	headerRegex = regexp.MustCompile(`^##\s+\[?([^\]\s]+)\]?(?:\(([^\)]+)\))?\s*(?:\(([^)]+)\))?`)
-	commitRegex = regexp.MustCompile(`\s*\(\[[0-9a-fA-F]+\]\([^\)]+\)\)`)
+	headerRegex    = regexp.MustCompile(`^##\s+\[?([^\]\s]+)\]?(?:\(([^\)]+)\))?\s*(?:\(([^)]+)\))?`)
+	commitRegex    = regexp.MustCompile(`\s*\(\[[0-9a-fA-F]+\]\([^\)]+\)\)`)
+	goalTokenRegex = regexp.MustCompile(`\s*(?:\(goals/[^)]+/goal\.md\)|\[goal:\s*[^\]]+\])`)
 )
 
 // Parse parses a Keep a Changelog formatted markdown string into a slice of Release objects.
@@ -44,6 +44,7 @@ func Parse(content string) ([]Release, error) {
 	var releases []Release
 	var current *Release
 	var currentSection string
+	seenVersions := make(map[string]bool)
 
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
@@ -61,6 +62,12 @@ func Parse(content string) ([]Release, error) {
 			matches := headerRegex.FindStringSubmatch(line)
 			if len(matches) > 1 {
 				v := matches[1]
+				if seenVersions[v] {
+					current = nil
+					currentSection = ""
+					continue
+				}
+				seenVersions[v] = true
 				url := ""
 				date := ""
 				if len(matches) > 2 {
@@ -104,6 +111,8 @@ func Parse(content string) ([]Release, error) {
 			bullet := strings.TrimSpace(line[2:])
 			// Strip markdown commit link at the end: ([2c387fb](https://...))
 			bullet = commitRegex.ReplaceAllString(bullet, "")
+			// Strip internal Sila goal attribution tokens: (goals/<slug>/goal.md) or [goal: <slug>]
+			bullet = strings.TrimSpace(goalTokenRegex.ReplaceAllString(bullet, ""))
 			// Convert markdown bold prefix **scope:** to scope:
 			if strings.HasPrefix(bullet, "**") {
 				if idx := strings.Index(bullet[2:], "**"); idx != -1 {
@@ -135,20 +144,8 @@ func Parse(content string) ([]Release, error) {
 	return releases, scanner.Err()
 }
 
-// LoadContent loads the changelog markdown from local disk if available,
-// falling back to embedded compile-time changelog.
+// LoadContent returns the embedded compile-time changelog markdown.
 func LoadContent() string {
-	// Try local file first (helpful during local development / testing)
-	candidates := []string{
-		"CHANGELOG.md",
-		"../CHANGELOG.md",
-		"../../CHANGELOG.md",
-	}
-	for _, path := range candidates {
-		if data, err := os.ReadFile(path); err == nil && len(data) > 0 {
-			return string(data)
-		}
-	}
 	return embeddedChangelog
 }
 

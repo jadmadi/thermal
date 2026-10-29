@@ -389,8 +389,17 @@ if [[ ! -f "${ROOT_DIR}/CHANGELOG.md" ]]; then
 elif ! grep -q "Keep a Changelog" "${ROOT_DIR}/CHANGELOG.md"; then
     echo -e "   ${RED}✖ Failed:${RESET} CHANGELOG.md does not reference Keep a Changelog standard"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
+elif ! cmp -s "${ROOT_DIR}/CHANGELOG.md" "${ROOT_DIR}/internal/changelog/CHANGELOG.md"; then
+    echo -e "   ${RED}✖ Failed:${RESET} CHANGELOG.md and internal/changelog/CHANGELOG.md are out of sync"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+elif grep -Eq '\(goals/|\[goal:' "${ROOT_DIR}/CHANGELOG.md"; then
+    echo -e "   ${RED}✖ Failed:${RESET} CHANGELOG.md contains leaked internal Sila goal tokens"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+elif [[ -n "$(grep -E '^## \[' "${ROOT_DIR}/CHANGELOG.md" | awk '{print $2}' | cut -d']' -f1 | sort | uniq -d)" ]]; then
+    echo -e "   ${RED}✖ Failed:${RESET} CHANGELOG.md contains duplicate release version headers"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
 else
-    echo -e "   ${GREEN}✔ Passed:${RESET} CHANGELOG.md conforms to Keep a Changelog format"
+    echo -e "   ${GREEN}✔ Passed:${RESET} CHANGELOG.md conforms to Keep a Changelog, synced, and free of goal tokens/duplicates"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
 fi
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))

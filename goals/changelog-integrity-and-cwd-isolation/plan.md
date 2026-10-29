@@ -1,0 +1,6 @@
+# Plan: Sanitize changelog history, isolate embedded changelog from CWD hijacking, and strip Sila goal tokens
+
+## Execution Steps
+- [x] **Phase 1 — Clean & Synchronize Changelog Files**: Remove the duplicate `0.21.0` dump from `CHANGELOG.md`, strip all `(goals/<slug>/goal.md)` and `[goal: <slug>]` tokens across `CHANGELOG.md`, and copy to `internal/changelog/CHANGELOG.md`.
+- [x] **Phase 2 — Harden `internal/changelog` & Release Gate**: Update `LoadContent()` in `internal/changelog/changelog.go` to return `embeddedChangelog` only, update `Parse()` to strip goal tokens and skip duplicate version headers, add unit tests in `internal/changelog/changelog_test.go`, and add changelog parity/hygiene checks in `scripts/simulated_user_gate.sh`.
+- [x] **Phase 3 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/changelog-integrity-and-cwd-isolation/plan.md`; (2) write `goals/changelog-integrity-and-cwd-isolation/evidence.md` with `Verdict: PASS`; (3) commit with `(goals/changelog-integrity-and-cwd-isolation/goal.md)` using a `fix(changelog):` subject; (4) certify via `sila goals certify changelog-integrity-and-cwd-isolation --evidence=goals/changelog-integrity-and-cwd-isolation/evidence.md`.
