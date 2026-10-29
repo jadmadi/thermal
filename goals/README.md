@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 6 (6 independent ⚡, 0 unblocked 🔗)
-- 🟢 **Implemented**: 128 (4 verified 📜, 36 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 5 (5 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 129 (12 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 577/608 completed (94%)
+- 📋 **Execution Tasks Progress**: 582/608 completed (95%)
 
 ---
 
@@ -39,7 +39,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#247)` | - | Replace the empty-state dead end with a per-source inventory and next steps — Priority: P1 (activation). On a machine with no supported agent data, the defaul... | `/goal goals/cli-first-run-source-inventory/goal.md` |
 | [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#248)` | - | Define machine-clean non-TTY stdout, exit codes, and silent statusline degradation — Priority: P1 (automation and prompt integration). Two command surfaces break the... | `/goal goals/cli-nontty-and-statusline-output-contract/goal.md` |
 | [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#249)` | - | Make every surface fit the terminal width or refuse with a clear minimum-width message — Priority: P1 (terminal citizenship). Thermal renders fixed-width box art regardl... | `/goal goals/cli-terminal-width-adaptation/goal.md` |
 | [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
@@ -86,11 +85,12 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
-| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e86a107` |
-| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `c0e4087` |
-| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `8ebde49` |
-| [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `4d97260` |
-| [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `743281a` |
+| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e86a107` |
+| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `c0e4087` |
+| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
+| [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `4d97260` |
+| [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `964cf9e` |
+| [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
@@ -159,8 +159,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9ae5494` |
 | [`sqlite-loader-resource-bounds`](sqlite-loader-resource-bounds/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`pricing-catalog-and-partial-model-provenance`](pricing-catalog-and-partial-model-provenance/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
-| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9903ca2` |
-| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `4dbf119` |
+| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `9903ca2` |
+| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `4dbf119` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |
