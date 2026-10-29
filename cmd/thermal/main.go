@@ -30,7 +30,6 @@ import (
 	"github.com/jadmadi/thermal/internal/theme"
 	"github.com/jadmadi/thermal/internal/thermal"
 	"github.com/jadmadi/thermal/internal/tui"
-	"github.com/jadmadi/thermal/internal/version"
 )
 
 func usage() string {
@@ -48,34 +47,23 @@ func parseArgs() thermal.Options {
 	if verb, tool, unknown, help := resolveHelpTarget(os.Args[1:]); help {
 		os.Exit(printHelpFor(verb, tool, unknown, noColorFromArgs(os.Args[1:])))
 	}
-	if len(os.Args) == 2 {
-		arg := os.Args[1]
-		if arg == "-h" || arg == "--help" || arg == "help" {
-			fmt.Print(usage())
-			os.Exit(0)
-		}
-		if arg == "-v" || arg == "--version" || arg == "version" {
-			fmt.Printf("thermal %s\n", version.String())
-			if version.Commit != "unknown" {
-				fmt.Printf("  commit: %s\n", version.Commit)
-			}
-			if version.Date != "unknown" {
-				fmt.Printf("  built:  %s\n", version.Date)
-			}
-			os.Exit(0)
-		}
-		if arg == "--license" || arg == "license" {
-			if arg == "--license" {
-				emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", os.Getenv("NO_COLOR") != "")
-			}
-			runLicense(thermal.Options{})
-			os.Exit(0)
-		}
+	if resolveVersionTarget(os.Args[1:]) {
+		printVersion(hasJSONFlag(os.Args[1:]))
+		os.Exit(0)
+	}
+	if len(os.Args) == 2 && os.Args[1] == "--license" {
+		emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", os.Getenv("NO_COLOR") != "")
+		runLicense(thermal.Options{})
+		os.Exit(0)
 	}
 
 	opts, err := parseArgsFrom(os.Args[1:])
 	if err == nil {
 		return opts
+	}
+	if errors.Is(err, errVersionRequested) {
+		printVersion(opts.JSON)
+		os.Exit(0)
 	}
 	if errors.Is(err, errHelpRequested) {
 		fmt.Print(usage())
@@ -400,24 +388,8 @@ func main() {
 	case "license", "--license":
 		runLicense(opts)
 		return
-	case "version", "--version", "-v":
-		if opts.JSON {
-			writeJSON(map[string]any{
-				"type":        "version",
-				"generatedAt": time.Now().UTC().Format(time.RFC3339),
-				"version":     version.String(),
-				"commit":      version.Commit,
-				"date":        version.Date,
-			})
-			return
-		}
-		fmt.Printf("thermal %s\n", version.String())
-		if version.Commit != "unknown" {
-			fmt.Printf("  commit: %s\n", version.Commit)
-		}
-		if version.Date != "unknown" {
-			fmt.Printf("  built:  %s\n", version.Date)
-		}
+	case "version":
+		printVersion(opts.JSON)
 		return
 	}
 

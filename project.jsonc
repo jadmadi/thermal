@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-29-23-25",
+  "lastEdit": "26-10-29-23-32",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -93,6 +93,7 @@
     "Reproducible fixed-fixture output gallery and consistency gate covering text, JSON, widths, validation exits, and cross-surface totals",
     "Strict, position-independent CLI parsing: every flag value validated once, contradictory arguments rejected, and usage errors exit 2 with a one-line fix and example",
     "Side-effect-free, command-scoped help: -h/--help is intercepted anywhere, thermal help <command> matches <command> --help, and help never reads data, opens a TUI, or replaces the binary",
+    "Unambiguous identity flags: -V/--version print build metadata, -v/--verbose enable diagnostics, and -v never changes meaning by argv position",
     "Platform-native application data directory discovery and cross-platform SQLite URI path normalization",
     "Global configuration overrides via ~/.config/thermal/thermal.config (INI/JSON) for custom tool and database paths"
   ],

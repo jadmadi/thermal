@@ -12,6 +12,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
 - [Upgrading to v0.22.0](#upgrading-to-v0220)
   - [Changed: Strict Argument Parsing and Usage Exit Codes](#changed-strict-argument-parsing)
   - [Changed: Help Is Intercepted and Command-Scoped](#changed-help-precedence)
+  - [Changed: `-v` Means Verbose; Use `-V` or `--version`](#changed-version-verbose-flags)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -163,6 +164,40 @@ Remove `--help` from data pipelines and use `--json` for machine output. Use `th
 
 **Escape hatch**:
 None is needed; help is always read-only. `--` does not disable help, and a help request wins over an invalid flag.
+
+---
+
+### Changed: `-v` Means Verbose; Use `-V` or `--version`
+<a id="changed-version-verbose-flags"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal +-v([^a-zA-Z]|$)' .`
+- **Detection signal**: `thermal -v` now renders the leaderboard and exits `0` (or exits `1` with the empty-state message when no agent data exists); it no longer prints `thermal dev (built from source)`.
+
+**What changed and why**:
+`-v` used to print the version only when it was the sole argument and meant verbose everywhere else, while the help documented it as verbose. The overload is removed: `-v`/`--verbose` enable diagnostics, and `-V`/`--version`/`thermal version` print build metadata. `-V` wins in any position and over validation, so `thermal -V daily` prints the version and ignores the command.
+
+**Before / After**:
+```bash
+# Before: context-dependent
+thermal -v          # version
+thermal -v daily    # verbose daily report
+
+# After: one meaning
+thermal -v          # verbose leaderboard
+thermal -V          # version
+thermal --version   # version
+```
+
+**The fix**:
+Replace `thermal -v` with `thermal -V` or `thermal --version` in scripts and aliases:
+```bash
+thermal -V
+thermal -V --json
+```
+
+**Escape hatch**:
+`thermal version` remains the long-form command and always prints metadata.
 
 ---
 

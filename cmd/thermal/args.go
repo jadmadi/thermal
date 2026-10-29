@@ -414,6 +414,9 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	fs.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
 	fs.BoolVar(&opts.Verbose, "v", false, "Enable verbose warning diagnostics on stderr (shorthand)")
 	fs.BoolVar(&opts.Verbose, "d", false, "Enable verbose warning diagnostics on stderr (shorthand)")
+	var showVersion bool
+	fs.BoolVar(&showVersion, "V", false, "Print version metadata (shorthand)")
+	fs.BoolVar(&showVersion, "version", false, "Print version metadata")
 
 	flagArgs, positionals, present, err := normalizeArgs(args, fs)
 	if err != nil {
@@ -421,6 +424,9 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	}
 	if err := fs.Parse(flagArgs); err != nil {
 		return opts, &usageError{Message: err.Error()}
+	}
+	if showVersion {
+		return opts, errVersionRequested
 	}
 	opts.LastSet = present["last"]
 	opts.TopSet = present["top"]

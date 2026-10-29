@@ -226,6 +226,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--stream, -f", Desc: "Stream continuous NDJSON live events (live verb)"},
 				{Name: "--json", Desc: "Output structured JSON (never launches a terminal UI)"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},
+				{Name: "-V, --version", Desc: "Print version, commit, and build timestamp"},
 				{Name: "--verbose, -v", Desc: "Output diagnostic warnings to stderr"},
 				{Name: "-h, --help", Desc: "Show global or command-scoped help"},
 			},

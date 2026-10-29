@@ -296,6 +296,41 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9c. Version & Verbose Contract:${RESET}"
+run_check "Version short flag" 0 text "${BIN_PATH}" -V
+run_check "Version long flag" 0 text "${BIN_PATH}" --version
+run_check "Version command" 0 text "${BIN_PATH}" version
+run_check "Version short JSON" 0 json "${BIN_PATH}" -V --json
+run_check "Version command JSON" 0 json "${BIN_PATH}" version --json
+run_check "Verbose short is not version" 0 text "${BIN_PATH}" -v --no-color
+if cmp -s <("${BIN_PATH}" -V) <("${BIN_PATH}" --version) && cmp -s <("${BIN_PATH}" -V) <("${BIN_PATH}" version); then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} -V, --version, and version are identical"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} version spellings differ"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" -v --no-color | grep -q 'Token Warriors'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} -v renders the leaderboard, not the version"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} -v did not render the leaderboard"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" -V daily | grep -q 'Daily Usage'; then
+    echo -e "  ${RED}✖ [FAIL]${RESET} -V daily executed the report"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${GREEN}✔ [PASS]${RESET} -V daily prints version and ignores the command"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

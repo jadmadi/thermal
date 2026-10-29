@@ -160,7 +160,12 @@ Check your current version:
 
 ```bash
 thermal version
+thermal -V          # short form
+thermal --version   # long form
 ```
+
+`-v` means verbose diagnostics, not version. `thermal -v` renders the normal
+leaderboard with loader warnings; use `-V` or `--version` for build metadata.
 
 ## Usage
 

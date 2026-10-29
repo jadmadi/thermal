@@ -313,10 +313,12 @@ var commandHelps = map[string]render.CommandHelp{
 		},
 		Flags: []render.HelpFlag{
 			{"--json", "Emit the version JSON object"},
+			{"-V, --version", "Short forms of this command"},
 			{"-h, --help", "Show this page"},
 		},
-		Examples: []string{"thermal version", "thermal version --json"},
-		JSON:     "keys: type, version, commit, date",
+		Examples: []string{"thermal version", "thermal -V --json", "thermal --version"},
+		JSON:     "keys: type, generatedAt, version, commit, date",
+		Note:     "Short forms: thermal -V and thermal --version. The -v flag means verbose, not version.",
 		Related:  []string{"thermal changelog", "thermal upgrade"},
 	},
 	"license": {
