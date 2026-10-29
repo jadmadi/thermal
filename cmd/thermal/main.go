@@ -450,6 +450,7 @@ func main() {
 			if !toolHasData(info) {
 				continue
 			}
+			printToolConfigWarning(info, opts.Verbose)
 
 			data, err := loaders.LoadToolData(t, info, "")
 			if err != nil {
@@ -533,9 +534,10 @@ func main() {
 	tools := loaders.AllTools()
 	info := tools[tool]
 
+	printToolConfigWarning(info, opts.Verbose)
 	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+		printLoadError(err, opts.Verbose)
 		os.Exit(1)
 	}
 	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
@@ -643,6 +645,7 @@ func loadUsage(opts thermal.Options) usageSet {
 			if !toolHasData(info) {
 				continue
 			}
+			printToolConfigWarning(info, opts.Verbose)
 			data, err := loaders.LoadToolData(t, info, "")
 			if err != nil {
 				if opts.Verbose {
@@ -677,9 +680,10 @@ func loadUsage(opts thermal.Options) usageSet {
 		os.Exit(2)
 	}
 	info := loaders.AllTools()[tool]
+	printToolConfigWarning(info, opts.Verbose)
 	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+		printLoadError(err, opts.Verbose)
 		os.Exit(1)
 	}
 	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
@@ -709,6 +713,28 @@ func printToolWarningsTo(w io.Writer, toolName string, warnings []string, verbos
 	}
 	for _, wStr := range warnings {
 		fmt.Fprintf(w, "thermal: warning: %s: %s\n", toolName, wStr)
+	}
+}
+
+// printToolConfigWarning surfaces a non-fatal config-override fallback only
+// with --verbose, so normal output stays quiet.
+func printToolConfigWarning(info loaders.ToolInfo, verbose bool) {
+	if !verbose || info.Warning == "" {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "thermal: warning: %s: %s\n", info.Name, info.Warning)
+}
+
+// printLoadError prints the user-facing loader error and, with --verbose, the
+// raw driver error behind a --db path.
+func printLoadError(err error, verbose bool) {
+	fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+	if !verbose {
+		return
+	}
+	var dbErr *loaders.DBPathError
+	if errors.As(err, &dbErr) && dbErr.Err != nil {
+		fmt.Fprintf(os.Stderr, "thermal: verbose: %v\n", dbErr.Err)
 	}
 }
 
@@ -1408,7 +1434,7 @@ func runLive(opts thermal.Options) {
 		}
 		results, projects, err := pollFn()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
+			printLoadError(err, opts.Verbose)
 			os.Exit(1)
 		}
 		snap, _ := tracker.Poll(results, projects, time.Now())

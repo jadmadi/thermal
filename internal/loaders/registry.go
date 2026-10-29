@@ -17,6 +17,7 @@ type ToolInfo struct {
 	DataDir    string
 	Name       string
 	DataSubdir string // e.g. "history.jsonl", "brain", "sessions", "projects"
+	Warning    string // non-fatal config-override diagnostic, printed with --verbose
 	Loader     func(string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error)
 }
 
@@ -191,6 +192,11 @@ func AllTools() map[thermal.Tool]ToolInfo {
 					info.DBPath = cand
 				}
 			}
+			if expected := ExpectedDBFile(tool); expected != "" {
+				if _, statErr := os.Stat(filepath.Join(customPath, expected)); statErr != nil && info.DBPath != "" {
+					info.Warning = fmt.Sprintf("configured path %s has no %s; using default %s", customPath, expected, info.DBPath)
+				}
+			}
 		}
 		tools[tool] = info
 	}
@@ -349,7 +355,19 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 	return "", false
 }
 
-func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error) {
+func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (data ToolData, err error) {
+	if dbPath != "" {
+		resolved, verr := ValidateDBPath(t, dbPath)
+		if verr != nil {
+			return ToolData{}, verr
+		}
+		dbPath = resolved
+		defer func() {
+			if err != nil {
+				err = translateDBError(t, dbPath, err)
+			}
+		}()
+	}
 	switch t {
 	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolHermes, thermal.ToolZed:
 		p := dbPath

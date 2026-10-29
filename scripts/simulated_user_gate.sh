@@ -345,6 +345,32 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9e. --db Scope & Path Errors:${RESET}"
+run_check "--db requires one tool" 2 error "${BIN_PATH}" --db /nonexistent daily
+run_check "--db missing path" 1 error "${BIN_PATH}" --tool opencode --db /nonexistent daily
+run_check "--db directory for file tool" 1 error "${BIN_PATH}" --tool opencode --db /tmp daily
+run_check "--db non-SQLite file" 1 error "${BIN_PATH}" --tool opencode --db /etc/passwd daily
+db_file_err=$("${BIN_PATH}" --tool opencode --db /etc/passwd daily 2>&1 >/dev/null || true)
+if echo "${db_file_err}" | grep -q '(26)'; then
+    echo -e "  ${RED}✖ [FAIL]${RESET} --db leaked a raw SQLite code"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --db hides raw SQLite codes"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+db_verbose_err=$("${BIN_PATH}" --tool opencode --db /etc/passwd daily --verbose 2>&1 >/dev/null || true)
+if echo "${db_verbose_err}" | grep -q 'verbose:'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --db --verbose exposes the raw driver detail"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --db --verbose did not expose driver detail"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on weekly report" 2 error "${BIN_PATH}" weekly --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

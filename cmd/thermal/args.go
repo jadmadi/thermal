@@ -489,6 +489,12 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	if showLicense {
 		opts.Tool = "license"
 	}
+	if opts.DBPath != "" && (opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "") {
+		return opts, &usageError{
+			Message: "--db applies to one tool; add --tool <name>",
+			Example: "thermal --tool opencode --db <path> daily",
+		}
+	}
 	if opts.Report == "statusline" || opts.Report == "prompt" || opts.Report == "status" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {
 		opts.NoUpdateCheck = true
 	}

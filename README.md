@@ -193,8 +193,11 @@ thermal --tool devin
 # Auto-detect the first installed tool
 thermal --tool auto
 
-# Override the data path for a tool
+# Read one tool's data from an explicit file or directory (requires --tool)
 thermal --tool opencode --db /path/to/opencode.db
+
+# Codex and directory-backed tools take a data directory
+thermal --tool codex --db /path/to/.codex
 
 # Show last 26 weeks (default: 52, range: 4-104)
 thermal --weeks 26

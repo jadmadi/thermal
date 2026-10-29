@@ -1,19 +1,19 @@
 # Plan: Make --db scope explicit and turn raw SQLite failures into actionable errors
 
 ## Execution Steps
-- [ ] **Phase 1 — Scope gate**: Detect `opts.DBPath != ""` and count the tools in scope before loading. Reject aggregate/all-tools contexts with exit `2` and the scope message. Acceptance: `TestDBScopeMatrix` passes; `--db /nonexistent daily` prints no report.
+- [x] **Phase 1 — Scope gate**: Detect `opts.DBPath != ""` and count the tools in scope before loading. Reject aggregate/all-tools contexts with exit `2` and the scope message. Acceptance: `TestDBScopeMatrix` passes; `--db /nonexistent daily` prints no report.
   - Count scope from `opts.Tool` and the positional resolution.
   - Allow single-tool `thermal <tool>`, `<tool> <report>`, `live --tool`, `statusline --tool`, `share --tool`.
   - Reject `--tool all`, `--tool auto`, and no tool selection.
-- [ ] **Phase 2 — Path validation**: Add `internal/loaders/pathcheck.go` with `ToolPathShape`, `ValidateDBPath`, and `DBPathError`. Validate existence, readability, file/directory shape, regular-file type, non-empty, and SQLite header for SQLite tools. Acceptance: `TestDBPathValidation` covers every tool shape and the failure matrix.
+- [x] **Phase 2 — Path validation**: Add `internal/loaders/pathcheck.go` with `ToolPathShape`, `ValidateDBPath`, and `DBPathError`. Validate existence, readability, file/directory shape, regular-file type, non-empty, and SQLite header for SQLite tools. Acceptance: `TestDBPathValidation` covers every tool shape and the failure matrix.
   - Probe only the exact expected filename inside a directory.
   - Show both given and resolved paths when symlinks differ.
   - Keep directory tools permissive for empty directories.
-- [ ] **Phase 3 — Error translation and no fallback**: Map driver errors to the canonical messages, keep raw text behind `--verbose`, and ensure the aggregate path never passes `""` when `--db` is set. Audit the config-override fallback and add a warning. Acceptance: `TestDBErrorTranslation` and `TestDBNeverFallsBack` pass; no `(10)`/`(26)` in non-verbose output.
+- [x] **Phase 3 — Error translation and no fallback**: Map driver errors to the canonical messages, keep raw text behind `--verbose`, and ensure the aggregate path never passes `""` when `--db` is set. Audit the config-override fallback and add a warning. Acceptance: `TestDBErrorTranslation` and `TestDBNeverFallsBack` pass; no `(10)`/`(26)` in non-verbose output.
   - Use `errors.As` to detect `DBPathError` and driver errors.
   - Add a sentinel-row fixture to prove the default DB is not read.
   - Add the config-override warning test.
-- [ ] **Phase 4 — Help, gate, docs, and closure**: Update `--db` help, README troubleshooting, MIGRATION, project.jsonc, and the simulated-user-gate `--db` section. Record the AC matrix and close the goal.
+- [x] **Phase 4 — Help, gate, docs, and closure**: Update `--db` help, README troubleshooting, MIGRATION, project.jsonc, and the simulated-user-gate `--db` section. Record the AC matrix and close the goal.
   - `CGO_ENABLED=0 go test -race ./...` and `./scripts/simulated_user_gate.sh` pass.
   - Commit with `fix(cli): scope --db to one tool and translate path errors (goals/cli-db-override-scope-and-errors/goal.md)`.
   - Certify with `sila goals certify cli-db-override-scope-and-errors --evidence=goals/cli-db-override-scope-and-errors/evidence.md`.
@@ -40,4 +40,4 @@
 - Never restore the silent aggregate fallback; if necessary, return an explicit warning and exit `1`.
 
 ## Phase 5 — Attribution & Registry Closure
-- [ ] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-db-override-scope-and-errors/plan.md`; (2) commit with `(goals/cli-db-override-scope-and-errors/goal.md)` using a `fix(cli):` subject; (3) certify via `sila goals certify cli-db-override-scope-and-errors --evidence=goals/cli-db-override-scope-and-errors/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.
+- [x] **Phase 5 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cli-db-override-scope-and-errors/plan.md`; (2) commit with `(goals/cli-db-override-scope-and-errors/goal.md)` using a `fix(cli):` subject; (3) certify via `sila goals certify cli-db-override-scope-and-errors --evidence=goals/cli-db-override-scope-and-errors/evidence.md` (with `Verdict: PASS`); (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts; verify `sila goals --json` reports `unverified_count: 0` for this goal.

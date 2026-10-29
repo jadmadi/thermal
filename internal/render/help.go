@@ -220,7 +220,7 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "Global & Engine Options:",
 			Items: []HelpItem{
-				{Name: "--db <path>", Desc: "Override database/data directory path"},
+				{Name: "--db <path>", Desc: "Read one tool's data from a file or directory (requires --tool)"},
 				{Name: "--offline", Desc: "Use cached models.dev pricing catalog without network"},
 				{Name: "--fresh", Desc: "Bypass cached statusline data; live sessions always start at launch"},
 				{Name: "--stream, -f", Desc: "Stream continuous NDJSON live events (live verb)"},

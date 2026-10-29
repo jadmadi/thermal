@@ -14,6 +14,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Help Is Intercepted and Command-Scoped](#changed-help-precedence)
   - [Changed: `-v` Means Verbose; Use `-V` or `--version`](#changed-version-verbose-flags)
   - [Changed: Upgrade Preview, Confirmation, and Exit Codes](#changed-upgrade-safety)
+  - [Changed: `--db` Requires One Tool and Validates the Path](#changed-db-scope)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -234,6 +235,42 @@ thermal upgrade --yes
 
 **Escape hatch**:
 `--check` and `--dry-run` are always read-only. Failed upgrades leave the original binary in place, and the previous binary is restored if the final rename fails.
+
+---
+
+### Changed: `--db` Requires One Tool and Validates the Path
+<a id="changed-db-scope"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal[^|;]*--db' .`
+- **Detection signal**: `thermal --db /nonexistent daily` now exits `2` with `thermal: --db applies to one tool; add --tool <name>`, and `thermal --tool opencode --db /tmp daily` exits `1` with `thermal: /tmp is a directory; OpenCode expects opencode.db inside it`.
+
+**What changed and why**:
+All-tool views used to ignore `--db` and render the default machine-wide data, so a user who thought they had scoped the read could receive unrelated data with exit `0`. `--db` now requires a single tool, validates the path before opening it, and never falls back to a default. SQLite-file tools accept a database file or a directory containing the expected filename; directory tools accept a directory. Raw SQLite driver text is replaced by an actionable message and remains available behind `--verbose`.
+
+**Before / After**:
+```bash
+# Before: silently machine-wide, exit 0
+thermal --db /nonexistent daily
+
+# After: exit 2, no report
+thermal: --db applies to one tool; add --tool <name>
+  example: thermal --tool opencode --db <path> daily
+
+# After: actionable path error, exit 1
+thermal --tool opencode --db /tmp daily
+thermal: /tmp is a directory; OpenCode expects opencode.db inside it
+```
+
+**The fix**:
+Add `--tool <name>` and pass a valid file or directory for that tool:
+```bash
+thermal --tool opencode --db ~/.local/share/opencode/opencode.db daily
+thermal --tool codex --db ~/.codex daily
+```
+
+**Escape hatch**:
+Omit `--db` to use the default paths. `--verbose` prints the raw driver error beneath the user-facing message.
 
 ---
 
