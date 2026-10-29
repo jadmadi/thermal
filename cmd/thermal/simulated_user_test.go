@@ -477,13 +477,16 @@ func TestSimulatedUser_ChangelogCommand(t *testing.T) {
 }
 
 func TestSimulatedUser_LiveCommand(t *testing.T) {
-	// 1. Non-TTY pipe execution
+	// 1. Non-TTY pipe execution is a usage error and keeps stdout clean.
 	stdout, stderr, code := runSim(t, "live")
-	if code != 0 {
-		t.Fatalf("expected exit code 0 for non-TTY 'thermal live', got %d. stderr: %s", code, stderr)
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for non-TTY 'thermal live', got %d. stderr: %s", code, stderr)
 	}
-	if !strings.Contains(stdout, "thermal live is interactive and needs a terminal") {
-		t.Errorf("'thermal live' non-TTY output missing hint: %s", stdout)
+	if stdout != "" {
+		t.Errorf("'thermal live' non-TTY wrote to stdout: %s", stdout)
+	}
+	if !strings.Contains(stderr, "live needs a terminal") {
+		t.Errorf("'thermal live' non-TTY output missing hint: %s", stderr)
 	}
 
 	// 2. JSON snapshot

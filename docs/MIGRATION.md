@@ -18,6 +18,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Unknown Commands and Tools Exit 2 with Suggestions](#changed-unknown-token-diagnostics)
   - [Changed: `--top` Caps Leaderboard and Period Rows](#changed-top-contract)
   - [Added: `thermal sources` and an Actionable Empty State](#added-sources-inventory)
+  - [Changed: Non-TTY `live` Exit Code and Silent Statusline Degradation](#changed-nontty-statusline-contract)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -375,6 +376,45 @@ Use `thermal sources --json` when a script needs an exit-0 inventory. Treat `the
 
 **Escape hatch**:
 `thermal sources` always exits `0` once it can produce the inventory; the human empty-state table still exits `1` so a data check remains meaningful.
+
+---
+
+### Changed: Non-TTY `live` Exit Code and Silent Statusline Degradation
+<a id="changed-nontty-statusline-contract"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal +live([^a-zA-Z]|$)' .` or `grep -rn 'thermal statusline' .`
+- **Detection signal**: `thermal live </dev/null` now exits `2`, writes `thermal: live needs a terminal` to stderr, and leaves stdout empty. `HOME=$(mktemp -d) thermal statusline` exits `0` with no stdout or stderr.
+
+**What changed and why**:
+`thermal live` in a pipe wrote human guidance to stdout and exited `0`, so a pipeline treated a non-result as success. `statusline` in an empty environment exited `1` and wrote an error to stderr, so a shell prompt printed an error on every redraw. The channel contract is now explicit: `live` guidance is stderr-only and non-TTY text exits `2`; `--json` and `--json --stream` remain machine-clean. `statusline` degrades silently with exit `0` when no source has data, and `--json` emits `state:"no-data"` (or `state:"ok"` with data). `share` remains a deliberate stderr failure with exit `1`.
+
+**Before / After**:
+```bash
+# Before: pipeline success, prose on stdout
+thermal live | jq .
+# stdout: "thermal live is interactive and needs a terminal."; exit 0
+
+# After: usage error, clean stdout
+thermal live
+# stderr: "thermal: live needs a terminal"; exit 2
+thermal live --json | jq .type
+# "live"
+
+# Before: prompt error
+HOME=$(mktemp -d) thermal statusline
+# stderr: "thermal: no supported tool data found"; exit 1
+
+# After: silent prompt
+HOME=$(mktemp -d) thermal statusline
+# no output; exit 0
+```
+
+**The fix**:
+Use `thermal live --json` or `thermal live --json --stream` in scripts; use `thermal statusline --json` when a caller needs a value. Empty prompt environments no longer require a special case.
+
+**Escape hatch**:
+`thermal sources` diagnoses missing paths; `thermal statusline --verbose` prints one `statusline: no data (15 sources checked)` line when a caller needs to know why the prompt is empty. `thermal live --json --stream | head -1` exits cleanly after the first snapshot.
 
 ---
 

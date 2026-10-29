@@ -17,6 +17,7 @@ import (
 
 // StatuslineData carries lightweight state for terminal prompt and statusline integration.
 type StatuslineData struct {
+	State         string `json:"state"`
 	Streak        int    `json:"streak"`
 	Scope         string `json:"scope,omitempty"`
 	LongestStreak int    `json:"longestStreak"`
@@ -95,9 +96,15 @@ func SaveStatuslineCache(homeDir string, data StatuslineData) error {
 
 // RenderStatusline formats StatuslineData into a concise, one-line string for shell prompts.
 func RenderStatusline(data StatuslineData, opts StatuslineOptions) string {
+	if data.State == "" {
+		data.State = "ok"
+	}
 	if opts.JSON {
 		bytes, _ := json.Marshal(data)
 		return string(bytes) + "\n"
+	}
+	if data.State == "no-data" {
+		return ""
 	}
 
 	colors := !opts.NoColor

@@ -8,6 +8,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN="${TMPDIR:-/tmp}/thermal-gallery-bin-$$"
+BUILT_BIN=1
+if [[ -n "${THERMAL_GALLERY_BIN:-}" && -x "${THERMAL_GALLERY_BIN}" ]]; then
+  BIN="${THERMAL_GALLERY_BIN}"
+  BUILT_BIN=0
+fi
 OUT="${1:-${ROOT_DIR}/docs/OUTPUT-GALLERY.md}"
 TMP="$(mktemp -d -t thermal-gallery-XXXXXX)"
 FIXTURE_HOME="$( "${ROOT_DIR}/scripts/output_gallery_fixture.sh" )"
@@ -15,11 +20,16 @@ WORK="${FIXTURE_HOME}/work"
 
 cleanup() {
   chmod -R u+w "${FIXTURE_HOME}" 2>/dev/null || true
-  rm -rf "${FIXTURE_HOME}" "${TMP}" "${BIN}"
+  if [[ "${BUILT_BIN}" -eq 1 ]]; then
+    rm -rf "${BIN}"
+  fi
+  rm -rf "${FIXTURE_HOME}" "${TMP}"
 }
 trap cleanup EXIT
 
-(cd "${ROOT_DIR}" && go build -o "${BIN}" ./cmd/thermal)
+if [[ "${BUILT_BIN}" -eq 1 ]]; then
+  (cd "${ROOT_DIR}" && go build -o "${BIN}" ./cmd/thermal)
+fi
 
 export HOME="${FIXTURE_HOME}"
 export GROK_HOME="${FIXTURE_HOME}/.grok"
@@ -92,7 +102,7 @@ capture_text statusline statusline
 capture_text audit audit
 capture_text changelog changelog --top 5
 capture_text license license
-capture_text live-nontty live
+capture_exit live-nontty live
 capture_text version version
 
 # Machine-readable surfaces.
@@ -367,6 +377,8 @@ $(cat "${TMP}/license.txt")
 Non-TTY pointer:
 
 \`\`\`text
+$ thermal live
+exit $(cat "${TMP}/live-nontty.code")
 $(cat "${TMP}/live-nontty.txt")
 \`\`\`
 

@@ -12,6 +12,32 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
+func TestRenderStatuslineNoData(t *testing.T) {
+	data := StatuslineData{State: "no-data", Day: "2026-10-30"}
+	if got := RenderStatusline(data, StatuslineOptions{}); got != "" {
+		t.Fatalf("no-data text=%q, want empty", got)
+	}
+	raw := RenderStatusline(data, StatuslineOptions{JSON: true})
+	var payload StatuslineData
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, raw)
+	}
+	if payload.State != "no-data" || payload.TodayTokens != 0 || payload.Streak != 0 {
+		t.Fatalf("unexpected no-data payload: %+v", payload)
+	}
+}
+
+func TestRenderStatuslineOKState(t *testing.T) {
+	data := StatuslineData{Streak: 3, Scope: "all tools", TodayTokens: 42, Day: "2026-10-30"}
+	raw := RenderStatusline(data, StatuslineOptions{JSON: true})
+	if !strings.Contains(raw, `"state":"ok"`) {
+		t.Fatalf("missing ok state: %s", raw)
+	}
+	if text := RenderStatusline(data, StatuslineOptions{}); !strings.Contains(text, "3d all tools") {
+		t.Fatalf("unexpected text: %q", text)
+	}
+}
+
 func TestRenderStatusline(t *testing.T) {
 	data := StatuslineData{
 		Streak:        14,

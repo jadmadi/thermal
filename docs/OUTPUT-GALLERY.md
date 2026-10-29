@@ -1,7 +1,7 @@
 # Thermal Output Gallery
 
 > Generated from a fixed fixture by `scripts/output_gallery.sh`. Capture
-> `2026-10-29T21:11:43Z` · fixture `331307fcd53dffbfd755c56e9523e1c1a4713b8d0a203decc7cf06e98e1f9018` · `thermal dev (built from source)`.
+> `2026-10-29T21:30:46Z` · fixture `7e6dce5287601e046c00266eab32f9751e498cb9f8b2aeca25de33b673e7b8ef` · `thermal dev (built from source)`.
 > Fixed data date: 2026-01-15. Text is `NO_COLOR=1`; non-TTY default width is
 > 100. Width sections use a PTY at 80/120. The live TUI block is synthetic and
 > labeled; the other text blocks are captured from the same fixture run.
@@ -38,7 +38,7 @@
 | trend (tokens) | mean 759700 | — | — | — | — | calendar | n/a (tokens) |
 | trend (cost) | mean 1.7546 | — | — | — | — | calendar | total |
 | share | 759700 | 1.75 | 0.0046 | 1.7546 | 1/— | all · all time (1 active day) | recorded+estimated |
-| live | — | — | — | — | — | today snapshot (live, 2026-10-30T00:11:43.372958789+03:00) | recorded+estimated |
+| live | — | — | — | — | — | today snapshot (live, 2026-10-30T00:30:46.327017493+03:00) | recorded+estimated |
 
 Allowed equalities are checked by `scripts/output_gallery_gate.sh`: leaderboard
 estimated equals daily estimated, projects total equals daily total, models
@@ -515,8 +515,8 @@ Cost trend:
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.c8e5bc84.TI9RTsMwEE…7Te6_bbhcAKznHfnF06JZE4jIk7T7wA
-  … full URL (357 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEI…7jW6_bDgPYJbznvzCKZHMaUTEafoZAA
+  … full URL (360 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -673,9 +673,9 @@ Third-Party Notices:
 Non-TTY pointer:
 
 ```text
-thermal live is interactive and needs a terminal.
-For scripts, pipelines, and status bars use:
-
+$ thermal live
+exit 2
+thermal: live needs a terminal
   thermal live --json            instant JSON snapshot
   thermal live --json --stream   stream NDJSON live events
   thermal stats                  daily distribution and token composition
@@ -1014,8 +1014,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.c8e5b…bhcAKznHfnF06JZE4jIk7T7wA
-  … full URL (357 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.2e2f0…DgPYJbznvzCKZHMaUTEafoZAA
+  … full URL (360 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud
     storage. No file paths, repository roots, or prompt telemetry encoded.
@@ -1039,8 +1039,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.c8e5bc84.TI9RTsMwEE…7Te6_bbhcAKznHfnF06JZE4jIk7T7wA
-  … full URL (357 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEI…7jW6_bDgPYJbznvzCKZHMaUTEafoZAA
+  … full URL (360 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -1092,22 +1092,22 @@ at four decimal places by `cmd/thermal/json.go`.
 ### Envelope types and timestamps
 
 ```text
-leaderboard      leaderboard    2026-10-29T21:11:43Z
-daily            daily          2026-10-29T21:11:43Z
-weekly           weekly         2026-10-29T21:11:43Z
-monthly          monthly        2026-10-29T21:11:43Z
-projects         projects       2026-10-29T21:11:43Z
-models           models         2026-10-29T21:11:43Z
-mix              mix            2026-10-29T21:11:43Z
-stats-token      stats          2026-10-29T21:11:43Z
-stats-cost       stats          2026-10-29T21:11:43Z
-trend-token      trend          2026-10-29T21:11:43Z
-trend-cost       trend          2026-10-29T21:11:43Z
-share            share          2026-10-29T21:11:43Z
-audit            audit          2026-10-30T00:11:43.363769172+03:00
-changelog        changelog      2026-10-29T21:11:43Z
-live             live           2026-10-30T00:11:43.372958789+03:00
-version          version        2026-10-29T21:11:43Z
+leaderboard      leaderboard    2026-10-29T21:30:46Z
+daily            daily          2026-10-29T21:30:46Z
+weekly           weekly         2026-10-29T21:30:46Z
+monthly          monthly        2026-10-29T21:30:46Z
+projects         projects       2026-10-29T21:30:46Z
+models           models         2026-10-29T21:30:46Z
+mix              mix            2026-10-29T21:30:46Z
+stats-token      stats          2026-10-29T21:30:46Z
+stats-cost       stats          2026-10-29T21:30:46Z
+trend-token      trend          2026-10-29T21:30:46Z
+trend-cost       trend          2026-10-29T21:30:46Z
+share            share          2026-10-29T21:30:46Z
+audit            audit          2026-10-30T00:30:46.318797302+03:00
+changelog        changelog      2026-10-29T21:30:46Z
+live             live           2026-10-30T00:30:46.327017493+03:00
+version          version        2026-10-29T21:30:46Z
 ```
 
 ## Validation cases
@@ -1175,7 +1175,7 @@ exit 0
 
 ```json
 {
-  "generatedAt": "2026-10-29T21:11:43Z",
+  "generatedAt": "2026-10-29T21:30:46Z",
   "snapshot": {
     "activeDays": 1,
     "coverage": "recorded+estimated",
@@ -1192,16 +1192,16 @@ exit 0
     "recordedCost": 1.75,
     "scope": "all",
     "streakBasis": "token-active",
-    "t": 1793308303,
+    "t": 1793309446,
     "tool": "all",
     "totalCost": 1.7546,
     "totalTokens": 759700,
     "v": 1,
     "window": "all time (1 active day)"
   },
-  "token": "v1.c8e5bc84.TI9RTsMwEESvEu0XCKfaNJhQfwI3gAtY9qpYdb3I3qaqqtwdxSGlnzN-M7O-wgimUyBgumHX9_jaY69AmCMYsDGCguL4h27qHJLn8yIbCUdqHrrGOgkjNd5eHueAZLKHN1tCAQPCB0rtQoACd8qZknxWpm5HTnsq984Cf9hLqVJYbPyaawqYQe8GRAWZHGdP_p3LfPxm0AqoSDhaWU3cID5r_VfwD1bP8UjZ7uePrVVPtzwo8HX9ClvcvrTYtZ1etycFR_YU67OL9uSp7Te6_bbhcAKznHfnF06JZE4jIk7T7wA",
+  "token": "v1.2e2f0fe8.TI9RbvIwEISvEu3T_6sO2gAmwo9tb9BewLJX1MJ4K3sThFDuXsVpKI8z_mZmfYcRTKdAwHT9cbfD435_UCDMEQzYGEFBcfxND3UNyfN1kY2ECzX_usY6CSM13t7-zwHJZM-vtoQCBoTPlNqFAAVuyJmSfFSmbkdOJyrPzgK_21upUlhs_JxrCpheH3tEBZkcZ0_-jct8_KbXCqhIuFhZTdwg7rX-LfgDq-d4pGxP88fWqpdHHhT4un6HLW4PLXZtp9ftScGFPcX67KIdPLW7jW6_bDgPYJbznvzCKZHMaUTEafoZAA",
   "type": "share",
-  "url": "https://jadmadi.net/project/thermal/share#v1.c8e5bc84.TI9RTsMwEESvEu0XCKfaNJhQfwI3gAtY9qpYdb3I3qaqqtwdxSGlnzN-M7O-wgimUyBgumHX9_jaY69AmCMYsDGCguL4h27qHJLn8yIbCUdqHrrGOgkjNd5eHueAZLKHN1tCAQPCB0rtQoACd8qZknxWpm5HTnsq984Cf9hLqVJYbPyaawqYQe8GRAWZHGdP_p3LfPxm0AqoSDhaWU3cID5r_VfwD1bP8UjZ7uePrVVPtzwo8HX9ClvcvrTYtZ1etycFR_YU67OL9uSp7Te6_bbhcAKznHfnF06JZE4jIk7T7wA"
+  "url": "https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEISvEu3T_6sO2gAmwo9tb9BewLJX1MJ4K3sThFDuXsVpKI8z_mZmfYcRTKdAwHT9cbfD435_UCDMEQzYGEFBcfxND3UNyfN1kY2ECzX_usY6CSM13t7-zwHJZM-vtoQCBoTPlNqFAAVuyJmSfFSmbkdOJyrPzgK_21upUlhs_JxrCpheH3tEBZkcZ0_-jct8_KbXCqhIuFhZTdwg7rX-LfgDq-d4pGxP88fWqpdHHhT4un6HLW4PLXZtp9ftScGFPcX67KIdPLW7jW6_bDgPYJbznvzCKZHMaUTEafoZAA"
 }
 ```
 
@@ -1209,7 +1209,7 @@ exit 0
 
 - Home: fixed temp fixture (removed after generation)
 - Date: 2026-01-15
-- Hash: `331307fcd53dffbfd755c56e9523e1c1a4713b8d0a203decc7cf06e98e1f9018`
+- Hash: `7e6dce5287601e046c00266eab32f9751e498cb9f8b2aeca25de33b673e7b8ef`
 - Reports: codewhale 750,000 tokens/$1.75 recorded; Claude 9,700 tokens;
   Agy 12 steps; two projects; two models.
 

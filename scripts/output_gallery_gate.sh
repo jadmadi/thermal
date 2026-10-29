@@ -12,7 +12,11 @@ BIN="${TMP}/thermal"
 GALLERY="${TMP}/OUTPUT-GALLERY.md"
 DOC_GALLERY="${ROOT_DIR}/docs/OUTPUT-GALLERY.md"
 
-(cd "${ROOT_DIR}" && go build -o "${BIN}" ./cmd/thermal)
+if [[ -n "${THERMAL_GALLERY_BIN:-}" && -x "${THERMAL_GALLERY_BIN}" ]]; then
+  BIN="${THERMAL_GALLERY_BIN}"
+else
+  (cd "${ROOT_DIR}" && go build -o "${BIN}" ./cmd/thermal)
+fi
 
 FIXTURE_HOME="$( "${ROOT_DIR}/scripts/output_gallery_fixture.sh" )"
 WORK="${FIXTURE_HOME}/work"
@@ -35,7 +39,7 @@ export AGY_HOME="${FIXTURE_HOME}/.gemini/antigravity"
 export NO_COLOR=1
 export CLICOLOR_FORCE=0
 
-"${ROOT_DIR}/scripts/output_gallery.sh" "${GALLERY}" >/dev/null
+THERMAL_GALLERY_BIN="${BIN}" "${ROOT_DIR}/scripts/output_gallery.sh" "${GALLERY}" >/dev/null
 
 FAILED=0
 check() {

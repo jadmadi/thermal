@@ -244,6 +244,11 @@ states, plus the next step. Run `thermal sources` at any time; `thermal sources
 --json` returns the same 15-entry inventory for automation. The inventory never
 reads database rows, transcripts, prompts, or project names.
 
+Prompt integration: `thermal statusline` prints one line, or nothing and exits
+`0` when no source has data; `--json` returns `state:"no-data"` in that case.
+In a pipe, `thermal live` writes its guidance to stderr and exits `2`; use
+`thermal live --json` or `thermal live --json --stream` for automation.
+
 ## Reports
 
 Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:

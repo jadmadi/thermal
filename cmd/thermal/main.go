@@ -645,7 +645,7 @@ type usageSet struct {
 // loadUsage loads one tool or every tool with data. All-tools mode skips
 // tools that fail and reports them on stderr when verbose; a named tool exits
 // on failure.
-func loadUsage(opts thermal.Options) usageSet {
+func loadUsage(opts thermal.Options) (usageSet, error) {
 	var set usageSet
 
 	if opts.Tool == "all" || opts.Tool == "auto" {
@@ -678,21 +678,20 @@ func loadUsage(opts thermal.Options) usageSet {
 			})
 		}
 		if len(set.days) == 0 && len(set.projects) == 0 {
-			os.Exit(printEmptyInventory(opts, opts.Report))
+			return set, errNoData
 		}
-		return set
+		return set, nil
 	}
 
 	tool, ok := loaders.ResolveTool(opts.Tool)
 	if !ok {
-		os.Exit(printUnknownToken(opts.Tool))
+		return set, &unknownToolError{Token: opts.Tool}
 	}
 	info := loaders.AllTools()[tool]
 	printToolConfigWarning(info, opts.Verbose)
 	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
 	if err != nil {
-		printLoadError(err, opts.Verbose)
-		os.Exit(1)
+		return set, err
 	}
 	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 	set.days = data.Daily
@@ -708,7 +707,27 @@ func loadUsage(opts thermal.Options) usageSet {
 		Summary: data.Summary,
 		Daily:   data.Daily,
 	}}
-	return set
+	return set, nil
+}
+
+// loadUsageOrExit preserves the foreground-command behavior for callers that
+// cannot degrade. The statusline calls loadUsage directly and handles errors
+// silently.
+func loadUsageOrExit(opts thermal.Options) usageSet {
+	set, err := loadUsage(opts)
+	if err == nil {
+		return set
+	}
+	if errors.Is(err, errNoData) {
+		os.Exit(printEmptyInventory(opts, opts.Report))
+	}
+	var unknown *unknownToolError
+	if errors.As(err, &unknown) {
+		os.Exit(printUnknownToken(unknown.Token))
+	}
+	printLoadError(err, opts.Verbose)
+	os.Exit(1)
+	return usageSet{}
 }
 
 func printToolWarnings(toolName string, warnings []string, verbose bool) {
@@ -791,7 +810,7 @@ func runReport(opts thermal.Options) {
 		Order:       opts.Order,
 	}
 
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 
 	rep := thermal.Aggregate(set.days, thermal.Grain(opts.Report), aggOpts, newPricer(opts))
 	rep.Tool = set.toolName
@@ -849,7 +868,7 @@ func reportWidth() int {
 
 // runProjectReport ranks projects by token usage across tools and time.
 func runProjectReport(opts thermal.Options) {
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 
 	projectOpts := thermal.ProjectOptions{
 		Since:            opts.Since,
@@ -889,7 +908,7 @@ func runProjectReport(opts thermal.Options) {
 // runModelReport ranks models across tools and time. Cost here is always an
 // estimate because recorded cost is not attributable to a single model.
 func runModelReport(opts thermal.Options) {
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 
 	modelOpts := thermal.ModelOptions{
 		Since: opts.Since,
@@ -924,7 +943,7 @@ func runModelReport(opts thermal.Options) {
 
 // runMixReport shows the tool or model mix over time with switching stats.
 func runMixReport(opts thermal.Options) {
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 
 	mixOpts := thermal.MixOptions{
 		Since:       opts.Since,
@@ -962,7 +981,7 @@ func runMixReport(opts thermal.Options) {
 
 // runStatsReport summarises the daily distribution of tokens or cost.
 func runStatsReport(opts thermal.Options) {
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 	pricer := newPricer(opts)
 
 	statsOpts := thermal.StatsOptions{
@@ -990,7 +1009,7 @@ func runStatsReport(opts thermal.Options) {
 
 // runTrendReport fits a daily trend and projects it to month end.
 func runTrendReport(opts thermal.Options) {
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 
 	trendOpts := thermal.TrendOptions{
 		Since:  opts.Since,
@@ -1167,7 +1186,7 @@ func runShare(opts thermal.Options) {
 		targetTool = opts.Tool
 	}
 	opts.Tool = targetTool
-	set := loadUsage(opts)
+	set := loadUsageOrExit(opts)
 	toolLabel := targetTool
 	pricer := newPricer(opts)
 	now := time.Now()
@@ -1461,13 +1480,17 @@ func runLive(opts thermal.Options) {
 			Event     *thermal.LiveEvent    `json:"event,omitempty"`
 		}
 
-		// Initial snapshot
+		// NDJSON streaming mode. A periodic snapshot keeps the stream alive
+		// and makes a closed pipe observable even when no new events arrive.
+		ignoreSIGPIPE()
 		initLine, _ := marshalJSONCompact(streamPayload{
 			Type:      "snapshot",
 			Timestamp: snap.Timestamp,
 			Snapshot:  &snap,
 		})
-		fmt.Println(string(initLine))
+		if _, err := fmt.Println(string(initLine)); err != nil {
+			return
+		}
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -1483,27 +1506,35 @@ func runLive(opts thermal.Options) {
 				if err != nil {
 					continue
 				}
-				_, newEvents := tracker.Poll(res, prj, t)
+				snapNow, newEvents := tracker.Poll(res, prj, t)
+				snapLine, _ := marshalJSONCompact(streamPayload{
+					Type:      "snapshot",
+					Timestamp: snapNow.Timestamp,
+					Snapshot:  &snapNow,
+				})
+				if _, err := fmt.Println(string(snapLine)); err != nil {
+					return
+				}
 				for _, ev := range newEvents {
 					line, _ := marshalJSONCompact(streamPayload{
 						Type:      "event",
 						Timestamp: ev.Timestamp,
 						Event:     &ev,
 					})
-					fmt.Println(string(line))
+					if _, err := fmt.Println(string(line)); err != nil {
+						return
+					}
 				}
 			}
 		}
 	}
 
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
-		fmt.Println("thermal live is interactive and needs a terminal.")
-		fmt.Println("For scripts, pipelines, and status bars use:")
-		fmt.Println()
-		fmt.Println("  thermal live --json            instant JSON snapshot")
-		fmt.Println("  thermal live --json --stream   stream NDJSON live events")
-		fmt.Println("  thermal stats                  daily distribution and token composition")
-		return
+		fmt.Fprintln(os.Stderr, "thermal: live needs a terminal")
+		fmt.Fprintln(os.Stderr, "  thermal live --json            instant JSON snapshot")
+		fmt.Fprintln(os.Stderr, "  thermal live --json --stream   stream NDJSON live events")
+		fmt.Fprintln(os.Stderr, "  thermal stats                  daily distribution and token composition")
+		os.Exit(2)
 	}
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
@@ -1524,6 +1555,9 @@ func runStatusline(opts thermal.Options) {
 	isAllTools := opts.Tool == "" || opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status"
 	if !opts.Fresh && isAllTools {
 		if data, ok := render.LoadStatuslineCache(""); ok {
+			if data.State == "" {
+				data.State = "ok"
+			}
 			fmt.Print(render.RenderStatusline(data, render.StatuslineOptions{
 				NoColor: opts.NoColor,
 				Nerd:    opts.Nerd,
@@ -1538,7 +1572,25 @@ func runStatusline(opts thermal.Options) {
 	if isAllTools {
 		opts.Tool = "all"
 	}
-	set := loadUsage(opts)
+	set, loadErr := loadUsage(opts)
+	if loadErr != nil {
+		data := render.StatuslineData{
+			State:     "no-data",
+			Scope:     "all tools",
+			Day:       thermal.LocalDay(time.Now()),
+			UpdatedAt: time.Now().Unix(),
+		}
+		if opts.Verbose {
+			fmt.Fprintln(os.Stderr, "thermal: statusline: no data (15 sources checked)")
+		}
+		fmt.Print(render.RenderStatusline(data, render.StatuslineOptions{
+			NoColor: opts.NoColor,
+			Nerd:    opts.Nerd,
+			Plain:   opts.Plain,
+			JSON:    opts.JSON,
+		}))
+		return
+	}
 	today := thermal.LocalDay(time.Now())
 
 	activeDays := make(map[string]bool)
@@ -1599,6 +1651,7 @@ func runStatusline(opts thermal.Options) {
 		}
 	}
 	data := render.StatuslineData{
+		State:         "ok",
 		Streak:        currentStreak,
 		Scope:         scope,
 		LongestStreak: longestStreak,

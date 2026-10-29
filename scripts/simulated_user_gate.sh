@@ -93,6 +93,8 @@ done
 # Isolate environment to hermetic GATE_HOME and neutral color settings
 ORIG_HOME="${HOME}"
 ORIG_GOCACHE="$(go env GOCACHE 2>/dev/null || true)"
+ORIG_GOPATH="$(go env GOPATH 2>/dev/null || true)"
+ORIG_GOMODCACHE="$(go env GOMODCACHE 2>/dev/null || true)"
 export HOME="${GATE_HOME}"
 export GROK_HOME="${GATE_HOME}/.grok"
 export DSH_HOME="${GATE_HOME}/.dsh"
@@ -486,6 +488,61 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 
+echo -e "\n${BOLD}9i. Non-TTY & Statusline Contract:${RESET}"
+run_check "Live non-TTY refuses" 2 error "${BIN_PATH}" live
+run_check "Live JSON snapshot" 0 json "${BIN_PATH}" live --json
+run_check "Statusline prompt" 0 text "${BIN_PATH}" statusline
+stream_line=$(timeout 5 "${BIN_PATH}" live --json --stream 2>/dev/null | head -1 || true)
+if echo "${stream_line}" | jq -e '.type=="snapshot"' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} live --json --stream exits cleanly after a closed pipe"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} live --json --stream did not emit a clean snapshot"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+empty_ui_home=$(mktemp -d)
+empty_ui_tmp=$(mktemp -d)
+set +e
+HOME="${empty_ui_home}" XDG_DATA_HOME="${empty_ui_home}" HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" statusline >"${empty_ui_tmp}/status.out" 2>"${empty_ui_tmp}/status.err"
+empty_status_code=$?
+if [[ "${empty_status_code}" -eq 0 && ! -s "${empty_ui_tmp}/status.out" && ! -s "${empty_ui_tmp}/status.err" ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} statusline is silent with no data"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} statusline no-data channel contract drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+empty_status_json=$(HOME="${empty_ui_home}" XDG_DATA_HOME="${empty_ui_home}" HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" statusline --json 2>/dev/null)
+if echo "${empty_status_json}" | jq -e '.state=="no-data"' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} statusline --json emits state=no-data"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} statusline --json no-data payload drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+HOME="${empty_ui_home}" XDG_DATA_HOME="${empty_ui_home}" HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" share >"${empty_ui_tmp}/share.out" 2>"${empty_ui_tmp}/share.err"
+empty_share_code=$?
+set -e
+if [[ "${empty_share_code}" -eq 1 && ! -s "${empty_ui_tmp}/share.out" && -s "${empty_ui_tmp}/share.err" ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} share remains a deliberate stderr failure with no data"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} share no-data channel contract drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+rm -rf "${empty_ui_home}" "${empty_ui_tmp}"
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5
@@ -694,7 +751,7 @@ run_check "Persona: FinOps project spend attribution" 0 text "${BIN_PATH}" proje
 # Persona 3: Security & Local Infrastructure flow
 run_check "Persona: System health and permissions audit" 0 text "${BIN_PATH}" audit --no-color
 run_check "Persona: Stateless share card URL generation" 0 text "${BIN_PATH}" share --no-color
-run_check "Persona: Live token burn non-interactive pipe" 0 text "${BIN_PATH}" live
+run_check "Persona: Live non-TTY refusal" 2 error "${BIN_PATH}" live
 run_check "Persona: Live token burn snapshot export" 0 json "${BIN_PATH}" live --json
 
 echo -e "\n${BOLD}16. Semantic Parity & Release Gate Assertions:${RESET}"
@@ -761,6 +818,7 @@ run_semantic_suite() {
             -u AGY_HOME -u ZED_HOME -u ANTIGRAVITY_APP_DATA_DIR -u THERMAL_CONFIG \
             -u NO_COLOR -u CLICOLOR_FORCE \
             HOME="${ORIG_HOME}" GOCACHE="${ORIG_GOCACHE}" \
+            GOPATH="${ORIG_GOPATH}" GOMODCACHE="${ORIG_GOMODCACHE}" \
             go test "${targets[@]}" -run "${pattern}" -count=1 -v 2>&1); then
         exit_code=0
     else
@@ -791,6 +849,8 @@ if gallery_output=$(env -u CODEX_HOME -u GROK_HOME -u DSH_HOME -u HERMES_HOME -u
     -u AGY_HOME -u ZED_HOME -u ANTIGRAVITY_APP_DATA_DIR -u THERMAL_CONFIG \
     -u NO_COLOR -u CLICOLOR_FORCE -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
     HOME="${ORIG_HOME}" GOCACHE="${ORIG_GOCACHE}" \
+    GOPATH="${ORIG_GOPATH}" GOMODCACHE="${ORIG_GOMODCACHE}" \
+    THERMAL_GALLERY_BIN="${BIN_PATH}" \
     "${ROOT_DIR}/scripts/output_gallery_gate.sh" </dev/null 2>&1); then
     echo -e "  ${GREEN}✔ [PASS]${RESET} Output gallery matrix, schemas, units, and validation cases"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
