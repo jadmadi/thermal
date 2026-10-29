@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-version-verbose-flag-contract",
+  "certified_at": "2026-10-29T20:34:11.64346769Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-version-verbose-flag-contract/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "743281a5627c72b135e1f656f7068c5b2d452ce5",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
