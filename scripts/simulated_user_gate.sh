@@ -570,11 +570,16 @@ run_semantic_suite "Audit claim semantics" 10 'Audit' ./internal/audit ./interna
 
 echo -e "\n${BOLD}18. Fixed-fixture Output Gallery Regression:${RESET}"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-if gallery_output=$("${ROOT_DIR}/scripts/output_gallery_gate.sh" 2>&1); then
+if gallery_output=$(env -u CODEX_HOME -u GROK_HOME -u DSH_HOME -u HERMES_HOME -u OPENCODE_HOME \
+    -u AGY_HOME -u ZED_HOME -u ANTIGRAVITY_APP_DATA_DIR -u THERMAL_CONFIG \
+    -u NO_COLOR -u CLICOLOR_FORCE -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
+    HOME="${ORIG_HOME}" GOCACHE="${ORIG_GOCACHE}" \
+    "${ROOT_DIR}/scripts/output_gallery_gate.sh" </dev/null 2>&1); then
     echo -e "  ${GREEN}✔ [PASS]${RESET} Output gallery matrix, schemas, units, and validation cases"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
 else
     echo -e "  ${RED}✖ [FAIL]${RESET} Output gallery gate"
+    printf '%s\n' "${gallery_output}" | grep -E '✘|FAIL' | sed 's/^/      /' >&2 || true
     printf '%s\n' "${gallery_output}" | tail -12 | sed 's/^/      /' >&2
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
 fi
