@@ -4,7 +4,6 @@
 package loaders
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,21 +96,24 @@ func LoadHermesData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therm
 		return thermal.Summary{}, nil, nil, fmt.Errorf("hermes: database not found: %s", dbPath)
 	}
 
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 268435456))
+	db, err := openBoundedStore(dbPath, 268435456)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 268435456;")
+
+	if err := rejectSubstitutableObjects(db, "sessions", "session", "session_model_usage"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	sessionTable := ""
 	var hasSessions bool
-	_ = db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sessions'`).Scan(&hasSessions)
+	_ = queryRowStore(db, []any{&hasSessions}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sessions'`)
 	if hasSessions {
 		sessionTable = "sessions"
 	} else {
 		var hasSession bool
-		_ = db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session'`).Scan(&hasSession)
+		_ = queryRowStore(db, []any{&hasSession}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session'`)
 		if hasSession {
 			sessionTable = "session"
 		}
@@ -216,7 +218,7 @@ func LoadHermesData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therm
 	// Check for optional session_model_usage table.
 	modelUsages := make(map[string][]hermesModelUsage)
 	var hasSMU bool
-	_ = db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_model_usage'`).Scan(&hasSMU)
+	_ = queryRowStore(db, []any{&hasSMU}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_model_usage'`)
 	if hasSMU {
 		smuModelCol := "model"
 		if !hasColumn(db, "session_model_usage", smuModelCol) && hasColumn(db, "session_model_usage", "model_id") {
@@ -248,7 +250,7 @@ func LoadHermesData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therm
 			FROM session_model_usage
 		`, smuModelCol, smuInCol, smuOutCol, smuReasonCol, smuCRCol, smuCWCol)
 
-		if smuRows, err := db.Query(smuQuery); err == nil {
+		if smuRows, err := queryStore(db, smuQuery); err == nil {
 			for smuRows.Next() {
 				var sessID, m string
 				var in, out, reason, cr, cw int64
@@ -289,7 +291,7 @@ func LoadHermesData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therm
 		FROM %s
 	`, timeCol, endSelect, cwdCol, modelCol, inputCol, outputCol, reasoningCol, cacheReadCol, cacheWriteCol, costCol, turnsCol, sessionTable)
 
-	rows, err := db.Query(query)
+	rows, err := queryStore(db, query)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}

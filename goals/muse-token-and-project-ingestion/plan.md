@@ -1,0 +1,6 @@
+# Plan: Ingest Muse JSONL session tokens, model facets, and project attribution
+
+## Execution Steps
+- [x] **Phase 1 — Muse JSONL & Live Source Signature**: Implement `scanMuseJSONL` and `LoadMuseData` in `internal/loaders/muse.go` with bounded concurrency, disjoint token math, `status` facet model resolution, synthetic `approval-review` clock filtering, `ProjectKey` attribution, and `DailyRow.Cost = 0`; wire `thermal.ToolMuse` into `internal/loaders/sourcesig.go`, `internal/loaders/registry.go`, and `internal/loaders/dircache.go`.
+- [x] **Phase 2 — Render Promotion & Unit Tests**: Promote Muse to `Token Warriors` in `internal/render/leaderboard.go` and `internal/render/dashboard.go` when token data exists, and verify with `TestLoadMuseData_SessionIndex`, `TestLoadMuseData_SessionJSONL`, `TestLoadMuseData_Hybrid`, and `TestLoadMuseData_SourceSig` in `internal/loaders/muse_test.go`.
+- [x] **Phase 3 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/muse-token-and-project-ingestion/plan.md`; (2) write `goals/muse-token-and-project-ingestion/evidence.md` with `Verdict: PASS`; (3) commit with `(goals/muse-token-and-project-ingestion/goal.md)` using a `feat(loaders):` subject; (4) certify via `sila goals certify muse-token-and-project-ingestion --evidence=goals/muse-token-and-project-ingestion/evidence.md`.

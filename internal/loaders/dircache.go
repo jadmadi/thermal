@@ -18,7 +18,7 @@ import (
 
 // dirScanCacheVersion bumps whenever the cached snapshot shape changes, so an
 // old cache file is ignored instead of decoded into stale zero fields.
-const dirScanCacheVersion = 2
+const dirScanCacheVersion = 3
 
 // DirScanCache is a disk-backed snapshot of a directory-backed loader scan.
 // Invalidation is keyed on the canonical root plus a per-file tree signature

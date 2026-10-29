@@ -120,6 +120,44 @@ func TestPriceDaySkipsUnclassifiedAndEmpty(t *testing.T) {
 	}
 }
 
+func TestPriceDayPartialClassifiedTokens(t *testing.T) {
+	cat := testCatalog()
+	// gpt-5.4 has Input: 1_000_000 and Unclassified: 500_000.
+	// The 1M classified input tokens must be priced (at $2.50) without reporting
+	// gpt-5.4 in MissingPricing.
+	day := thermal.DailyRow{
+		Tokens: 1_500_000,
+		Models: map[string]thermal.ModelTokens{
+			"gpt-5.4": {Input: 1_000_000, Unclassified: 500_000},
+		},
+	}
+	cost, missing := cat.PriceDay(day)
+	if cost != 2.5 {
+		t.Errorf("cost = %v, want 2.5", cost)
+	}
+	if len(missing) != 0 {
+		t.Errorf("expected no missing models, got %v", missing)
+	}
+}
+
+func TestLookupFreeTierSuffix(t *testing.T) {
+	cat := testCatalog()
+	for _, id := range []string{
+		"nemotron-3-ultra-free",
+		"muse-spark-1.3-contributor-free",
+		"x-preview-f-free",
+		"custom-agent:free",
+	} {
+		p, ok := cat.Lookup(id)
+		if !ok {
+			t.Errorf("Lookup(%q) = false, want true for free-tier model", id)
+		}
+		if p.Input != 0 || p.Output != 0 {
+			t.Errorf("Lookup(%q) price = %+v, want zero cost", id, p)
+		}
+	}
+}
+
 func TestReadCacheRejectsOldVersion(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "pricing.json")

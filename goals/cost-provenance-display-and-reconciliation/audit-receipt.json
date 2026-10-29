@@ -1,0 +1,18 @@
+{
+  "version": "sila/audit-receipt/v1",
+  "goal_slug": "cost-provenance-display-and-reconciliation",
+  "commit_sha": "a324b2dff0155d27b7f2d99bea43c0b85ade9076",
+  "spec_hash": "7bc39ccf637b80b8d12cba774505c98cd6e626dae6ca90ffb35b9ee402a7155b",
+  "sandbox_nonce": "f0b74da51c659f24",
+  "candidate_selection": "A",
+  "blindfold_verified": true,
+  "canary_passed": true,
+  "ccdsi_score": 0.8333333333333334,
+  "req_coverage": 1,
+  "probes_executed": 6,
+  "probes_passed": 6,
+  "probe_manifest_hash": "9c3c599ac1f291d279fcfca8ab7da3daf6fe19403a9d7f921257d284d0acd7c7",
+  "auditor_pub_key": "QNn/N4TXRNTVYM6w0x92VbwXIk7J6D5FHC/3tFK4xkw=",
+  "auditor_signature": "cwPna4KUxk7cEHB+XAdu/AdD7aQqz2oK3Q6zit8uxpNI1w02ITQT36/duUJ8YSV/Boi89TV1Xl0EiXqhNbhwAQ==",
+  "certified_at": "2026-10-29T08:31:21Z"
+}

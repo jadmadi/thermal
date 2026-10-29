@@ -35,17 +35,24 @@ type modelsDevCost struct {
 // variantAliases maps names that tools record onto the catalog id they mirror.
 // models.dev lists the preview id while some CLIs record a variant suffix.
 var variantAliases = map[string]string{
-	"gemini-3-pro-high": "gemini-3-pro-preview",
-	"gemini-3-pro-low":  "gemini-3-pro-preview",
-	"gemini-3.8-flash":  "gemini-2.5-flash",
-	"gemini-3.7-flash":  "gemini-2.5-flash",
-	"gemini-3.6-flash":  "gemini-2.5-flash",
-	"gemini-3.1-pro":    "gemini-2.5-pro",
-	"claude-3-5-sonnet": "claude-3.5-sonnet-v2",
-	"claude-3.5-sonnet": "claude-3.5-sonnet-v2",
-	"claude-3-7-sonnet": "claude-3.7-sonnet",
-	"claude-sonnet":     "claude-3.7-sonnet",
-	"deepseek-chat":     "deepseek-v3",
+	"gemini-3-pro-high":      "gemini-3-pro-preview",
+	"gemini-3-pro-low":       "gemini-3-pro-preview",
+	"gemini-3.8-flash":       "gemini-2.5-flash",
+	"gemini-3.7-flash":       "gemini-2.5-flash",
+	"gemini-3.6-flash":       "gemini-2.5-flash",
+	"gemini-3.1-pro":         "gemini-2.5-pro",
+	"claude-3-5-sonnet":      "claude-3.5-sonnet-v2",
+	"claude-3.5-sonnet":      "claude-3.5-sonnet-v2",
+	"claude-3-7-sonnet":      "claude-3.7-sonnet",
+	"claude-sonnet":          "claude-3.7-sonnet",
+	"deepseek-chat":          "deepseek-v3",
+	"deepseek-v4.1-flash":    "deepseek-v3",
+	"deepseek-v4-flash":      "deepseek-v3",
+	"deepseek-v4-flash-0731": "deepseek-v3",
+	"deepseek-v4-pro-0813":   "deepseek-v3",
+	"deepseek-flash":         "deepseek-v3",
+	"gpt-6-astra":            "gpt-4o",
+	"codex-auto-review":      "gpt-4o-mini",
 }
 
 // preferredProviders orders first-party catalogs ahead of resellers. Prices

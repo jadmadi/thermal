@@ -4,7 +4,6 @@
 package loaders
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -20,15 +19,18 @@ import (
 // turn_usage supplies user-visible turn counts for daily rows. The DB records
 // no cost figures, so Cost stays 0.
 func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
+	db, err := openBoundedStore(dbPath, 30000000000)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
+
+	if err := rejectSubstitutableObjects(db, "model_usage", "turn_usage", "session"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	var hasModelUsage bool
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='model_usage'`).Scan(&hasModelUsage); err != nil {
+	if err := queryRowStore(db, []any{&hasModelUsage}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='model_usage'`); err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	if !hasModelUsage {
@@ -40,7 +42,8 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	// contains cache reads and reasoning is part of output_tokens, so both are
 	// reported without the nested part. Otherwise the type columns double
 	// count against LifetimeTokens.
-	err = db.QueryRow(`
+	err = queryRowStore(db, []any{&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
+		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens}, `
 		SELECT
 			COUNT(DISTINCT session_id),
 			COALESCE(SUM(computed_total_tokens), 0),
@@ -50,25 +53,23 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			COALESCE(SUM(cache_creation_input_tokens + cache_read_input_tokens), 0)
 		FROM model_usage
 		WHERE status = 'completed'
-	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
-		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens)
+	`)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 
 	// Longest session duration from the session table when present.
-	_ = db.QueryRow(`SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`).
-		Scan(&summary.LongestSessionMs)
+	_ = queryRowStore(db, []any{&summary.LongestSessionMs}, `SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`)
 
 	// Code-change analytics from session summary columns (NULL on current
 	// schema, COALESCE keeps them 0 until ZCode populates them).
-	_ = db.QueryRow(`
+	_ = queryRowStore(db, []any{&summary.LinesAdded, &summary.LinesDeleted, &summary.FilesTouched}, `
 		SELECT COALESCE(SUM(summary_additions), 0), COALESCE(SUM(summary_deletions), 0), COALESCE(SUM(summary_files), 0)
 		FROM session WHERE summary_additions IS NOT NULL
-	`).Scan(&summary.LinesAdded, &summary.LinesDeleted, &summary.FilesTouched)
+	`)
 
 	// Model and agent distribution from completed requests.
-	if modelRows, err := db.Query(`SELECT model_id, COUNT(*) FROM model_usage WHERE status = 'completed' AND model_id != '' GROUP BY model_id`); err == nil {
+	if modelRows, err := queryStore(db, `SELECT model_id, COUNT(*) FROM model_usage WHERE status = 'completed' AND model_id != '' GROUP BY model_id`); err == nil {
 		summary.ModelBreakdown = make(map[string]int64)
 		for modelRows.Next() {
 			var model string
@@ -78,7 +79,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		}
 		modelRows.Close()
 	}
-	if agentRows, err := db.Query(`SELECT agent, COUNT(*) FROM model_usage WHERE status = 'completed' AND agent != '' GROUP BY agent`); err == nil {
+	if agentRows, err := queryStore(db, `SELECT agent, COUNT(*) FROM model_usage WHERE status = 'completed' AND agent != '' GROUP BY agent`); err == nil {
 		summary.AgentBreakdown = make(map[string]int)
 		for agentRows.Next() {
 			var agent string
@@ -94,7 +95,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	// completed turn_usage rows when present (one per user-visible turn), else
 	// completed request counts.
 	var hasTurns bool
-	_ = db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='turn_usage'`).Scan(&hasTurns)
+	_ = queryRowStore(db, []any{&hasTurns}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='turn_usage'`)
 
 	turnTable := "model_usage"
 	if hasTurns {
@@ -109,11 +110,11 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 	turnsByDay := make(map[string]int)
 	turnsByKey := make(map[projectDayKey]int)
-	if turnRows, err := db.Query(`
+	if turnRows, err := queryStore(db, `
 		SELECT date(t.started_at / 1000, 'unixepoch', 'localtime') AS day,
-			` + turnProject + ` AS project,
+			`+turnProject+` AS project,
 			COUNT(*)
-		FROM ` + turnTable + ` t` + turnJoin + `
+		FROM `+turnTable+` t`+turnJoin+`
 		WHERE t.status = 'completed'
 		GROUP BY day, project
 	`); err == nil {
@@ -135,10 +136,10 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		modelProject = "COALESCE(NULLIF(s.directory, ''), '')"
 		modelJoin = " LEFT JOIN session s ON s.id = m.session_id"
 	}
-	rows, err := db.Query(`
+	rows, err := queryStore(db, `
 		SELECT
 			date(m.started_at / 1000, 'unixepoch', 'localtime') AS day,
-			` + modelProject + ` AS project,
+			`+modelProject+` AS project,
 			COALESCE(m.model_id, '') AS model,
 			COALESCE(SUM(MAX(m.input_tokens - m.cache_read_input_tokens - m.cache_creation_input_tokens, 0)), 0),
 			COALESCE(SUM(MAX(m.output_tokens - m.reasoning_tokens, 0)), 0),
@@ -148,7 +149,7 @@ func LoadZCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 			0.0,
 			0,
 			COALESCE(SUM(m.computed_total_tokens), 0)
-		FROM model_usage m` + modelJoin + `
+		FROM model_usage m`+modelJoin+`
 		WHERE m.status = 'completed'
 		GROUP BY day, project, model
 		ORDER BY day

@@ -166,16 +166,18 @@ const (
 )
 
 type ToolResult struct {
-	Tool          Tool       `json:"tool"`
-	Name          string     `json:"name"`
-	Summary       Summary    `json:"summary"`
-	Daily         []DailyRow `json:"daily,omitempty"`
-	CurrentStreak int        `json:"currentStreak"`
-	LongestStreak int        `json:"longestStreak"`
-	ActiveDays    int        `json:"activeDays"`
-	TotalActivity int64      `json:"totalActivity"`
-	DataPath      string     `json:"dataPath,omitempty"`
-	EstimatedCost float64    `json:"estimatedCost"`
+	Tool               Tool       `json:"tool"`
+	Name               string     `json:"name"`
+	Summary            Summary    `json:"summary"`
+	Daily              []DailyRow `json:"daily,omitempty"`
+	CurrentStreak      int        `json:"currentStreak"`
+	LongestStreak      int        `json:"longestStreak"`
+	ActiveDays         int        `json:"activeDays"`
+	TotalActivity      int64      `json:"totalActivity"`
+	DataPath           string     `json:"dataPath,omitempty"`
+	EstimatedCost      float64    `json:"estimatedCost"`
+	MissingPricing     []string   `json:"missingPricing,omitempty"`
+	UnattributedTokens int64      `json:"unattributedTokens,omitempty"`
 }
 
 // Grain is the bucket size for a period report.

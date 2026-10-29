@@ -710,11 +710,22 @@ func main() {
 			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 
 			var estCost float64
-			if pricer != nil {
+			var toolMissing []string
+			var toolUnattr int64
+			if pricer != nil && !opts.NoEstimate {
 				for _, d := range data.Daily {
 					if d.Cost == 0 && d.Tokens > 0 {
-						c, _ := pricer.PriceDay(d)
-						estCost += c
+						if len(d.Models) == 0 {
+							toolUnattr += d.Tokens
+						} else {
+							c, missing := pricer.PriceDay(d)
+							estCost += c
+							for _, m := range missing {
+								if !containsString(toolMissing, m) {
+									toolMissing = append(toolMissing, m)
+								}
+							}
+						}
 					}
 				}
 			}
@@ -728,16 +739,18 @@ func main() {
 			current, longest := thermal.ComputeStreaks(activeDays)
 
 			results = append(results, thermal.ToolResult{
-				Tool:          t,
-				Name:          info.Name,
-				Summary:       data.Summary,
-				Daily:         data.Daily,
-				CurrentStreak: current,
-				LongestStreak: longest,
-				ActiveDays:    len(activeDays),
-				TotalActivity: data.Summary.LifetimeTokens,
-				DataPath:      data.Path,
-				EstimatedCost: estCost,
+				Tool:               t,
+				Name:               info.Name,
+				Summary:            data.Summary,
+				Daily:              data.Daily,
+				CurrentStreak:      current,
+				LongestStreak:      longest,
+				ActiveDays:         len(activeDays),
+				TotalActivity:      data.Summary.LifetimeTokens,
+				DataPath:           data.Path,
+				EstimatedCost:      estCost,
+				MissingPricing:     toolMissing,
+				UnattributedTokens: toolUnattr,
 			})
 		}
 
@@ -802,17 +815,37 @@ func main() {
 	}
 
 	var estCost float64
+	var dashMissing []string
+	var dashUnattr int64
 	pricer := newPricer(opts)
-	if pricer != nil && data.Summary.Cost == 0 {
+	if pricer != nil && !opts.NoEstimate {
 		for _, d := range data.Daily {
-			if len(d.Models) > 0 {
-				c, _ := pricer.PriceDay(d)
-				estCost += c
+			if d.Cost == 0 && d.Tokens > 0 {
+				if len(d.Models) == 0 {
+					dashUnattr += d.Tokens
+				} else {
+					c, missing := pricer.PriceDay(d)
+					estCost += c
+					for _, m := range missing {
+						if !containsString(dashMissing, m) {
+							dashMissing = append(dashMissing, m)
+						}
+					}
+				}
 			}
 		}
 	}
 
-	fmt.Print(render.RenderDashboard(info.Name, data.Summary, data.Daily, data.Path, opts.Weeks, opts.NoColor, estCost))
+	fmt.Print(render.RenderDashboard(info.Name, data.Summary, data.Daily, data.Path, opts.Weeks, opts.NoColor, estCost, dashMissing, dashUnattr))
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 // allToolOrder is the stable display order shared by the leaderboard and the

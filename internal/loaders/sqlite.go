@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -26,25 +27,31 @@ import (
 // back to the session table, and to message.data JSON aggregation when the
 // session table has no token columns.
 func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
+	db, err := openBoundedStore(dbPath, 30000000000)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
+
+	if err := rejectSubstitutableObjects(db, "session_v2", "session", "message"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	var summary thermal.Summary
 
 	// OpenCode v2 moved sessions into session_v2; the legacy session table
 	// keeps only pre-migration rows. Read v2 when present.
 	var hasV2 bool
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_v2'`).Scan(&hasV2); err != nil {
+	if err := queryRowStore(db, []any{&hasV2}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_v2'`); err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	if hasV2 {
 		src := "(" + opencodeV2Source(db) + ")"
 
-		err = db.QueryRow(`
+		err = queryRowStore(db, []any{&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
+			&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens,
+			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
+			&summary.FilesTouched, &summary.LongestSessionMs}, `
 			SELECT
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
@@ -57,16 +64,13 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COALESCE(SUM(summary_deletions), 0),
 				COALESCE(SUM(summary_files), 0),
 				COALESCE(MAX(time_updated - time_created), 0)
-			FROM `+src).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
-			&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens,
-			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
-			&summary.FilesTouched, &summary.LongestSessionMs)
+			FROM `+src)
 		if err != nil {
 			return thermal.Summary{}, nil, nil, err
 		}
 
 		// Agent breakdown from session.agent column.
-		agentRows, err := db.Query(`SELECT agent, COUNT(*) FROM ` + src + ` WHERE agent != '' GROUP BY agent`)
+		agentRows, err := queryStore(db, `SELECT agent, COUNT(*) FROM `+src+` WHERE agent != '' GROUP BY agent`)
 		if err == nil {
 			summary.AgentBreakdown = make(map[string]int)
 			for agentRows.Next() {
@@ -79,7 +83,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 		}
 
 		// Model breakdown from session model column.
-		modelRows, err := db.Query(`SELECT model, COUNT(*) FROM ` + src + ` WHERE model != '' GROUP BY model`)
+		modelRows, err := queryStore(db, `SELECT model, COUNT(*) FROM `+src+` WHERE model != '' GROUP BY model`)
 		if err == nil {
 			summary.ModelBreakdown = make(map[string]int64)
 			for modelRows.Next() {
@@ -97,7 +101,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 
 		// Daily aggregation from pre-agg columns, one row per session,
 		// project, and model, far fewer rows than message-level.
-		rows, err := db.Query(`
+		rows, err := queryStore(db, `
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
 				project,
@@ -113,7 +117,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COALESCE(SUM(summary_additions), 0),
 				COALESCE(SUM(summary_deletions), 0),
 				COALESCE(SUM(summary_files), 0)
-			FROM ` + src + `
+			FROM `+src+`
 			GROUP BY day, project, model
 			ORDER BY day
 		`)
@@ -134,14 +138,17 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 	// Check whether the session table has the pre-agg token columns (newer
 	// schemas). Fall back to message-level aggregation if not.
 	var hasSessionCols bool
-	err = db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'tokens_input'`).Scan(&hasSessionCols)
+	err = queryRowStore(db, []any{&hasSessionCols}, `SELECT COUNT(*) FROM pragma_table_info('session') WHERE name = 'tokens_input'`)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 
 	if hasSessionCols {
 		// Fast path: pre-aggregated session columns + cost + code changes.
-		err = db.QueryRow(`
+		err = queryRowStore(db, []any{&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
+			&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens,
+			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
+			&summary.FilesTouched, &summary.LongestSessionMs}, `
 			SELECT
 				COUNT(*),
 				COALESCE(SUM(tokens_input + tokens_output + tokens_reasoning + tokens_cache_read + tokens_cache_write), 0),
@@ -155,16 +162,13 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				COALESCE(SUM(summary_files), 0),
 				COALESCE(MAX(time_updated - time_created), 0)
 			FROM session
-		`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
-			&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens,
-			&summary.Cost, &summary.LinesAdded, &summary.LinesDeleted,
-			&summary.FilesTouched, &summary.LongestSessionMs)
+		`)
 		if err != nil {
 			return thermal.Summary{}, nil, nil, err
 		}
 
 		// Agent breakdown from session.agent column.
-		agentRows, err := db.Query(`SELECT agent, COUNT(*) FROM session WHERE agent != '' GROUP BY agent`)
+		agentRows, err := queryStore(db, `SELECT agent, COUNT(*) FROM session WHERE agent != '' GROUP BY agent`)
 		if err == nil {
 			summary.AgentBreakdown = make(map[string]int)
 			for agentRows.Next() {
@@ -183,7 +187,7 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 		legacyModel := "''"
 		if hasColumn(db, "session", "model") {
 			legacyModel = modelIDExpr("model")
-			modelRows, err := db.Query(`SELECT ` + legacyModel + `, COUNT(*) FROM session WHERE ` + legacyModel + ` != '' GROUP BY 1`)
+			modelRows, err := queryStore(db, `SELECT `+legacyModel+`, COUNT(*) FROM session WHERE `+legacyModel+` != '' GROUP BY 1`)
 			if err == nil {
 				summary.ModelBreakdown = make(map[string]int64)
 				for modelRows.Next() {
@@ -199,11 +203,11 @@ func LoadOpenCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 				modelRows.Close()
 			}
 		}
-		rows, err := db.Query(`
+		rows, err := queryStore(db, `
 			SELECT
 				date(time_created / 1000, 'unixepoch', 'localtime') AS day,
-				` + sessionProjectExpr(db, "session") + ` AS project,
-				` + legacyModel + ` AS model,
+				`+sessionProjectExpr(db, "session")+` AS project,
+				`+legacyModel+` AS model,
 				COALESCE(SUM(tokens_input), 0),
 				COALESCE(SUM(tokens_output), 0),
 				COALESCE(SUM(tokens_reasoning), 0),
@@ -260,7 +264,7 @@ func opencodeV2Source(db *sql.DB) string {
 	source := cols + ` ` + v2Model + ` AS model, ` + v2Project + ` AS project
 		FROM session_v2`
 	var colsSeen int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`).Scan(&colsSeen); err == nil && colsSeen == 2 {
+	if err := queryRowStore(db, []any{&colsSeen}, `SELECT COUNT(*) FROM pragma_table_info('session') WHERE name IN ('id', 'tokens_input')`); err == nil && colsSeen == 2 {
 		legacyModel := modelIDExpr("model")
 		if !hasColumn(db, "session", "model") {
 			legacyModel = "''"
@@ -274,20 +278,47 @@ func opencodeV2Source(db *sql.DB) string {
 	return source
 }
 
-// hasColumn reports whether a table carries the named column. A missing table
-// also reports false.
+// rejectSubstitutableObjects refuses a database whose named objects are not
+// ordinary B-tree tables. SQLite resolves views and virtual tables through a
+// FROM clause, so a substituted object would run attacker-controlled schema
+// SQL. Absent optional tables are left to each loader to handle.
+func rejectSubstitutableObjects(db *sql.DB, names ...string) error {
+	for _, name := range names {
+		var typ string
+		var rootpage sql.NullInt64
+		err := queryRowStore(db, []any{&typ, &rootpage},
+			`SELECT type, rootpage FROM sqlite_master WHERE lower(name) = lower(?)`, name)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("refusing store: cannot inspect %q: %w", name, err)
+		}
+		if typ != "table" || !rootpage.Valid || rootpage.Int64 <= 0 {
+			return fmt.Errorf("refusing store: %q is not an ordinary table", name)
+		}
+	}
+	return nil
+}
+
+// hasColumn reports whether a table carries the named column. A missing table,
+// a view, or a virtual table also reports false, so pragma_table_info never
+// compiles a view body.
 func hasColumn(db *sql.DB, table, column string) bool {
+	if !hasTable(db, table) || rejectSubstitutableObjects(db, table) != nil {
+		return false
+	}
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column).Scan(&n); err != nil {
+	if err := queryRowStore(db, []any{&n}, `SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column); err != nil {
 		return false
 	}
 	return n > 0
 }
 
-// hasTable reports whether a table exists in the SQLite database.
+// hasTable reports whether an ordinary table exists in the SQLite database.
 func hasTable(db *sql.DB, table string) bool {
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&n); err != nil {
+	if err := queryRowStore(db, []any{&n}, `SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`, table); err != nil {
 		return false
 	}
 	return n > 0
@@ -312,7 +343,7 @@ type projectDayKey struct{ day, project string }
 // (ZCode counts cache reads inside input, for example). Cache reads and writes
 // stay separate for pricing, and their sum feeds DailyRow.Cache. Project paths
 // are normalized to their git root, and blank projects are skipped.
-func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.ProjectDay, error) {
+func foldDayModelProjectRows(rows rowIterator) ([]thermal.DailyRow, []thermal.ProjectDay, error) {
 	cols, err := rows.Columns()
 	if err != nil {
 		return nil, nil, err
@@ -445,12 +476,15 @@ func foldDayModelProjectRows(rows *sql.Rows) ([]thermal.DailyRow, []thermal.Proj
 // also surface session.summary_additions/deletions/files (code changes) and
 // message.data.agent (agent mode distribution) that were previously hidden.
 func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 30000000000))
+	db, err := openBoundedStore(dbPath, 30000000000)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
+
+	if err := rejectSubstitutableObjects(db, "session", "message"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	summary, daily, projects, err := loadMessageLevelData(db)
 	if err != nil {
@@ -458,13 +492,13 @@ func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 	}
 
 	// Code-change analytics from session summary columns.
-	_ = db.QueryRow(`
+	_ = queryRowStore(db, []any{&summary.LinesAdded, &summary.LinesDeleted, &summary.FilesTouched}, `
 		SELECT COALESCE(SUM(summary_additions), 0), COALESCE(SUM(summary_deletions), 0), COALESCE(SUM(summary_files), 0)
 		FROM session WHERE summary_additions IS NOT NULL
-	`).Scan(&summary.LinesAdded, &summary.LinesDeleted, &summary.FilesTouched)
+	`)
 
 	// Agent mode distribution from message.data.agent.
-	agentRows, err := db.Query(`SELECT json_extract(data, '$.agent'), COUNT(*) FROM message WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant' AND json_extract(data, '$.agent') != '' GROUP BY 1`)
+	agentRows, err := queryStore(db, `SELECT json_extract(data, '$.agent'), COUNT(*) FROM message WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant' AND json_extract(data, '$.agent') != '' GROUP BY 1`)
 	if err == nil {
 		summary.AgentBreakdown = make(map[string]int)
 		for agentRows.Next() {
@@ -484,7 +518,8 @@ func LoadMiMoCodeData(dbPath string) (thermal.Summary, []thermal.DailyRow, []the
 // schemas without session-level token columns).
 func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	var summary thermal.Summary
-	err := db.QueryRow(`
+	err := queryRowStore(db, []any{&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
+		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens, &summary.Cost}, `
 		SELECT
 			COUNT(DISTINCT session_id),
 			COALESCE(SUM(
@@ -504,16 +539,14 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 			COALESCE(SUM(COALESCE(CAST(json_extract(data, '$.cost') AS REAL), 0)), 0)
 		FROM message
 		WHERE data LIKE '%"assistant"%' AND json_extract(data, '$.role') = 'assistant'
-	`).Scan(&summary.Sessions, &summary.LifetimeTokens, &summary.InputTokens,
-		&summary.OutputTokens, &summary.ReasoningTokens, &summary.CacheTokens, &summary.Cost)
+	`)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 
-	db.QueryRow(`SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`).
-		Scan(&summary.LongestSessionMs)
+	_ = queryRowStore(db, []any{&summary.LongestSessionMs}, `SELECT COALESCE(MAX(time_updated - time_created), 0) FROM session`)
 
-	modelRows, err := db.Query(`
+	modelRows, err := queryStore(db, `
 		SELECT COALESCE(
 			NULLIF(NULLIF(json_extract(data, '$.modelID'), ''), '<synthetic>'),
 			NULLIF(json_extract(data, '$.model'), ''),
@@ -547,10 +580,10 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 		projectExpr = "COALESCE(NULLIF(s.directory, ''), '')"
 		from = "FROM message LEFT JOIN session s ON s.id = message.session_id"
 	}
-	rows, err := db.Query(`
+	rows, err := queryStore(db, `
 		SELECT
 			date(message.time_created / 1000, 'unixepoch', 'localtime') AS day,
-			` + projectExpr + ` AS project,
+			`+projectExpr+` AS project,
 			COALESCE(
 				NULLIF(NULLIF(json_extract(message.data, '$.modelID'), ''), '<synthetic>'),
 				NULLIF(json_extract(message.data, '$.model'), ''),
@@ -570,7 +603,7 @@ func loadMessageLevelData(db *sql.DB) (thermal.Summary, []thermal.DailyRow, []th
 				COALESCE(CAST(json_extract(message.data, '$.tokens.cache.read') AS INTEGER), 0) +
 				COALESCE(CAST(json_extract(message.data, '$.tokens.cache.write') AS INTEGER), 0)
 			), 0)
-		` + from + `
+		`+from+`
 		WHERE message.data LIKE '%"assistant"%' AND json_extract(message.data, '$.role') = 'assistant'
 		GROUP BY day, project, model
 		ORDER BY day
@@ -592,12 +625,15 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	canonicalPath := CanonicalDatabasePath(dbPath)
 	sourceID, _ := devinSourceIdentity(canonicalPath)
 
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(canonicalPath, 30000000000))
+	db, err := openBoundedStore(canonicalPath, 30000000000)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
+
+	if err := rejectSubstitutableObjects(db, "sessions", "message_nodes", "prompt_history"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	projectSelect, projectJoin := "''", ""
 	modelSelect := "''"
@@ -626,8 +662,8 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		sessLastActCol = "COALESCE(last_activity_at, 0)"
 	}
 
-	sessRows, err := db.Query(`
-		SELECT id, ` + sessModelCol + `, ` + sessWDCol + `, ` + sessCreatedCol + `, ` + sessLastActCol + `
+	sessRows, err := queryStore(db, `
+		SELECT id, `+sessModelCol+`, `+sessWDCol+`, `+sessCreatedCol+`, `+sessLastActCol+`
 		FROM sessions
 		WHERE hidden = 0
 		ORDER BY id
@@ -677,13 +713,13 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 		if promptTimeCol != "" {
 			timeQuery = "COALESCE(TOTAL(" + promptTimeCol + "), 0)"
 		}
-		if err := db.QueryRow(`SELECT COUNT(*), COALESCE(MAX(rowid), 0), `+timeQuery+` FROM prompt_history`).Scan(&promptCount, &promptMaxRowID, &promptTotalTime); err == nil {
+		if err := queryRowStore(db, []any{&promptCount, &promptMaxRowID, &promptTotalTime}, `SELECT COUNT(*), COALESCE(MAX(rowid), 0), `+timeQuery+` FROM prompt_history`); err == nil {
 			promptSig = fmt.Sprintf("%d:%d:%d", promptCount, promptMaxRowID, int64(promptTotalTime))
 		}
 	}
 
 	var maxRowID int64
-	if err := db.QueryRow(`SELECT COALESCE(MAX(row_id), 0) FROM message_nodes`).Scan(&maxRowID); err != nil {
+	if err := queryRowStore(db, []any{&maxRowID}, `SELECT COALESCE(MAX(row_id), 0) FROM message_nodes`); err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 
@@ -702,17 +738,17 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 
 		var baseCount int64
 		var baseLength float64
-		if err := db.QueryRow(`SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, c.MaxRowID).Scan(&baseCount, &baseLength); err == nil &&
+		if err := queryRowStore(db, []any{&baseCount, &baseLength}, `SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, c.MaxRowID); err == nil &&
 			baseCount == c.BaseRowCount && int64(baseLength) == c.BaseRowLength {
 
 			var totalRowCount int64
 			var totalRowLength float64
-			_ = db.QueryRow(`SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes`).Scan(&totalRowCount, &totalRowLength)
+			_ = queryRowStore(db, []any{&totalRowCount, &totalRowLength}, `SELECT COUNT(*), COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes`)
 
 			c.Summary.Sessions = sessionCount
 			c.Summary.LongestSessionMs = longestSec * 1000
 
-			deltaRows, err := db.Query(`
+			deltaRows, err := queryStore(db, `
 				SELECT m.created_at,
 				       `+projectSelect+`,
 				       `+modelSelect+`,
@@ -853,24 +889,24 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	summary.Sessions = sessionCount
 	summary.LongestSessionMs = longestSec * 1000
 
-	rows, err := db.Query(`
+	var totalRowCount int64
+	_ = queryRowStore(db, []any{&totalRowCount}, `SELECT COUNT(*) FROM message_nodes`)
+
+	rows, err := queryStore(db, `
 		SELECT m.created_at,
-		       ` + projectSelect + `,
-		       ` + modelSelect + `,
+		       `+projectSelect+`,
+		       `+modelSelect+`,
 		       json_extract(m.chat_message, '$.metadata.metrics.input_tokens'),
 		       json_extract(m.chat_message, '$.metadata.metrics.output_tokens'),
 		       json_extract(m.chat_message, '$.metadata.metrics.cache_read_tokens'),
 		       json_extract(m.chat_message, '$.metadata.metrics.cache_creation_tokens')
-		FROM message_nodes m` + projectJoin + `
+		FROM message_nodes m`+projectJoin+`
 		WHERE m.chat_message LIKE '%"assistant"%' AND json_extract(m.chat_message, '$.role') = 'assistant'
 	`)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer rows.Close()
-
-	var totalRowCount int64
-	_ = db.QueryRow(`SELECT COUNT(*) FROM message_nodes`).Scan(&totalRowCount)
 
 	progress := render.NewProgress("Devin", totalRowCount)
 	progress.Start()
@@ -951,7 +987,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	}
 
 	if hasPrompt && promptTimeCol != "" {
-		pRows, pErr := db.Query(`SELECT ` + promptTimeCol + ` FROM prompt_history WHERE ` + promptTimeCol + ` > 0`)
+		pRows, pErr := queryStore(db, `SELECT `+promptTimeCol+` FROM prompt_history WHERE `+promptTimeCol+` > 0`)
 		if pErr == nil {
 			defer pRows.Close()
 			for pRows.Next() {
@@ -996,7 +1032,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 	summary.LifetimeTokens = summary.InputTokens + summary.OutputTokens + summary.CacheTokens
 
 	if len(daily) == 0 {
-		fbRows, fbErr := db.Query(`
+		fbRows, fbErr := queryStore(db, `
 			SELECT date(created_at, 'unixepoch', 'localtime') AS day, COUNT(*) AS turns
 			FROM sessions
 			WHERE hidden = 0
@@ -1023,7 +1059,7 @@ func LoadDevinData(dbPath string) (thermal.Summary, []thermal.DailyRow, []therma
 
 	projects := sortedProjects(byProjectDay)
 	var baseRowLength float64
-	_ = db.QueryRow(`SELECT COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, maxRowID).Scan(&baseRowLength)
+	_ = queryRowStore(db, []any{&baseRowLength}, `SELECT COALESCE(TOTAL(LENGTH(chat_message)), 0) FROM message_nodes WHERE row_id <= ?`, maxRowID)
 	freshnessKey := fmt.Sprintf("%d:%d:%d:%s:%s", maxRowID, totalRowCount, int64(baseRowLength), sessionsSig, promptSig)
 	saveDevinCache(canonicalPath, DevinCache{
 		CanonicalPath:     canonicalPath,

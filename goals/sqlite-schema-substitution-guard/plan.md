@@ -1,0 +1,7 @@
+# Plan: Reject SQLite view and virtual-table substitution across all loaders
+
+## Execution Steps
+- [x] **Phase 1 — Schema Object Validator & `hasColumn` Guard**: Implement `rejectSubstitutableObjects(db *sql.DB, names ...string) error` in `internal/loaders/sqlite.go` checking `type = 'table' AND rootpage > 0` (case-insensitively on `name`), guard `hasColumn`, and add `_pragma=trusted_schema=0` in `sqliteReadOnlyDSN`.
+- [x] **Phase 2 — Guard All 8 SQLite Loaders**: Wire `rejectSubstitutableObjects` into `LoadOpenCodeData`, `LoadMiMoCodeData`, `LoadDevinData`, `LoadMuseData`, `LoadZCodeData`, `loadCodexFromStateDB`, `LoadHermesData`, `loadAgyWorkspaces`, and `LoadZedData`.
+- [x] **Phase 3 — Verification & Evidence**: Add unit tests in `internal/loaders/sqlite_dsn_test.go` covering `VIEW` and `VIRTUAL TABLE` substitution across loaders, run `CGO_ENABLED=0 go test -race ./...` and `./scripts/simulated_user_gate.sh`, and write `goals/sqlite-schema-substitution-guard/evidence.md` with `Verdict: PASS`.
+- [x] **Phase 4 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/sqlite-schema-substitution-guard/plan.md`; (2) commit with `(goals/sqlite-schema-substitution-guard/goal.md)` using a `fix(loaders):` subject; (3) certify via `sila goals certify sqlite-schema-substitution-guard --evidence=goals/sqlite-schema-substitution-guard/evidence.md`; (4) reconcile via `sila goals` and commit the updated `goals/README.md` and certification receipts.

@@ -12,8 +12,11 @@ func TestRenderCostContract(t *testing.T) {
 	if got := formatCostValue(0.005, true); got != "~$0.0050" {
 		t.Errorf("formatCostValue sub-cent = %q", got)
 	}
-	if got := formatTotalCost(10, 4, 6); got != "$10.00" {
-		t.Errorf("mixed total = %q, want $10.00", got)
+	if got := formatTotalCost(10, 4, 6); got != "~$10.00" {
+		t.Errorf("mixed total = %q, want ~$10.00", got)
+	}
+	if got := formatTotalCost(10, 10, 0); got != "$10.00" {
+		t.Errorf("pure recorded total = %q, want $10.00", got)
 	}
 	if got := formatTotalCost(10, 0, 10); got != "~$10.00" {
 		t.Errorf("all-estimated total = %q", got)

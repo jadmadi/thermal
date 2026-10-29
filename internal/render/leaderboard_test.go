@@ -161,6 +161,35 @@ func TestRenderLeaderboardSortKeys_EstimatedCost(t *testing.T) {
 	}
 }
 
+func TestRenderLeaderboard_MixedCostAndDisclosures(t *testing.T) {
+	results := []thermal.ToolResult{
+		{
+			Tool: thermal.ToolOpenCode, Name: "OpenCode", CurrentStreak: 5, LongestStreak: 10,
+			ActiveDays: 10, TotalActivity: 100000,
+			Summary:            thermal.Summary{Cost: 64.50},
+			EstimatedCost:      0.16,
+			MissingPricing:     []string{"mystery-model"},
+			UnattributedTokens: 1500,
+		},
+	}
+	out := RenderLeaderboard(results, 52, true, "", true)
+	if !strings.Contains(out, "~$64.66") {
+		t.Errorf("expected ~$64.66 combined cost on row, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Recorded cost: $64.50 from 1 tools.") {
+		t.Errorf("expected recorded cost breakdown, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Estimated: ~$0.16 across 1 tools") {
+		t.Errorf("expected estimated cost breakdown, got:\n%s", out)
+	}
+	if !strings.Contains(out, "1.5K tokens have no model recorded") {
+		t.Errorf("expected unattributed tokens disclosure, got:\n%s", out)
+	}
+	if !strings.Contains(out, "No pricing for: mystery-model") {
+		t.Errorf("expected missing pricing disclosure, got:\n%s", out)
+	}
+}
+
 func BenchmarkRenderLeaderboard(b *testing.B) {
 	results := make([]thermal.ToolResult, 0, 12)
 	for i := 0; i < 6; i++ {

@@ -68,3 +68,24 @@ func TestRenderDashboard_EstimatedCost(t *testing.T) {
 		t.Errorf("expected ~$0.45 spent (est) in output, got:\n%s", out)
 	}
 }
+
+func TestRenderDashboard_MixedCostAndDisclosures(t *testing.T) {
+	sum := thermal.Summary{
+		Sessions:       5,
+		LifetimeTokens: 200000,
+		Cost:           10.50,
+	}
+	daily := []thermal.DailyRow{
+		{Day: "2026-07-15", Tokens: 2000, Turns: 2},
+	}
+	out := RenderDashboard("OpenCode", sum, daily, "/path/to/db", 52, true, 2.25, []string{"mystery-model"}, int64(500))
+	if !strings.Contains(out, "~$12.75 spent ($10.50 recorded + ~$2.25 est)") {
+		t.Errorf("expected combined spent in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "500 tokens have no model recorded") {
+		t.Errorf("expected unattributed tokens note in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "No pricing for: mystery-model") {
+		t.Errorf("expected missing pricing note in output, got:\n%s", out)
+	}
+}

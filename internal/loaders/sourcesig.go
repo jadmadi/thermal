@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jadmadi/thermal/internal/thermal"
 )
@@ -22,7 +23,7 @@ type SourceSig struct {
 // GetToolSourceSig calculates a lightweight file system signature for a tool's data sources.
 func GetToolSourceSig(t thermal.Tool, info ToolInfo, dbPathOverride string) SourceSig {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes, thermal.ToolZed:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolHermes, thermal.ToolZed:
 		p := dbPathOverride
 		if p == "" {
 			p = info.DBPath
@@ -49,6 +50,61 @@ func GetToolSourceSig(t thermal.Tool, info ToolInfo, dbPathOverride string) Sour
 		// -shm causes a self-invalidation feedback loop where thermal invalidates its
 		// own cache signature on every read tick. True database commits always mutate
 		// either the primary DB file or the -wal log.
+		return sig
+
+	case thermal.ToolMuse:
+		dir := info.DataDir
+		if dir == "" && info.DBPath != "" {
+			dir = filepath.Dir(info.DBPath)
+		}
+		if dbPathOverride != "" {
+			if fi, err := os.Stat(dbPathOverride); err == nil && !fi.IsDir() {
+				dir = filepath.Dir(dbPathOverride)
+			} else {
+				dir = dbPathOverride
+			}
+		}
+		if dir == "" {
+			return SourceSig{Missing: true}
+		}
+		var sig SourceSig
+		dbPath := info.DBPath
+		if dbPath == "" {
+			dbPath = filepath.Join(dir, "session-index.db")
+		}
+		if fi, err := os.Stat(dbPath); err == nil {
+			sig.FileCount++
+			sig.TotalSize += fi.Size()
+			sig.MaxNano = fi.ModTime().UnixNano()
+		}
+		if wfi, err := os.Stat(dbPath + "-wal"); err == nil {
+			sig.FileCount++
+			sig.TotalSize += wfi.Size()
+			if nano := wfi.ModTime().UnixNano(); nano > sig.MaxNano {
+				sig.MaxNano = nano
+			}
+		}
+		sessionsDir := filepath.Join(dir, "sessions")
+		if _, err := os.Stat(sessionsDir); err == nil {
+			_ = filepath.WalkDir(sessionsDir, func(p string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return nil
+				}
+				if strings.HasSuffix(d.Name(), ".jsonl") {
+					if info, err := d.Info(); err == nil {
+						sig.FileCount++
+						sig.TotalSize += info.Size()
+						if nano := info.ModTime().UnixNano(); nano > sig.MaxNano {
+							sig.MaxNano = nano
+						}
+					}
+				}
+				return nil
+			})
+		}
+		if sig.FileCount == 0 {
+			return SourceSig{Missing: true}
+		}
 		return sig
 
 	default:

@@ -1,0 +1,6 @@
+# Plan: Price classified tokens on partial days, resolve free-tier suffixes, and refresh model catalog
+
+## Execution Steps
+- [x] **Phase 1 — Classified Token Pricing & Free Suffixes**: Update `Catalog.PriceDay` and `Catalog.Lookup` in `internal/pricing/pricing.go` so classified tokens on partial days are priced, purely unclassified models stay in `MissingPricing`, and `-free` / `:free` suffixes resolve to `$0.00` unless overridden.
+- [x] **Phase 2 — Catalog Refresh & Dead Code Archival**: Layer `applyMuseCatalog` in `internal/pricing/pricing.go`, update `CanonicalIdentities` (`internal/pricing/models.go`) and `variantAliases` (`internal/pricing/modelsdev.go`), archive `internal/pricing/subscription.go` and `internal/pricing/subscription_test.go` to `rm/`, and add unit tests in `internal/pricing/pricing_test.go`.
+- [x] **Phase 3 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/pricing-catalog-and-partial-model-provenance/plan.md`; (2) write `goals/pricing-catalog-and-partial-model-provenance/evidence.md` with `Verdict: PASS`; (3) commit with `(goals/pricing-catalog-and-partial-model-provenance/goal.md)` using a `fix(pricing):` subject; (4) certify via `sila goals certify pricing-catalog-and-partial-model-provenance --evidence=goals/pricing-catalog-and-partial-model-provenance/evidence.md`.

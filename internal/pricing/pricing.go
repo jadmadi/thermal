@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,6 +83,7 @@ func Load(cachePath string, offline bool) *Catalog {
 	if cat == nil {
 		cat = &Catalog{Version: CacheVersion, Models: map[string]Price{}}
 	}
+	applyMuseCatalog(cat, filepath.Join(thermal.HomeDir(), ".local", "share", "muse", "model-catalog"))
 	applyOverrides(cat, DefaultOverridesPath())
 
 	stale := cat.FetchedAt.IsZero() || time.Since(cat.FetchedAt) > cacheTTL
@@ -97,6 +99,7 @@ func Load(cachePath string, offline bool) *Catalog {
 	// Persist before layering overrides so a user price never becomes part of
 	// the shared cache and outlives its own file.
 	writeCache(cachePath, fresh)
+	applyMuseCatalog(fresh, filepath.Join(thermal.HomeDir(), ".local", "share", "muse", "model-catalog"))
 	applyOverrides(fresh, DefaultOverridesPath())
 	return fresh
 }
@@ -113,7 +116,7 @@ func NewCatalog(models map[string]Price) *Catalog {
 
 // Lookup resolves a model name to a price. Names are matched case
 // insensitively, with provider path segments and date or variant suffixes
-// stripped.
+// stripped. Models ending in -free or :free resolve to zero cost.
 func (c *Catalog) Lookup(model string) (Price, bool) {
 	if c == nil || len(c.Models) == 0 {
 		return Price{}, false
@@ -122,6 +125,10 @@ func (c *Catalog) Lookup(model string) (Price, bool) {
 		if p, ok := c.Models[key]; ok {
 			return p, true
 		}
+	}
+	base := strings.ToLower(strings.TrimSpace(model))
+	if strings.HasSuffix(base, "-free") || strings.HasSuffix(base, ":free") {
+		return Price{}, true
 	}
 	return Price{}, false
 }
@@ -136,9 +143,9 @@ func (c *Catalog) LookupPrice(model string) (input, output, cacheRead, cacheWrit
 }
 
 // PriceDay implements thermal.Pricer. It prices each model from its token
-// types and returns the models that have no usable price. A model with
-// unclassified tokens is left unpriced rather than half-priced, because no
-// rate matches those tokens.
+// types and returns the models that have no usable price in the catalog. When
+// a model has classified tokens, those tokens are priced. A model missing from
+// the catalog is left unpriced and reported in missing.
 func (c *Catalog) PriceDay(day thermal.DailyRow) (float64, []string) {
 	if c == nil || len(day.Models) == 0 {
 		return 0, nil
@@ -153,8 +160,12 @@ func (c *Catalog) PriceDay(day thermal.DailyRow) (float64, []string) {
 			continue
 		}
 		p, ok := c.Lookup(model)
-		if !ok || t.Unclassified > 0 {
+		if !ok {
 			missing = append(missing, model)
+			continue
+		}
+		classified := t.Input + t.Output + t.Reasoning + t.CacheRead + t.CacheWrite
+		if classified == 0 {
 			continue
 		}
 		cost += float64(t.Input) * p.Input / million
@@ -198,6 +209,7 @@ func lookupCandidates(model string) []string {
 		if i := strings.Index(key, ":"); i >= 0 {
 			add(key[:i])
 		}
+		add(strings.TrimSuffix(key, "-free"))
 		add(trimDateSuffix(key))
 		add(strings.TrimSuffix(key, "-latest"))
 		add(trimTierSuffix(key))
@@ -308,5 +320,76 @@ func applyOverrides(cat *Catalog, path string) {
 	}
 	for id, p := range overrides {
 		cat.Models[strings.ToLower(strings.TrimSpace(id))] = p.withFallbacks()
+	}
+}
+
+// applyMuseCatalog layers Meta Muse's local model-catalog pricing before user
+// overrides so models not listed on models.dev are priced accurately.
+func applyMuseCatalog(cat *Catalog, dir string) {
+	if cat == nil {
+		return
+	}
+	if cat.Models == nil {
+		cat.Models = make(map[string]Price)
+	}
+	defaults := map[string]Price{
+		"muse-wonder-1.0":            {Input: 4.00, Output: 20.00, CacheRead: 0.20, CacheWrite: 4.00},
+		"muse-spark-1.3":             {Input: 1.25, Output: 4.25, CacheRead: 0.15, CacheWrite: 1.25},
+		"muse-spark-1.3-contributor": {Input: 0.10, Output: 0.20, CacheRead: 0.002, CacheWrite: 0.10},
+		"muse-spark-1.2":             {Input: 1.25, Output: 4.25, CacheRead: 0.15, CacheWrite: 1.25},
+		"muse-spark-1.2-contributor": {Input: 0.10, Output: 0.20, CacheRead: 0.002, CacheWrite: 0.10},
+	}
+	for id, p := range defaults {
+		if _, exists := cat.Models[id]; !exists {
+			cat.Models[id] = p
+		}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	type museCatalogFile struct {
+		Rows []struct {
+			ModelID string `json:"model_id"`
+			Cost    *struct {
+				Input  string `json:"input"`
+				Output string `json:"output"`
+				Cached string `json:"cached"`
+			} `json:"cost"`
+		} `json:"rows"`
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			continue
+		}
+		var cf museCatalogFile
+		if err := json.Unmarshal(b, &cf); err != nil {
+			continue
+		}
+		for _, row := range cf.Rows {
+			if row.ModelID == "" || row.Cost == nil {
+				continue
+			}
+			inRate, err1 := strconv.ParseFloat(strings.TrimSpace(row.Cost.Input), 64)
+			outRate, err2 := strconv.ParseFloat(strings.TrimSpace(row.Cost.Output), 64)
+			cacheRate, err3 := strconv.ParseFloat(strings.TrimSpace(row.Cost.Cached), 64)
+			if err1 != nil && err2 != nil {
+				continue
+			}
+			if err3 != nil {
+				cacheRate = inRate * 0.1
+			}
+			key := strings.ToLower(strings.TrimSpace(row.ModelID))
+			cat.Models[key] = Price{
+				Input:      inRate,
+				Output:     outRate,
+				CacheRead:  cacheRate,
+				CacheWrite: inRate,
+			}
+		}
 	}
 }

@@ -101,22 +101,25 @@ func LoadZedData(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.
 		}
 	}
 
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(canonicalPath, 30000000000))
+	db, err := openBoundedStore(canonicalPath, 30000000000)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA cache_size = -64000; PRAGMA mmap_size = 30000000000;")
+
+	if err := rejectSubstitutableObjects(db, "threads"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	var hasThreads bool
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads'`).Scan(&hasThreads); err != nil {
+	if err := queryRowStore(db, []any{&hasThreads}, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads'`); err != nil {
 		return thermal.Summary{}, nil, nil, err
 	}
 	if !hasThreads {
 		return thermal.Summary{}, nil, nil, fmt.Errorf("zed: threads table not found in %s", canonicalPath)
 	}
 
-	rows, err := db.Query(`
+	rows, err := queryStore(db, `
 		SELECT id, summary, updated_at, data_type, data, parent_id, worktree_branch, folder_paths, folder_paths_order, created_at
 		FROM threads
 	`)

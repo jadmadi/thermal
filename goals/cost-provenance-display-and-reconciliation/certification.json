@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cost-provenance-display-and-reconciliation",
+  "certified_at": "2026-10-29T08:31:56.888407325Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cost-provenance-display-and-reconciliation/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "a324b2dff0155d27b7f2d99bea43c0b85ade9076",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": false,
+    "handoff": true,
+    "verified": true
+  }
+}

@@ -59,8 +59,11 @@ func TestFormatCostContract(t *testing.T) {
 }
 
 func TestFormatTotalCostContract(t *testing.T) {
-	if got := FormatTotalCost(10, 4, 6); got != "$10.00" {
-		t.Errorf("mixed total = %q, want $10.00 (no tilde)", got)
+	if got := FormatTotalCost(10, 4, 6); got != "~$10.00" {
+		t.Errorf("mixed total = %q, want ~$10.00 (tilde for mixed estimate)", got)
+	}
+	if got := FormatTotalCost(10, 10, 0); got != "$10.00" {
+		t.Errorf("pure recorded total = %q, want $10.00", got)
 	}
 	if got := FormatTotalCost(10, 0, 10); got != "~$10.00" {
 		t.Errorf("all-estimated total = %q, want ~$10.00", got)
