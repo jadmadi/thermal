@@ -28,20 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🔵 **In Progress (Claimed)**: 1
-- ⛔ **Blocked on Prerequisites**: 2
-- 🟢 **Implemented**: 121 (4 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 12 (10 independent ⚡, 2 unblocked 🔗)
+- 🟢 **Implemented**: 122 (5 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 542/608 completed (89%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@command-code` | Implementing strict parser foundation first | 0s ago |
+- 📋 **Execution Tasks Progress**: 547/608 completed (89%)
 
 ---
 
@@ -59,8 +49,8 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
 | [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#253)` | - | Name denominators and intervals and remove run-on or zero-noise report prose — Priority: P2 (output clarity). The analytics commands are numerically correct bu... | `/goal goals/cli-analytics-and-audit-prose-clarity/goal.md` |
 | [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#254)` | - | Give -v, -V, --version, and --verbose one unambiguous contract — Priority: P1 (discoverability). `-v` is context-dependent: it prints the version... | `/goal goals/cli-version-verbose-flag-contract/goal.md` |
-| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#245)` | Prereqs: cli-argument-parser-strictness | Classify unknown commands, tools, and extra positionals with actionable suggestions — Priority: P1 (error empathy). Every unrecognized positional is currently funnell... | `/goal goals/cli-unknown-token-diagnostics/goal.md` |
-| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⛔ Blocked (#250)` | Prereqs: cli-argument-parser-strictness | Give --top one documented contract and make every remediation hint valid — Priority: P1 (consistency). `--top` has three incompatible stories. The help say... | `/goal goals/cli-top-flag-contract/goal.md` |
+| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#245)` | Deps met: cli-argument-parser-strictness | Classify unknown commands, tools, and extra positionals with actionable suggestions — Priority: P1 (error empathy). Every unrecognized positional is currently funnell... | `/goal goals/cli-unknown-token-diagnostics/goal.md` |
+| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#250)` | Deps met: cli-argument-parser-strictness | Give --top one documented contract and make every remediation hint valid — Priority: P1 (consistency). `--top` has three incompatible stories. The help say... | `/goal goals/cli-top-flag-contract/goal.md` |
 
 ---
 
@@ -102,6 +92,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
+| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
