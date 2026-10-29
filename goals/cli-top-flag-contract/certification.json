@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-top-flag-contract",
+  "certified_at": "2026-10-29T21:06:15.021827895Z",
+  "certified_by": "command-code",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-top-flag-contract/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "4dbf119a53f05229e3b889a5c0bd09f67d5959ae",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
