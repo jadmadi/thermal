@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 8 (6 independent ⚡, 2 unblocked 🔗)
-- 🟢 **Implemented**: 126 (9 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 7 (6 independent ⚡, 1 unblocked 🔗)
+- 🟢 **Implemented**: 127 (10 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 567/608 completed (93%)
+- 📋 **Execution Tasks Progress**: 572/608 completed (94%)
 
 ---
 
@@ -45,7 +45,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
 | [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
 | [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#253)` | - | Name denominators and intervals and remove run-on or zero-noise report prose — Priority: P2 (output clarity). The analytics commands are numerically correct bu... | `/goal goals/cli-analytics-and-audit-prose-clarity/goal.md` |
-| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#245)` | Deps met: cli-argument-parser-strictness | Classify unknown commands, tools, and extra positionals with actionable suggestions — Priority: P1 (error empathy). Every unrecognized positional is currently funnell... | `/goal goals/cli-unknown-token-diagnostics/goal.md` |
 | [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#250)` | Deps met: cli-argument-parser-strictness | Give --top one documented contract and make every remediation hint valid — Priority: P1 (consistency). `--top` has three incompatible stories. The help say... | `/goal goals/cli-top-flag-contract/goal.md` |
 
 ---
@@ -161,6 +160,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9ae5494` |
 | [`sqlite-loader-resource-bounds`](sqlite-loader-resource-bounds/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`pricing-catalog-and-partial-model-provenance`](pricing-catalog-and-partial-model-provenance/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
+| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `9903ca2` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |
