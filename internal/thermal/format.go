@@ -36,14 +36,15 @@ func FormatCostOrDash(v float64, estimated bool) string {
 	return FormatCost(v, estimated)
 }
 
-// FormatTotalCost renders a report total. A total with recorded money is not
-// prefixed with the estimate tilde; the footer names the recorded and
-// estimated components. An all-estimated total keeps the tilde.
+// FormatTotalCost renders a report total. If any component is estimated
+// (estimated > 0), the total is prefixed with the estimate tilde so a mixed
+// sum is never mistaken for a purely billed invoice amount. The footer
+// names the recorded and estimated components.
 func FormatTotalCost(total, recorded, estimated float64) string {
 	if total <= 0 {
 		return "—"
 	}
-	return FormatCost(total, recorded <= 0 && estimated > 0)
+	return FormatCost(total, estimated > 0)
 }
 
 // FormatPercent renders a percentage with a fixed number of decimals.

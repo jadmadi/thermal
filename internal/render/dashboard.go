@@ -13,7 +13,7 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
-func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool, estimatedCost ...float64) string {
+func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.DailyRow, dbPath string, weeks int, noColor bool, extraArgs ...any) string {
 	st := NewStyle(noColor)
 	colors := st.Colors
 	muted := st.Muted
@@ -25,7 +25,9 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	case "Agy":
 		tokenLabel = "steps"
 	case "Muse":
-		tokenLabel = "prompts"
+		if summary.InputTokens == 0 && summary.OutputTokens == 0 && summary.CacheTokens == 0 {
+			tokenLabel = "prompts"
+		}
 	case "Droid":
 		tokenLabel = "messages"
 	}
@@ -84,21 +86,34 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 	// Extra analytics line: cost, code changes, sessions, agent breakdown.
 	var extra []string
 	var est float64
-	if len(estimatedCost) > 0 {
-		est = estimatedCost[0]
+	var missingModels []string
+	var unattributedTokens int64
+	for _, arg := range extraArgs {
+		switch v := arg.(type) {
+		case float64:
+			est = v
+		case []string:
+			missingModels = v
+		case int64:
+			unattributedTokens = v
+		case int:
+			unattributedTokens = int64(v)
+		}
 	}
-	if summary.Cost > 0 {
+	if summary.Cost > 0 && est > 0 {
+		extra = append(extra, fmt.Sprintf("%s spent (%s recorded + %s est)",
+			thermal.FormatCost(summary.Cost+est, true),
+			thermal.FormatCost(summary.Cost, false),
+			thermal.FormatCost(est, true),
+		))
+	} else if summary.Cost > 0 {
 		if summary.Cost < 0.01 {
 			extra = append(extra, fmt.Sprintf("$%.4f spent", summary.Cost))
 		} else {
 			extra = append(extra, fmt.Sprintf("$%.2f spent", summary.Cost))
 		}
 	} else if est > 0 {
-		if est < 0.01 {
-			extra = append(extra, fmt.Sprintf("%s spent (est)", thermal.FormatCost(est, true)))
-		} else {
-			extra = append(extra, fmt.Sprintf("%s spent (est)", thermal.FormatCost(est, true)))
-		}
+		extra = append(extra, fmt.Sprintf("%s spent (est)", thermal.FormatCost(est, true)))
 	}
 	if summary.LinesAdded > 0 || summary.LinesDeleted > 0 {
 		extra = append(extra, fmt.Sprintf("%s+ / %s- lines", thermal.CompactNumber(summary.LinesAdded), thermal.CompactNumber(summary.LinesDeleted)))
@@ -114,7 +129,7 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		extra = append(extra, fmt.Sprintf("%d sessions", summary.Sessions))
 	}
 
-	if len(extra) > 0 || len(summary.AgentBreakdown) > 0 {
+	if len(extra) > 0 || len(summary.AgentBreakdown) > 0 || len(summary.ReasoningBreakdown) > 0 || unattributedTokens > 0 || len(missingModels) > 0 {
 		maxW := 0
 		for _, l := range cardLines {
 			if w := ansi.StringWidth(l); w > maxW {
@@ -163,6 +178,16 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 				parts = append(parts, fmt.Sprintf("%s: %d", lc.level, lc.n))
 			}
 			cardLines = append(cardLines, fmt.Sprintf(" %s reasoning  %s", muted("·"), strings.Join(parts, muted("  "))))
+		}
+		if note := unpriceableNote(unattributedTokens); note != "" {
+			cardLines = append(cardLines, " "+dim(note))
+		}
+		if len(missingModels) > 0 {
+			models := missingModels
+			if len(models) > 4 {
+				models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
+			}
+			cardLines = append(cardLines, " "+dim("No pricing for: "+strings.Join(models, ", ")))
 		}
 	}
 

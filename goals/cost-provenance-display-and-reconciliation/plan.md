@@ -1,0 +1,6 @@
+# Plan: Enforce tilde prefix on mixed-cost totals and surface missing-price provenance on leaderboard and dashboard
+
+## Execution Steps
+- [x] **Phase 1 — Mixed Total Tilde & Tool Cost Reconciliation**: Update `formatTotalCost` in `internal/render/format.go` to prefix `~` whenever `estimated > 0`, and update `cmd/thermal/main.go`, `internal/render/leaderboard.go`, and `internal/render/dashboard.go` so tools mixing recorded and estimated days include `EstimatedCost` in both row cells and footer totals.
+- [x] **Phase 2 — Leaderboard & Dashboard Provenance Footers**: Capture `MissingPricing` and `UnattributedTokens` in `cmd/thermal/main.go` and render the disclosures in `RenderLeaderboard` and `RenderDashboard`; update golden tests and verify `./scripts/simulated_user_gate.sh`.
+- [x] **Phase 3 — Attribution & Registry Closure**: (1) check all completed tasks in `goals/cost-provenance-display-and-reconciliation/plan.md`; (2) write `goals/cost-provenance-display-and-reconciliation/evidence.md` with `Verdict: PASS`; (3) commit with `(goals/cost-provenance-display-and-reconciliation/goal.md)` using a `fix(render):` subject; (4) certify via `sila goals certify cost-provenance-display-and-reconciliation --evidence=goals/cost-provenance-display-and-reconciliation/evidence.md`.

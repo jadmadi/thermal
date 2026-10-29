@@ -4,7 +4,6 @@
 package loaders
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -106,12 +105,17 @@ func loadAgyWorkspaces(dataDir string) map[string]string {
 			continue
 		}
 
-		db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 268435456))
+		db, err := openBoundedStore(dbPath, 268435456)
 		if err != nil {
 			continue
 		}
 
-		rows, err := db.Query("SELECT conversation_id, workspace_uris FROM conversation_summaries")
+		if err := rejectSubstitutableObjects(db, "conversation_summaries"); err != nil {
+			db.Close()
+			continue
+		}
+
+		rows, err := queryStore(db, "SELECT conversation_id, workspace_uris FROM conversation_summaries")
 		if err != nil {
 			db.Close()
 			continue

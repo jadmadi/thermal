@@ -33,17 +33,20 @@ func LoadCodexData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 }
 
 func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
-	db, err := sql.Open("sqlite", sqliteReadOnlyDSN(dbPath, 268435456))
+	db, err := openBoundedStore(dbPath, 268435456)
 	if err != nil {
 		return thermal.Summary{}, nil, nil, fmt.Errorf("cannot open %s: %w", dbPath, err)
 	}
 	defer db.Close()
-	_, _ = db.Exec("PRAGMA mmap_size=268435456")
+
+	if err := rejectSubstitutableObjects(db, "threads", "thread_spawn_edges"); err != nil {
+		return thermal.Summary{}, nil, nil, err
+	}
 
 	// Query thread lineage DAG edges (parent-child relationships) if supported
 	forkThreads := make(map[string]string)
 	if hasTable(db, "thread_spawn_edges") {
-		edgeRows, err := db.Query(`SELECT child_thread_id, parent_thread_id FROM thread_spawn_edges`)
+		edgeRows, err := queryStore(db, `SELECT child_thread_id, parent_thread_id FROM thread_spawn_edges`)
 		if err == nil {
 			for edgeRows.Next() {
 				var child, parent string
@@ -65,9 +68,9 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	if hasColumn(db, "threads", "thread_source") {
 		threadSourceExpr = "thread_source"
 	}
-	rows, err := db.Query(`
+	rows, err := queryStore(db, `
 		SELECT id, tokens_used, model, source, reasoning_effort, agent_role,
-		       created_at, updated_at, rollout_path, ` + cwdExpr + `, ` + threadSourceExpr + `
+		       created_at, updated_at, rollout_path, `+cwdExpr+`, `+threadSourceExpr+`
 		FROM threads
 		WHERE archived = 0
 		ORDER BY created_at

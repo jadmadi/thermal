@@ -62,6 +62,11 @@ var CanonicalIdentities = []ModelIdentity{
 
 	// Meta
 	{CanonicalID: "llama-3.3-70b-instruct", DisplayName: "Llama 3.3 70B", Provider: "meta", Family: "llama"},
+	{CanonicalID: "muse-wonder-1.0", DisplayName: "Muse Wonder 1.0", Provider: "meta", Family: "muse"},
+	{CanonicalID: "muse-spark-1.3", DisplayName: "Muse Spark 1.3", Provider: "meta", Family: "muse"},
+	{CanonicalID: "muse-spark-1.3-contributor", DisplayName: "Muse Spark 1.3 Contributor", Provider: "meta", Family: "muse"},
+	{CanonicalID: "muse-spark-1.2", DisplayName: "Muse Spark 1.2", Provider: "meta", Family: "muse"},
+	{CanonicalID: "muse-spark-1.2-contributor", DisplayName: "Muse Spark 1.2 Contributor", Provider: "meta", Family: "muse"},
 
 	// Mistral
 	{CanonicalID: "codestral-latest", DisplayName: "Codestral", Provider: "mistralai", Family: "mistral"},

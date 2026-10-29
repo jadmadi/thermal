@@ -38,14 +38,14 @@ thermal/
    db.Exec("PRAGMA mmap_size=268435456") // 256MB mmap window
    ```
 3. **Robust Time Parsing (`parseSessionTime`)**: AI tool timestamps vary wildly across tools and versions (RFC3339 strings, Unix seconds, milliseconds, microseconds, SQLite strings). Always use robust multi-format parsing or `time_test.go` utilities. Never assume a single fixed format.
-4. **Incremental Delta Caching (`cache.go`)**: To satisfy the sub-10ms cached invocation target, large databases and multi-file scanners use disk-backed delta snapshot caches in `~/.cache/thermal/<tool>/`. Devin implements this via `DevinCache` in `internal/loaders/cache.go` (storing canonical database identity, file size, modification timestamps, max row IDs, and sessions signatures); Codex rollout logs via `codexRolloutCachePath` in `internal/loaders/codexcache.go`; and every directory scanner (Claude, codewhale, Droid, command-code, Agy, Grok, DeepSeek (DSH)) via `DirScanCache` in `internal/loaders/dircache.go`, keyed on the canonical root plus a per-file signature (relative path, size, nanosecond modification time) so an untouched tree is reused without re-reading file bodies. A stat-based signature cannot observe a rewrite that preserves both byte size and the recorded modification time; OpenCode/MiMoCode incremental state tracking remains a follow-up. Loaders must store exact file modification times (`mod_time`), sizes (`size`), or max seen transaction IDs so subsequent invocations take under `10ms`.
+4. **Incremental Delta Caching (`cache.go`, `codexcache.go`, `dircache.go`)**: Large databases and multi-file scanners use disk-backed delta snapshot caches in `~/.cache/thermal/<tool>/` (`DevinCache`, `codexRolloutCachePath`, and `DirScanCache` keyed on canonical root + relative path, byte size, and nanosecond `mod_time`) so subsequent invocations take `<10ms`.
 5. **Concurrency Safety**: Multi-file, directory, and JSONL log scanners (`command-code`, `Codex` rollout logs, `Agy` overview logs) must use bounded worker pools (`sync.WaitGroup` or semaphore channels capped at ~16 workers) with thread-safe aggregation (`sync.Mutex`). Never spawn unbounded goroutines over thousands of files.
 6. **Disjoint Token Types**: Token type fields (`Input`, `Output`, `Reasoning`, `CacheRead`, `CacheWrite`) MUST be disjoint and add up to the recorded total. Sources that nest them (Codex and Grok put reasoning inside output and cache inside input; ZCode and command-code put cache inside input) must subtract the nested parts in the loader, never in render or pricing.
-7. **Project Attribution**: Loaders whose source records where a session ran MUST emit `thermal.ProjectDay` rows beside the daily rows, normalized through `thermal.ProjectKey` so subdirectories fold into their nearest git root. Sources with no project data return an empty slice. `ProjectKey` resolves symlinks first, because the same directory reached through a symlinked parent (a symlinked home, for example) must count once, and never invent a project name from a hash or an encoded directory name; it falls back to the recorded path only when no repository marker exists.
+7. **Project Attribution**: Loaders whose source records where a session ran MUST emit `thermal.ProjectDay` rows beside the daily rows, normalized through `thermal.ProjectKey` (resolving symlinks first and folding subdirectories into their nearest git root; never invent a project name from a hash).
 8. **Canonical Model Names**: Model ids MUST pass through `modelName()` before they become map keys (`DailyRow.Models`, `ProjectDay.Models`, `Summary.ModelBreakdown`), because tools disagree on case (`GLM-5.3-Flash` in ZCode versus `glm-5.3-flash` in OpenCode). One model is one row everywhere, including `thermal models`.
-9. **JSONL Scanner Line Ceilings**: Every JSONL scan MUST set an explicit ceiling that fits real data, using the shared `newJSONLScanner()` constructor (32 MiB ceiling today). A smaller ceiling truncates multi-megabyte tool results, rollout chunks, or transcripts and silently drops all subsequent lines.
-10. **JSONL Scan Diagnostics**: Every JSONL scan loop MUST check `scanner.Err()` and report errors through `Summary.Warnings` using `formatScanWarning()`. Diagnostics ride `Summary.Warnings` (`json:"-"`) to `--verbose` stderr only and MUST never pollute stdout or `--json` output.
-11. **SQLite Rows Iteration Safety**: Every database query iterating over `rows.Next()` MUST explicitly check `rows.Err()` immediately after loop termination. Query truncation or connection failures during iteration return `false` on `Next()`; unhandled `rows.Err()` causes silent session omission.
+9. **JSONL Scanner Line Ceilings**: Every JSONL scan MUST set an explicit ceiling that fits real data, using the shared `newJSONLScanner()` constructor (32 MiB ceiling today).
+10. **JSONL Scan Diagnostics**: Every JSONL scan loop MUST check `scanner.Err()` and report errors through `Summary.Warnings` using `formatScanWarning()` (`json:"-"`, `--verbose` stderr only; never stdout or `--json`).
+11. **SQLite Rows Iteration Safety**: Every database query iterating over `rows.Next()` MUST explicitly check `rows.Err()` immediately after loop termination.
 
 ### B. TUI Boundary (`internal/tui/`)
 1. **Imports stay inside the package**: `internal/tui` may import `internal/thermal`, `internal/loaders`, `internal/pricing`, and the charm stack. Nothing outside it imports `internal/tui` except `cmd/thermal`, and the CLI must never render a TUI frame itself.
@@ -61,20 +61,18 @@ thermal/
 5. **`--chart` never touches `--json`**: it only adds rows to stdout.
 
 ### D. Tool-Specific Loader Quirks
-* **Devin (`devin.go`)**: Queries the SQLite DB joining `message_nodes` against `sessions`. Always check `metadata.metrics` for true input/output/cache token counts (`input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`). Check `prompt_history` (`updated_at` fallback to `created_at`) for accurate streak calculations across sessions without messages. The `sessions.model` column MUST be projected onto `DailyRow.Models` and `ProjectDay.Models`, because pricing needs a model and a day without one is priced at zero and disclosed as unattributed. Attribution is session-level carried down to the day a message was created, which is the finest granularity the source offers, and a session whose model is empty leaves its tokens unattributed rather than inventing a name.
-* **OpenCode / MiMoCode (`internal/loaders/sqlite.go`)**: Read pre-aggregated token columns (`tokens_input`, `tokens_output`, `tokens_reasoning`, `tokens_cache_read/write`) plus `cost` and diff summaries. OpenCode v2 writes sessions to `session_v2` and abandons the legacy `session` table; probe for `session_v2` first and fold in legacy-only rows. Never assume a table stays the primary source across tool upgrades.
-* **Codex (`codex.go`)**: Reads `state_5.sqlite` (`threads.tokens_used`, reasoning effort, source/model breakdown) as the primary source. Supplements with rollout JSONL logs (`~/.codex/sessions/**/*.jsonl`) for granular token breakdowns when available.
-* **codewhale (`codewhale.go`)**: Reads `~/.codewhale/sessions/*.json` files for `metadata.total_tokens` and `metadata.cost.session_cost_usd`.
-* **command-code (`commandcode.go`)**: Scans `~/.commandcode/projects/*/*.jsonl` with a bounded worker pool. Modern entries record per-assistant `usage` (`inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, `costUsd`) and a per-message model; `inputTokens` nests cache read and write, so the loader subtracts them to keep token types disjoint. The session header's `cwd` feeds `thermal.ProjectKey` for `ProjectDay` rows, and `.meta.json` supplies a model fallback. Legacy flat transcripts carry no usage, so their assistant messages count as turns only and never as tokens.
-* **Agy (`agy.go`)**: Scans `~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl` for step activity and model distribution (`Model Selection` entries); falls back to legacy `overview.txt` (same schema) and legacy root `~/.gemini/antigravity` when the `-cli` root is absent.
-* **ZCode (`zcode.go`)**: Reads `~/.zcode/cli/db/db.sqlite` `model_usage` (per-request tokens, model, agent; `status = 'completed'` only) and `turn_usage` for turn counts. The DB records no cost, so Cost stays 0.
-* **Grok (`grok.go`)**: Scans `<grok-home>/sessions/*/*/updates.jsonl` (`GROK_HOME` env or `~/.grok`) for `turn_completed` usage only. Turn deduplication discards duplicate `turn_completed` events sharing the same `prompt_id` (fallback to `turn_id` or `_meta.eventId`) and records a non-fatal warning. `costUsdTicks` converts at 1e-10 USD; `inputTokens` already includes cache, `reasoningTokens` is a subset of output, lifetime uses recorded `totalTokens`. Bounded worker pool like command-code.
-* **Muse (`muse.go`)**: Reads `~/.local/share/muse/session-index.db` (sessions, prompt counts, model ids, microsecond timestamps). Activity-only: no token or cost columns exist. Prompt counts stand in for activity; upgrade to per-session `session.jsonl` when model-call frames accumulate.
-* **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for assistant `message.usage` (input/output/cache tokens) and model ids; one file per session. No cost fields, so Cost stays 0. Bounded worker pool like command-code.
-* **Droid (`droid.go`)**: Scans `~/.factory/sessions/*/*.jsonl` message records for activity; session files carry no token or cost telemetry. Bounded worker pool like command-code.
-* **DeepSeek harness (`dsh.go`)**: Scans `~/.dsh/storages/session_projcache/sessions/*.json` in parallel and supplements with monolithic `~/.dsh/storages/session_projcache.json` (`tables.sessions`). Honors `DSH_HOME` env or default `~/.dsh`. Token usage maps `uncachedInputTokens` to disjoint input, `outputTokens` to output, `cacheReadTokens` to cache read, and `cacheWriteTokens` to cache write. Session timestamps parse from `identity.createdAt` (Unix ms/s or RFC3339). Project attribution maps `identity.cwd` through `thermal.ProjectKey`. Defensive against null/nil pointers in `record.rows`.
-* **Nous Hermes (`hermes.go`)**: Reads `~/.hermes/state.db` SQLite database (`HERMES_HOME` env or default `~/.hermes`) with read-only URI and memory-mapped I/O. Extracts `sessions` (and optional `session_model_usage`), mapping `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `reasoning_tokens`, and `estimated_cost_usd`. Project attribution maps `cwd` through `thermal.ProjectKey`. Resilient multi-format timestamp parsing for Unix epochs and ISO strings.
-* **Project sources (token tools)**: OpenCode `session_v2.directory` (fall back to the `project` table worktree), MiMoCode `session.directory`, ZCode `session.directory`, Codex `threads.cwd`, Devin `sessions.working_directory`, Claude per-line `cwd`, Grok `summary.json.git_root_dir` (fall back to the URL-decoded session directory), codewhale `metadata.workspace`, dsh `identity.cwd`, Hermes `cwd`, command-code session header `cwd`. Muse and Droid carry a workspace or encoded directory but are deferred; Agy records no project at all.
+* **Devin (`devin.go`)**: Joins `message_nodes` + `sessions` (`metadata.metrics` for true input/output/cache tokens; `prompt_history` for streaks). Projects `sessions.model` onto `DailyRow.Models` and `ProjectDay.Models` (empty model stays unattributed).
+* **OpenCode / MiMoCode (`sqlite.go`)**: Probes `session_v2` first and folds in legacy `session` rows (`tokens_input/output/reasoning/cache_read/write`, `cost`).
+* **Codex (`codex.go`)**: Reads `state_5.sqlite` (`threads.tokens_used`) supplemented by `~/.codex/sessions/**/*.jsonl` rollout logs.
+* **codewhale (`codewhale.go`)**: Reads `~/.codewhale/sessions/*.json` (`metadata.total_tokens`, `metadata.cost.session_cost_usd`).
+* **command-code (`commandcode.go`)**: Scans `~/.commandcode/projects/*/*.jsonl` with bounded pool; subtracts `cacheReadTokens`/`cacheWriteTokens` from `inputTokens`; `.meta.json` model fallback; legacy flat transcripts count as turns only.
+* **Agy (`agy.go`)**: Scans `~/.gemini/antigravity-cli/brain/*/.system_generated/logs/transcript.jsonl` (fallback `overview.txt` and `~/.gemini/antigravity`) for step activity and `Model Selection`.
+* **ZCode (`zcode.go`)**: Reads `~/.zcode/cli/db/db.sqlite` (`model_usage` with `status = 'completed'`, `turn_usage`); Cost is 0.
+* **Grok (`grok.go`)**: Scans `<grok-home>/sessions/*/*/updates.jsonl` for deduplicated `turn_completed` events (`prompt_id` -> `turn_id` -> `_meta.eventId`); `costUsdTicks` at `1e-10` USD; subtracts cache from input and reasoning from output.
+* **Muse (`muse.go`) & Droid (`droid.go`)**: Activity-only (`~/.local/share/muse/session-index.db` prompt counts; `~/.factory/sessions/*/*.jsonl` message records).
+* **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for `message.usage` and model ids; Cost is 0.
+* **DeepSeek (`dsh.go`)**: Scans `~/.dsh/storages/session_projcache/sessions/*.json` + monolithic `session_projcache.json` (`DSH_HOME`), mapping `uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, and `identity.cwd`.
+* **Nous Hermes (`hermes.go`)**: Reads `~/.hermes/state.db` (`HERMES_HOME`) `sessions` and `session_model_usage` (`cwd` -> `ProjectKey`).
 
 ---
 
@@ -87,7 +85,10 @@ thermal/
 3. **Color & Verbosity Flags**:
    * `--no-color`: Strips all ANSI escape sequences. Always check `colorEnabled` before emitting color codes.
    * `--verbose`: Outputs non-fatal loader diagnostic warnings (`database locked`, `missing directory`) exclusively to `os.Stderr`. Never pollute `os.Stdout` or JSON output (`--json`) with warnings.
-4. **Report, Project, Analytics, and Extended Commands**: `daily`, `weekly`, `monthly`, `projects`, `models`, `mix`, `stats`, `trend`, `audit`, `share`, `live`, `license`, and `changelog` are reserved positional words (`thermal opencode weekly`, `thermal projects`, `thermal audit`, `thermal share`, `thermal live`, `thermal license`, `thermal changelog`). Utility commands include `version`, `upgrade`, `license`, and `changelog` (with `--top`, `--last`, and `--json` support). Report options (`--since`, `--until`, `--last`, `--order`, `--breakdown`, `--start-of-week`, `--offline`, `--no-estimate`) must error when no report word is present instead of being silently ignored, and `--sort`/`--top` must error where they do not apply: `streak|tokens|cost` for the leaderboard, `tokens|cost|days|recent` for projects, `tokens|cost` for models. `--interval`, `--stream`, and `--flame-ceiling` apply to `live` (real-time token burn monitor with launch-relative sessions, one-second Peak/Rate buckets, a metric-specific configurable flame ceiling, rolling sparkline, grouped ticker, and NDJSON streaming). `audit` runs non-destructive local setup and context health checks across permissions, memory mapping, and caches. `share` generates zero-database stateless compressed URL cards. Cost always comes from the source when recorded; `internal/pricing` estimates only days that have no recorded cost and that name a model. The leaderboard and single-tool dashboards display estimated costs prefixed with `~` (`~$X.XX`) for tools without recorded cost, and `--no-estimate` disables estimation. A day with no model is priced at zero, counted in `PeriodRow.UnattributedTokens` and `ProjectRow.UnattributedTokens`, and stated in the footer, so an estimated total never reads as complete when part of it could not be priced. Activity-only rows, where `Tokens` equals `Turns` and every other field is empty, are `isActivityOnly` and never enter token totals: a step count is not a token; they are excluded from token metrics in reports and analytics (`mix`, `stats`, `trend`). Models the catalog cannot find are listed in the footer by name rather than treated as free. Lookup strips one tier word (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco` and a few more) because a tool records the variant it asked for while the catalog prices the base model. Never widen that to a fuzzy or stem match: folding two models onto one price is worse than naming a model as unpriced. A model with unclassified tokens is left unpriced rather than half priced. Model cost is always an estimate because recorded cost is not attributable to a single model. Project rows merge across tools by project key, tools rank by contributed tokens, and the table prints every row unless `--top` limits it.
+4. **Report, Project, Analytics, and Extended Commands**:
+   * Reserved positional words: `daily`, `weekly`, `monthly`, `projects`, `models`, `mix`, `stats`, `trend`, `audit`, `share`, `live`, `license`, `changelog`, `version`, `upgrade`.
+   * Report flags (`--since`, `--until`, `--last`, `--order`, `--breakdown`, `--start-of-week`, `--offline`, `--no-estimate`) error when no report word is present. `--sort`/`--top` validate per command (`streak|tokens|cost` on leaderboard, `tokens|cost|days|recent` on projects, `tokens|cost` on models). `--interval`, `--stream`, and `--flame-ceiling` apply to `live`.
+   * Pricing (`internal/pricing`): Estimates only days without recorded cost that name a model (prefixed with `~`, disabled via `--no-estimate`). Unattributed tokens (`PeriodRow.UnattributedTokens`, `ProjectRow.UnattributedTokens`) and unknown catalog models are priced at zero and disclosed in the footer. Catalog lookup strips one tier suffix (`-high`, `-medium`, `-max`, `-mini`, `-fast`, `-eco`) and never uses fuzzy/stem matching. Activity-only rows (`isActivityOnly`) never enter token totals.
 5. **Dual-Licensing & Contributor Gating**: Thermal is dual-licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** (community edition) and a **Commercial Enterprise License**. All external contributions require acceptance of the Contributor License Agreement (CLA) in `CONTRIBUTING.md` (via git `Signed-off-by:` trailers or PR sign-off) granting commercial sublicensing rights to Jad Madi so external contributions never deadlock commercial dual-licensing rights. Third-party permissive notices are preserved in `NOTICES.md`.
 6. **Breaking Change & Migration Governance Gate**: Any pull request or commit that modifies CLI flag semantics, removes an alias, alters `--json` schema keys, or changes token aggregation behavior MUST include a matching entry in [`docs/MIGRATION.md`](docs/MIGRATION.md) following the 6-part Entry Anatomy (stable verb-prefixed heading, detection regex with literal error output, 3-sentence rationale, before/after snippets, fix command, and escape hatch). PRs altering user-visible CLI contracts without migration documentation will not be approved.
 
@@ -134,32 +135,11 @@ thermal/
 
 ## 5. Testing & Verification Checklist
 
-Before committing or submitting a pull request, run the verification suite:
-
-```bash
-# 1. Run all unit tests with race detection and verbose output
-go test -v ./...
-
-# 2. Verify compilation of the CLI binary
-go build -o /tmp/thermal-test ./cmd/thermal
-
-# 3. Test alias resolution and heatmap output locally
-/tmp/thermal-test --tool auto
-/tmp/thermal-test --tool devin
-/tmp/thermal-test --tool agy --verbose
-
-# 4. Run automated simulated user testing release gate
-./scripts/simulated_user_gate.sh
-
-# 5. Regenerate and verify the fixed-fixture output gallery
-./scripts/output_gallery_gate.sh
-```
-
 When modifying loaders, ensure unit tests inside `internal/loaders/*_test.go` cover edge cases (missing databases, corrupted files, zero-token sessions, timestamp variations, and schema differences) using mock temporary files or SQLite in-memory databases.
 
-* **Tiered Gate Verification (`scripts/check.sh`)**:
+* **Tiered Gate Verification (`scripts/check.sh` & `./scripts/output_gallery_gate.sh`)**:
   - **Fast-Path Pre-Commit (`./scripts/check.sh --pre-commit` / `-q`)**: Runs in `<3s`. Audits active diff for secrets/merge markers/debug lines via Diff Sentry, runs `gofmt -l` strictly on modified files, and executes unit tests ONLY for modified Go packages. Install via `./scripts/check.sh --install-hooks`.
-  - **Full Pre-Push & CI Gate (`./scripts/check.sh` / `--full`)**: Runs full race detector (`go test -race ./...`), per-package statement coverage table (`go test -cover ./...`), Go report card (`go vet ./...`), binary compilation, and the simulated user release gate.
+  - **Full Pre-Push & CI Gate (`./scripts/check.sh` / `--full`)**: Runs full race detector (`go test -race ./...`), per-package statement coverage table (`go test -cover ./...`), Go report card (`go vet ./...`), binary compilation (`/tmp/thermal-test`), and the simulated user release gate.
 * **Simulated User Release Gate**: Before announcing any feature or release, run `./scripts/simulated_user_gate.sh` (also enforced in CI). It runs end-to-end user flows across every CLI command and flag combination, checking exit codes, ANSI stripping under `--no-color`, numerical sanity (no NaN, Inf, or unformatted raw floats), JSON schema validity, token math, and language/terminology integrity.
 * **gofmt scope**: run `gofmt` only on files the change touches. Several test files carry pre-existing drift, and a repo-wide sweep adds unrelated noise to feature diffs.
 
@@ -173,35 +153,54 @@ Whenever you implement a new feature, add a CLI command or flag, bump the versio
 <!-- project-sync:end -->
 
 <!-- sila:begin (managed by sila; content inside is regenerated by `sila install` / `sila agents sync`) -->
+<!-- sila:meta rev=1 scope=core hash=a57df412ba43bc74 -->
 ## 0. Safety Rails (NEVER Do This)
-- No unprompted remote push: Local commits are autonomous; remote push requires explicit user consent.
-- No unauthorized repo creation or namespace re-homing: NEVER run 'gh repo create' or push external/organizational specifications to personal namespaces; fail closed on push/auth hurdles.
+- No unprompted remote push: Local commits are autonomous; remote push requires user consent.
+- No unauthorized repo creation or re-homing: NEVER run 'gh repo create' or push external specs to personal namespaces; fail closed on auth hurdles.
 
 ## 1. Working Relationship & Discipline
-- Simplified, concise, and straight to the point.
+- Concise and direct.
+- Terminal Markdown: Keep visible line and table width under 80 chars; no hard breaks inside bullets or links.
+- Decision Brief & `/adoo` Receipts: Lead with 1-line verdict ("X happens because Y, confirmed by Z"), compact receipt/risk table, file links, and next action. No 1-5 scores.
 - Verified Repo Runbook Primacy: Never guess commands; verify exit code 0 locally.
-- Closed-Loop Goal Attribution: Complete the verification loop for every task.
+- Closed-Loop Goal Attribution (6 Steps) for `goals/<slug>/`:
+  1. Check every completed task `- [x]` in `goals/<slug>/plan.md`.
+  2. Write markdown evidence with a standalone `Verdict: PASS` line.
+  3. Commit with `(goals/<slug>/goal.md)` or `[goal: <slug>]` under `feat:`, `fix:`, `refactor:`, `perf:`, or `chore:` (`docs:`/`test:` ignored).
+  4. Certify via `sila goals certify <slug> --evidence=goals/<slug>/evidence.md` or `sila goals audit <slug>`.
+  5. Run `sila goals` to reconcile `goals/README.md` and commit receipts.
+  6. Verify `sila goals --json` reports `status: "implemented"`, `verification_status: "verified"`, `unverified_count: 0`, and clean `git status`.
+
+## Sila Trigger Contract
+
+Memory writes are required by the goal contract and enforced by `sila gate`.
+- `sila prime` (start) → briefing + goals.
+- `sila recall "<symptom>"` (stuck) → prior resolutions.
+- `sila memo "<directive>" --files=...` (decision) → grounded directive.
+- `sila lesson "<symptom>" --cause=... --fix=...` (solved) → grounded lesson.
+- `sila case "<intent>" --approach=... --invariant=...` (pattern) → case record.
+- `sila facts verify` (grounding) → file/ledger evidence.
+- `sila gate` (before commit) → deterministic quality receipt.
+- `sila handoff "<summary>" --open=...` (end) → handoff record.
+- `sila sync` (after changes) → cross-harness continuity.
+- `sila salam`, `sila guide`, `docs/reference.md` → detail.
+- Prior research/specs (BEFORE grep/find): `sila search "<q>" --omni` (`omni_search`), `sila search expand <id>` (`get_message_context`), `sila doc search "<q>"` (`search_docs`).
+- Activity/domains/review/skills: `sila standup last 24h`, `sila digest --since=24h`, `sila recap`; `sila guide` (`get_operational_guidebook`), `sila learn`, `sila persona`, `sila hire --for-goal=<slug>`, `sila audit` (`audit_goal`), `sila skill` (`skill_search`, `skill_load`).
+- Symbols/decisions: `sila edit-check --symbol=<sym>`, `sila safe-delete --symbol=<sym>`, `sila note --symbol=<sym>`, `sila decision` (`create_decision`), `sila vision triage`.
 
 ---
 
 ## Stack-Specific Standards (Go)
 
-- Pure-Go CGO-Free Portability: Maintain CGO_ENABLED=0 with pure-Go drivers (modernc.org/sqlite) across all target architectures.
-- Goroutine Leak Prevention: Verify goroutine lifecycle with goleak or context cancellation in all concurrent pipelines.
-- Race Detector Discipline: Always run tests with race detection ('go test -race ./...') with zero tolerance for data races.
-- File Size Ceilings: Enforce SRP with files <1,000 LOC; reject multi-thousand-line monolithic packages.
+- 1. Code Review & Hygiene: maintain pure Go standard library with zero third-party dependencies, Pure-Go CGO-Free Portability with CGO_ENABLED=0, and hard file ceilings under 1,000 LOC.
+- 2. Goroutine & Context Safety: require context.Context on all background routines; declare defer cancel() immediately after timeout context creation; ensure goroutine leak prevention.
+- 3. Goal Scaffolding: break findings into discrete single-outcome packages under goals/<slug>/ with goal.md, facts.md, plan.md, and explicit dependencies.
+- 4. Test-Driven Implementation: claim goal locks before editing; write table-driven tests verifying both acceptance assertions and negative rejection paths.
+- 5. Quality Gates & Race Detector Discipline: verify changes locally with linter scripts and full race detection ('go test -race ./...') with zero tolerance for data races.
+- 6. Attributed Commits: use semantic prefixes containing the goal slug: feat(scope): desc [goal: <slug>]; run sila goals audit to certify receipts.
+- 7. Git Branch Discipline: develop on dedicated feature branches; never push unprompted to remotes; re-verify race tests on merged main.
+- 8. Security & Trust Boundaries: validate all CLI flags and stdin readers; enforce UID ownership; use mode 0600 on sensitive temporary storage.
+- 9. Release Lifecycle & Value Changelog: implement a 24-hour cached daily version check, offer direct upgrades, provide a human-readable benefits-focused changelog, and credit contributors.
 
 ---
-
-
-## Sila Trigger Contract
-
-- First command in a repository: `sila salam` prints this loop with live next steps; run `sila --help` to inspect all available tools.
-- Task start: run `sila heal` (idempotent; sila's rules, plugin, and MCP entry only, no project git hooks; preview with `--dry-run`), commit refreshed managed files, then `sila prime` and `sila goals ready`.
-- Stuck on an error, a package, or an unfamiliar API: run `sila recall "<error or symptom>"` before web search or a workaround.
-- Problem solved: record it with `sila lesson "<symptom>" --cause=... --fix=... --files=...`.
-- Decision made: record it with `sila memo "<directive>"`.
-- Session end: `sila handoff "<summary>" --open="..."` and `sila sync` (or the session-end hook).
-- Workspace search (`fffind`, `ffgrep`, ripgrep, rtk) finds code in the current tree; `sila` is cross-harness continuity: past sessions, decisions, and lessons. Use both.
-- Sila itself gets in the way or misses something: run `sila feedback "<what happened>" --type=issue|tip|idea` and keep working.
 <!-- sila:end -->

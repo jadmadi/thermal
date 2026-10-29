@@ -90,6 +90,12 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		switch r.Tool {
 		case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolCodex, thermal.ToolCommandCode, thermal.ToolCodewhale, thermal.ToolZCode, thermal.ToolGrok, thermal.ToolClaude, thermal.ToolDsh, thermal.ToolHermes, thermal.ToolZed:
 			tokenResults = append(tokenResults, r)
+		case thermal.ToolMuse:
+			if r.Summary.LifetimeTokens > int64(r.Summary.Sessions) || r.Summary.InputTokens > 0 || r.Summary.OutputTokens > 0 {
+				tokenResults = append(tokenResults, r)
+			} else {
+				activityResults = append(activityResults, r)
+			}
 		default:
 			activityResults = append(activityResults, r)
 		}
@@ -208,7 +214,9 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			}
 
 			costPlain := formatCostOrDash(r.Summary.Cost)
-			if r.Summary.Cost <= 0 && estimate && r.EstimatedCost > 0 {
+			if r.Summary.Cost > 0 && estimate && r.EstimatedCost > 0 {
+				costPlain = formatEstimatedCost(r.Summary.Cost + r.EstimatedCost)
+			} else if r.Summary.Cost <= 0 && estimate && r.EstimatedCost > 0 {
 				costPlain = formatEstimatedCost(r.EstimatedCost)
 			}
 			var costStr string
@@ -351,7 +359,8 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		if r.Summary.Cost > 0 {
 			recorded += r.Summary.Cost
 			recording++
-		} else if estimate && r.EstimatedCost > 0 {
+		}
+		if estimate && r.EstimatedCost > 0 {
 			estimated += r.EstimatedCost
 			estimating++
 		}
@@ -371,6 +380,41 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			parts = append(parts, "Estimates are off. Reports would show the same figure.")
 		}
 		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(strings.Join(parts, " "))))
+	}
+
+	var allMissing []string
+	var totalUnattr int64
+	if estimate {
+		for _, r := range results {
+			totalUnattr += r.UnattributedTokens
+			for _, m := range r.MissingPricing {
+				found := false
+				for _, ex := range allMissing {
+					if ex == m {
+						found = true
+						break
+					}
+				}
+				if !found {
+					allMissing = append(allMissing, m)
+				}
+			}
+		}
+	}
+	if note := unpriceableNote(totalUnattr); note != "" {
+		for _, line := range WrapText(note, 80) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+		}
+	}
+	if len(allMissing) > 0 {
+		models := allMissing
+		if len(models) > 4 {
+			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
+		}
+		note := "No pricing for: " + strings.Join(models, ", ")
+		for _, line := range WrapText(note, 80) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+		}
 	}
 
 	sb.WriteString(fmt.Sprintf("\n  %s\n\n", dim("Keep the heat going. Don't break the streak.")))

@@ -98,10 +98,11 @@ func AllTools() map[thermal.Tool]ToolInfo {
 		thermal.ToolMuse: func() ToolInfo {
 			db, dir := probePlatformDataPath(home, "muse", "session-index.db")
 			return ToolInfo{
-				DBPath:  db,
-				DataDir: dir,
-				Name:    "Muse",
-				Loader:  LoadMuseData,
+				DBPath:     db,
+				DataDir:    dir,
+				DataSubdir: "sessions",
+				Name:       "Muse",
+				Loader:     LoadMuseData,
 			}
 		}(),
 		thermal.ToolClaude: {
@@ -350,7 +351,7 @@ func ResolveTool(name string) (thermal.Tool, bool) {
 
 func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error) {
 	switch t {
-	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolMuse, thermal.ToolHermes, thermal.ToolZed:
+	case thermal.ToolMiMoCode, thermal.ToolOpenCode, thermal.ToolDevin, thermal.ToolZCode, thermal.ToolHermes, thermal.ToolZed:
 		p := dbPath
 		if p == "" {
 			p = info.DBPath
@@ -364,6 +365,39 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (ToolData, error
 		s, d, pr, err := info.Loader(p)
 		s.Tool = info.Name
 		return ToolData{Summary: s, Daily: d, Projects: pr, Path: info.DBPath}, err
+	case thermal.ToolMuse:
+		p := dbPath
+		if p == "" {
+			if info.DataDir != "" {
+				p = info.DataDir
+			} else {
+				p = info.DBPath
+			}
+		}
+		if p == "" {
+			return ToolData{}, fmt.Errorf("no path configured for %s", info.Name)
+		}
+		dir := p
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			dir = filepath.Dir(p)
+		}
+		canonicalRoot := CanonicalDatabasePath(dir)
+		dataPath := filepath.Join(dir, "sessions")
+		if sig, sigErr := directoryScanSignature(canonicalRoot); sigErr == nil {
+			if cached, ok := loadDirScanCache(t, canonicalRoot, sig, dataPath); ok {
+				return cached, nil
+			}
+		}
+
+		s, d, pr, err := info.Loader(p)
+		s.Tool = info.Name
+		data := ToolData{Summary: s, Daily: d, Projects: pr, Path: dataPath}
+		if err == nil {
+			if sig, sigErr := directoryScanSignature(canonicalRoot); sigErr == nil {
+				saveDirScanCache(t, canonicalRoot, sig, data)
+			}
+		}
+		return data, err
 	default:
 		dir := info.DataDir
 		if dbPath != "" {

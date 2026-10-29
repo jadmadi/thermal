@@ -19,5 +19,5 @@ func sqliteReadOnlyDSN(path string, mmapSize int64) string {
 	if mmapSize <= 0 {
 		mmapSize = 268435456 // 256MB default mmap window
 	}
-	return fmt.Sprintf("%s?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=%d", clean, mmapSize)
+	return fmt.Sprintf("%s?mode=ro&_pragma=cache_size=-64000&_pragma=mmap_size=%d&_pragma=trusted_schema=0", clean, mmapSize)
 }
