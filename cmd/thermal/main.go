@@ -44,6 +44,9 @@ func usage() string {
 }
 
 func parseArgs() thermal.Options {
+	if width, ok := scanWidth(os.Args[1:]); ok {
+		render.SetWidth(width)
+	}
 	if verb, tool, unknown, help := resolveHelpTarget(os.Args[1:]); help {
 		os.Exit(printHelpFor(verb, tool, unknown, noColorFromArgs(os.Args[1:])))
 	}
@@ -85,6 +88,59 @@ func parseArgs() thermal.Options {
 	fmt.Fprintf(os.Stderr, "thermal: %v\n", err)
 	os.Exit(2)
 	return thermal.Options{}
+}
+
+// commandMinWidth returns the user-facing command name and its minimum width.
+func commandMinWidth(report, tool string) (string, int) {
+	command := report
+	if command == "" {
+		command = tool
+	}
+	switch command {
+	case "", "all", "auto":
+		command = "leaderboard"
+	case "daily", "weekly", "monthly":
+		return command, 56
+	case "projects", "models", "trend":
+		return command, 48
+	case "audit":
+		return command, 56
+	case "changelog":
+		return command, 48
+	}
+	return command, 40
+}
+
+func requireCommandWidth(opts thermal.Options) {
+	if opts.JSON {
+		return
+	}
+	command, min := commandMinWidth(opts.Report, opts.Tool)
+	if width := render.TerminalWidth(); width < min {
+		fmt.Fprint(os.Stderr, render.WidthRefusal(command, min, width))
+		os.Exit(2)
+	}
+}
+
+// scanWidth extracts a valid explicit width before help interception. Invalid
+// values are left to the strict parser, which reports them unless help wins.
+func scanWidth(args []string) (int, bool) {
+	for i, arg := range args {
+		raw := ""
+		if strings.HasPrefix(arg, "--width=") {
+			raw = strings.TrimPrefix(arg, "--width=")
+		} else if arg == "--width" && i+1 < len(args) {
+			raw = args[i+1]
+		}
+		if raw == "" {
+			continue
+		}
+		n, err := strconv.Atoi(raw)
+		if err == nil && n >= 40 && n <= 240 {
+			return n, true
+		}
+	}
+	return 0, false
 }
 
 func isReportWord(s string) bool {
@@ -360,6 +416,7 @@ func main() {
 	_ = ctx
 
 	opts := parseArgs()
+	requireCommandWidth(opts)
 	defer maybeCheckForUpdate(opts)
 
 	if usedLicenseFlag() {
@@ -1534,6 +1591,11 @@ func runLive(opts thermal.Options) {
 		fmt.Fprintln(os.Stderr, "  thermal live --json            instant JSON snapshot")
 		fmt.Fprintln(os.Stderr, "  thermal live --json --stream   stream NDJSON live events")
 		fmt.Fprintln(os.Stderr, "  thermal stats                  daily distribution and token composition")
+		os.Exit(2)
+	}
+
+	if err := liveWidthError(render.ContentWidth()); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 

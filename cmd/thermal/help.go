@@ -399,7 +399,8 @@ func toolHelpPage(name string) (render.CommandHelp, bool) {
 		Description: desc,
 		Flags: []render.HelpFlag{
 			{"--db <path>", "Override the data file or directory"},
-			{"--weeks <N>", "Heatmap width in weeks (4-104, default 52)"},
+			{"--weeks <N>", "Heatmap width in weeks (4-104, default 52; auto-fits narrow terminals)"},
+			{"--width <N>", "Text render width in columns (40-240; overrides COLUMNS)"},
 			{"--json", "Emit the scoped JSON envelope"},
 			{"--no-color", "Disable ANSI colors"},
 			{"--verbose", "Show loader diagnostics on stderr"},
@@ -612,6 +613,10 @@ func helpOutput(verb, tool, unknown string, noColor bool) (string, int) {
 }
 
 func printHelpFor(verb, tool, unknown string, noColor bool) int {
+	if width := render.TerminalWidth(); width < 48 {
+		fmt.Fprint(os.Stderr, render.WidthRefusal("help", 48, width))
+		return 2
+	}
 	out, code := helpOutput(verb, tool, unknown, noColor)
 	if code == 0 {
 		fmt.Print(out)

@@ -58,6 +58,27 @@ func mockLivePollFunc(eventCount int) LivePollFunc {
 	}
 }
 
+func TestLiveModel_StackedAtSixty(t *testing.T) {
+	m := NewLiveModel(mockLivePollFunc(1), time.Second, "", false)
+	m.width = 60
+	m.height = 20
+	view := m.View().Content
+	if !strings.Contains(view, "[q] Quit") {
+		t.Fatalf("stacked frame missing [q] Quit:\n%s", view)
+	}
+	if !strings.Contains(view, "THERMAL LIVE") {
+		t.Fatalf("stacked frame missing title:\n%s", view)
+	}
+	if !strings.Contains(view, "╰") {
+		t.Fatalf("stacked frame missing bottom border:\n%s", view)
+	}
+	for _, line := range strings.Split(view, "\n") {
+		if ansi.StringWidth(line) > 60 {
+			t.Fatalf("stacked frame line exceeds 60 columns (%d): %q", ansi.StringWidth(line), line)
+		}
+	}
+}
+
 func TestLiveModel_Dimensions(t *testing.T) {
 	sizes := []struct {
 		name   string

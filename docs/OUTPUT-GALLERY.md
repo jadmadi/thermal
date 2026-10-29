@@ -1,7 +1,7 @@
 # Thermal Output Gallery
 
 > Generated from a fixed fixture by `scripts/output_gallery.sh`. Capture
-> `2026-10-29T21:30:46Z` · fixture `7e6dce5287601e046c00266eab32f9751e498cb9f8b2aeca25de33b673e7b8ef` · `thermal dev (built from source)`.
+> `2026-10-29T21:58:57Z` · fixture `b23f222c2164b632e6520da53a5a84c0bd615a412e2b37676e464c65949f8ee4` · `thermal dev (built from source)`.
 > Fixed data date: 2026-01-15. Text is `NO_COLOR=1`; non-TTY default width is
 > 100. Width sections use a PTY at 80/120. The live TUI block is synthetic and
 > labeled; the other text blocks are captured from the same fixture run.
@@ -38,7 +38,7 @@
 | trend (tokens) | mean 759700 | — | — | — | — | calendar | n/a (tokens) |
 | trend (cost) | mean 1.7546 | — | — | — | — | calendar | total |
 | share | 759700 | 1.75 | 0.0046 | 1.7546 | 1/— | all · all time (1 active day) | recorded+estimated |
-| live | — | — | — | — | — | today snapshot (live, 2026-10-30T00:30:46.327017493+03:00) | recorded+estimated |
+| live | — | — | — | — | — | today snapshot (live, 2026-10-30T00:58:57.808134412+03:00) | recorded+estimated |
 
 Allowed equalities are checked by `scripts/output_gallery_gate.sh`: leaderboard
 estimated equals daily estimated, projects total equals daily total, models
@@ -102,7 +102,8 @@ and share token/cost fields use one window.
     --until <date>         End date filter (YYYY-MM-DD or YYYYMMDD)
     --last <N>             Limit to last N days, weeks, or months
     --order <asc|desc>     Sort order for report rows (default: desc)
-    --weeks <N>            Heatmap width in weeks (default: 52)
+    --weeks <N>            Heatmap width in weeks (default: 52; auto-fits narrow terminals)
+    --width <N>            Text render width in columns (40-240; overrides COLUMNS)
     --start-of-week <day>  First day of week: sunday-saturday (default: sunday)
 
   Ranking & Analytics Options:
@@ -165,7 +166,6 @@ and share token/cost fields use one window.
 
   Recorded cost: $1.75 from 1 tools. Estimated: ~$0.0046 across 1 tools (~ prefix).
   12 tokens have no model recorded, so no price is applied to them.
-
   Keep the heat going. Don't break the streak.
 ```
 
@@ -175,22 +175,22 @@ Single tool: [codewhale](#single-tool-codewhale) · [Agy](#single-tool-agy)
 
 ```text
 
-  ╭─ codewhale Activity ─────────────────────────────────────────────────── ~/.codewhale/sessions ─╮
-  │  750.0K tokens / 52 weeks   ·   1 active days  |  1 day streak  |  1 best  |  750.0K all-time  │
-  │                                                                                                │
-  │       Nov  Dec Jan Feb Mar  Apr May  Jun Jul Aug  Sep Oct                                      │
-  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │   Mon ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │   Wed ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │   Fri ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                     │
-  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                      │
-  │       Less □░▒▓█ More                                                                          │
-  │  ───────────────────────────────────────────────────────────────────────────────────────────── │
-  │  $1.75 spent  ·  1 sessions                                                                    │
-  │  · agents  chat: 1                                                                             │
-  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ codewhale Activity ──────────────────────────────────────── ~/.codewhale/sessions ─╮
+  │ 750.0K tokens / 52 weeks · 1 active days | 1 day streak | 1 best | 750.0K all-time  │
+  │                                                                                     │
+  │       Nov  Dec Jan Feb Mar  Apr May  Jun Jul Aug  Sep Oct                           │
+  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │   Mon ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │   Wed ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │   Fri ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          │
+  │       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                           │
+  │       Less □░▒▓█ More                                                               │
+  │  ────────────────────────────────────────────────────────────────────────────────── │
+  │  $1.75 spent  ·  1 sessions                                                         │
+  │  · agents  chat: 1                                                                  │
+  ╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Single tool: Agy
@@ -221,15 +221,16 @@ Single tool: [codewhale](#single-tool-codewhale) · [Agy](#single-tool-agy)
 
   Thermal · daily usage · all tools
 
-  Window: [all time (1 active day) · all tools]  Total: [759.7K tok · ~$1.75]  Cache: [89.1% hit]
+  Window: [all time (1 active day) · all tools] Total: [759.7K tok · ~$1.75] Cache: [89.1%
+  hit]
 
-  ╭─ Daily Usage ─────────────────────────────────────────────────────────────── all tools ─╮
-  │  Period      Models                   Input     Output      Cache     Tokens       Cost │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  2026-01-15  claude-3.5-son… +1        1.0K        500       8.2K     759.7K     ~$1.75 │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  Total                                 1.0K        500       8.2K     759.7K     ~$1.75 │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Daily Usage ────────────────────────────────────────────────────────── all tools ─╮
+  │  Period      Models                  Input    Output     Cache    Tokens      Cost │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  2026-01-15  claude-3.5-son… +1       1.0K       500      8.2K    759.7K    ~$1.75 │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  Total                                1.0K       500      8.2K    759.7K    ~$1.75 │
+  ╰────────────────────────────────────────────────────────────────────────────────────╯
 
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 ```
@@ -240,15 +241,16 @@ Single tool: [codewhale](#single-tool-codewhale) · [Agy](#single-tool-agy)
 
   Thermal · weekly usage · all tools
 
-  Window: [all time (1 active week) · all tools]  Total: [759.7K tok · ~$1.75]  Cache: [89.1% hit]
+  Window: [all time (1 active week) · all tools] Total: [759.7K tok · ~$1.75] Cache: [89.1%
+  hit]
 
-  ╭─ Weekly Usage ────────────────────────────────────────────────────────────── all tools ─╮
-  │  Period      Models                   Input     Output      Cache     Tokens       Cost │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  2026-01-11  claude-3.5-son… +1        1.0K        500       8.2K     759.7K     ~$1.75 │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  Total                                 1.0K        500       8.2K     759.7K     ~$1.75 │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Weekly Usage ───────────────────────────────────────────────────────── all tools ─╮
+  │  Period      Models                  Input    Output     Cache    Tokens      Cost │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  2026-01-11  claude-3.5-son… +1       1.0K       500      8.2K    759.7K    ~$1.75 │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  Total                                1.0K       500      8.2K    759.7K    ~$1.75 │
+  ╰────────────────────────────────────────────────────────────────────────────────────╯
 
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 ```
@@ -259,15 +261,16 @@ Single tool: [codewhale](#single-tool-codewhale) · [Agy](#single-tool-agy)
 
   Thermal · monthly usage · all tools
 
-  Window: [all time (1 active month) · all tools]  Total: [759.7K tok · ~$1.75]  Cache: [89.1% hit]
+  Window: [all time (1 active month) · all tools] Total: [759.7K tok · ~$1.75] Cache: [89.1%
+  hit]
 
-  ╭─ Monthly Usage ───────────────────────────────────────────────────────────── all tools ─╮
-  │  Period      Models                   Input     Output      Cache     Tokens       Cost │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  2026-01     claude-3.5-son… +1        1.0K        500       8.2K     759.7K     ~$1.75 │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  Total                                 1.0K        500       8.2K     759.7K     ~$1.75 │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Monthly Usage ──────────────────────────────────────────────────────── all tools ─╮
+  │  Period      Models                  Input    Output     Cache    Tokens      Cost │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  2026-01     claude-3.5-son… +1       1.0K       500      8.2K    759.7K    ~$1.75 │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  Total                                1.0K       500      8.2K    759.7K    ~$1.75 │
+  ╰────────────────────────────────────────────────────────────────────────────────────╯
 
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 ```
@@ -278,14 +281,14 @@ Single tool: [codewhale](#single-tool-codewhale) · [Agy](#single-tool-agy)
 
   Thermal · projects
 
-  ╭─ Projects ─────────────────────────────────────────────────────────────────── attribution & spend ─╮
-  │    #  Project                       Tools                    Tokens       Cost  P-Days  Last       │
-  │  ───────────────────────────────────────────────────────────────────────────────────────────────── │
-  │   1.  repo-a                        codewhale                750.0K      $1.75       1  2026-01-15 │
-  │   2.  repo-b                        Claude                     9.7K   ~$0.0046       1  2026-01-15 │
-  │  ───────────────────────────────────────────────────────────────────────────────────────────────── │
-  │       Total                         Claude · codewhale       759.7K     ~$1.75       2  2026-01-15 │
-  ╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Projects ─────────────────────────────────────────────────────────── attribution & spend ─╮
+  │    #  Project                 Tools                   Tokens      Cost  P-Days  Last       │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │   1.  repo-a                  codewhale               750.0K     $1.75       1  2026-01-15 │
+  │   2.  repo-b                  Claude                    9.7K  ~$0.0046       1  2026-01-15 │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │       Total                   Claude · codewhale      759.7K    ~$1.75       2  2026-01-15 │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 ```
 
@@ -295,14 +298,14 @@ Chart variant (`projects --top 2 --order asc --chart`):
 
   Thermal · projects
 
-  ╭─ Projects ─────────────────────────────────────────────────────────────────── attribution & spend ─╮
-  │    #  Project                       Tools                    Tokens       Cost  P-Days  Last       │
-  │  ───────────────────────────────────────────────────────────────────────────────────────────────── │
-  │   1.  repo-b                        Claude                     9.7K   ~$0.0046       1  2026-01-15 │
-  │   2.  repo-a                        codewhale                750.0K      $1.75       1  2026-01-15 │
-  │  ───────────────────────────────────────────────────────────────────────────────────────────────── │
-  │       Total                         Claude · codewhale       759.7K     ~$1.75       2  2026-01-15 │
-  ╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Projects ─────────────────────────────────────────────────────────── attribution & spend ─╮
+  │    #  Project                 Tools                   Tokens      Cost  P-Days  Last       │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │   1.  repo-b                  Claude                    9.7K  ~$0.0046       1  2026-01-15 │
+  │   2.  repo-a                  codewhale               750.0K     $1.75       1  2026-01-15 │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │       Total                   Claude · codewhale      759.7K    ~$1.75       2  2026-01-15 │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 
 
@@ -318,16 +321,16 @@ Chart variant (`projects --top 2 --order asc --chart`):
 
   Thermal · models
 
-  ╭─ Models ──────────────────────────────────────────────────────────────────────────── tokens & spend ─╮
-  │    #  Model                           Tools                    Tokens       Cost  M-Days  Last       │
-  │  ─────────────────────────────────────────────────────────────────────────────────────────────────── │
-  │   1.  claude-3.5-sonnet               codewhale                750.0K          —       1  2026-01-15 │
-  │   2.  claude-3.5-haiku                Claude                     9.7K   ~$0.0046       1  2026-01-15 │
-  │  ─────────────────────────────────────────────────────────────────────────────────────────────────── │
-  │       Total                           Claude · codewhale       759.7K   ~$0.0046       2  2026-01-15 │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
-  Cost is estimated from models.dev list prices; recorded session cost is not attributable to one
-  model.
+  ╭─ Models ────────────────────────────────────────────────────────────────── tokens & spend ─╮
+  │    #  Model                   Tools                   Tokens      Cost  M-Days  Last       │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │   1.  claude-3.5-sonnet       codewhale               750.0K         —       1  2026-01-15 │
+  │   2.  claude-3.5-haiku        Claude                    9.7K  ~$0.0046       1  2026-01-15 │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │       Total                   Claude · codewhale      759.7K  ~$0.0046       2  2026-01-15 │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  Cost is estimated from models.dev list prices; recorded session cost is not attributable to
+  one model.
 ```
 
 Chart variant (`models --top 2 --order asc --chart`):
@@ -336,16 +339,16 @@ Chart variant (`models --top 2 --order asc --chart`):
 
   Thermal · models
 
-  ╭─ Models ──────────────────────────────────────────────────────────────────────────── tokens & spend ─╮
-  │    #  Model                           Tools                    Tokens       Cost  M-Days  Last       │
-  │  ─────────────────────────────────────────────────────────────────────────────────────────────────── │
-  │   1.  claude-3.5-haiku                Claude                     9.7K   ~$0.0046       1  2026-01-15 │
-  │   2.  claude-3.5-sonnet               codewhale                750.0K          —       1  2026-01-15 │
-  │  ─────────────────────────────────────────────────────────────────────────────────────────────────── │
-  │       Total                           Claude · codewhale       759.7K   ~$0.0046       2  2026-01-15 │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
-  Cost is estimated from models.dev list prices; recorded session cost is not attributable to one
-  model.
+  ╭─ Models ────────────────────────────────────────────────────────────────── tokens & spend ─╮
+  │    #  Model                   Tools                   Tokens      Cost  M-Days  Last       │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │   1.  claude-3.5-haiku        Claude                    9.7K  ~$0.0046       1  2026-01-15 │
+  │   2.  claude-3.5-sonnet       codewhale               750.0K         —       1  2026-01-15 │
+  │  ───────────────────────────────────────────────────────────────────────────────────────── │
+  │       Total                   Claude · codewhale      759.7K  ~$0.0046       2  2026-01-15 │
+  ╰────────────────────────────────────────────────────────────────────────────────────────────╯
+  Cost is estimated from models.dev list prices; recorded session cost is not attributable to
+  one model.
 
 
   Models by tokens  bar = share of the largest charted row, 750.0K tok; ~ = estimated cost
@@ -360,19 +363,19 @@ Chart variant (`models --top 2 --order asc --chart`):
 
   Thermal · mix · by tool · tokens
 
-  ╭─ Tool Mix ───────────────────────────── tokens share ─╮
-  │  Period        codewhale     Claude             Total │
-  │  ──────────────────────────────────────────────────── │
-  │  2026-01       99%           1%                759.7K │
-  │  ──────────────────────────────────────────────────── │
-  │  Total         99%           1%                759.7K │
-  ╰───────────────────────────────────────────────────────╯
+  ╭─ Tool Mix ─────────────────────── tokens share ─╮
+  │  Period        codewhale  Claude          Total │
+  │  ────────────────────────────────────────────── │
+  │  2026-01       99%        1%             759.7K │
+  │  ────────────────────────────────────────────── │
+  │  Total         99%        1%             759.7K │
+  ╰─────────────────────────────────────────────────╯
 
   Shares are rounded to the nearest percent.
 
-  Dominant   codewhale
-  Switches   0 
-  Spread     0.97 (1 = one tool, 0 = even spread)
+  Dominant  codewhale
+  Switches  0 
+  Spread    0.97 (1 = one tool, 0 = even spread)
 ```
 
 ### Stats
@@ -461,7 +464,8 @@ Token trend:
 
   Thermal · trend · tokens
 
-  Trajectory: [FLAT → steady state]  Calendar window: [1 days · 2026-01-15 to 2026-01-15]  Daily Mean: ≈759.7K
+  Trajectory: [FLAT → steady state] Calendar window: [1 days · 2026-01-15 to 2026-01-15] Daily
+  Mean: ≈759.7K
 
   ╭─ Activity Trend ────────────── tokens ─╮
   │  Range        2026-01-15 to 2026-01-15 │
@@ -481,7 +485,8 @@ Cost trend:
 
   Thermal · trend · cost
 
-  Trajectory: [FLAT → steady state]  Calendar window: [1 days · 2026-01-15 to 2026-01-15]  Daily Mean: ≈$1.75
+  Trajectory: [FLAT → steady state] Calendar window: [1 days · 2026-01-15 to 2026-01-15] Daily
+  Mean: ≈$1.75
 
   ╭─ Activity Trend ──────────────── cost ─╮
   │  Range        2026-01-15 to 2026-01-15 │
@@ -515,8 +520,8 @@ Cost trend:
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEI…7jW6_bDgPYJbznvzCKZHMaUTEafoZAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -540,25 +545,25 @@ The full URL is in [the share JSON appendix](#full-share-json).
   Score components: rules -5 · MCP -0 · readiness -0. Largest: rule files. Biggest win: Warning:
   AGENTS.md (repo root) is 160 lines (~333 tok). Prune stale rules to save context budget.
 
-  ╭─ Instruction & Rule Files ─────────────────────────────────────────────────── rule overhead ─╮
-  │  PASS  CLAUDE.md (repo root)              2 lines  ≈7 tok                                    │
-  │  WARN  AGENTS.md (repo root)            160 lines  ≈333 tok                                  │
-  │  PASS  CLAUDE.md (~/.claude)              1 lines  ≈4 tok                                    │
-  │  ─────────────────────────────────────────────────────────────────────────────────────────── │
-  │  Legend: [WARN] >150 lines (moderate context tax)                                            │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Instruction & Rule Files ────────────────────────────────────────────────── rule overhead ─╮
+  │  PASS  CLAUDE.md (repo root)              2 lines  ≈7 tok                                   │
+  │  WARN  AGENTS.md (repo root)            160 lines  ≈333 tok                                 │
+  │  PASS  CLAUDE.md (~/.claude)              1 lines  ≈4 tok                                   │
+  │  ────────────────────────────────────────────────────────────────────────────────────────── │
+  │  Legend: [WARN] >150 lines (moderate context tax)                                           │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  ╭─ MCP Server Registrations ────────────────────────────────────────────────────── schema tax ─╮
-  │  No MCP servers configured.                                                                  │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ MCP Server Registrations ── schema tax ─╮
+  │  No MCP servers configured.              │
+  ╰──────────────────────────────────────────╯
 
-  ╭─ Agent Readiness & Repository Hygiene ─────────────────────────────────── environment check ─╮
-  │  PASS  Instructions      AGENTS.md verified (160 lines)                                      │
-  │  PASS  Gitignore         .gitignore rules properly anchored                                  │
-  │  PASS  Delta Cache       Cache directory writable (probe file created and removed)           │
-  │  INFO  Tool Databases    No local tool database files found; database access was not         │
-  │                          assessed                                                            │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Agent Readiness & Repository Hygiene ─────────────────────────── environment check ─╮
+  │  PASS  Instructions      AGENTS.md verified (160 lines)                              │
+  │  PASS  Gitignore         .gitignore rules properly anchored                          │
+  │  PASS  Delta Cache       Cache directory writable (probe file created and removed)   │
+  │  INFO  Tool Databases    No local tool database files found; database access was not │
+  │                          assessed                                                    │
+  ╰──────────────────────────────────────────────────────────────────────────────────────╯
 
   ╭─ Actionable Advice ────────────────────────────────────────────────────────── optimizations ─╮
   │  • Warning: AGENTS.md (repo root) is 160 lines (~333 tok). Prune stale rules to save context │
@@ -588,39 +593,39 @@ The full URL is in [the share JSON appendix](#full-share-json).
   │   • ci: bump Go baseline to 1.27.3 to resolve crypto/x509 GO-2026-6809 in govulncheck        │
   ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  ╭─ v0.20.1 ─────────────────────────────────────────────────────────────────────── 2026-10-14 ─╮
-  │  Features:                                                                                   │
-  │   • loaders: rename command-code canonical display name to CMD                               │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ v0.20.1 ───────────────────────────────────────── 2026-10-14 ─╮
+  │  Features:                                                     │
+  │   • loaders: rename command-code canonical display name to CMD │
+  ╰────────────────────────────────────────────────────────────────╯
 
-  ╭─ v0.20.0 ─────────────────────────────────────────────────────────────────────── 2026-10-12 ─╮
-  │  Features:                                                                                   │
-  │   • ci: add fast-path bypass to pre-push gate for docs and metadata diffs                    │
-  │                                                                                              │
-  │  Bug Fixes:                                                                                  │
-  │   • loaders: exclude sqlite shm files to prevent live monitor CPU thrashing                  │
-  │   • tui: clamp projection stats bar and band bounds against negative values                  │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ v0.20.0 ────────────────────────────────────────────────────── 2026-10-12 ─╮
+  │  Features:                                                                  │
+  │   • ci: add fast-path bypass to pre-push gate for docs and metadata diffs   │
+  │                                                                             │
+  │  Bug Fixes:                                                                 │
+  │   • loaders: exclude sqlite shm files to prevent live monitor CPU thrashing │
+  │   • tui: clamp projection stats bar and band bounds against negative values │
+  ╰─────────────────────────────────────────────────────────────────────────────╯
 
-  ╭─ v0.19.0 ─────────────────────────────────────────────────────────────────────── 2026-10-08 ─╮
-  │  Features:                                                                                   │
-  │   • build: verify multi-target cross-compilation release gate                                │
-  │   • ci: verify cross-platform operating system test matrix                                   │
-  │   • docs: update documentation parity and simulated human user audit for 15 tools            │
-  │   • gate: ensure hermetic verification and release gate semantic parity                      │
-  │   • git: verify zero bot contributor attribution in git history                              │
-  │   • loaders: ingest Zed editor assistant threads and tokens                                  │
-  │   • sila: complete Sila onboarding and strict verification                                   │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ v0.19.0 ──────────────────────────────────────────────────────────── 2026-10-08 ─╮
+  │  Features:                                                                        │
+  │   • build: verify multi-target cross-compilation release gate                     │
+  │   • ci: verify cross-platform operating system test matrix                        │
+  │   • docs: update documentation parity and simulated human user audit for 15 tools │
+  │   • gate: ensure hermetic verification and release gate semantic parity           │
+  │   • git: verify zero bot contributor attribution in git history                   │
+  │   • loaders: ingest Zed editor assistant threads and tokens                       │
+  │   • sila: complete Sila onboarding and strict verification                        │
+  ╰───────────────────────────────────────────────────────────────────────────────────╯
 
-  ╭─ v0.18.0 ─────────────────────────────────────────────────────────────────────── 2026-10-03 ─╮
-  │  Features:                                                                                   │
-  │   • loaders: add platform-native application data directory discovery                        │
-  │                                                                                              │
-  │  Bug Fixes:                                                                                  │
-  │   • loaders: normalize SQLite URI paths for cross-platform compatibility                     │
-  │   • test: resolve cross-platform paths and line endings on windows and macos                 │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ v0.18.0 ─────────────────────────────────────────────────────── 2026-10-03 ─╮
+  │  Features:                                                                   │
+  │   • loaders: add platform-native application data directory discovery        │
+  │                                                                              │
+  │  Bug Fixes:                                                                  │
+  │   • loaders: normalize SQLite URI paths for cross-platform compatibility     │
+  │   • test: resolve cross-platform paths and line endings on windows and macos │
+  ╰──────────────────────────────────────────────────────────────────────────────╯
 
   … and 20 more releases (use --top 25 to view all, or --json for full history)
 ```
@@ -773,7 +778,10 @@ stats, share, statusline) are captured at both widths.
     --until <date>         End date filter (YYYY-MM-DD or YYYYMMDD)
     --last <N>             Limit to last N days, weeks, or months
     --order <asc|desc>     Sort order for report rows (default: desc)
-    --weeks <N>            Heatmap width in weeks (default: 52)
+    --weeks <N>            Heatmap width in weeks (default: 52; auto-fits narrow
+                           terminals)
+    --width <N>            Text render width in columns (40-240; overrides
+                           COLUMNS)
     --start-of-week <day>  First day of week: sunday-saturday (default: sunday)
 
   Ranking & Analytics Options:
@@ -874,7 +882,8 @@ stats, share, statusline) are captured at both widths.
     --until <date>         End date filter (YYYY-MM-DD or YYYYMMDD)
     --last <N>             Limit to last N days, weeks, or months
     --order <asc|desc>     Sort order for report rows (default: desc)
-    --weeks <N>            Heatmap width in weeks (default: 52)
+    --weeks <N>            Heatmap width in weeks (default: 52; auto-fits narrow terminals)
+    --width <N>            Text render width in columns (40-240; overrides COLUMNS)
     --start-of-week <day>  First day of week: sunday-saturday (default: sunday)
 
   Ranking & Analytics Options:
@@ -1014,8 +1023,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.2e2f0…DgPYJbznvzCKZHMaUTEafoZAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.b4e36…GYQKznffgF0oJeU1LKeWy_AwA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud
     storage. No file paths, repository roots, or prompt telemetry encoded.
@@ -1039,8 +1048,8 @@ stats, share, statusline) are captured at both widths.
 
 
   Shareable Card URL:
-  https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEI…7jW6_bDgPYJbznvzCKZHMaUTEafoZAA
-  … full URL (360 chars) is available with --json
+  https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEI…jvo9suGYQKznffgF0oJeU1LKeWy_AwA
+  … full URL (358 chars) is available with --json
 
   • Privacy Guarantee: 100% client-only URL fragment. Zero database or cloud storage. No file
     paths, repository roots, or prompt telemetry encoded.
@@ -1092,22 +1101,22 @@ at four decimal places by `cmd/thermal/json.go`.
 ### Envelope types and timestamps
 
 ```text
-leaderboard      leaderboard    2026-10-29T21:30:46Z
-daily            daily          2026-10-29T21:30:46Z
-weekly           weekly         2026-10-29T21:30:46Z
-monthly          monthly        2026-10-29T21:30:46Z
-projects         projects       2026-10-29T21:30:46Z
-models           models         2026-10-29T21:30:46Z
-mix              mix            2026-10-29T21:30:46Z
-stats-token      stats          2026-10-29T21:30:46Z
-stats-cost       stats          2026-10-29T21:30:46Z
-trend-token      trend          2026-10-29T21:30:46Z
-trend-cost       trend          2026-10-29T21:30:46Z
-share            share          2026-10-29T21:30:46Z
-audit            audit          2026-10-30T00:30:46.318797302+03:00
-changelog        changelog      2026-10-29T21:30:46Z
-live             live           2026-10-30T00:30:46.327017493+03:00
-version          version        2026-10-29T21:30:46Z
+leaderboard      leaderboard    2026-10-29T21:58:57Z
+daily            daily          2026-10-29T21:58:57Z
+weekly           weekly         2026-10-29T21:58:57Z
+monthly          monthly        2026-10-29T21:58:57Z
+projects         projects       2026-10-29T21:58:57Z
+models           models         2026-10-29T21:58:57Z
+mix              mix            2026-10-29T21:58:57Z
+stats-token      stats          2026-10-29T21:58:57Z
+stats-cost       stats          2026-10-29T21:58:57Z
+trend-token      trend          2026-10-29T21:58:57Z
+trend-cost       trend          2026-10-29T21:58:57Z
+share            share          2026-10-29T21:58:57Z
+audit            audit          2026-10-30T00:58:57.799954673+03:00
+changelog        changelog      2026-10-29T21:58:57Z
+live             live           2026-10-30T00:58:57.808134412+03:00
+version          version        2026-10-29T21:58:57Z
 ```
 
 ## Validation cases
@@ -1151,15 +1160,16 @@ exit 0
 
   Thermal · daily usage · all tools
 
-  Window: [all time (1 active day) · all tools]  Total: [759.7K tok · ~$1.75]  Cache: [89.1% hit]
+  Window: [all time (1 active day) · all tools] Total: [759.7K tok · ~$1.75] Cache: [89.1%
+  hit]
 
-  ╭─ Daily Usage ─────────────────────────────────────────────────────────────── all tools ─╮
-  │  Period      Models                   Input     Output      Cache     Tokens       Cost │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  2026-01-15  claude-3.5-son… +1        1.0K        500       8.2K     759.7K     ~$1.75 │
-  │  ────────────────────────────────────────────────────────────────────────────────────── │
-  │  Total                                 1.0K        500       8.2K     759.7K     ~$1.75 │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭─ Daily Usage ────────────────────────────────────────────────────────── all tools ─╮
+  │  Period      Models                  Input    Output     Cache    Tokens      Cost │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  2026-01-15  claude-3.5-son… +1       1.0K       500      8.2K    759.7K    ~$1.75 │
+  │  ───────────────────────────────────────────────────────────────────────────────── │
+  │  Total                                1.0K       500      8.2K    759.7K    ~$1.75 │
+  ╰────────────────────────────────────────────────────────────────────────────────────╯
 
   Total = $1.75 recorded + ~$0.0046 estimated from pricing data.
 
@@ -1175,7 +1185,7 @@ exit 0
 
 ```json
 {
-  "generatedAt": "2026-10-29T21:30:46Z",
+  "generatedAt": "2026-10-29T21:58:57Z",
   "snapshot": {
     "activeDays": 1,
     "coverage": "recorded+estimated",
@@ -1192,16 +1202,16 @@ exit 0
     "recordedCost": 1.75,
     "scope": "all",
     "streakBasis": "token-active",
-    "t": 1793309446,
+    "t": 1793311137,
     "tool": "all",
     "totalCost": 1.7546,
     "totalTokens": 759700,
     "v": 1,
     "window": "all time (1 active day)"
   },
-  "token": "v1.2e2f0fe8.TI9RbvIwEISvEu3T_6sO2gAmwo9tb9BewLJX1MJ4K3sThFDuXsVpKI8z_mZmfYcRTKdAwHT9cbfD435_UCDMEQzYGEFBcfxND3UNyfN1kY2ECzX_usY6CSM13t7-zwHJZM-vtoQCBoTPlNqFAAVuyJmSfFSmbkdOJyrPzgK_21upUlhs_JxrCpheH3tEBZkcZ0_-jct8_KbXCqhIuFhZTdwg7rX-LfgDq-d4pGxP88fWqpdHHhT4un6HLW4PLXZtp9ftScGFPcX67KIdPLW7jW6_bDgPYJbznvzCKZHMaUTEafoZAA",
+  "token": "v1.b4e36473.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeU6noBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA",
   "type": "share",
-  "url": "https://jadmadi.net/project/thermal/share#v1.2e2f0fe8.TI9RbvIwEISvEu3T_6sO2gAmwo9tb9BewLJX1MJ4K3sThFDuXsVpKI8z_mZmfYcRTKdAwHT9cbfD435_UCDMEQzYGEFBcfxND3UNyfN1kY2ECzX_usY6CSM13t7-zwHJZM-vtoQCBoTPlNqFAAVuyJmSfFSmbkdOJyrPzgK_21upUlhs_JxrCpheH3tEBZkcZ0_-jct8_KbXCqhIuFhZTdwg7rX-LfgDq-d4pGxP88fWqpdHHhT4un6HLW4PLXZtp9ftScGFPcX67KIdPLW7jW6_bDgPYJbznvzCKZHMaUTEafoZAA"
+  "url": "https://jadmadi.net/project/thermal/share#v1.b4e36473.TI9RbvMgEISvYu3T_6s4grjUCo9tb9BeAMEqRcZsBWtHUeS7V8Z1mscZvplZbjCDUQIYjOpPXaeU6noBTBTBgI0RBBRH33hXl5A8XTbZcBix-aca6zjM2Hh7_b8GOKMdXm0JBQwwDZjajQABbsoZE39Upm5HSmcsj84Gv9trqZKJbfxcawqYXp96KQVkdJQ9-jcq6_GHXgvAwmG0vJvyIOWz1r8Ff2D1HM2Y7Xn92F71dM-DAF_Xb3CUx5dWqlbpfXsRMJLHWJ9dtJPHtjvo9suGYQKznffgF0oJeU1LKeWy_AwA"
 }
 ```
 
@@ -1209,7 +1219,7 @@ exit 0
 
 - Home: fixed temp fixture (removed after generation)
 - Date: 2026-01-15
-- Hash: `7e6dce5287601e046c00266eab32f9751e498cb9f8b2aeca25de33b673e7b8ef`
+- Hash: `b23f222c2164b632e6520da53a5a84c0bd615a412e2b37676e464c65949f8ee4`
 - Reports: codewhale 750,000 tokens/$1.75 recorded; Claude 9,700 tokens;
   Agy 12 steps; two projects; two models.
 

@@ -16,6 +16,14 @@ import (
 
 var errNoData = errors.New("no supported tool data found")
 
+// liveWidthError rejects a TUI launch that cannot render the 60-column frame.
+func liveWidthError(width int) error {
+	if width < 60 {
+		return fmt.Errorf("Thermal Live needs at least 60 columns (terminal is %d); resize or use thermal live --json", width)
+	}
+	return nil
+}
+
 // runSources prints the stat-only inventory and always exits 0 when it can be
 // produced, even when every source is missing.
 func runSources(opts thermal.Options) {

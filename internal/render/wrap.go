@@ -5,6 +5,7 @@ package render
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -24,6 +25,14 @@ const (
 
 // TerminalWidth returns the current terminal width in columns, or DefaultTerminalWidth.
 func TerminalWidth() int {
+	if resolvedWidth > 0 {
+		return resolvedWidth
+	}
+	if cols := os.Getenv("COLUMNS"); cols != "" {
+		if n, err := strconv.Atoi(cols); err == nil && n > 0 {
+			return n
+		}
+	}
 	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
 		return w
 	}

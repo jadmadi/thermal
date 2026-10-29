@@ -66,6 +66,7 @@ var flagMetas = map[string]flagMeta{
 	"tool":          {kindString, "a tool name", "thermal --tool opencode daily"},
 	"db":            {kindString, "a database or directory path", "thermal --tool opencode --db <path> daily"},
 	"weeks":         {kindInt, "a number between 4 and 104", "thermal daily --weeks 12"},
+	"width":         {kindInt, "a number between 40 and 240", "thermal --width 100 daily"},
 	"since":         {kindString, "a date (YYYY-MM-DD or YYYYMMDD)", "thermal daily --since 2026-10-01"},
 	"until":         {kindString, "a date (YYYY-MM-DD or YYYYMMDD)", "thermal daily --until 2026-10-31"},
 	"last":          {kindInt, "a whole number of days", "thermal daily --last 7"},
@@ -241,6 +242,10 @@ func validateFlagValue(name, val string, meta flagMeta) error {
 			if n < 4 || n > 104 {
 				return &usageError{Message: fmt.Sprintf("--weeks wants a number between 4 and 104, got %d", n), Example: meta.Example}
 			}
+		case "--width":
+			if n < 40 || n > 240 {
+				return &usageError{Message: fmt.Sprintf("--width wants a number between 40 and 240, got %d", n), Example: meta.Example}
+			}
 		case "--last":
 			if n < 1 {
 				return &usageError{Message: fmt.Sprintf("--last must be at least 1, got %d", n), Example: meta.Example}
@@ -382,6 +387,7 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	fs.StringVar(&opts.Tool, "tool", "all", "Tool: all, mimocode, opencode, codex, devin, agy, command-code, codewhale, zcode, grok, muse, claude, droid, dsh, hermes, zed")
 	fs.StringVar(&opts.DBPath, "db", "", "Override database/data path")
 	fs.IntVar(&opts.Weeks, "weeks", 52, "Heatmap width in weeks (4-104)")
+	fs.IntVar(&opts.Width, "width", 0, "Text render width in columns (40-240; overrides COLUMNS)")
 	fs.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
 	fs.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
 	fs.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
@@ -430,6 +436,7 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	}
 	opts.LastSet = present["last"]
 	opts.TopSet = present["top"]
+	opts.WidthSet = present["width"]
 
 	if flameCeilingRaw != "" {
 		v, parseErr := parseCompactFloat(flameCeilingRaw)

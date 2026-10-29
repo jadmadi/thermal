@@ -543,6 +543,59 @@ else
 fi
 rm -rf "${empty_ui_home}" "${empty_ui_tmp}"
 
+echo -e "\n${BOLD}9j. Terminal Width Contract:${RESET}"
+maxw() { awk '{ if (length > m) m = length } END { print m+0 }'; }
+set +e
+COLUMNS=50 "${BIN_PATH}" daily --no-color --offline >/dev/null 2>"${TMPDIR:-/tmp}/width-refusal.err"
+width_refusal_code=$?
+set -e
+if [[ "${width_refusal_code}" -eq 2 ]] && grep -q 'daily needs at least 56 columns' "${TMPDIR:-/tmp}/width-refusal.err"; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} daily refuses below its 56-column minimum"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} daily minimum-width refusal drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+for spec in "50|--no-color --offline|50" "60|daily --no-color --offline|60" "60|projects --no-color --offline|60" "60|stats --no-color --offline|60" "60|--help --no-color|60" "120|--no-color --offline|120" "120|daily --no-color --offline|120"; do
+    cols=${spec%%|*}; rest=${spec#*|}; cmd=${rest%|*}; want=${spec##*|}
+    max=$(COLUMNS=$cols "${BIN_PATH}" $cmd 2>/dev/null | maxw)
+    if [[ "${max}" -le "${want}" ]]; then
+        echo -e "  ${GREEN}✔ [PASS]${RESET} COLUMNS=${cols} ${cmd%% *} max=${max}"
+        PASSED_CHECKS=$((PASSED_CHECKS + 1))
+        TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    else
+        echo -e "  ${RED}✖ [FAIL]${RESET} COLUMNS=${cols} ${cmd%% *} max=${max} > ${want}"
+        FAILED_CHECKS=$((FAILED_CHECKS + 1))
+        TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    fi
+done
+COLUMNS=60 "${BIN_PATH}" daily --no-color --offline >"${TMPDIR:-/tmp}/width-columns.out" 2>/dev/null
+"${BIN_PATH}" --width 60 daily --no-color --offline >"${TMPDIR:-/tmp}/width-flag.out" 2>/dev/null
+if cmp -s "${TMPDIR:-/tmp}/width-columns.out" "${TMPDIR:-/tmp}/width-flag.out"; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --width 60 equals COLUMNS=60"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --width and COLUMNS precedence drifted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+set +e
+"${BIN_PATH}" --width 39 daily >/dev/null 2>&1
+width39_code=$?
+set -e
+if [[ "${width39_code}" -eq 2 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --width 39 is rejected"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --width 39 was accepted"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+
 echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messages):${RESET}"
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5

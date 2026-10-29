@@ -65,11 +65,25 @@ func RenderCard(opts CardOptions) string {
 	}
 	if opts.Width > 4 {
 		innerWidth = opts.Width - 4
+		// The right header is decorative; drop it rather than widen the card
+		// past a narrow terminal's boundary.
+		if minHeaderWidth > innerWidth && rightWidth > 0 {
+			rightPlain = ""
+			rightWidth = 0
+			opts.RightHeader = ""
+			minHeaderWidth = titleWidth + 4
+		}
 		if minHeaderWidth > innerWidth {
 			innerWidth = minHeaderWidth
 		}
 	} else if opts.MaxWidth > 4 && innerWidth > opts.MaxWidth-4 {
 		innerWidth = opts.MaxWidth - 4
+		if minHeaderWidth > innerWidth && rightWidth > 0 {
+			rightPlain = ""
+			rightWidth = 0
+			opts.RightHeader = ""
+			minHeaderWidth = titleWidth + 4
+		}
 		if minHeaderWidth > innerWidth {
 			innerWidth = minHeaderWidth
 		}

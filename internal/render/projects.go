@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	projectWidth = 28
+	projectWidth = 22
 	toolsWidth   = 20
 	daysWidth    = 6
 	lastWidth    = 10
@@ -23,16 +23,26 @@ const (
 // RenderProjects prints a project leaderboard. top limits the printed rows;
 // zero means print every row. The full project paths stay in --json output.
 func RenderProjects(rep thermal.ProjectReport, top int, noColor bool) string {
-	return renderProjects(rep, top, noColor, false)
+	return renderProjects(rep, top, noColor, false, ContentWidth())
+}
+
+// RenderProjectsAt renders at an explicit width for the width matrix tests.
+func RenderProjectsAt(rep thermal.ProjectReport, top int, noColor bool, width int) string {
+	return renderProjects(rep, top, noColor, false, width)
 }
 
 // RenderProjectsBreakdown adds a tool split and the top models under every
 // project row.
 func RenderProjectsBreakdown(rep thermal.ProjectReport, top int, noColor bool) string {
-	return renderProjects(rep, top, noColor, true)
+	return renderProjects(rep, top, noColor, true, ContentWidth())
 }
 
-func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown bool) string {
+// RenderProjectsBreakdownAt renders at an explicit width for the width matrix tests.
+func RenderProjectsBreakdownAt(rep thermal.ProjectReport, top int, noColor bool, width int) string {
+	return renderProjects(rep, top, noColor, true, width)
+}
+
+func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown bool, width int) string {
 	st := NewStyle(noColor)
 	colors := st.Colors
 	highlight := st.Highlight
@@ -67,9 +77,19 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		rWidth = 5
 	}
 
-	headers := []string{"#", "Project", "Tools", "Tokens", "Cost", "P-Days", "Last"}
-	alignRight := []bool{true, false, false, true, true, true, false}
-	widths := []int{rWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+	compact := width < 88
+	var headers []string
+	var alignRight []bool
+	var widths []int
+	if compact {
+		headers = []string{"#", "Project", "Tokens", "Cost"}
+		alignRight = []bool{true, false, true, true}
+		widths = []int{rWidth, projectWidth, numberWidth, numberWidth}
+	} else {
+		headers = []string{"#", "Project", "Tools", "Tokens", "Cost", "P-Days", "Last"}
+		alignRight = []bool{true, false, false, true, true, true, false}
+		widths = []int{rWidth, projectWidth, toolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+	}
 
 	rule := 2 * (len(widths) - 1)
 	for _, w := range widths {
@@ -82,12 +102,36 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 	cardLines = append(cardLines, " "+tableRule(widths))
 
 	breakdownIndent := 1 + rWidth + 2 + 1
+	if compact {
+		breakdownIndent = 2
+	}
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
-		cardLines = append(cardLines, formatProjectRow(i+1, row, names[row.Project], widths, colors, st))
+		if compact {
+			name := names[row.Project]
+			cells := []string{
+				formatRankCell(i+1, rWidth, colors),
+				padRight(truncate(name, projectWidth), projectWidth),
+				padLeft(thermal.CompactNumber(row.Tokens), numberWidth),
+				padLeft(formatCostOrDashValue(row.Cost, row.EstimatedCost > 0), numberWidth),
+			}
+			var rowSb strings.Builder
+			rowSb.WriteString(" ")
+			for j, c := range cells {
+				rowSb.WriteString(c)
+				if j < len(cells)-1 {
+					rowSb.WriteString("  ")
+				}
+			}
+			cardLines = append(cardLines, rowSb.String())
+		} else {
+			cardLines = append(cardLines, formatProjectRow(i+1, row, names[row.Project], widths, colors, st))
+		}
 		if breakdown {
 			for _, bl := range formatProjectBreakdown(row, breakdownIndent, colors, st) {
-				cardLines = append(cardLines, bl)
+				for _, wl := range WrapText(bl, width-4) {
+					cardLines = append(cardLines, wl)
+				}
 			}
 		}
 	}
@@ -97,14 +141,24 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 
 	cardLines = append(cardLines, " "+strings.Repeat("─", rule))
 	totals := rep.Totals
-	cells := []string{
-		padRight("", rWidth),
-		padRight("Total", projectWidth),
-		padRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
-		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
-		padLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
-		padRight(totals.LastDay, lastWidth),
+	var cells []string
+	if compact {
+		cells = []string{
+			padRight("", rWidth),
+			padRight("Total", projectWidth),
+			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+			padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
+		}
+	} else {
+		cells = []string{
+			padRight("", rWidth),
+			padRight("Total", projectWidth),
+			padRight(toolsCell(totals.Tools, toolsWidth), toolsWidth),
+			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+			padLeft(formatTotalCost(totals.Cost, totals.StoredCost, totals.EstimatedCost), numberWidth),
+			padLeft(fmt.Sprintf("%d", totals.ActiveDays), daysWidth),
+			padRight(totals.LastDay, lastWidth),
+		}
 	}
 	var totalSb strings.Builder
 	totalSb.WriteString(" ")
@@ -120,13 +174,14 @@ func renderProjects(rep thermal.ProjectReport, top int, noColor bool, breakdown 
 		Title:       "Projects",
 		RightHeader: "attribution & spend",
 		Lines:       cardLines,
+		Width:       CardWidthFor(width),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
 	}))
 
-	footLimit := BoundedCardWidth(2)
+	footLimit := width - 4
 	if totals.EstimatedCost > 0 {
 		note := fmt.Sprintf("Total = %s recorded + %s estimated from pricing data.", formatCost(totals.StoredCost), formatEstimatedCost(totals.EstimatedCost))
 		for _, wl := range WrapText(note, footLimit) {

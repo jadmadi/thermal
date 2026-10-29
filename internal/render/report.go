@@ -14,24 +14,34 @@ import (
 
 const (
 	periodWidth = 10
-	modelsWidth = 19
-	numberWidth = 9
+	modelsWidth = 16
+	numberWidth = 8
 )
 
 // RenderReport prints a daily, weekly, or monthly report as a table. Columns
 // for reasoning tokens appear only when some row carries that data. Cost shows
 // stored plus estimated cost; estimated totals are called out below the table.
 func RenderReport(rep thermal.Report, noColor bool) string {
-	return renderReport(rep, noColor, false)
+	return renderReport(rep, noColor, false, ContentWidth())
+}
+
+// RenderReportAt renders at an explicit width for the width matrix tests.
+func RenderReportAt(rep thermal.Report, noColor bool, width int) string {
+	return renderReport(rep, noColor, false, width)
 }
 
 // RenderReportBreakdown renders the same table with an indented per-model row
 // under every period that recorded a model.
 func RenderReportBreakdown(rep thermal.Report, noColor bool) string {
-	return renderReport(rep, noColor, true)
+	return renderReport(rep, noColor, true, ContentWidth())
 }
 
-func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
+// RenderReportBreakdownAt renders at an explicit width for the width matrix tests.
+func RenderReportBreakdownAt(rep thermal.Report, noColor bool, width int) string {
+	return renderReport(rep, noColor, true, width)
+}
+
+func renderReport(rep thermal.Report, noColor bool, breakdown bool, width int) string {
 	st := NewStyle(noColor)
 	colors := st.Colors
 	highlight := st.Highlight
@@ -89,26 +99,56 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 
 	costDisplay := formatTotalCost(rep.Totals.Cost, rep.Totals.StoredCost, rep.Totals.EstimatedCost)
 
-	sb.WriteString(fmt.Sprintf("  Window: [%s · %s]  Total: [%s · %s]  Cache: [%s hit]\n\n",
+	headerLine := fmt.Sprintf("Window: [%s · %s]  Total: [%s · %s]  Cache: [%s hit]",
 		highlight(periodLabel),
 		dim(toolLabel),
 		highlight(thermal.CompactNumber(rep.Totals.Tokens)+" tok"),
 		highlight(costDisplay),
 		st.Success(hitRateStr),
-	))
-
-	headers := []string{"Period", "Models", "Input", "Output"}
-	alignRight := []bool{false, false, true, true}
-	if hasReasoning {
-		headers = append(headers, "Reason")
-		alignRight = append(alignRight, true)
+	)
+	for _, line := range WrapText(headerLine, width-4) {
+		sb.WriteString("  " + line + "\n")
 	}
-	headers = append(headers, "Cache", "Tokens", "Cost")
-	alignRight = append(alignRight, true, true, true)
+	sb.WriteString("\n")
 
-	widths := []int{periodWidth, modelsWidth}
-	for range headers[2:] {
-		widths = append(widths, numberWidth)
+	// Column policy: full detail needs 88+ columns; reasoning needs 96+.
+	// Below 88, keep row identity plus Tokens and Cost so a 60/80-column
+	// terminal never clips a table.
+	includeReasoning := hasReasoning && width >= 96
+	compact := width < 88
+	displayModelsWidth := modelsWidth
+	if width >= 96 {
+		displayModelsWidth = 19
+	}
+
+	var headers []string
+	var alignRight []bool
+	var widths []int
+	if compact {
+		headers = []string{"Period"}
+		alignRight = []bool{false}
+		widths = []int{periodWidth}
+		if breakdown {
+			headers = append(headers, "Models")
+			alignRight = append(alignRight, false)
+			widths = append(widths, modelsWidth)
+		}
+		headers = append(headers, "Tokens", "Cost")
+		alignRight = append(alignRight, true, true)
+		widths = append(widths, numberWidth, numberWidth)
+	} else {
+		headers = []string{"Period", "Models", "Input", "Output"}
+		alignRight = []bool{false, false, true, true}
+		widths = []int{periodWidth, displayModelsWidth}
+		if includeReasoning {
+			headers = append(headers, "Reason")
+			alignRight = append(alignRight, true)
+		}
+		headers = append(headers, "Cache", "Tokens", "Cost")
+		alignRight = append(alignRight, true, true, true)
+		for range headers[2:] {
+			widths = append(widths, numberWidth)
+		}
 	}
 
 	rule := 2 * (len(widths) - 1)
@@ -122,17 +162,26 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	cardLines = append(cardLines, " "+tableRule(widths))
 
 	formatRow := func(period, models string, row thermal.PeriodRow, isTotal bool, isBreakdown bool) string {
-		cells := []string{
-			padRight(truncate(period, periodWidth), periodWidth),
-			padRight(truncate(models, modelsWidth), modelsWidth),
-		}
-		nums := []int64{row.Input, row.Output}
-		if hasReasoning {
-			nums = append(nums, row.Reasoning)
-		}
-		nums = append(nums, row.Cache, row.Tokens)
-		for _, n := range nums {
-			cells = append(cells, padLeft(thermal.CompactNumber(n), numberWidth))
+		var cells []string
+		if compact {
+			cells = append(cells, padRight(truncate(period, periodWidth), periodWidth))
+			if breakdown {
+				cells = append(cells, padRight(truncate(models, modelsWidth), modelsWidth))
+			}
+			cells = append(cells, padLeft(thermal.CompactNumber(row.Tokens), numberWidth))
+		} else {
+			cells = append(cells,
+				padRight(truncate(period, periodWidth), periodWidth),
+				padRight(truncate(models, displayModelsWidth), displayModelsWidth),
+			)
+			nums := []int64{row.Input, row.Output}
+			if includeReasoning {
+				nums = append(nums, row.Reasoning)
+			}
+			nums = append(nums, row.Cache, row.Tokens)
+			for _, n := range nums {
+				cells = append(cells, padLeft(thermal.CompactNumber(n), numberWidth))
+			}
 		}
 		if row.Cost > 0 {
 			costText := formatCostValue(row.Cost, row.EstimatedCost > 0)
@@ -164,7 +213,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	}
 
 	for _, row := range rep.Rows {
-		cardLines = append(cardLines, formatRow(row.Period, modelCell(row.Models, modelsWidth), row, false, false))
+		cardLines = append(cardLines, formatRow(row.Period, modelCell(row.Models, displayModelsWidth), row, false, false))
 		if !breakdown {
 			continue
 		}
@@ -183,7 +232,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 	cardLines = append(cardLines, " "+tableRule(widths))
 	cardLines = append(cardLines, formatRow("Total", "", rep.Totals, true, false))
 
-	cardWidth := BoundedCardWidth(2)
+	cardWidth := width - 4
 
 	title := strings.ToUpper(rep.Type[:1]) + rep.Type[1:] + " Usage"
 
@@ -191,6 +240,7 @@ func renderReport(rep thermal.Report, noColor bool, breakdown bool) string {
 		Title:       title,
 		RightHeader: toolLabel,
 		Lines:       cardLines,
+		Width:       CardWidthFor(width),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,

@@ -37,23 +37,45 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		return sb.String()
 	}
 
+	width := ContentWidth()
+	maxSeries := mixSeriesShown
+	seriesWidth := 12
+	periodW := analyticsNumber + 2
+	switch {
+	case width < 60:
+		maxSeries = 1
+		seriesWidth = 7
+		periodW = 8
+	case width < 72:
+		maxSeries = 2
+		seriesWidth = 9
+	case width < 80:
+		maxSeries = 3
+		seriesWidth = 9
+	case width < 100:
+		maxSeries = 4
+		seriesWidth = 9
+	}
+	if maxSeries > len(rep.Series) {
+		maxSeries = len(rep.Series)
+	}
+
 	shown := rep.Series
 	otherLabel := ""
 	var otherTotals map[string]float64
-	if len(shown) > mixSeriesShown {
-		shown = rep.Series[:mixSeriesShown]
-		otherLabel = fmt.Sprintf("other (%d)", len(rep.Series)-mixSeriesShown)
+	if len(shown) > maxSeries {
+		shown = rep.Series[:maxSeries]
+		otherLabel = fmt.Sprintf("other (%d)", len(rep.Series)-maxSeries)
 		otherTotals = make(map[string]float64, len(rep.Buckets))
 		for _, bucket := range rep.Buckets {
 			var rest float64
-			for i := mixSeriesShown; i < len(rep.Series); i++ {
+			for i := maxSeries; i < len(rep.Series); i++ {
 				rest += bucketValue(bucket, i)
 			}
 			otherTotals[bucket.Period] = rest
 		}
 	}
 
-	seriesWidth := 12
 	headers := []string{"Period"}
 	for _, s := range shown {
 		headers = append(headers, truncate(s.Name, seriesWidth))
@@ -62,7 +84,7 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		headers = append(headers, truncate(otherLabel, seriesWidth))
 	}
 	headers = append(headers, "Total")
-	widths := []int{analyticsNumber + 2}
+	widths := []int{periodW}
 	alignRight := []bool{false}
 	for range shown {
 		widths = append(widths, seriesWidth)
@@ -80,7 +102,7 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 	cardLines = append(cardLines, " "+tableRule(widths))
 
 	formatRow := func(label string, shares []float64, total float64, style func(string) string) string {
-		cells := []string{padRight(label, analyticsNumber+2)}
+		cells := []string{padRight(label, periodW)}
 		for _, share := range shares {
 			cells = append(cells, padRight(fmt.Sprintf("%.0f%%", share*100), seriesWidth))
 		}
@@ -127,7 +149,7 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 	}
 	if otherLabel != "" {
 		var rest float64
-		for i := mixSeriesShown; i < len(rep.Series); i++ {
+		for i := maxSeries; i < len(rep.Series); i++ {
 			rest += rep.Series[i].Share
 		}
 		totalShares = append(totalShares, rest)
@@ -143,21 +165,34 @@ func RenderMix(rep thermal.MixReport, noColor bool) string {
 		Title:       title,
 		RightHeader: rep.Metric + " share",
 		Lines:       cardLines,
+		Width:       CardWidthFor(width),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
 	}))
 
-	sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Shares are rounded to the nearest percent.")))
+	for _, line := range WrapText("Shares are rounded to the nearest percent.", width-4) {
+		sb.WriteString("\n  " + dim(line))
+	}
+	sb.WriteString("\n")
 	if rep.By == "tool" {
 		sb.WriteString("\n")
-		sb.WriteString(fmt.Sprintf("  %s %s\n", dim("Dominant  "), rep.Dominant))
-		sb.WriteString(fmt.Sprintf("  %s %d %s\n", dim("Switches  "), rep.Switches, switchMonths(rep.SwitchesByMonth)))
-		sb.WriteString(fmt.Sprintf("  %s %.2f (1 = one tool, 0 = even spread)\n", dim("Spread    "), rep.Concentration))
+		for _, line := range WrapText("Dominant  "+rep.Dominant, width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		for _, line := range WrapText(fmt.Sprintf("Switches  %d %s", rep.Switches, switchMonths(rep.SwitchesByMonth)), width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		for _, line := range WrapText(fmt.Sprintf("Spread    %.2f (1 = one tool, 0 = even spread)", rep.Concentration), width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
 	}
 	if rep.Estimated {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Cost mixes recorded values with estimates from models.dev list prices.")))
+		for _, line := range WrapText("Cost mixes recorded values with estimates from models.dev list prices.", width-4) {
+			sb.WriteString("\n  " + dim(line))
+		}
+		sb.WriteString("\n")
 	}
 
 	sb.WriteString("\n")
@@ -181,6 +216,14 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		return sb.String()
 	}
 
+	width := ContentWidth()
+	barWidth := 16
+	if width < 60 {
+		barWidth = 8
+	}
+	if width < 48 {
+		barWidth = 0
+	}
 	metric := func(v float64) string { return formatMixValue(v, rep.Metric) }
 	rows := [][2]string{
 		{"Active days", fmt.Sprintf("%d", rep.Days)},
@@ -213,17 +256,24 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		if w.Days == 0 {
 			continue
 		}
-		bar := chartBar(w.Mean, maxWeekdayMean, 16, colors)
+		bar := chartBar(w.Mean, maxWeekdayMean, barWidth, colors)
 		daysLabel := fmt.Sprintf("%d days", w.Days)
 		if w.Days == 1 {
 			daysLabel = "1 day"
 		}
-		sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
-			dim(thermal.PadRight(w.Weekday, 11)),
-			thermal.PadLeft(metric(w.Mean), 10),
-			bar,
-			dim(thermal.PadLeft(daysLabel, 8)),
-		))
+		if barWidth == 0 {
+			sb.WriteString(fmt.Sprintf("  %s %s\n",
+				dim(thermal.PadRight(w.Weekday, 11)),
+				thermal.PadLeft(metric(w.Mean), 10),
+			))
+		} else {
+			sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
+				dim(thermal.PadRight(w.Weekday, 11)),
+				thermal.PadLeft(metric(w.Mean), 10),
+				bar,
+				dim(thermal.PadLeft(daysLabel, 8)),
+			))
+		}
 	}
 
 	if rep.Composition != nil && (rep.Composition.Total > 0 || rep.Composition.Unclassified > 0) {
@@ -258,25 +308,38 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 			if totalF > 0 {
 				share = float64(p.val) / totalF
 			}
-			bar := chartBar(float64(p.val), maxPart, 16, colors)
+			bar := chartBar(float64(p.val), maxPart, barWidth, colors)
 			shareLabel := fmt.Sprintf("%5.1f%%", share*100)
-			sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
-				dim(thermal.PadRight(p.label, 15)),
-				thermal.PadLeft(metric(float64(p.val)), 10),
-				bar,
-				dim(shareLabel),
-			))
+			if barWidth == 0 {
+				sb.WriteString(fmt.Sprintf("  %s %s  %s\n",
+					dim(thermal.PadRight(p.label, 15)),
+					thermal.PadLeft(metric(float64(p.val)), 10),
+					dim(shareLabel),
+				))
+			} else {
+				sb.WriteString(fmt.Sprintf("  %s %s  %s  %s\n",
+					dim(thermal.PadRight(p.label, 15)),
+					thermal.PadLeft(metric(float64(p.val)), 10),
+					bar,
+					dim(shareLabel),
+				))
+			}
 		}
 		if c.CacheRead > 0 || c.UncachedInput > 0 || c.CacheWrite > 0 {
-			sb.WriteString(fmt.Sprintf("  %s: %.1f%% of prompt tokens read from cache\n",
-				dim("Cache hit rate"), c.CacheHitRate*100))
+			for _, line := range WrapText(fmt.Sprintf("Cache hit rate: %.1f%% of prompt tokens read from cache", c.CacheHitRate*100), width-4) {
+				sb.WriteString("  " + dim(line) + "\n")
+			}
 		}
 		if c.Unclassified > 0 {
-			sb.WriteString(fmt.Sprintf("  %s\n", dim("Composition percentages use all tokens (classified + unclassified); cache hit rate uses prompt categories only.")))
+			for _, line := range WrapText("Composition percentages use all tokens (classified + unclassified); cache hit rate uses prompt categories only.", ContentWidth()-4) {
+				sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+			}
 		}
 	}
 	if rep.Metric == "cost" && rep.CostedDays > 0 && rep.CostedDays != rep.Days {
-		sb.WriteString(fmt.Sprintf("  %s\n", dim("Mean, median, p90, max, weekday profile, and distribution use costed days; active days include zero-cost days.")))
+		for _, line := range WrapText("Mean, median, p90, max, weekday profile, and distribution use costed days; active days include zero-cost days.", ContentWidth()-4) {
+			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
+		}
 	}
 
 	if len(rep.Histogram) > 0 {
@@ -296,15 +359,29 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 		}
 
 		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Distribution")))
+		histBarWidth := 24
+		if width < 60 {
+			histBarWidth = 8
+		}
+		if width < 48 {
+			histBarWidth = 0
+		}
 		for _, b := range rep.Histogram {
-			bar := chartBar(float64(b.Count), float64(maxCount), 24, colors)
+			bar := chartBar(float64(b.Count), float64(maxCount), histBarWidth, colors)
 			rangeLabel := fmt.Sprintf("%s — %s", metric(b.From), metric(b.To))
 			countLabel := fmt.Sprintf("%d", b.Count)
-			sb.WriteString(fmt.Sprintf("  %s  %s  %s\n",
-				dim(thermal.PadLeft(rangeLabel, maxRangeW)),
-				bar,
-				thermal.PadLeft(countLabel, 4),
-			))
+			if histBarWidth == 0 {
+				sb.WriteString(fmt.Sprintf("  %s  %s\n",
+					dim(thermal.PadLeft(rangeLabel, maxRangeW)),
+					thermal.PadLeft(countLabel, 4),
+				))
+			} else {
+				sb.WriteString(fmt.Sprintf("  %s  %s  %s\n",
+					dim(thermal.PadLeft(rangeLabel, maxRangeW)),
+					bar,
+					thermal.PadLeft(countLabel, 4),
+				))
+			}
 		}
 	}
 
@@ -335,28 +412,36 @@ func RenderStats(rep thermal.StatsReport, noColor bool) string {
 
 	if len(rep.Outliers) > 0 {
 		header := fmt.Sprintf("Outliers above %s (median + 2 MAD)", metric(rep.OutlierThreshold))
+		text := header
 		if allDisplayedAreOutliers {
 			if len(rep.Outliers) > topLimit {
 				extra := len(rep.Outliers) - topLimit
-				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), fmt.Sprintf("all %d top days above, plus %d more", topLimit, extra)))
+				text = fmt.Sprintf("%s: all %d top days above, plus %d more", header, topLimit, extra)
 			} else if topLimit == 1 {
-				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), "top day above"))
+				text = fmt.Sprintf("%s: top day above", header)
 			} else {
-				sb.WriteString(fmt.Sprintf("\n  %s: %s\n", dim(header), fmt.Sprintf("all %d top days above", topLimit)))
+				text = fmt.Sprintf("%s: all %d top days above", header, topLimit)
 			}
-		} else {
-			sb.WriteString(fmt.Sprintf("\n  %s\n", dim(header)))
+		}
+		for _, line := range WrapText(text, ContentWidth()-4) {
+			sb.WriteString("\n  " + dim(line))
+		}
+		if !allDisplayedAreOutliers {
 			for i, d := range rep.Outliers {
 				if i == 5 {
 					break
 				}
-				sb.WriteString(fmt.Sprintf("  %s %s\n", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
+				sb.WriteString(fmt.Sprintf("\n  %s %s", dim(thermal.PadRight(d.Day, 12)), thermal.PadLeft(metric(d.Value), 10)))
 			}
 		}
+		sb.WriteString("\n")
 	}
 
 	if rep.Estimated {
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim("Cost mixes recorded values with estimates from models.dev list prices.")))
+		for _, line := range WrapText("Cost mixes recorded values with estimates from models.dev list prices.", ContentWidth()-4) {
+			sb.WriteString("\n  " + dim(line))
+		}
+		sb.WriteString("\n")
 	}
 
 	sb.WriteString("\n")
@@ -405,15 +490,19 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		badgeColor = faint
 	}
 
-	sb.WriteString(fmt.Sprintf("  Trajectory: [%s]  Calendar window: [%d days · %s to %s]  Daily Mean: ≈%s\n\n",
+	trajectoryLine := fmt.Sprintf("Trajectory: [%s]  Calendar window: [%d days · %s to %s]  Daily Mean: ≈%s",
 		badgeColor(badge),
 		len(rep.Points),
 		rep.FirstDay,
 		rep.LastDay,
 		highlight(metric(rep.Mean)),
-	))
+	)
+	for _, line := range WrapText(trajectoryLine, ContentWidth()-4) {
+		sb.WriteString("  " + line + "\n")
+	}
+	sb.WriteString("\n")
 
-	cardWidth := BoundedCardWidth(2)
+	cardWidth := ContentWidth()
 	innerWidth := cardWidth - 4
 
 	rows := [][2]string{
@@ -516,7 +605,7 @@ func RenderTrend(rep thermal.TrendReport, noColor bool) string {
 		Colors:      colors,
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
-		MaxWidth:    cardWidth,
+		Width:       CardWidthFor(cardWidth),
 	}))
 
 	// Actionable Insights section (like audit)

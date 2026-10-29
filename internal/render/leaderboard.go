@@ -159,6 +159,10 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		}
 	}
 
+	width := ContentWidth()
+	compact := width < 70
+	tiny := width < 56
+
 	var sb strings.Builder
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("  %s  %s\n\n", highlight("THERMAL"), dim("— Don't break the streak.")))
@@ -168,9 +172,19 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		tokenHeaders := []string{"#", "Tool", "Strk", "Best", "Days", "Tokens", "Cost"}
 		tokenAlign := []bool{true, false, true, true, true, true, true}
 		tokenWidths := []int{3, 14, 6, 6, 6, 11, 11}
+		tokenTableWidths := tokenWidths
+		if tiny {
+			tokenHeaders = []string{"#", "Tool", "Tokens"}
+			tokenAlign = []bool{true, false, true}
+			tokenTableWidths = []int{3, 14, 11}
+		} else if compact {
+			tokenHeaders = []string{"#", "Tool", "Strk", "Tokens", "Cost"}
+			tokenAlign = []bool{true, false, true, true, true}
+			tokenTableWidths = []int{3, 14, 6, 11, 11}
+		}
 
-		tokenLines = append(tokenLines, formatHeaderRow(tokenHeaders, tokenWidths, tokenAlign, colors))
-		tokenLines = append(tokenLines, " "+tableRule(tokenWidths))
+		tokenLines = append(tokenLines, formatHeaderRow(tokenHeaders, tokenTableWidths, tokenAlign, colors))
+		tokenLines = append(tokenLines, " "+tableRule(tokenTableWidths))
 
 		for i, r := range tokenResults {
 			rank := i + 1
@@ -244,15 +258,26 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 				costStr = padLeft(costPlain, tokenWidths[6])
 			}
 
-			tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s  %s",
-				rankCell, nameStr, streakStr, bestStr, activeStr, tokStr, costStr,
-			))
+			if tiny {
+				tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s  %s",
+					rankCell, nameStr, tokStr,
+				))
+			} else if compact {
+				tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s  %s  %s  %s",
+					rankCell, nameStr, streakStr, tokStr, costStr,
+				))
+			} else {
+				tokenLines = append(tokenLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s  %s",
+					rankCell, nameStr, streakStr, bestStr, activeStr, tokStr, costStr,
+				))
+			}
 		}
 
 		sb.WriteString(RenderCard(CardOptions{
 			Title:       "Token Warriors",
 			RightHeader: "tokens & spend",
 			Lines:       tokenLines,
+			Width:       CardWidthFor(width),
 			Indent:      2,
 			Colors:      colors,
 			TitleColor:  theme.Primary,
@@ -266,9 +291,19 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		actHeaders := []string{"#", "Tool", "Strk", "Best", "Days", "Activity"}
 		actAlign := []bool{true, false, true, true, true, true}
 		actWidths := []int{3, 14, 6, 6, 6, 12}
+		actTableWidths := actWidths
+		if tiny {
+			actHeaders = []string{"#", "Tool", "Activity"}
+			actAlign = []bool{true, false, true}
+			actTableWidths = []int{3, 14, 12}
+		} else if compact {
+			actHeaders = []string{"#", "Tool", "Strk", "Activity"}
+			actAlign = []bool{true, false, true, true}
+			actTableWidths = []int{3, 14, 6, 12}
+		}
 
-		actLines = append(actLines, formatHeaderRow(actHeaders, actWidths, actAlign, colors))
-		actLines = append(actLines, " "+tableRule(actWidths))
+		actLines = append(actLines, formatHeaderRow(actHeaders, actTableWidths, actAlign, colors))
+		actLines = append(actLines, " "+tableRule(actTableWidths))
 
 		for i, r := range activityResults {
 			rank := i + 1
@@ -328,15 +363,26 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 				actStr = padLeft(actPlain, actWidths[5])
 			}
 
-			actLines = append(actLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s",
-				rankCell, nameStr, streakStr, bestStr, activeStr, actStr,
-			))
+			if tiny {
+				actLines = append(actLines, fmt.Sprintf(" %s  %s  %s",
+					rankCell, nameStr, actStr,
+				))
+			} else if compact {
+				actLines = append(actLines, fmt.Sprintf(" %s  %s  %s  %s",
+					rankCell, nameStr, streakStr, actStr,
+				))
+			} else {
+				actLines = append(actLines, fmt.Sprintf(" %s  %s  %s  %s  %s  %s",
+					rankCell, nameStr, streakStr, bestStr, activeStr, actStr,
+				))
+			}
 		}
 
 		sb.WriteString(RenderCard(CardOptions{
 			Title:       "Activity Hunters",
 			RightHeader: "messages & steps",
 			Lines:       actLines,
+			Width:       CardWidthFor(width),
 			Indent:      2,
 			Colors:      colors,
 			TitleColor:  theme.Secondary,
@@ -354,9 +400,11 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			}
 		}
 		if best.CurrentStreak > 0 {
-			sb.WriteString(fmt.Sprintf("  %s %s is on fire with a %d-day streak!\n",
-				gold(">>"), highlight(best.Name), best.CurrentStreak,
-			))
+			line := fmt.Sprintf("%s %s is on fire with a %d-day streak!",
+				gold(">>"), highlight(best.Name), best.CurrentStreak)
+			for _, wl := range WrapText(line, width-4) {
+				sb.WriteString("  " + wl + "\n")
+			}
 		} else {
 			sb.WriteString(fmt.Sprintf("  %s No active streaks. Time to code!\n", dim("--")))
 		}
@@ -391,7 +439,10 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		} else {
 			parts = append(parts, "Estimates are off. Reports would show the same figure.")
 		}
-		sb.WriteString(fmt.Sprintf("\n  %s\n", dim(strings.Join(parts, " "))))
+		for _, line := range WrapText(strings.Join(parts, " "), width-4) {
+			sb.WriteString("\n  " + dim(line))
+		}
+		sb.WriteString("\n")
 	}
 
 	var allMissing []string
@@ -414,7 +465,7 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		}
 	}
 	if note := unpriceableNote(totalUnattr); note != "" {
-		for _, line := range WrapText(note, 80) {
+		for _, line := range WrapText(note, width-4) {
 			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
 		}
 	}
@@ -424,12 +475,15 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 			models = append(append([]string{}, models[:4]...), fmt.Sprintf("+%d more", len(models)-4))
 		}
 		note := "No pricing for: " + strings.Join(models, ", ")
-		for _, line := range WrapText(note, 80) {
+		for _, line := range WrapText(note, width-4) {
 			sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
 		}
 	}
 
-	sb.WriteString(fmt.Sprintf("\n  %s\n\n", dim("Keep the heat going. Don't break the streak.")))
+	for _, line := range WrapText("Keep the heat going. Don't break the streak.", width-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
+	sb.WriteString("\n")
 
 	return sb.String()
 }

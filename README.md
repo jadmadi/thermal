@@ -249,6 +249,29 @@ Prompt integration: `thermal statusline` prints one line, or nothing and exits
 In a pipe, `thermal live` writes its guidance to stderr and exits `2`; use
 `thermal live --json` or `thermal live --json --stream` for automation.
 
+### Terminal width
+
+Width resolves once per invocation: `--width N` (40–240), then `COLUMNS`, then
+the terminal, then 100. Text output caps at 96 columns; `--json` ignores width.
+
+| Command | Minimum | Columns dropped below 80 |
+| --- | --- | --- |
+| Leaderboard | 40 | Best, Days, Cost, Strk |
+| daily / weekly / monthly | 56 | Models, Input, Output, Reason, Cache |
+| projects | 48 | P-Days, Tools, Last |
+| models | 48 | M-Days, Tools, Last |
+| stats | 40 | bars shrink |
+| trend | 48 | sparkline cells |
+| audit | 56 | path truncation + advice wrap |
+| changelog | 48 | bullet wrap |
+| help | 48 | description wrap |
+| heatmap | 40 | weeks auto-fit, caption |
+| live | 60 | stacked KPI layout at 60–79 |
+
+Below a command's minimum, Thermal prints a two-line refusal and exits `2`
+instead of clipping. Heatmaps auto-fit their weeks and caption the fit; `live`
+refuses below 60 columns and never enters the alternate screen.
+
 ## Reports
 
 Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:

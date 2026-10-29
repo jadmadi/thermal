@@ -231,6 +231,57 @@ func (m LiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// renderStackedFrame is the 60-79 column layout: one KPI per line, no
+// sparkline or flame bar, and a controls line that always keeps [q] Quit.
+func (m LiveModel) renderStackedFrame(width int) string {
+	cardWidth := width - 2
+	if cardWidth < 40 {
+		cardWidth = 40
+	}
+	inner := cardWidth - 4
+	colors := m.palette.Colorful
+	border := func(s string) string { return theme.Border.Sprint(colors, s) }
+
+	status := "● LIVE"
+	if m.paused {
+		status = "⏸ PAUSED"
+	}
+	title := "🔥 THERMAL LIVE"
+	rule := inner - 4 - ansi.StringWidth(title) - ansi.StringWidth(status)
+	if rule < 1 {
+		rule = 1
+	}
+
+	var b strings.Builder
+	b.WriteString(border(" ╭─ ") + theme.Primary.SprintBold(colors, title) + " " +
+		border(strings.Repeat("─", rule)) + " " + border(status) + border(" ─╮") + "\n")
+	line := func(s string) {
+		b.WriteString(" " + border("│ ") + padLine(s, inner) + border(" │") + "\n")
+	}
+
+	rate := fmt.Sprintf("%s tok/m", thermal.CompactNumber(int64(m.snapshot.BurnTokensPerMin)))
+	if m.snapshot.BurnTokensPerMin <= 0 && m.snapshot.BurnTurnsPerMin > 0 {
+		rate = fmt.Sprintf("%s step/m", thermal.CompactNumber(int64(m.snapshot.BurnTurnsPerMin)))
+	}
+	today := fmt.Sprintf("%s tok", thermal.CompactNumber(m.snapshot.TodayTokens))
+	if m.snapshot.TodayTokens == 0 && m.snapshot.TodayTurns > 0 {
+		today = fmt.Sprintf("%d turns", m.snapshot.TodayTurns)
+	}
+	session := fmt.Sprintf("%s tok", thermal.CompactNumber(m.snapshot.SessionTokens))
+	if m.snapshot.SessionTokens == 0 && m.snapshot.SessionTurns > 0 {
+		session = fmt.Sprintf("%d turns", m.snapshot.SessionTurns)
+	}
+
+	line(fmt.Sprintf("Rate     %s", rate))
+	line(fmt.Sprintf("Today    %s  %s", today, formatCost(m.snapshot.TodayCost, colors)))
+	line(fmt.Sprintf("Session  %s  %s", session, formatCost(m.snapshot.SessionCost, colors)))
+	line(fmt.Sprintf("Cache    %.1f%% hit", m.snapshot.TodayCacheHit))
+	line("")
+	line("[q] Quit  [p] Pause  [s] Sort  [?] Help")
+	b.WriteString(" " + border("╰"+strings.Repeat("─", inner+2)+"╯") + "\n")
+	return b.String()
+}
+
 // View satisfies tea.Model, rendering the live monitor dashboard frame.
 func (m LiveModel) View() tea.View {
 	if m.quitting {
@@ -265,6 +316,9 @@ func (m LiveModel) View() tea.View {
 
 // renderLiveFrame assembles the themed, bounded card for the live monitor.
 func (m LiveModel) renderLiveFrame(width, height int) string {
+	if width < 80 {
+		return m.renderStackedFrame(width)
+	}
 	colors := m.palette.Colorful
 
 	// Responsive outer card width: adapts up to 200 columns for ultra-wide displays

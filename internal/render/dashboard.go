@@ -76,7 +76,9 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		longest,
 		thermal.CompactNumber(allTime),
 	)
-	cardLines = append(cardLines, kpiLine)
+	for _, line := range WrapText(kpiLine, ContentWidth()-4) {
+		cardLines = append(cardLines, line)
+	}
 	cardLines = append(cardLines, "")
 
 	for _, line := range RenderHeatmap(activity, weeks, colors) {
@@ -197,6 +199,7 @@ func RenderDashboard(toolName string, summary thermal.Summary, daily []thermal.D
 		Title:       toolName + " Activity",
 		RightHeader: thermal.FormatPath(dbPath),
 		Lines:       cardLines,
+		Width:       CardWidthFor(ContentWidth()),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,

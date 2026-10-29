@@ -4,6 +4,7 @@
 package render
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jadmadi/thermal/internal/theme"
@@ -61,6 +62,27 @@ func monthHeader(firstSunday time.Time, weeks int) string {
 }
 
 func RenderHeatmap(activity map[string]thermal.DayActivity, weeks int, colors bool) []string {
+	requested := weeks
+	width := ContentWidth()
+	cellWidth := 1
+	if colors {
+		cellWidth = 2
+	}
+	fit := (width - 7) / cellWidth
+	if fit < 4 {
+		fit = 4
+	}
+	if fit < weeks {
+		weeks = fit
+	}
+	// Keep the 50-column case in the documented 4-12 week band.
+	if width < 60 && weeks > 12 {
+		weeks = 12
+	}
+	if weeks < 4 {
+		weeks = 4
+	}
+
 	today := thermal.StartOfToday()
 	thisSunday := today.AddDate(0, 0, -int(today.Weekday()))
 	firstSunday := thisSunday.AddDate(0, 0, -(weeks-1)*7)
@@ -88,5 +110,8 @@ func RenderHeatmap(activity map[string]thermal.DayActivity, weeks int, colors bo
 		legend += heatCell(i, colors)
 	}
 	lines = append(lines, "      Less "+legend+" More")
+	if weeks < requested {
+		lines = append(lines, fmt.Sprintf("      weeks 4–%d, auto-fit to %d columns", requested, width))
+	}
 	return lines
 }

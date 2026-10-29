@@ -38,7 +38,7 @@ func RenderChangelog(rep ChangelogReport, noColor bool) string {
 	}
 
 	shown := len(rep.Releases)
-	header := fmt.Sprintf("  Current: %s  ·  Showing %d of %d releases",
+	header := fmt.Sprintf("Current: %s  ·  Showing %d of %d releases",
 		rep.CurrentVersion,
 		shown,
 		rep.TotalReleases,
@@ -46,14 +46,17 @@ func RenderChangelog(rep ChangelogReport, noColor bool) string {
 	if shown < rep.TotalReleases {
 		header += fmt.Sprintf("  ·  thermal changelog --top %d for all", rep.TotalReleases)
 	}
-	sb.WriteString(header + "\n\n")
+	for _, line := range render.WrapText(header, render.ContentWidth()-4) {
+		sb.WriteString("  " + line + "\n")
+	}
+	sb.WriteString("\n")
 
 	if len(rep.Releases) == 0 {
 		sb.WriteString("  " + faint("No changelog entries found.") + "\n\n")
 		return sb.String()
 	}
 
-	cardWidth := render.BoundedCardWidth(2)
+	cardWidth := render.ContentWidth()
 	innerWidth := cardWidth - 4
 
 	formatBullet := func(s string) string {
@@ -139,7 +142,7 @@ func RenderChangelog(rep ChangelogReport, noColor bool) string {
 			Title:       title,
 			RightHeader: rel.Date,
 			Lines:       lines,
-			Width:       cardWidth,
+			Width:       render.CardWidthFor(cardWidth),
 			Indent:      2,
 			Colors:      colors,
 			TitleColor:  titleColor,
@@ -150,9 +153,10 @@ func RenderChangelog(rep ChangelogReport, noColor bool) string {
 
 	if shown < rep.TotalReleases {
 		remainder := rep.TotalReleases - shown
-		sb.WriteString(fmt.Sprintf("  %s\n\n",
-			dim(fmt.Sprintf("… and %d more releases (use --top %d to view all, or --json for full history)", remainder, rep.TotalReleases)),
-		))
+		for _, line := range render.WrapText(fmt.Sprintf("… and %d more releases (use --top %d to view all, or --json for full history)", remainder, rep.TotalReleases), render.ContentWidth()-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		sb.WriteString("\n")
 	}
 
 	return sb.String()

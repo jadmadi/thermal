@@ -58,15 +58,18 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		highlight("audit · local setup & context health"),
 	))
 
-	sb.WriteString(fmt.Sprintf("  Score: [%s/100 · Grade %s]  Context Tax: ≈%s tokens / turn (Rules: ≈%s tok, MCP: ≈%s tok)\n",
+	scoreLine := fmt.Sprintf("Score: [%s/100 · Grade %s]  Context Tax: ≈%s tokens / turn (Rules: ≈%s tok, MCP: ≈%s tok)",
 		highlight(fmt.Sprintf("%d", rep.Score)),
 		gradeBadge(rep.Grade),
 		highlight(thermal.CompactNumber(int64(rep.TotalRulesTax+rep.TotalMCPTax))),
 		thermal.CompactNumber(int64(rep.TotalRulesTax)),
 		thermal.CompactNumber(int64(rep.TotalMCPTax)),
-	))
+	)
+	for _, line := range WrapText(scoreLine, ContentWidth()-4) {
+		sb.WriteString("  " + line + "\n")
+	}
 
-	cardWidth := BoundedCardWidth(2)
+	cardWidth := ContentWidth()
 	innerWidth := cardWidth - 4
 
 	largest := "none"
@@ -86,7 +89,11 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 	if len(rep.Recommendations) > 0 {
 		explanation += " Biggest win: " + rep.Recommendations[0]
 	}
-	for _, line := range WrapText(explanation, cardWidth) {
+	explanationWidth := cardWidth
+	if cardWidth < 80 {
+		explanationWidth = cardWidth - 4
+	}
+	for _, line := range WrapText(explanation, explanationWidth) {
 		sb.WriteString(fmt.Sprintf("  %s\n", dim(line)))
 	}
 	sb.WriteString("\n")
@@ -135,7 +142,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		Title:       "Instruction & Rule Files",
 		RightHeader: "rule overhead",
 		Lines:       cardLinesRules,
-		Width:       cardWidth,
+		Width:       CardWidthFor(cardWidth),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,
@@ -173,7 +180,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		Title:       "MCP Server Registrations",
 		RightHeader: "schema tax",
 		Lines:       cardLinesMCP,
-		Width:       cardWidth,
+		Width:       CardWidthFor(cardWidth),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Secondary,
@@ -229,7 +236,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 		Title:       "Agent Readiness & Repository Hygiene",
 		RightHeader: "environment check",
 		Lines:       cardLinesReadiness,
-		Width:       cardWidth,
+		Width:       CardWidthFor(cardWidth),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,
@@ -247,7 +254,7 @@ func RenderAudit(rep audit.AuditReport, noColor bool) string {
 			Title:       "Actionable Advice",
 			RightHeader: "optimizations",
 			Lines:       cardLinesRec,
-			Width:       cardWidth,
+			Width:       CardWidthFor(cardWidth),
 			Indent:      2,
 			Colors:      colors,
 			TitleColor:  theme.Accent,

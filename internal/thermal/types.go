@@ -31,6 +31,8 @@ type Options struct {
 	Tool            string
 	DBPath          string
 	Weeks           int
+	Width           int
+	WidthSet        bool
 	JSON            bool
 	Format          string // "text", "json", "md", "markdown"
 	NoColor         bool

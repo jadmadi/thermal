@@ -28,10 +28,19 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 4 (4 independent ⚡, 0 unblocked 🔗)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🔵 **In Progress (Claimed)**: 1
 - 🟢 **Implemented**: 130 (13 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
 - 📋 **Execution Tasks Progress**: 587/608 completed (96%)
+
+---
+
+## 🔵 In Progress (Claimed Goals)
+
+| Goal Package | Tier | Mode | Agent | Status & Note | Started |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@command-code` | Implementing width-aware reports, help, and TUI guard | 0s ago |
 
 ---
 
@@ -39,7 +48,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#249)` | - | Make every surface fit the terminal width or refuse with a clear minimum-width message — Priority: P1 (terminal citizenship). Thermal renders fixed-width box art regardl... | `/goal goals/cli-terminal-width-adaptation/goal.md` |
 | [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#251)` | - | Self-document the leaderboard ranking key, column abbreviations, and cost markers — Priority: P1 (clarity). The default leaderboard is the first screen a user sees,... | `/goal goals/cli-leaderboard-ranking-and-legend/goal.md` |
 | [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#252)` | - | Make report total rows contain only additive, dimension-consistent values — Priority: P2 (output semantics). The projects and models reports reuse the row s... | `/goal goals/cli-report-total-row-semantics/goal.md` |
 | [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP ⚡ Independent (#253)` | - | Name denominators and intervals and remove run-on or zero-noise report prose — Priority: P2 (output clarity). The analytics commands are numerically correct bu... | `/goal goals/cli-analytics-and-audit-prose-clarity/goal.md` |

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	modelWidth = 30
+	modelWidth = 22
 	// modelToolsWidth leaves room for "OpenCode,MiMoCode".
 	modelToolsWidth = 20
 )
@@ -22,16 +22,26 @@ const (
 // estimate, because recorded cost attaches to a session or a day, never to a
 // single model. That is called out below the table.
 func RenderModels(rep thermal.ModelReport, top int, noColor bool) string {
-	return renderModels(rep, top, noColor, false)
+	return renderModels(rep, top, noColor, false, ContentWidth())
+}
+
+// RenderModelsAt renders at an explicit width for the width matrix tests.
+func RenderModelsAt(rep thermal.ModelReport, top int, noColor bool, width int) string {
+	return renderModels(rep, top, noColor, false, width)
 }
 
 // RenderModelsBreakdown adds token types and cognitive intensity (reasoning effort)
 // breakdown rows under each model.
 func RenderModelsBreakdown(rep thermal.ModelReport, top int, noColor bool) string {
-	return renderModels(rep, top, noColor, true)
+	return renderModels(rep, top, noColor, true, ContentWidth())
 }
 
-func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool) string {
+// RenderModelsBreakdownAt renders at an explicit width for the width matrix tests.
+func RenderModelsBreakdownAt(rep thermal.ModelReport, top int, noColor bool, width int) string {
+	return renderModels(rep, top, noColor, true, width)
+}
+
+func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool, width int) string {
 	st := NewStyle(noColor)
 	colors := st.Colors
 	highlight := st.Highlight
@@ -70,14 +80,28 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		rWidth = 5
 	}
 
-	headers := []string{"#", "Model", "Tools", "Tokens", "Cost", "M-Days", "Last"}
-	alignRight := []bool{true, false, false, true, true, true, false}
-	widths := []int{rWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+	compact := width < 88
+	var headers []string
+	var alignRight []bool
+	var widths []int
+	if compact {
+		headers = []string{"#", "Model", "Tokens", "Cost"}
+		alignRight = []bool{true, false, true, true}
+		widths = []int{rWidth, modelWidth, numberWidth, numberWidth}
+	} else {
+		headers = []string{"#", "Model", "Tools", "Tokens", "Cost", "M-Days", "Last"}
+		alignRight = []bool{true, false, false, true, true, true, false}
+		widths = []int{rWidth, modelWidth, modelToolsWidth, numberWidth, numberWidth, daysWidth, lastWidth}
+	}
 
 	var cardLines []string
 	cardLines = append(cardLines, formatHeaderRow(headers, widths, alignRight, colors))
 	cardLines = append(cardLines, " "+tableRule(widths))
 
+	breakdownIndent := rWidth + 4
+	if compact {
+		breakdownIndent = 2
+	}
 	for i := 0; i < shown; i++ {
 		row := rep.Rows[i]
 		rankCell := formatRankCell(i+1, rWidth, colors)
@@ -94,13 +118,16 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		} else {
 			modelCell = padRight(truncName, modelWidth)
 		}
-		toolsCellStr := formatToolsCell(row.Tools, modelToolsWidth, colors)
 		tokCell := formatTokensCell(row.Tokens, numberWidth, colors)
 		costCell := formatCostCellKind(row.Cost, true, numberWidth, colors)
-		daysCell := formatDaysCell(row.Days, daysWidth, colors)
-		lastCell := formatDateCell(row.LastDay, lastWidth, colors)
 
-		cells := []string{rankCell, modelCell, toolsCellStr, tokCell, costCell, daysCell, lastCell}
+		cells := []string{rankCell, modelCell, tokCell, costCell}
+		if !compact {
+			toolsCellStr := formatToolsCell(row.Tools, modelToolsWidth, colors)
+			daysCell := formatDaysCell(row.Days, daysWidth, colors)
+			lastCell := formatDateCell(row.LastDay, lastWidth, colors)
+			cells = []string{rankCell, modelCell, toolsCellStr, tokCell, costCell, daysCell, lastCell}
+		}
 		var rowSb strings.Builder
 		rowSb.WriteString(" ")
 		for j, c := range cells {
@@ -111,8 +138,10 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		}
 		cardLines = append(cardLines, rowSb.String())
 		if breakdown {
-			for _, bl := range formatModelBreakdown(row, rWidth+4, colors, st) {
-				cardLines = append(cardLines, bl)
+			for _, bl := range formatModelBreakdown(row, breakdownIndent, colors, st) {
+				for _, wl := range WrapText(bl, width-4) {
+					cardLines = append(cardLines, wl)
+				}
 			}
 		}
 	}
@@ -122,14 +151,24 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 
 	cardLines = append(cardLines, " "+tableRule(widths))
 	totals := rep.Totals
-	totalCells := []string{
-		padRight("", rWidth),
-		padRight("Total", modelWidth),
-		padRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
-		padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
-		padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
-		padLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
-		padRight(totals.LastDay, lastWidth),
+	var totalCells []string
+	if compact {
+		totalCells = []string{
+			padRight("", rWidth),
+			padRight("Total", modelWidth),
+			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+			padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
+		}
+	} else {
+		totalCells = []string{
+			padRight("", rWidth),
+			padRight("Total", modelWidth),
+			padRight(toolsCell(totals.Tools, modelToolsWidth), modelToolsWidth),
+			padLeft(thermal.CompactNumber(totals.Tokens), numberWidth),
+			padLeft(formatCostOrDashValue(totals.Cost, true), numberWidth),
+			padLeft(fmt.Sprintf("%d", totals.Days), daysWidth),
+			padRight(totals.LastDay, lastWidth),
+		}
 	}
 	var totalSb strings.Builder
 	totalSb.WriteString(" ")
@@ -145,13 +184,14 @@ func renderModels(rep thermal.ModelReport, top int, noColor bool, breakdown bool
 		Title:       "Models",
 		RightHeader: "tokens & spend",
 		Lines:       cardLines,
+		Width:       CardWidthFor(width),
 		Indent:      2,
 		Colors:      colors,
 		TitleColor:  theme.Primary,
 		BorderColor: theme.Border,
 	}))
 
-	footLimit := BoundedCardWidth(2)
+	footLimit := width - 4
 	if totals.Cost > 0 {
 		for _, wl := range WrapText("Cost is estimated from models.dev list prices; recorded session cost is not attributable to one model.", footLimit) {
 			sb.WriteString(fmt.Sprintf("  %s\n", dim(wl)))

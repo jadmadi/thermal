@@ -50,23 +50,21 @@ func RenderHelp(noColor bool) string {
 		return theme.Secondary.Sprint(colors, s)
 	}
 
-	termWidth := TerminalWidth()
-	if termWidth > MaxCardWidth {
-		termWidth = MaxCardWidth
-	}
-	if termWidth < MinCardWidth {
-		termWidth = MinCardWidth
-	}
+	termWidth := ContentWidth()
 
 	var sb strings.Builder
 
 	// 1. Header Banner
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("  %s %s %s\n\n",
+	header := fmt.Sprintf("%s %s %s",
 		highlight("Thermal"),
 		dim("·"),
 		highlight("usage profile & activity heatmaps for AI coding tools"),
-	))
+	)
+	for _, line := range WrapText(header, termWidth-4) {
+		sb.WriteString("  " + line + "\n")
+	}
+	sb.WriteString("\n")
 
 	// 2. Usage Section
 	sb.WriteString(fmt.Sprintf("  %s\n", secTitle("Usage:")))
@@ -193,7 +191,8 @@ func RenderHelp(noColor bool) string {
 				{Name: "--until <date>", Desc: "End date filter (YYYY-MM-DD or YYYYMMDD)"},
 				{Name: "--last <N>", Desc: "Limit to last N days, weeks, or months"},
 				{Name: "--order <asc|desc>", Desc: "Sort order for report rows (default: desc)"},
-				{Name: "--weeks <N>", Desc: "Heatmap width in weeks (default: 52)"},
+				{Name: "--weeks <N>", Desc: "Heatmap width in weeks (default: 52; auto-fits narrow terminals)"},
+				{Name: "--width <N>", Desc: "Text render width in columns (40-240; overrides COLUMNS)"},
 				{Name: "--start-of-week <day>", Desc: "First day of week: sunday-saturday (default: sunday)"},
 			},
 		},

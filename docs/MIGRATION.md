@@ -19,6 +19,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: `--top` Caps Leaderboard and Period Rows](#changed-top-contract)
   - [Added: `thermal sources` and an Actionable Empty State](#added-sources-inventory)
   - [Changed: Non-TTY `live` Exit Code and Silent Statusline Degradation](#changed-nontty-statusline-contract)
+  - [Changed: Reports Drop Columns Below 80 and Live Refuses Below 60](#changed-width-contract)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -415,6 +416,38 @@ Use `thermal live --json` or `thermal live --json --stream` in scripts; use `the
 
 **Escape hatch**:
 `thermal sources` diagnoses missing paths; `thermal statusline --verbose` prints one `statusline: no data (15 sources checked)` line when a caller needs to know why the prompt is empty. `thermal live --json --stream | head -1` exits cleanly after the first snapshot.
+
+---
+
+### Changed: Reports Drop Columns Below 80 and Live Refuses Below 60
+<a id="changed-width-contract"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'COLUMNS|--width|--weeks' .`
+- **Detection signal**: `COLUMNS=60 thermal daily` now renders a compact Period/Tokens/Cost table; `COLUMNS=50 thermal daily` exits `2` with `thermal: daily needs at least 56 columns (terminal is 50)`; `thermal --width 39 daily` exits `2` with `--width wants a number between 40 and 240`.
+
+**What changed and why**:
+Reports used fixed 100+ column layouts regardless of the terminal, so an 80-column terminal wrapped or clipped tables and charts hinted at a `--top` flag that did not exist. Width now resolves once per invocation (`--width`, then `COLUMNS`, then the TTY, then 100), caps at 96 for pasteability, and drops low-priority columns in a documented order. Each command has a minimum width and refuses below it with a fix. Heatmaps auto-fit their week count and print a caption. `thermal live` uses a stacked layout from 60–79 columns and refuses below 60; `--json` ignores width entirely.
+
+**Before / After**:
+```bash
+# Before: 104-column table at 80 columns
+COLUMNS=80 thermal daily
+
+# After: compact table, ≤80 columns
+COLUMNS=80 thermal daily
+
+# After: explicit minimum refusal
+COLUMNS=50 thermal daily
+thermal: daily needs at least 56 columns (terminal is 50)
+  widen the terminal, pipe to a file, or set --width 100
+```
+
+**The fix**:
+Set `--width 100` (or `COLUMNS=100`) for the full layout, use fewer columns for compact output, or use `--json` for machine data. For live scripts use `thermal live --json`.
+
+**Escape hatch**:
+`--json` is byte-stable regardless of width. `--width 100` restores the full report layout in a narrow terminal.
 
 ---
 
