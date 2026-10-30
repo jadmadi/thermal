@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-empty-data-success-contract",
+  "certified_at": "2026-10-30T12:08:40.983446588Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-empty-data-success-contract/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "6bd8d1cbd5b9ae7ddba02e7707ff02e734a313e8",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}

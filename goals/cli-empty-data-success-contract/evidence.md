@@ -82,4 +82,23 @@ go test ./...
 
 All three passed. `simulated_user_gate.sh` reported `159 passed, 0 failed`.
 
+## Memory Writes
+
+```json
+{
+  "schema": "sila/memory-writes/v1",
+  "goal_slug": "cli-empty-data-success-contract",
+  "prime": {"ran": true},
+  "recall": [
+    {"query": "no supported tool data found", "matches": 5},
+    {"query": "empty json sources payload", "matches": 5}
+  ],
+  "memos": [{"id": "fact_5924cf13"}],
+  "lessons": [{"id": "fact_023ba3a7"}],
+  "cases": [{"id": "fact_426dcbb5"}],
+  "facts_verify": {"exit_code": 0},
+  "handoff": {"id": "hoff_cb118c8b569d"}
+}
+```
+
 Verdict: PASS
