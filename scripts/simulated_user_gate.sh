@@ -859,6 +859,38 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 rm -rf "${loop_dir}"
+window14d=$("${BIN_PATH}" weekly --last 14d --no-color 2>/dev/null)
+if echo "${window14d}" | grep -q 'last 14 days'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --last accepts an explicit day unit"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --last 14d did not pin the day unit"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+repeated_err=$("${BIN_PATH}" --tool claude --tool codewhale --no-color 2>&1 >/dev/null || true)
+if echo "${repeated_err}" | grep -q -- '--tool given 2 times' && \
+   echo "${repeated_err}" | grep -q 'codewhale' && \
+   echo "${repeated_err}" | grep -q 'claude'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} repeated scalar flags warn with the discarded value"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} repeated scalar flags are still silent"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+dash_err=$("${BIN_PATH}" weekly -- --offline 2>&1 >/dev/null || true)
+if echo "${dash_err}" | grep -q 'passed after --'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} -- explains positional tokens"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} -- still produces an unknown-tool message"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then

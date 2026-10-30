@@ -336,11 +336,15 @@ func Aggregate(days []DailyRow, grain Grain, opts AggregateOptions, pricer Price
 	case GrainMonth:
 		unit = "month"
 	}
+	window := FormatReportWindow(len(rows), unit, opts.Last, opts.Since, opts.Until)
+	if opts.WindowLabel != "" {
+		window = opts.WindowLabel
+	}
 	return Report{
 		Type:      string(grain),
 		Rows:      rows,
 		Totals:    total,
-		Window:    FormatReportWindow(len(rows), unit, opts.Last, opts.Since, opts.Until),
+		Window:    window,
 		CostBasis: CostBasisTotal,
 	}
 }

@@ -298,7 +298,7 @@ refuses below 60 columns and never enters the alternate screen.
 
 ## Reports
 
-Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows:
+Daily, weekly, and monthly reports fold the same data into period tables with tokens, cost, and per-model rows. `--last` counts periods at the report's grain, so `weekly --last 7` is seven weeks; add `d`, `w`, or `m` to pin the unit, as in `weekly --last 14d` or `monthly --last 3m`.
 
 ```bash
 # Last 7 days for OpenCode

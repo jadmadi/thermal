@@ -244,7 +244,7 @@ func validateReportFlags(opts thermal.Options) error {
 		return fmt.Errorf("--format must be text or json")
 	}
 
-	if opts.Last < 0 || (opts.LastSet && opts.Last == 0) {
+	if opts.Last < 0 || (opts.LastSet && opts.Last == 0 && !opts.LastExplicit) {
 		return fmt.Errorf("--last must be at least 1")
 	}
 	if opts.Top < 0 {
@@ -415,7 +415,14 @@ func main() {
 	defer cancel()
 	_ = ctx
 
+	if msg := doubleDashDiagnostic(os.Args[1:]); msg != "" {
+		fmt.Fprint(os.Stderr, msg)
+		os.Exit(2)
+	}
 	opts := parseArgs()
+	for _, warning := range repeatedFlagWarnings(os.Args[1:]) {
+		fmt.Fprintf(os.Stderr, "thermal: warning: %s\n", warning)
+	}
 	requireCommandWidth(opts)
 	defer maybeCheckForUpdate(opts)
 
@@ -869,6 +876,7 @@ func runReport(opts thermal.Options) {
 		Since:       opts.Since,
 		Until:       opts.Until,
 		Last:        opts.Last,
+		WindowLabel: opts.WindowLabel,
 		Order:       opts.Order,
 	}
 

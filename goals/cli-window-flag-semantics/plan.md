@@ -1,31 +1,31 @@
 # Plan: Make window and repeated-flag semantics explicit and non-silent
 
 ## Execution Steps
-- [ ] **Phase 1 — LastSpec and parsing**: Add `LastSpec`, suffix parsing, and
+- [x] **Phase 1 — LastSpec and parsing**: Add `LastSpec`, suffix parsing, and
   unit-aware errors; keep bare integers on their current per-report unit.
   Acceptance: `TestParseLast`, `TestLastUnitMatrix`, and
   `TestLastInvalidForms` pass.
   - `7`, `7d`, `4w`, `3m`, case-insensitive.
   - `0`, `-1`, `1.5`, `7x` are usage errors with a range and example.
   - `changelog --last` stays a release count.
-- [ ] **Phase 2 — One start-date resolver**: Add `LastWindowStart` and route
+- [x] **Phase 2 — One start-date resolver**: Add `LastWindowStart` and route
   `Aggregate`, `FilterDailyRows`, `AggregateStats`, `AggregateTrend`, and
   `AggregateToolMix` through it; remove grain-specific multiplication.
   Acceptance: `TestWindowStartAllGrains`, `TestWindowTotalsParity`, and all
   existing report tests pass.
   - Frozen-clock table for first/last included day.
   - `weekly --last 14d` equals `daily --last 14` totals.
-- [ ] **Phase 3 — Repeated-flag warnings**: Change `present` to a count, emit
+- [x] **Phase 3 — Repeated-flag warnings**: Change `present` to a count, emit
   one stderr line per repeated singleton, and keep booleans silent.
   Acceptance: `TestRepeatedScalarFlags`, `TestRepeatedBooleanSilent`, and
   `TestRepeatedFlagJSONStdout` pass.
   - Warning names the flag, the count, and the last value.
   - `--json` stdout is unchanged.
-- [ ] **Phase 4 — `--` diagnostics and examples**: Explain flag-like
+- [x] **Phase 4 — `--` diagnostics and examples**: Explain flag-like
   positionals after `--`, replace `<path>` with a real path, and add `sh -n`
   coverage. Acceptance: `TestDoubleDashDiagnostics` and
   `TestExamplesShellSafe` pass.
-- [ ] **Phase 5 — Docs, gate, evidence, closure**: README, MIGRATION,
+- [x] **Phase 5 — Docs, gate, evidence, closure**: README, MIGRATION,
   `project.jsonc`, simulated-user gate, evidence, commit, certify, reconcile.
 
 ## Acceptance Command Ledger
@@ -54,7 +54,7 @@
 - Do not change bare `--last N` behavior without a major-version MIGRATION.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `fix(cli): make window units and repeated flags explicit
   (goals/cli-window-flag-semantics/goal.md)`; (3) certify via

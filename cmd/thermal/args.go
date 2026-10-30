@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -64,12 +65,12 @@ type flagMeta struct {
 // validation, user-facing expectations, and examples.
 var flagMetas = map[string]flagMeta{
 	"tool":          {kindString, "a tool name", "thermal --tool opencode daily"},
-	"db":            {kindString, "a database or directory path", "thermal --tool opencode --db <path> daily"},
+	"db":            {kindString, "a database or directory path", `thermal --tool opencode --db "$HOME/.local/share/opencode/opencode.db" daily`},
 	"weeks":         {kindInt, "a number between 4 and 104", "thermal daily --weeks 12"},
 	"width":         {kindInt, "a number between 40 and 240", "thermal --width 100 daily"},
 	"since":         {kindString, "a date (YYYY-MM-DD or YYYYMMDD)", "thermal daily --since 2026-10-01"},
 	"until":         {kindString, "a date (YYYY-MM-DD or YYYYMMDD)", "thermal daily --until 2026-10-31"},
-	"last":          {kindInt, "a whole number of days", "thermal daily --last 7"},
+	"last":          {kindString, "a whole number (days by default; add d, w, or m)", "thermal weekly --last 4"},
 	"order":         {kindString, "asc or desc", "thermal daily --order asc"},
 	"sort":          {kindString, "a sort key", "thermal --sort tokens"},
 	"top":           {kindInt, "a non-negative whole number", "thermal projects --top 5"},
@@ -159,7 +160,8 @@ func normalizeArgs(args []string, fs *flag.FlagSet) (flagArgs, positionals []str
 				return nil, nil, present, emptyValueError(name, meta)
 			}
 		} else {
-			if i+1 >= len(args) || (looksLikeFlag(args[i+1]) && !(meta.Kind != kindString && isNumericToken(args[i+1]))) {
+			allowsSignedNumber := meta.Kind != kindString || key == "last"
+			if i+1 >= len(args) || (looksLikeFlag(args[i+1]) && !(allowsSignedNumber && isNumericToken(args[i+1]))) {
 				return nil, nil, present, missingValueError(name, meta)
 			}
 			val = args[i+1]
@@ -225,6 +227,106 @@ func isNumericToken(s string) bool {
 func isBoolFlag(f *flag.Flag) bool {
 	bf, ok := f.Value.(interface{ IsBoolFlag() bool })
 	return ok && bf.IsBoolFlag()
+}
+
+// parseLastValue accepts a bare period count or a count with an explicit
+// d/w/m suffix. A bare count keeps the report's default unit.
+func parseLastValue(raw string) (int, string, bool, error) {
+	s := strings.TrimSpace(raw)
+	unit := ""
+	explicit := false
+	if s != "" {
+		switch s[len(s)-1] {
+		case 'd', 'D':
+			unit, explicit, s = "day", true, s[:len(s)-1]
+		case 'w', 'W':
+			unit, explicit, s = "week", true, s[:len(s)-1]
+		case 'm', 'M':
+			unit, explicit, s = "month", true, s[:len(s)-1]
+		}
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, "", false, &usageError{
+			Message: fmt.Sprintf("--last wants a whole number, optionally followed by d, w, or m, got %q", raw),
+			Example: "thermal weekly --last 4",
+		}
+	}
+	if n < 1 {
+		return 0, "", false, &usageError{
+			Message: "--last must be at least 1",
+			Example: "thermal daily --last 7",
+		}
+	}
+	return n, unit, explicit, nil
+}
+
+var singletonFlags = map[string]bool{
+	"tool": true, "db": true, "sort": true, "order": true, "metric": true,
+	"by": true, "grain": true, "format": true, "width": true, "weeks": true,
+	"since": true, "until": true, "last": true, "top": true,
+	"start-of-week": true, "interval": true, "flame-ceiling": true,
+}
+
+// repeatedFlagWarnings reports singleton flags that were supplied more than
+// once. The parser keeps the last value, so the warning names what was lost.
+func repeatedFlagWarnings(args []string) []string {
+	counts := make(map[string]int)
+	first := make(map[string]string)
+	last := make(map[string]string)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--" {
+			break
+		}
+		if !strings.HasPrefix(a, "-") || a == "-" {
+			continue
+		}
+		name, val := a, ""
+		hasVal := false
+		if eq := strings.Index(a, "="); eq >= 0 {
+			name, val, hasVal = a[:eq], a[eq+1:], true
+		}
+		key := strings.TrimLeft(name, "-")
+		if !singletonFlags[key] {
+			continue
+		}
+		if !hasVal && i+1 < len(args) {
+			val = args[i+1]
+			i++
+		}
+		counts[key]++
+		if counts[key] == 1 {
+			first[key] = val
+		}
+		last[key] = val
+	}
+	var warnings []string
+	for key, n := range counts {
+		if n < 2 {
+			continue
+		}
+		warnings = append(warnings, fmt.Sprintf("--%s given %d times; using %q (last), ignoring %q", key, n, last[key], first[key]))
+	}
+	sort.Strings(warnings)
+	return warnings
+}
+
+// doubleDashDiagnostic explains a flag-like token that was made positional by
+// the POSIX -- terminator.
+func doubleDashDiagnostic(args []string) string {
+	for i, a := range args {
+		if a != "--" {
+			continue
+		}
+		for _, token := range args[i+1:] {
+			if strings.HasPrefix(token, "-") && token != "-" {
+				return fmt.Sprintf("thermal: %q was passed after --, so it is a positional, not a flag\n  put flags before --, or drop -- to let thermal parse them\n", token)
+			}
+		}
+		return ""
+	}
+	return ""
 }
 
 func validateFlagValue(name, val string, meta flagMeta) error {
@@ -390,7 +492,8 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	fs.IntVar(&opts.Width, "width", 0, "Text render width in columns (40-240; overrides COLUMNS)")
 	fs.StringVar(&opts.Since, "since", "", "Report window start (YYYY-MM-DD or YYYYMMDD)")
 	fs.StringVar(&opts.Until, "until", "", "Report window end (YYYY-MM-DD or YYYYMMDD)")
-	fs.IntVar(&opts.Last, "last", 0, "Last N days/weeks/months for reports")
+	var lastRaw string
+	fs.StringVar(&lastRaw, "last", "", "Last N periods; add d, w, or m for an explicit unit")
 	fs.StringVar(&opts.Order, "order", "desc", "Report sort order: asc or desc")
 	fs.StringVar(&opts.Sort, "sort", "", "Ranking: streak|tokens|cost for the leaderboard, tokens|cost|days|recent for projects, tokens|cost for models")
 	fs.IntVar(&opts.Top, "top", 0, "Project or model rows to print, 0 for all")
@@ -499,13 +602,45 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 		}
 	}
 
+	if lastRaw != "" {
+		n, unit, explicit, perr := parseLastValue(lastRaw)
+		if perr != nil {
+			return opts, perr
+		}
+		opts.Last = n
+		opts.LastSet = true
+		opts.LastUnit = unit
+		opts.LastExplicit = explicit
+		if explicit {
+			if opts.Since != "" || opts.Until != "" {
+				return opts, &usageError{
+					Message: "--last with a unit cannot be combined with --since or --until",
+					Example: "thermal weekly --last 14d",
+				}
+			}
+			now := time.Now()
+			switch unit {
+			case "day":
+				opts.Since = now.AddDate(0, 0, -(n - 1)).Format("2006-01-02")
+				opts.WindowLabel = fmt.Sprintf("last %d days", n)
+			case "week":
+				opts.Since = now.AddDate(0, 0, -7*(n-1)).Format("2006-01-02")
+				opts.WindowLabel = fmt.Sprintf("last %d weeks", n)
+			case "month":
+				opts.Since = now.AddDate(0, -(n - 1), 0).Format("2006-01-02")
+				opts.WindowLabel = fmt.Sprintf("last %d months", n)
+			}
+			opts.Last = 0
+		}
+	}
+
 	if showLicense {
 		opts.Tool = "license"
 	}
 	if opts.DBPath != "" && (opts.Tool == "all" || opts.Tool == "auto" || opts.Tool == "" || opts.Tool == "sources") {
 		return opts, &usageError{
 			Message: "--db applies to one tool; add --tool <name>",
-			Example: "thermal --tool opencode --db <path> daily",
+			Example: `thermal --tool opencode --db "$HOME/.local/share/opencode/opencode.db" daily`,
 		}
 	}
 	if opts.Report == "statusline" || opts.Report == "prompt" || opts.Report == "status" || opts.Tool == "statusline" || opts.Tool == "prompt" || opts.Tool == "status" {

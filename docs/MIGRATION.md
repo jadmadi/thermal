@@ -25,6 +25,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Analytics Denominators and Audit Prose](#changed-analytics-prose)
   - [Changed: No-Data Is a Successful State and JSON Keeps Its Envelope](#changed-no-data-success)
   - [Changed: Data-Access Errors Name the Condition and Next Commands](#changed-data-access-errors)
+  - [Changed: Explicit `--last` Units, Repeated-Flag Warnings, and `--` Diagnostics](#changed-window-units)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -178,6 +179,41 @@ Run `thermal sources` to see which source exists, use the all-tools report, or p
 
 **Escape hatch**:
 Explicit `--db` validation keeps its existing messages (`--db path does not exist`, `expects a directory`, `expects <file>`), so scripts that supplied a path are unaffected.
+
+---
+
+### Changed: Explicit `--last` Units, Repeated-Flag Warnings, and `--` Diagnostics
+<a id="changed-window-units"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal .*--last [0-9]+' .` or `grep -rnE -- '--tool .*--tool ' .`
+- **Detection signal**: `thermal weekly --last 14d` now prints `Window: [last 14 days ...]`; `thermal --tool claude --tool codewhale` now writes a stderr warning naming both values; `thermal weekly -- --offline` explains that `--offline` became a positional.
+
+**What changed and why**:
+A bare `--last N` still uses the report's unit, but a `d`, `w`, or `m` suffix now pins the window unit and labels it explicitly. Repeated scalar flags keep the last value and warn on stderr with the discarded value, instead of silently changing scope. The `--` terminator now explains that following tokens are positional, and the `--db` examples use a real path instead of a shell-breaking `<path>` placeholder.
+
+**Before / After**:
+```bash
+# Before: 7 meant weeks on weekly, with no way to say 7 days
+thermal weekly --last 7
+
+# After: both units are expressible
+thermal weekly --last 7        # 7 weeks
+thermal weekly --last 14d      # 14 days
+thermal monthly --last 3m      # 3 months
+
+# Before: claude silently discarded
+thermal --tool claude --tool codewhale
+
+# After: same result, but the discard is named
+thermal: warning: --tool given 2 times; using "codewhale" (last), ignoring "claude"
+```
+
+**The fix**:
+Add the unit you mean to `--last`, pass one value per scalar flag, and put flags before `--` (or drop `--`). Boolean repeats such as `--json --json` remain silent and idempotent.
+
+**Escape hatch**:
+Bare `--last N` behavior is unchanged. `--since`/`--until` remain the exact-date form, and `--last` with a suffix cannot be combined with them.
 
 ---
 

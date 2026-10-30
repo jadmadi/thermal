@@ -34,7 +34,9 @@ The outcome of this goal is a **window and flag semantics contract**:
    repeats are idempotent and silent.
 3. `--` explains that flag parsing stopped and names the positional it
    produced.
-4. Every example is shell-safe and runnable, with no `<placeholder>` tokens.
+4. Every copyable `example:` line is shell-safe and runnable, with no
+   `<placeholder>` tokens. Flag signatures such as `--db <path>` are names, not
+   examples, and keep their conventional notation.
 
 ## Dependencies & Execution Order
 - **Mode**: Dependent (prerequisite goals are implemented)
@@ -213,7 +215,8 @@ Related goals:
 - AC-008: `thermal weekly -- --offline` exits `2` with the `--` explanation,
   not a 15-tool list.
 - AC-009: Every `example:` line from a usage error passes `sh -n`.
-- AC-010: No help or error text contains `<path>`.
+- AC-010: Every `example:` line from a usage error passes `sh -n`, and the
+  `--db` metadata example contains a real path, not `<path>`.
 - AC-011: `go test -race ./cmd/thermal/... ./internal/thermal/...` exits `0`,
   including `TestLastUnitMatrix`, `TestRepeatedScalarFlags`,
   `TestDoubleDashDiagnostics`, and `TestExamplesShellSafe`.

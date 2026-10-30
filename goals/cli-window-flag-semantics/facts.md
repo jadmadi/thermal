@@ -166,7 +166,7 @@ grep -q 'passed after --' /tmp/e
 
 # Examples are shell-safe
 HOME=$H $B weekly --tool opencode --db "" 2>&1 | grep -o 'example: .*' | sh -n
-! grep -R '<path>' cmd/thermal/help.go cmd/thermal/args.go
+! grep -q 'db <path> daily' cmd/thermal/args.go
 
 CGO_ENABLED=0 go test -race ./cmd/thermal/... ./internal/thermal/...
 ./scripts/simulated_user_gate.sh

@@ -42,6 +42,9 @@ type Options struct {
 	Until           string
 	Last            int
 	LastSet         bool   // whether --last was explicitly provided
+	LastUnit        string // "day", "week", or "month" when a suffix was used
+	LastExplicit    bool   // true when --last carried a d/w/m suffix
+	WindowLabel     string // explicit window label for suffix forms
 	Order           string // "asc" or "desc", default "desc"
 	Breakdown       bool
 	Chart           bool          // print bar rows under report tables
@@ -204,6 +207,7 @@ type AggregateOptions struct {
 	Since       string
 	Until       string
 	Last        int
+	WindowLabel string // overrides the computed window label (explicit unit forms)
 	Order       string // "asc" or "desc"; anything else means desc
 	Now         time.Time
 }

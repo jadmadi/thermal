@@ -191,7 +191,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--flame-ceiling <N>", Desc: "Live flame ceiling in active units per minute (e.g. 9M or 60)"},
 				{Name: "--since <date>", Desc: "Start date filter (YYYY-MM-DD or YYYYMMDD)"},
 				{Name: "--until <date>", Desc: "End date filter (YYYY-MM-DD or YYYYMMDD)"},
-				{Name: "--last <N>", Desc: "Limit to last N days, weeks, or months"},
+				{Name: "--last <N>[d|w|m]", Desc: "Last N periods; bare N uses the report unit, a suffix pins days, weeks, or months"},
 				{Name: "--order <asc|desc>", Desc: "Sort order for report rows (default: desc)"},
 				{Name: "--weeks <N>", Desc: "Heatmap width in weeks (default: 52; auto-fits narrow terminals)"},
 				{Name: "--width <N>", Desc: "Text render width in columns (40-240; overrides COLUMNS)"},

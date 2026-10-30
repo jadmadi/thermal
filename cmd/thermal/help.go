@@ -55,7 +55,7 @@ func baseReportFlags() []render.HelpFlag {
 	return []render.HelpFlag{
 		{"--since <date>", "Start date (YYYY-MM-DD or YYYYMMDD)"},
 		{"--until <date>", "End date (YYYY-MM-DD or YYYYMMDD)"},
-		{"--last <N>", "Last N days, weeks, or months (N >= 1)"},
+		{"--last <N>[d|w|m]", "Last N periods; bare N uses the report unit (d/w/m pins it)"},
 		{"--json", "Emit the JSON envelope"},
 		{"--require-data", "Exit 1 when the report has no data"},
 		{"--no-color", "Disable ANSI colors"},
