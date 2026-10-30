@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-help-glossary-and-routing",
+  "certified_at": "2026-10-30T14:25:28.454408677Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-help-glossary-and-routing/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "a2dd941a967fe471e1c6c5fb952dbe518b2012ab",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
