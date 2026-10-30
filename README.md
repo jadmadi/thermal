@@ -218,6 +218,10 @@ thermal --verbose
 thermal --no-color
 ```
 
+`--verbose` also reports skipped JSONL records. A half-written final line is
+counted as `truncatedTails` and `skippedRecords` in the report, with one warning
+naming the file; a clean scan omits those keys. A partial read still exits `0`.
+
 The leaderboard ranks by contribution streak and says so: `Ranked by current
 streak · all time`. A legend defines `Strk` (current streak), `Best` (longest
 streak), `Days` (active days), and the cost markers (`$` recorded, `~$`

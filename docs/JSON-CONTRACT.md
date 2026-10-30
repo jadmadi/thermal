@@ -42,6 +42,18 @@ even when no source has data. In that state:
 - The process exits `0`; `--require-data` keeps the payload and exits `1`.
 - `thermal sources --json` remains the only `type:"sources"` producer.
 
+## Partial JSONL reads
+
+A malformed or truncated transcript line is counted, never silently dropped.
+Clean payloads omit the keys below; a partial read adds them additively:
+
+- `skippedRecords`: malformed + truncated + over-ceiling records.
+- `malformedLines`, `truncatedTails`, `ceilingHits`: disjoint causes.
+- `scanStats`: per-tool `{recordsRead, recordsSkipped, malformedLines,
+  truncatedTails, ceilingHits, duplicates}`.
+- Warnings stay on stderr under `--verbose`; a partial read is still exit `0`
+  because the returned data is valid and explicitly incomplete.
+
 ## Precision
 
 `cmd/thermal/json.go` rounds every serialized floating-point value to **four

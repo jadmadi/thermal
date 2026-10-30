@@ -34,6 +34,7 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 		dayCounts map[string]int
 		duration  int64 // ms between first and last message
 		warning   string
+		stats     thermal.ScanStats
 	}
 
 	results := make(chan fileResult, len(files))
@@ -68,6 +69,8 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 					Timestamp string `json:"timestamp"`
 				}
 				if err := json.Unmarshal([]byte(line), &rec); err != nil {
+					res.stats.MalformedLines++
+					res.stats.RecordsSkipped++
 					continue
 				}
 				if rec.Type != "message" || rec.Timestamp == "" {
@@ -107,6 +110,12 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
 		}
+		if res.stats != (thermal.ScanStats{}) {
+			if summary.ScanStats == nil {
+				summary.ScanStats = &thermal.ScanStats{}
+			}
+			summary.ScanStats.Add(res.stats)
+		}
 		if len(res.dayCounts) == 0 {
 			continue
 		}
@@ -127,5 +136,6 @@ func LoadDroidData(dataDir string) (thermal.Summary, []thermal.DailyRow, []therm
 	sort.Slice(daily, func(i, j int) bool { return daily[i].Day < daily[j].Day })
 
 	sort.Strings(summary.Warnings)
+	applyScanStats(&summary)
 	return summary, daily, nil, nil
 }

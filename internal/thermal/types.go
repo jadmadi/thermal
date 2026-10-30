@@ -68,6 +68,28 @@ type Options struct {
 	RequireData     bool          // exit 1 when a read-only report has no data
 }
 
+// ScanStats counts JSONL records that were read, skipped, or dropped. The
+// categories are disjoint: SkippedRecords is the sum of malformed, truncated,
+// and over-ceiling records, while Duplicates is tracked separately.
+type ScanStats struct {
+	RecordsRead    int64 `json:"recordsRead,omitempty"`
+	RecordsSkipped int64 `json:"recordsSkipped,omitempty"`
+	MalformedLines int64 `json:"malformedLines,omitempty"`
+	TruncatedTails int64 `json:"truncatedTails,omitempty"`
+	CeilingHits    int64 `json:"ceilingHits,omitempty"`
+	Duplicates     int64 `json:"duplicates,omitempty"`
+}
+
+// Add merges another file's counters.
+func (s *ScanStats) Add(o ScanStats) {
+	s.RecordsRead += o.RecordsRead
+	s.RecordsSkipped += o.RecordsSkipped
+	s.MalformedLines += o.MalformedLines
+	s.TruncatedTails += o.TruncatedTails
+	s.CeilingHits += o.CeilingHits
+	s.Duplicates += o.Duplicates
+}
+
 type Summary struct {
 	Tool             string  `json:"tool"`
 	Sessions         int     `json:"sessions"`
@@ -89,6 +111,11 @@ type Summary struct {
 	ForkTokens         int64            `json:"forkTokens,omitempty"`
 	RootSessions       int              `json:"rootSessions,omitempty"`
 	ForkSessions       int              `json:"forkSessions,omitempty"`
+	SkippedRecords     int64            `json:"skippedRecords,omitempty"`
+	MalformedLines     int64            `json:"malformedLines,omitempty"`
+	TruncatedTails     int64            `json:"truncatedTails,omitempty"`
+	CeilingHits        int64            `json:"ceilingHits,omitempty"`
+	ScanStats          *ScanStats       `json:"scanStats,omitempty"`
 	Warnings           []string         `json:"-"`
 }
 

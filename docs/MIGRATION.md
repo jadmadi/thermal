@@ -29,6 +29,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Live SIGINT Is a Clean Stop; SIGTERM Exits 143](#changed-live-signals)
   - [Changed: Version Metadata and Deprecation Warnings Are Truthful](#changed-version-deprecation-truth)
   - [Changed: Exit Codes Are Documented and `upgrade` Accepts Global Flags](#changed-exit-codes-upgrade-flags)
+  - [Changed: Partial JSONL Reads Are Counted and Warned](#changed-jsonl-partial-reads)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -310,6 +311,35 @@ Drop `--offline` from `upgrade` if you want the network check; use `--check` or 
 
 **Escape hatch**:
 `--no-update-check` is accepted as a no-op on `upgrade`; `--width` and `--fresh` are not applicable and return a runnable alternative.
+
+---
+
+### Changed: Partial JSONL Reads Are Counted and Warned
+<a id="changed-jsonl-partial-reads"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal (daily|weekly|monthly|projects|models|stats|trend).*--json' .`
+- **Detection signal**: A transcript with a half-written final line now adds `"skippedRecords": 1` and `"truncatedTails": 1` to the report; `--verbose` writes one `truncated tail` warning on stderr.
+
+**What changed and why**:
+Every JSONL loader used to `continue` on a parse error, so a process killed mid-write silently removed a record and shrank the totals. Scans now count read, malformed, truncated, and over-ceiling records per file, re-emit the warning from the disk cache, and expose the counters in the report and `scanStats`. A partial read remains valid data with a disclosure, not a failed command.
+
+**Before / After**:
+```bash
+# Before: one valid record, one dropped, no signal
+thermal daily --json --verbose
+
+# After: the same valid record plus a disclosure
+thermal daily --json --verbose
+{"skippedRecords":1,"truncatedTails":1,...}
+thermal: warning: Claude: skipped 1 truncated tail record(s) in <path>
+```
+
+**The fix**:
+Read `skippedRecords` or the per-tool `scanStats` object when a report must be complete; treat `0`/absent as a clean scan. Run with `--verbose` to see the file and cause. A partial read still exits `0`.
+
+**Escape hatch**:
+Clean payloads are byte-identical apart from omitting the new keys. Warnings never enter stdout or `--json`.
 
 ---
 

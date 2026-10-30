@@ -10,6 +10,38 @@ import (
 	"testing"
 )
 
+func TestLoadClaudeData_TruncatedTail(t *testing.T) {
+	dir := t.TempDir()
+	proj := filepath.Join(dir, "projects", "proj")
+	if err := os.MkdirAll(proj, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	valid := `{"type":"assistant","timestamp":"2026-07-21T10:00:00Z","message":{"id":"m1","model":"claude-opus","usage":{"input_tokens":100,"output_tokens":50}}}`
+	truncated := `{"type":"assistant","timestamp":"2026-07-21T10:00:05Z","message":{"id":"m2"`
+	if err := os.WriteFile(filepath.Join(proj, "s.jsonl"), []byte(valid+"\n"+truncated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sum, _, _, err := LoadClaudeData(dir)
+	if err != nil {
+		t.Fatalf("LoadClaudeData: %v", err)
+	}
+	if sum.Sessions != 1 || sum.LifetimeTokens != 150 {
+		t.Fatalf("valid record lost: sessions=%d tokens=%d", sum.Sessions, sum.LifetimeTokens)
+	}
+	if sum.SkippedRecords != 1 || sum.TruncatedTails != 1 || sum.MalformedLines != 0 {
+		t.Fatalf("counters = %+v", sum)
+	}
+	found := false
+	for _, w := range sum.Warnings {
+		if strings.Contains(w, "truncated tail") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing truncated warning: %v", sum.Warnings)
+	}
+}
+
 func TestLoadClaudeData_AssistantUsage(t *testing.T) {
 	dir := t.TempDir()
 	proj := filepath.Join(dir, "projects", "proj")

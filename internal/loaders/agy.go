@@ -147,6 +147,7 @@ type sessionResult struct {
 	modelCounts map[string]int64
 	activeModel string
 	warnings    []string
+	stats       thermal.ScanStats
 }
 
 // parseAgyModelSetting extracts a canonical model name from an Antigravity user settings change.
@@ -209,6 +210,8 @@ func countAgySteps(path string, res *sessionResult) int {
 			} `json:"tool_calls"`
 		}
 		if json.Unmarshal([]byte(line), &rec) != nil {
+			res.stats.MalformedLines++
+			res.stats.RecordsSkipped++
 			continue
 		}
 
@@ -313,6 +316,8 @@ func probeAgyModels(path string, res *sessionResult) {
 			Content string `json:"content"`
 		}
 		if json.Unmarshal([]byte(line), &rec) != nil {
+			res.stats.MalformedLines++
+			res.stats.RecordsSkipped++
 			continue
 		}
 		if (rec.Source == "USER_EXPLICIT" || rec.Type == "USER_INPUT" || rec.Type == "SYSTEM") &&
@@ -521,6 +526,12 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 
 	for res := range results {
 		summary.Warnings = append(summary.Warnings, res.warnings...)
+		if res.stats != (thermal.ScanStats{}) {
+			if summary.ScanStats == nil {
+				summary.ScanStats = &thermal.ScanStats{}
+			}
+			summary.ScanStats.Add(res.stats)
+		}
 		if res.steps == 0 {
 			continue
 		}
@@ -581,5 +592,6 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 	}
 
 	sort.Strings(summary.Warnings)
+	applyScanStats(&summary)
 	return summary, daily, projectDays, nil
 }

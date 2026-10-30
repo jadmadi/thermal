@@ -49,6 +49,54 @@ func formatScanWarning(path string, err error) string {
 	return fmt.Sprintf("%s: %v", path, err)
 }
 
+// formatRecordWarning summarises skipped records for one file.
+func formatRecordWarning(tool, path string, stats thermal.ScanStats) string {
+	var parts []string
+	if stats.MalformedLines > 0 {
+		parts = append(parts, fmt.Sprintf("%d malformed", stats.MalformedLines))
+	}
+	if stats.TruncatedTails > 0 {
+		parts = append(parts, fmt.Sprintf("%d truncated tail", stats.TruncatedTails))
+	}
+	// A ceiling hit already has its own scanner warning; do not duplicate it.
+	if len(parts) == 0 {
+		return ""
+	}
+	_ = tool
+	return fmt.Sprintf("skipped %s record(s) in %s", strings.Join(parts, ", "), path)
+}
+
+// fileEndsWithNewline reports whether a file's final byte is a newline. An
+// unreadable or empty file is treated as terminated so it is not miscounted.
+func fileEndsWithNewline(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil || fi.Size() == 0 {
+		return true
+	}
+	buf := make([]byte, 1)
+	if _, err := f.ReadAt(buf, fi.Size()-1); err != nil {
+		return true
+	}
+	return buf[0] == '\n'
+}
+
+// applyScanStats lifts the aggregate counters into the Summary fields exposed
+// to JSON consumers.
+func applyScanStats(summary *thermal.Summary) {
+	if summary.ScanStats == nil {
+		return
+	}
+	summary.SkippedRecords = summary.ScanStats.RecordsSkipped
+	summary.MalformedLines = summary.ScanStats.MalformedLines
+	summary.TruncatedTails = summary.ScanStats.TruncatedTails
+	summary.CeilingHits = summary.ScanStats.CeilingHits
+}
+
 func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (thermal.Summary, []thermal.DailyRow, []thermal.ProjectDay, error) {
 	historyPath := filepath.Join(dataDir, "history.jsonl")
 	f, err := os.Open(historyPath)
@@ -60,6 +108,9 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 	dayCounts := make(map[string]int)
 	var totalCommands int64
 	var warnings []string
+	var stats thermal.ScanStats
+	endsNL := fileEndsWithNewline(historyPath)
+	lineNo, lastParseErr := 0, 0
 
 	scanner := newJSONLScanner(f)
 	for scanner.Scan() {
@@ -67,9 +118,14 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 		if line == "" {
 			continue
 		}
+		lineNo++
+		stats.RecordsRead++
 
 		var raw map[string]interface{}
 		if err := json.Unmarshal([]byte(line), &raw); err != nil {
+			stats.MalformedLines++
+			stats.RecordsSkipped++
+			lastParseErr = lineNo
 			continue
 		}
 
@@ -93,6 +149,17 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 	}
 	if err := scanner.Err(); err != nil {
 		warnings = append(warnings, formatScanWarning(historyPath, err))
+		if errors.Is(err, bufio.ErrTooLong) {
+			stats.CeilingHits++
+			stats.RecordsSkipped++
+		}
+	}
+	if !endsNL && lastParseErr == lineNo && lineNo > 0 {
+		stats.MalformedLines--
+		stats.TruncatedTails++
+	}
+	if warning := formatRecordWarning("history", historyPath, stats); warning != "" {
+		warnings = append(warnings, warning)
 	}
 
 	var daily []thermal.DailyRow
@@ -109,6 +176,10 @@ func loadJsonlData(dataDir string, fieldTimestamp string, useMillis bool) (therm
 		Sessions:       0,
 		LifetimeTokens: totalCommands,
 		Warnings:       warnings,
+	}
+	if stats != (thermal.ScanStats{}) {
+		summary.ScanStats = &stats
+		applyScanStats(&summary)
 	}
 
 	return summary, daily, nil, nil

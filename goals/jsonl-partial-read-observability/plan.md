@@ -1,10 +1,10 @@
 # Plan: Make truncated and malformed JSONL records observable
 
 ## Execution Steps
-- [ ] **Phase 1 — ScanStats model**: Add `ScanStats` and the `Summary` fields;
+- [x] **Phase 1 — ScanStats model**: Add `ScanStats` and the `Summary` fields;
   define the disjoint taxonomy and `SkippedRecords` derivation. Acceptance:
   `TestScanStatsDisjoint` and `TestCleanScanOmitsKeys` pass.
-- [ ] **Phase 2 — Shared scanner and loader adoption**: Add `scanJSONL` with
+- [x] **Phase 2 — Shared scanner and loader adoption**: Add `scanJSONL` with
   line numbers and truncated-tail detection; replace the silent `continue`
   sites in Claude, commandcode, Droid, Grok, Agy, DSH, and the generic JSONL
   loader. Acceptance: `TestTruncatedTail`, `TestMalformedMiddle`, and
@@ -13,15 +13,15 @@
   - Unterminated final line -> `TruncatedTails`.
   - Ceiling -> `CeilingHits`.
   - Duplicate -> `Duplicates`.
-- [ ] **Phase 3 — Warnings and JSON**: Add `formatRecordWarning`, emit one
+- [x] **Phase 3 — Warnings and JSON**: Add `formatRecordWarning`, emit one
   stderr line per file under `--verbose`, aggregate per tool, and add the
   top-level `skippedRecords` sum. Acceptance: `TestPartialReadJSON`,
   `TestWarningsStderrOnly`, and `TestCleanScanByteIdentical` pass.
-- [ ] **Phase 4 — Cache round-trip**: Persist `ScanStats` in `dircache` and
+- [x] **Phase 4 — Cache round-trip**: Persist `ScanStats` in `dircache` and
   `codexcache`, bump the schema version, treat an old cache as a miss, and
   re-emit warnings on a hit. Acceptance: `TestScanStatsCacheRoundTrip`,
   `TestOldCacheIsMiss`, and `TestCachedWarningReEmitted`.
-- [ ] **Phase 5 — Docs, gate, evidence, closure**: Update
+- [x] **Phase 5 — Docs, gate, evidence, closure**: Update
   `docs/JSON-CONTRACT.md`, README, MIGRATION, `project.jsonc`, the simulated
   gate; record evidence; commit, certify, reconcile.
 

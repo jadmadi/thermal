@@ -4,7 +4,9 @@
 package loaders
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,6 +49,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 		duration     int64 // ms between first and last timestamp
 		warning      string
 		dupesRemoved int
+		stats        thermal.ScanStats
 	}
 
 	results := make(chan fileResult, len(files))
@@ -71,12 +74,16 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 
 			seenMsgIDs := make(map[string]struct{})
 			var firstTs, lastTs time.Time
+			endsNL := fileEndsWithNewline(p)
+			lineNo, lastParseErr := 0, 0
 			scanner := newJSONLScanner(f)
 			for scanner.Scan() {
 				line := strings.TrimSpace(scanner.Text())
 				if line == "" {
 					continue
 				}
+				lineNo++
+				res.stats.RecordsRead++
 				var rec struct {
 					Type      string `json:"type"`
 					Timestamp string `json:"timestamp"`
@@ -93,6 +100,9 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 					} `json:"message"`
 				}
 				if err := json.Unmarshal([]byte(line), &rec); err != nil {
+					res.stats.MalformedLines++
+					res.stats.RecordsSkipped++
+					lastParseErr = lineNo
 					continue
 				}
 				if rec.Type != "assistant" {
@@ -101,6 +111,7 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 				if rec.Message.ID != "" {
 					if _, seen := seenMsgIDs[rec.Message.ID]; seen {
 						res.dupesRemoved++
+						res.stats.Duplicates++
 						continue
 					}
 					seenMsgIDs[rec.Message.ID] = struct{}{}
@@ -132,8 +143,19 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 			}
 			if err := scanner.Err(); err != nil {
 				res.warning = formatScanWarning(p, err)
+				if errors.Is(err, bufio.ErrTooLong) {
+					res.stats.CeilingHits++
+					res.stats.RecordsSkipped++
+				}
 			}
 			f.Close()
+			if !endsNL && lastParseErr == lineNo && lineNo > 0 {
+				res.stats.MalformedLines--
+				res.stats.TruncatedTails++
+			}
+			if warning := formatRecordWarning("Claude", p, res.stats); warning != "" {
+				res.warning = warning
+			}
 
 			if len(res.msgs) == 0 {
 				results <- res
@@ -162,6 +184,12 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 	for res := range results {
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
+		}
+		if res.stats != (thermal.ScanStats{}) {
+			if summary.ScanStats == nil {
+				summary.ScanStats = &thermal.ScanStats{}
+			}
+			summary.ScanStats.Add(res.stats)
 		}
 		totalDupes += res.dupesRemoved
 		if len(res.msgs) == 0 {
@@ -261,5 +289,6 @@ func LoadClaudeData(dataDir string) (thermal.Summary, []thermal.DailyRow, []ther
 	}
 
 	sort.Strings(summary.Warnings)
+	applyScanStats(&summary)
 	return summary, daily, projects, nil
 }

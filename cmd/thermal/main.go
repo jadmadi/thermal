@@ -729,11 +729,19 @@ func toolHasData(info loaders.ToolInfo) bool {
 
 // usageSet is the loaded data behind the report, project, and model commands.
 type usageSet struct {
-	days     []thermal.DailyRow
-	projects []thermal.ProjectDay
-	byTool   []thermal.ToolDays
-	results  []thermal.ToolResult
-	toolName string
+	days      []thermal.DailyRow
+	projects  []thermal.ProjectDay
+	byTool    []thermal.ToolDays
+	results   []thermal.ToolResult
+	toolName  string
+	scanStats thermal.ScanStats
+}
+
+func mergeSummaryScan(set *usageSet, summary thermal.Summary) {
+	if summary.ScanStats == nil {
+		return
+	}
+	set.scanStats.Add(*summary.ScanStats)
 }
 
 // loadUsage loads one tool or every tool with data. All-tools mode skips
@@ -758,6 +766,7 @@ func loadUsage(opts thermal.Options) (usageSet, error) {
 				continue
 			}
 			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
+			mergeSummaryScan(&set, data.Summary)
 			set.days = append(set.days, data.Daily...)
 			for i := range data.Projects {
 				data.Projects[i].Tool = info.Name
@@ -788,6 +797,7 @@ func loadUsage(opts thermal.Options) (usageSet, error) {
 		return set, loaders.EnrichDefaultDataError(err, opts.Report)
 	}
 	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
+	mergeSummaryScan(&set, data.Summary)
 	set.days = data.Daily
 	set.projects = data.Projects
 	for i := range set.projects {
@@ -917,13 +927,21 @@ func runReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.Report
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
+			MalformedLines int64       `json:"malformedLines,omitempty"`
+			TruncatedTails int64       `json:"truncatedTails,omitempty"`
+			CeilingHits    int64       `json:"ceilingHits,omitempty"`
 		}
 		payload := jsonReport{
-			Report:      rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			Report:         rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
+			MalformedLines: set.scanStats.MalformedLines,
+			TruncatedTails: set.scanStats.TruncatedTails,
+			CeilingHits:    set.scanStats.CeilingHits,
 		}
 		if noData {
 			payload.State = "no-data"
@@ -995,13 +1013,15 @@ func runProjectReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.ProjectReport
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
 		}
 		payload := jsonReport{
-			ProjectReport: rep,
-			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
+			ProjectReport:  rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
 		}
 		if noData {
 			payload.State = "no-data"
@@ -1051,13 +1071,15 @@ func runModelReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.ModelReport
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
 		}
 		payload := jsonReport{
-			ModelReport: rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			ModelReport:    rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
 		}
 		if noData {
 			payload.State = "no-data"
@@ -1113,13 +1135,15 @@ func runMixReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.MixReport
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
 		}
 		payload := jsonReport{
-			MixReport:   rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			MixReport:      rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
 		}
 		if noData {
 			payload.State = "no-data"
@@ -1158,13 +1182,15 @@ func runStatsReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.StatsReport
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
 		}
 		payload := jsonReport{
-			StatsReport: rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			StatsReport:    rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
 		}
 		if noData {
 			payload.State = "no-data"
@@ -1202,13 +1228,15 @@ func runTrendReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.TrendReport
-			GeneratedAt string      `json:"generatedAt"`
-			State       string      `json:"state,omitempty"`
-			Next        *noDataNext `json:"next,omitempty"`
+			GeneratedAt    string      `json:"generatedAt"`
+			State          string      `json:"state,omitempty"`
+			Next           *noDataNext `json:"next,omitempty"`
+			SkippedRecords int64       `json:"skippedRecords,omitempty"`
 		}
 		payload := jsonReport{
-			TrendReport: rep,
-			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			TrendReport:    rep,
+			GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
+			SkippedRecords: set.scanStats.RecordsSkipped,
 		}
 		if noData {
 			payload.State = "no-data"

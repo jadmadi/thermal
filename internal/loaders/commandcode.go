@@ -57,6 +57,7 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 		durationMs int64
 		hasSession bool
 		warning    string
+		stats      thermal.ScanStats
 	}
 
 	results := make(chan fileResult, len(sessionFiles))
@@ -108,6 +109,8 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 					} `json:"usage"`
 				}
 				if err := json.Unmarshal([]byte(line), &rec); err != nil {
+					res.stats.MalformedLines++
+					res.stats.RecordsSkipped++
 					continue
 				}
 				if cwd == "" && rec.Cwd != "" {
@@ -200,6 +203,12 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 	for res := range results {
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
+		}
+		if res.stats != (thermal.ScanStats{}) {
+			if summary.ScanStats == nil {
+				summary.ScanStats = &thermal.ScanStats{}
+			}
+			summary.ScanStats.Add(res.stats)
 		}
 		if !res.hasSession {
 			continue
@@ -311,5 +320,6 @@ func LoadCommandCodeData(dataDir string) (thermal.Summary, []thermal.DailyRow, [
 	}
 
 	sort.Strings(summary.Warnings)
+	applyScanStats(&summary)
 	return summary, daily, projects, nil
 }
