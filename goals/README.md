@@ -28,19 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 143
-- 🟡 **Ready to Execute (Pending)**: 2 (0 independent ⚡, 2 unblocked 🔗)
-- 🟢 **Implemented**: 141 (24 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- 🟢 **Implemented**: 143 (26 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 142 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 653/660 completed (98%)
-
----
-
-## 🟡 Ready to Execute (Pending Goals)
-
-| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`cli-help-glossary-and-routing`](cli-help-glossary-and-routing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#260)` | Deps met: cli-unknown-token-diagnostics, cli-help-interception-and-scoped-help, cli-db-override-scope-and-errors | Route every unknown word to the right namespace and explain domain vocabulary — Priority: P1 (discoverability). Thermal's banner says "Ranked by current streak"... | `/goal goals/cli-help-glossary-and-routing/goal.md` |
-| [`jsonl-partial-read-observability`](jsonl-partial-read-observability/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#263)` | Deps met: jsonl-scan-diagnostics, jsonl-line-ceilings | Make truncated and malformed JSONL records observable — Priority: P1 (data trust). A half-written final line is the most common real-wor... | `/goal goals/jsonl-partial-read-observability/goal.md` |
+- 📋 **Execution Tasks Progress**: 660/660 completed (100%)
 
 ---
 
@@ -179,7 +170,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7fe97c8` |
 | [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3b7cb85` |
 | [`cost-provenance-display-and-reconciliation`](cost-provenance-display-and-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
+| [`cli-help-glossary-and-routing`](cli-help-glossary-and-routing/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `a2dd941` |
 | [`cli-version-and-deprecation-truth`](cli-version-and-deprecation-truth/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `88de961` |
+| [`jsonl-partial-read-observability`](jsonl-partial-read-observability/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `40b2726` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `f662fef` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c849d30` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `ed0143c` |

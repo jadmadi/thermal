@@ -1,0 +1,24 @@
+{
+  "goal_slug": "jsonl-partial-read-observability",
+  "certified_at": "2026-10-30T14:28:17.150277072Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/jsonl-partial-read-observability/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "40b2726194afafae878a9c2e1fb69e76de7742d1",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
