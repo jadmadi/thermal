@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 143
-- 🟡 **Ready to Execute (Pending)**: 4 (0 independent ⚡, 4 unblocked 🔗)
-- 🟢 **Implemented**: 139 (22 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 3 (0 independent ⚡, 3 unblocked 🔗)
+- 🟢 **Implemented**: 140 (4 verified 📜, 48 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 142 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 636/660 completed (96%)
+- 📋 **Execution Tasks Progress**: 642/660 completed (97%)
 
 ---
 
@@ -40,7 +40,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`cli-terminal-output-integrity`](cli-terminal-output-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#258)` | Deps met: cli-terminal-width-adaptation, cli-leaderboard-ranking-and-legend, cli-nontty-and-statusline-output-contract | Enforce one width, colour, and sanitisation policy across every renderer — Priority: P1 (terminal trust). Thermal has several good rendering rules, but the... | `/goal goals/cli-terminal-output-integrity/goal.md` |
-| [`cli-automation-exit-and-upgrade-parity`](cli-automation-exit-and-upgrade-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#262)` | Deps met: cli-upgrade-nondestructive-safety-flags, cli-nontty-and-statusline-output-contract | Document exit codes and give upgrade global-flag parity — Priority: P1 (scripting). A wrapper that prepends `--offline` — the documented... | `/goal goals/cli-automation-exit-and-upgrade-parity/goal.md` |
 | [`cli-help-glossary-and-routing`](cli-help-glossary-and-routing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#260)` | Deps met: cli-unknown-token-diagnostics, cli-help-interception-and-scoped-help, cli-db-override-scope-and-errors | Route every unknown word to the right namespace and explain domain vocabulary — Priority: P1 (discoverability). Thermal's banner says "Ranked by current streak"... | `/goal goals/cli-help-glossary-and-routing/goal.md` |
 | [`jsonl-partial-read-observability`](jsonl-partial-read-observability/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#263)` | Deps met: jsonl-scan-diagnostics, jsonl-line-ceilings | Make truncated and malformed JSONL records observable — Priority: P1 (data trust). A half-written final line is the most common real-wor... | `/goal goals/jsonl-partial-read-observability/goal.md` |
 
@@ -84,17 +83,17 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`sqlite-schema-substitution-guard`](sqlite-schema-substitution-guard/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`muse-token-and-project-ingestion`](muse-token-and-project-ingestion/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`changelog-integrity-and-cwd-isolation`](changelog-integrity-and-cwd-isolation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `ad8009c` |
-| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `e86a107` |
-| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `c0e4087` |
-| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `8ebde49` |
-| [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `4d97260` |
-| [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `964cf9e` |
-| [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a352e43` |
-| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `a936195` |
-| [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `17ab978` |
-| [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `20e2ace` |
-| [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Evidence (evidence.md) | `evidence` |
-| [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `743281a` |
+| [`cli-help-interception-and-scoped-help`](cli-help-interception-and-scoped-help/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `e86a107` |
+| [`cli-upgrade-nondestructive-safety-flags`](cli-upgrade-nondestructive-safety-flags/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `c0e4087` |
+| [`cli-argument-parser-strictness`](cli-argument-parser-strictness/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `8ebde49` |
+| [`cli-db-override-scope-and-errors`](cli-db-override-scope-and-errors/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `4d97260` |
+| [`cli-first-run-source-inventory`](cli-first-run-source-inventory/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `964cf9e` |
+| [`cli-nontty-and-statusline-output-contract`](cli-nontty-and-statusline-output-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a352e43` |
+| [`cli-terminal-width-adaptation`](cli-terminal-width-adaptation/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a936195` |
+| [`cli-leaderboard-ranking-and-legend`](cli-leaderboard-ranking-and-legend/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `17ab978` |
+| [`cli-report-total-row-semantics`](cli-report-total-row-semantics/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `20e2ace` |
+| [`cli-analytics-and-audit-prose-clarity`](cli-analytics-and-audit-prose-clarity/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Evidence (evidence.md) | `evidence` |
+| [`cli-version-verbose-flag-contract`](cli-version-verbose-flag-contract/goal.md) | `⚡ Indep` | 🚢 SHIP | stale ⚠️ | Git Commit | `743281a` |
 | [`acp-commerce-discovery`](acp-commerce-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `0c83f16` |
 | [`agent-link-headers`](agent-link-headers/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `7dd5f9a` |
 | [`agent-skills-discovery`](agent-skills-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unverified | Git Commit | `383ec34` |
@@ -163,12 +162,13 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`audit-path-and-score-clarity`](audit-path-and-score-clarity/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `9ae5494` |
 | [`sqlite-loader-resource-bounds`](sqlite-loader-resource-bounds/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
 | [`pricing-catalog-and-partial-model-provenance`](pricing-catalog-and-partial-model-provenance/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
-| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `9903ca2` |
-| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `4dbf119` |
-| [`cli-empty-data-success-contract`](cli-empty-data-success-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `6bd8d1c` |
-| [`cli-data-access-error-guidance`](cli-data-access-error-guidance/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `a8a3661` |
-| [`cli-window-flag-semantics`](cli-window-flag-semantics/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `aa3c643` |
-| [`cli-sigint-lifecycle-contract`](cli-sigint-lifecycle-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `7975021` |
+| [`cli-unknown-token-diagnostics`](cli-unknown-token-diagnostics/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `9903ca2` |
+| [`cli-top-flag-contract`](cli-top-flag-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `4dbf119` |
+| [`cli-empty-data-success-contract`](cli-empty-data-success-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `6bd8d1c` |
+| [`cli-data-access-error-guidance`](cli-data-access-error-guidance/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a8a3661` |
+| [`cli-window-flag-semantics`](cli-window-flag-semantics/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `aa3c643` |
+| [`cli-sigint-lifecycle-contract`](cli-sigint-lifecycle-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `7975021` |
+| [`cli-automation-exit-and-upgrade-parity`](cli-automation-exit-and-upgrade-parity/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `770a13d` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |
@@ -179,7 +179,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`json-output-contract-hardening`](json-output-contract-hardening/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `7fe97c8` |
 | [`live-ticker-unit-and-rollup-contract`](live-ticker-unit-and-rollup-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `3b7cb85` |
 | [`cost-provenance-display-and-reconciliation`](cost-provenance-display-and-reconciliation/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `a7034d1` |
-| [`cli-version-and-deprecation-truth`](cli-version-and-deprecation-truth/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `88de961` |
+| [`cli-version-and-deprecation-truth`](cli-version-and-deprecation-truth/goal.md) | `🔗 Dep` | 🚢 SHIP | stale ⚠️ | Git Commit | `88de961` |
 | [`tui-projects-view`](tui-projects-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `f662fef` |
 | [`tui-mix-models-views`](tui-mix-models-views/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `c849d30` |
 | [`tui-stats-view`](tui-stats-view/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `ed0143c` |
