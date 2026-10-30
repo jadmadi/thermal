@@ -278,7 +278,7 @@ run_check "Daily help no color" 0 text "${BIN_PATH}" daily --help --no-color
 run_check "Live scoped help" 0 text "${BIN_PATH}" live --help
 run_check "Upgrade scoped help" 0 text "${BIN_PATH}" upgrade --help
 run_check "Version scoped help" 0 text "${BIN_PATH}" version --help
-run_check "Unknown help token" 1 error "${BIN_PATH}" help nope
+run_check "Unknown help token" 2 error "${BIN_PATH}" help nope
 if cmp -s <("${BIN_PATH}" daily --help) <("${BIN_PATH}" help daily); then
     echo -e "  ${GREEN}✔ [PASS]${RESET} daily --help and help daily are identical"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
@@ -917,6 +917,44 @@ if "${BIN_PATH}" --help | grep -q 'Exit Codes:' && "${BIN_PATH}" upgrade --help 
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 else
     echo -e "  ${RED}✖ [FAIL]${RESET} exit-code documentation missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" help streak 2>/dev/null | grep -q 'thermal glossary · streak'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} help explains domain vocabulary"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} help still rejects glossary terms"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+doctor_err=$("${BIN_PATH}" doctor 2>&1 >/dev/null || true)
+if echo "${doctor_err}" | grep -q 'thermal sources' && ! echo "${doctor_err}" | grep -q 'Valid tools:'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} beginner intent routes to sources"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} beginner intent still blames the tool namespace"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+open_err=$("${BIN_PATH}" --tool open 2>&1 || true)
+if echo "${open_err}" | grep -q 'did you mean: OpenCode'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} tool prefixes suggest the canonical name and alias"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} tool prefix suggestion is missing"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" --no-color 2>/dev/null | grep -q '^  Next: thermal weekly --chart'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} leaderboard ends with a next step"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} leaderboard has no next-step hint"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi

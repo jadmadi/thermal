@@ -244,6 +244,16 @@ func TestLeaderboardCaption(t *testing.T) {
 	}
 }
 
+func TestLeaderboardNextHint(t *testing.T) {
+	out := RenderLeaderboard([]thermal.ToolResult{{
+		Tool: thermal.ToolOpenCode, Name: "OpenCode", CurrentStreak: 3,
+		TotalActivity: 1000, Summary: thermal.Summary{Cost: 1},
+	}}, 52, true, "", true)
+	if !strings.Contains(out, "Next: thermal weekly --chart") {
+		t.Fatalf("missing next hint:\n%s", out)
+	}
+}
+
 func TestLeaderboardLegend(t *testing.T) {
 	results := []thermal.ToolResult{
 		{Tool: thermal.ToolOpenCode, Name: "OpenCode", CurrentStreak: 3, LongestStreak: 5, ActiveDays: 4, TotalActivity: 1000, Summary: thermal.Summary{Cost: 1.25}},

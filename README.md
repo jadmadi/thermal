@@ -256,6 +256,13 @@ validated once, and Thermal never silently falls back to a different window:
   are identified as paths and pointed at `--db`; report words used in the tool
   slot are named as report commands.
 
+### Glossary
+
+`thermal help glossary` lists the domain terms, and `thermal help streak`,
+`thermal help token`, `thermal help warriors`, or `thermal help activity` explain
+one in place. `thermal doctor` and `thermal config` route to `thermal sources`
+instead of a vendor list; `thermal top` points at `--top <N>`.
+
 ### Exit codes
 
 | Code | Meaning |

@@ -31,6 +31,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Exit Codes Are Documented and `upgrade` Accepts Global Flags](#changed-exit-codes-upgrade-flags)
   - [Changed: Partial JSONL Reads Are Counted and Warned](#changed-jsonl-partial-reads)
   - [Changed: Width, Legend, Sources, and Statusline Colour Honesty](#changed-terminal-output-integrity)
+  - [Changed: Help Glossary and Namespace Routing](#changed-help-glossary-routing)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -371,6 +372,47 @@ Pass `--width N` when a pipe needs a specific width; `COLUMNS` is only a TTY hin
 
 **Escape hatch**:
 `--width` remains authoritative on every stream. A clean, wide terminal keeps the previous layout apart from the atomic legend wrapping and clearer source details.
+
+---
+
+### Changed: Help Glossary and Namespace Routing
+<a id="changed-help-glossary-routing"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal help (streak|token|warriors|activity)' .` or wrappers parsing unknown-token diagnostics.
+- **Detection signal**: `thermal help streak` now exits `0` with a definition; `thermal doctor` names an unknown command and points at `thermal sources`; `thermal top` suggests `--top <N>`.
+
+**What changed and why**:
+The banner and leaderboard use terms such as streak, token, warriors, and activity, but `help` rejected them as unknown commands. Beginner intent words such as doctor and config were blamed on the tool namespace, while `top` suggested the two-letter alias `oc`. `help` now has a glossary and a namespace-aware fallback: glossary terms explain themselves, intent words point at `sources`, and tool suggestions always show the canonical name plus its alias.
+
+**Before / After**:
+```bash
+# Before
+thermal help streak
+thermal: unknown command "streak"
+exit 1
+
+# After
+thermal help streak
+  thermal glossary · streak
+  Consecutive calendar days with activity for a tool. ...
+exit 0
+
+# Before
+thermal doctor
+thermal: unknown tool "doctor" + 15 vendor names
+
+# After
+thermal: unknown command "doctor"
+  checking what thermal can read:  thermal sources
+  all commands:                    thermal --help
+```
+
+**The fix**:
+Use `thermal help glossary` for the full list, and `thermal help <term>` for one definition. Keep command execution first when a term is also a command, such as `cost`; `help` resolves the glossary only in the help path.
+
+**Escape hatch**:
+Truly unknown help targets now exit `2` with a nearest command or glossary suggestion; retired commands keep exit `1`. The leaderboard adds one `Next:` hint, and `--json` is unchanged.
 
 ---
 

@@ -127,6 +127,31 @@ func classifyToken(token string, slot tokenSlot) tokenDiagnostic {
 	lower := strings.ToLower(trimmed)
 	d.Token = lower
 
+	if slot == slotTool {
+		switch lower {
+		case "doctor", "config", "setup", "history", "usage":
+			d.Class = classUnknown
+			d.Message = "intent"
+			d.ExitCode = 2
+			return d
+		case "top":
+			d.Class = classUnknown
+			d.Message = "top-flag"
+			d.ExitCode = 2
+			return d
+		case "open":
+			d.Class = classUnknown
+			d.Suggestion = `OpenCode (alias "oc")`
+			d.ExitCode = 2
+			return d
+		case "code":
+			d.Class = classUnknown
+			d.Suggestion = `Claude (alias "ccode"), OpenCode (alias "oc"), or CMD`
+			d.ExitCode = 2
+			return d
+		}
+	}
+
 	if msg, ok := retiredHelp[lower]; ok {
 		d.Class = classRetired
 		d.Message = msg
@@ -185,6 +210,18 @@ func classifyToken(token string, slot tokenSlot) tokenDiagnostic {
 
 func renderTokenDiagnostic(d tokenDiagnostic) string {
 	var b strings.Builder
+	if d.Message == "intent" {
+		fmt.Fprintf(&b, "thermal: unknown command %q\n", d.Token)
+		b.WriteString("  checking what thermal can read:  thermal sources\n")
+		b.WriteString("  all commands:                    thermal --help\n")
+		return b.String()
+	}
+	if d.Message == "top-flag" {
+		fmt.Fprintf(&b, "thermal: unknown command %q\n", d.Token)
+		b.WriteString("  did you mean: --top <N>   (e.g. thermal models --top 5)\n")
+		b.WriteString("  run thermal --help for the flag list\n")
+		return b.String()
+	}
 	switch d.Class {
 	case classKnown:
 		return ""
@@ -224,6 +261,8 @@ func renderTokenDiagnostic(d tokenDiagnostic) string {
 	if d.Suggestion != "" {
 		if d.SuggestIsCommand {
 			fmt.Fprintf(&b, "  did you mean: thermal %s?\n", d.Suggestion)
+		} else if strings.Contains(d.Suggestion, "alias") {
+			fmt.Fprintf(&b, "  did you mean: %s?\n", d.Suggestion)
 		} else {
 			fmt.Fprintf(&b, "  did you mean: %q?\n", d.Suggestion)
 		}

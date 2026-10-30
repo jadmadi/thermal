@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/jadmadi/thermal/internal/loaders"
@@ -567,16 +568,87 @@ func noColorFromArgs(args []string) bool {
 	return false
 }
 
+type glossaryEntry struct {
+	Def string
+	See string
+}
+
+var glossary = map[string]glossaryEntry{
+	"streak":           {"Consecutive calendar days with activity for a tool. The default leaderboard ranks by current streak; Best is the longest streak.", "thermal daily · thermal stats"},
+	"token":            {"One unit of model input or output. Thermal counts input, output, reasoning, cache read, and cache write separately and keeps the types disjoint.", "thermal models · thermal stats"},
+	"tokens":           {"One unit of model input or output. Thermal counts input, output, reasoning, cache read, and cache write separately and keeps the types disjoint.", "thermal models · thermal stats"},
+	"warriors":         {"The Token Warriors table groups tools that report token usage. Activity Hunters groups tools that report steps, messages, or prompts.", "thermal --help · thermal"},
+	"token warriors":   {"The leaderboard section for tools that report token usage. Activity-only tools appear under Activity Hunters.", "thermal --help · thermal"},
+	"activity":         {"Actions, steps, messages, or prompts counted for a tool. Activity is not a token total and never enters one.", "thermal --help · thermal"},
+	"activity hunters": {"The leaderboard section for tools that report actions, steps, messages, or prompts instead of tokens.", "thermal --help · thermal"},
+	"active day":       {"A calendar day with at least one counted turn or token. Active days are the denominator for streaks and daily means.", "thermal stats · thermal daily"},
+	"best":             {"The longest streak recorded for a tool, regardless of whether it is current.", "thermal daily"},
+	"cost":             {"A dollar figure. $ is recorded by the source, ~$ includes a pricing estimate, ≥$ is partial, and — is unpriced.", "thermal models · thermal audit"},
+	"estimated":        {"A cost calculated from public models.dev list prices when the source records tokens but no spend. Estimates carry a ~ prefix.", "thermal models · thermal --help"},
+	"recorded":         {"A cost written by the source itself. Recorded cost always wins over an estimate for the same day.", "thermal models"},
+	"unpriced":         {"A model or token volume the catalog cannot price. It is named in the No pricing for line and never treated as free.", "thermal models"},
+	"cache hit":        {"The share of prompt tokens read from cache. The stats composition line reports the hit rate.", "thermal stats"},
+	"scope":            {"The tool or tool set a report covers: all tools, one tool, or a statusline scope.", "thermal statusline · thermal sources"},
+	"window":           {"The date range or period count a report covers. Bare --last N uses the report unit; d/w/m suffixes pin it.", "thermal daily · thermal weekly"},
+	"session":          {"One recorded agent session. A session can span multiple days and models.", "thermal projects · thermal stats"},
+	"turn":             {"One counted assistant response or step. Turns drive activity, streaks, and live rate units.", "thermal statusline · thermal live"},
+}
+
+var intentWords = map[string]bool{
+	"doctor": true, "config": true, "setup": true, "history": true, "usage": true,
+}
+
+func nearestGlossary(token string) (string, bool) {
+	terms := make([]string, 0, len(glossary))
+	for t := range glossary {
+		terms = append(terms, t)
+	}
+	return nearestName(strings.ToLower(token), terms)
+}
+
+func glossaryPage(term string) (string, bool) {
+	key := strings.ToLower(strings.TrimSpace(term))
+	if key == "glossary" {
+		var b strings.Builder
+		b.WriteString("  thermal glossary\n\n")
+		terms := make([]string, 0, len(glossary))
+		for t := range glossary {
+			terms = append(terms, t)
+		}
+		sort.Strings(terms)
+		for _, t := range terms {
+			b.WriteString(fmt.Sprintf("  %-18s %s\n", t, glossary[t].Def))
+		}
+		b.WriteString("\n  See also: thermal --help · thermal daily · thermal stats\n")
+		return b.String(), true
+	}
+	entry, ok := glossary[key]
+	if !ok {
+		return "", false
+	}
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("  thermal glossary · %s\n  %s\n\n  See also: %s\n", key, entry.Def, entry.See))
+	return b.String(), true
+}
+
 // helpOutput returns the text and exit code for a help request without writing.
 func helpOutput(verb, tool, unknown string, noColor bool) (string, int) {
 	if unknown != "" {
+		if page, ok := glossaryPage(unknown); ok {
+			return page, 0
+		}
+		if intentWords[strings.ToLower(unknown)] {
+			return fmt.Sprintf("thermal: unknown command %q\n  checking what thermal can read:  thermal sources\n  all commands:                    thermal --help\n", unknown), 2
+		}
 		var b strings.Builder
 		fmt.Fprintf(&b, "thermal: unknown command %q\n", unknown)
-		if s, ok := nearestHelpName(unknown); ok {
+		if term, ok := nearestGlossary(unknown); ok {
+			fmt.Fprintf(&b, "  did you mean: thermal help %s?\n", term)
+		} else if s, ok := nearestHelpName(unknown); ok {
 			fmt.Fprintf(&b, "  did you mean: thermal %s?\n", s)
 		}
 		b.WriteString("  run thermal --help for the command list\n")
-		return b.String(), 1
+		return b.String(), 2
 	}
 	if msg, ok := retiredHelp[verb]; ok {
 		see := "See also: thermal changelog"

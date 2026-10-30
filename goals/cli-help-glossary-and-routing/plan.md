@@ -1,13 +1,13 @@
 # Plan: Route every unknown word to the right namespace and explain domain vocabulary
 
 ## Execution Steps
-- [ ] **Phase 1 — Glossary table and renderer**: Add `GlossaryEntry`,
+- [x] **Phase 1 — Glossary table and renderer**: Add `GlossaryEntry`,
   `lookupGlossary`, and `renderGlossary`; wire `help <term>` before the
   unknown-command path. Acceptance: `TestGlossary` and
   `TestGlossaryExitCodes` pass.
   - At least 15 terms, each with a definition and see-also.
   - `help glossary` lists them; `help <unknown>` exits 2 with pointers.
-- [ ] **Phase 2 — Namespace classifier and suggestion quality**: Extend
+- [x] **Phase 2 — Namespace classifier and suggestion quality**: Extend
   `tokenDiagnostic` with a namespace, add prefix/canonical matching, and
   render canonical-plus-alias suggestions. Acceptance:
   `TestTokenClassification`, `TestSuggestionQuality`, and
@@ -15,13 +15,13 @@
   - `doctor`/`config` route to commands, not tools.
   - `top` suggests `--top`, not `oc`.
   - `open` -> OpenCode; `code` -> Claude/OpenCode/CMD.
-- [ ] **Phase 3 — Leaderboard hint**: Add one `Next:` line after the cheer,
+- [x] **Phase 3 — Leaderboard hint**: Add one `Next:` line after the cheer,
   width-aware, JSON-unchanged. Acceptance: `TestLeaderboardNextHint` at 80 and
   120, `TestLeaderboardJSONUnchanged`.
-- [ ] **Phase 4 — Help grouping and docs**: Add the glossary pointer to global
+- [x] **Phase 4 — Help grouping and docs**: Add the glossary pointer to global
   help, update README, MIGRATION, `project.jsonc`, and the gate. Acceptance:
   help line count <= 105 at 80 columns; gate exits 0.
-- [ ] **Phase 5 — Evidence and closure**: Record the glossary, classification,
+- [x] **Phase 5 — Evidence and closure**: Record the glossary, classification,
   suggestion, and leaderboard outputs; commit, certify, reconcile.
 
 ## Acceptance Command Ledger
@@ -51,7 +51,7 @@
 - Do not return to alias-only suggestions; that was the defect.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `feat(cli): add a glossary and namespace-aware help routing
   (goals/cli-help-glossary-and-routing/goal.md)`; (3) certify via

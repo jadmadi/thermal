@@ -10,6 +10,29 @@ import (
 	"github.com/jadmadi/thermal/internal/loaders"
 )
 
+func TestIntentAndToolSuggestions(t *testing.T) {
+	for _, token := range []string{"doctor", "config", "setup", "history", "usage"} {
+		d := classifyToken(token, slotTool)
+		if d.Message != "intent" || !strings.Contains(renderTokenDiagnostic(d), "thermal sources") {
+			t.Fatalf("%s diagnostic = %+v", token, d)
+		}
+	}
+	top := renderTokenDiagnostic(classifyToken("top", slotTool))
+	if !strings.Contains(top, "--top") || strings.Contains(top, `"oc"`) {
+		t.Fatalf("top diagnostic = %q", top)
+	}
+	open := renderTokenDiagnostic(classifyToken("open", slotTool))
+	if !strings.Contains(open, `OpenCode (alias "oc")`) {
+		t.Fatalf("open diagnostic = %q", open)
+	}
+	code := renderTokenDiagnostic(classifyToken("code", slotTool))
+	for _, want := range []string{"Claude", "OpenCode", "CMD"} {
+		if !strings.Contains(code, want) {
+			t.Fatalf("code diagnostic missing %q: %q", want, code)
+		}
+	}
+}
+
 func TestClassifyToken(t *testing.T) {
 	cases := []struct {
 		name             string

@@ -131,9 +131,24 @@ func TestHelpAliasesAndTools(t *testing.T) {
 	}
 }
 
+func TestGlossaryHelp(t *testing.T) {
+	for _, term := range []string{"streak", "token", "warriors", "activity", "glossary"} {
+		out, code := helpOutput("", "", term, true)
+		if code != 0 {
+			t.Fatalf("help %s code=%d\n%s", term, code, out)
+		}
+		if !strings.Contains(strings.ToLower(out), term) {
+			t.Fatalf("help %s missing term:\n%s", term, out)
+		}
+	}
+	if out, code := helpOutput("", "", "doctor", true); code != 2 || !strings.Contains(out, "thermal sources") {
+		t.Fatalf("doctor help code=%d\n%s", code, out)
+	}
+}
+
 func TestHelpUnknownAndRetired(t *testing.T) {
 	unknown, code := helpOutput("", "", "today", true)
-	if code != 1 {
+	if code != 2 {
 		t.Fatalf("unknown help code=%d", code)
 	}
 	if !strings.Contains(unknown, `unknown command "today"`) || !strings.Contains(unknown, "did you mean: thermal daily?") {

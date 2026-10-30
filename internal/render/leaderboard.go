@@ -501,6 +501,9 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	}
 	sb.WriteString("\n")
 
+	for _, line := range WrapText("Next: thermal weekly --chart   weekly bars · thermal --help   all flags", width-4) {
+		sb.WriteString("  " + dim(line) + "\n")
+	}
 	for _, line := range WrapText("Keep the heat going. Don't break the streak.", width-4) {
 		sb.WriteString("  " + dim(line) + "\n")
 	}

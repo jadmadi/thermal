@@ -162,6 +162,7 @@ func RenderHelp(noColor bool) string {
 		{"thermal daily --help", "Scoped help for the daily report"},
 		{"thermal help daily", "Same page via the help command"},
 		{"thermal sources", "Inspect all 15 source paths and states"},
+		{"thermal help glossary", "Explain streak, token, warriors, and cost terms"},
 		{"thermal stats", "Daily distribution and token composition"},
 		{"thermal audit", "Audit instruction files & MCP context tax"},
 		{"thermal changelog --top 5", "View latest new features & arguments"},
