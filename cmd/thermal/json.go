@@ -122,6 +122,9 @@ func leaderboardJSONPayloadWithMeta(results []thermal.ToolResult, now time.Time,
 	totals.ActiveDays = len(active)
 	totals.Cost = totals.RecordedCost + totals.EstimatedCost
 	display := results
+	if display == nil {
+		display = []thermal.ToolResult{}
+	}
 	if top > 0 && len(display) > top {
 		display = display[:top]
 	}

@@ -150,7 +150,8 @@ $ thermal statusline           -> "🔥 5d all tools · 0 tok today · top: code
   "type": "leaderboard",
   "generatedAt": "2026-10-30T00:00:00Z",
   "state": "no-data",
-  "ranking": [],
+  "ranking": {"key": "streak", "order": "desc"},
+  "results": [],
   "totals": {"tokens": 0, "cost": 0, "sessions": 0},
   "unpricedModels": [],
   "next": {

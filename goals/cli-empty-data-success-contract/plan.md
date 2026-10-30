@@ -1,7 +1,7 @@
 # Plan: Make no-data a successful, schema-stable state across text, JSON, and statusline
 
 ## Execution Steps
-- [ ] **Phase 1 — Contract types and flags**: Add `RequireData` to
+- [x] **Phase 1 — Contract types and flags**: Add `RequireData` to
   `thermal.Options` and `parseArgsFrom`, define `NoDataNext`, and add the
   `state`/`next` fields to the report envelopes without changing payloads that
   have data. Acceptance: `TestRequireDataFlag`, `TestNoDataEnvelopeKeys`, and
@@ -11,7 +11,7 @@
     no-op with a documented note; choose one and test).
   - `state` and `next` are `omitempty`; populated payloads are byte-identical
     to today.
-- [ ] **Phase 2 — Text onboarding**: Replace `printEmptyInventory` with
+- [x] **Phase 2 — Text onboarding**: Replace `printEmptyInventory` with
   `printNoData`, print the three-line block to stdout, keep the inventory for
   `sources` and `--verbose`, and honor the one-empty-source and unreadable
   variants. Acceptance: `TestNoDataText`, `TestNoDataOneEmptySource`, and
@@ -19,7 +19,7 @@
   - Exit `0` by default, `1` with `--require-data`.
   - stderr empty unless `--verbose` or `--require-data`.
   - No ANSI under `NO_COLOR`.
-- [ ] **Phase 3 — JSON and statusline**: Make every report return its own
+- [x] **Phase 3 — JSON and statusline**: Make every report return its own
   no-data envelope; keep `sources --json` unchanged; add `state:"no-data"` to
   statusline JSON; document statusline silence in help. Acceptance:
   `TestNoDataJSONSchema` (table over every verb),
@@ -27,10 +27,10 @@
   `TestStatuslineCacheFallback` pass.
   - `jq` schema checks for each verb.
   - `--json --verbose` stays valid; warnings on stderr only.
-- [ ] **Phase 4 — Migration, docs, gate**: Add the six-part MIGRATION entry,
+- [x] **Phase 4 — Migration, docs, gate**: Add the six-part MIGRATION entry,
   update `docs/JSON-CONTRACT.md`, README first-run, `project.jsonc`, and the
   simulated-user gate. Acceptance: MIGRATION lint passes; gate exits `0`.
-- [ ] **Phase 5 — Evidence and closure**: Record the no-data matrix, JSON
+- [x] **Phase 5 — Evidence and closure**: Record the no-data matrix, JSON
   samples, statusline channels, and gate output in `evidence.md`; commit with
   goal attribution; certify and reconcile.
 
@@ -64,7 +64,7 @@
   payload.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `feat(cli): make no-data a success state with stable JSON
   (goals/cli-empty-data-success-contract/goal.md)`; (3) certify via

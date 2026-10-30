@@ -443,27 +443,69 @@ else
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 empty_source_home=$(mktemp -d)
-empty_source_out=$(HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
+set +e
+HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
     HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
-    "${BIN_PATH}" 2>&1 >/dev/null || true)
-if echo "${empty_source_out}" | grep -q 'Thermal · sources' && echo "${empty_source_out}" | grep -q 'missing'; then
-    echo -e "  ${GREEN}✔ [PASS]${RESET} empty first run prints the source inventory"
+    "${BIN_PATH}" >"${empty_source_home}/out" 2>"${empty_source_home}/err"
+empty_first_code=$?
+set -e
+if [[ "${empty_first_code}" -eq 0 ]] && \
+   grep -q 'No AI coding sessions found yet' "${empty_source_home}/out" && \
+   grep -q 'thermal sources' "${empty_source_home}/out" && \
+   [[ ! -s "${empty_source_home}/err" ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} empty first run is a successful onboarding state"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 else
-    echo -e "  ${RED}✖ [FAIL]${RESET} empty first run did not print the inventory"
+    echo -e "  ${RED}✖ [FAIL]${RESET} empty first run channel or exit contract drifted"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
 empty_source_json=$(HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
     HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
     "${BIN_PATH}" --json 2>/dev/null || true)
-if echo "${empty_source_json}" | jq -e '.type=="sources" and .summary.found==0' >/dev/null 2>&1; then
-    echo -e "  ${GREEN}✔ [PASS]${RESET} empty thermal --json emits a sources object"
+if echo "${empty_source_json}" | jq -e '.type=="leaderboard" and .state=="no-data" and (.results|length)==0' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} empty thermal --json keeps the leaderboard envelope"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 else
-    echo -e "  ${RED}✖ [FAIL]${RESET} empty thermal --json did not emit sources"
+    echo -e "  ${RED}✖ [FAIL]${RESET} empty thermal --json swapped its envelope"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+empty_report_ok=1
+for empty_report in daily weekly monthly projects models mix stats trend; do
+    empty_report_json=$(HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
+        HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+        "${BIN_PATH}" "${empty_report}" --json 2>/dev/null || true)
+    if ! echo "${empty_report_json}" | jq -e --arg t "${empty_report}" '.type==$t and .state=="no-data"' >/dev/null 2>&1; then
+        empty_report_ok=0
+        break
+    fi
+done
+if [[ "${empty_report_ok}" -eq 1 ]]; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} every report keeps its own no-data envelope"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} a report swapped its no-data envelope"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+set +e
+HOME="${empty_source_home}" XDG_DATA_HOME="${empty_source_home}" \
+    HERMES_HOME= DSH_HOME= CODEX_HOME= OPENCODE_HOME= ZED_HOME= AGY_HOME= \
+    "${BIN_PATH}" --require-data >"${empty_source_home}/req.out" 2>"${empty_source_home}/req.err"
+empty_require_code=$?
+set -e
+if [[ "${empty_require_code}" -eq 1 ]] && \
+   grep -q 'No AI coding sessions found yet' "${empty_source_home}/req.out" && \
+   grep -q -- '--require-data' "${empty_source_home}/req.err"; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} --require-data restores the strict empty exit"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} --require-data did not restore the strict empty exit"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi

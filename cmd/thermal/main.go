@@ -529,6 +529,9 @@ func main() {
 				continue
 			}
 			printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
+			if !dailyHasActivity(data.Daily, data.Projects) {
+				continue
+			}
 
 			var estCost float64
 			var toolMissing []string
@@ -576,7 +579,19 @@ func main() {
 		}
 
 		if len(results) == 0 {
-			os.Exit(printEmptyInventory(opts, ""))
+			if opts.JSON {
+				payload := markNoDataPayload(leaderboardJSONPayloadWithMeta(nil, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top))
+				writeJSON(payload)
+				if opts.RequireData {
+					requireDataExit()
+				}
+				return
+			}
+			printNoData(opts, "")
+			if opts.RequireData {
+				requireDataExit()
+			}
+			return
 		}
 
 		if opts.JSON {
@@ -734,7 +749,7 @@ func loadUsage(opts thermal.Options) (usageSet, error) {
 				Daily:   data.Daily,
 			})
 		}
-		if len(set.days) == 0 && len(set.projects) == 0 {
+		if !usageHasActivity(set) {
 			return set, errNoData
 		}
 		return set, nil
@@ -764,27 +779,17 @@ func loadUsage(opts thermal.Options) (usageSet, error) {
 		Summary: data.Summary,
 		Daily:   data.Daily,
 	}}
+	if !usageHasActivity(set) {
+		return set, errNoData
+	}
 	return set, nil
 }
 
-// loadUsageOrExit preserves the foreground-command behavior for callers that
-// cannot degrade. The statusline calls loadUsage directly and handles errors
-// silently.
-func loadUsageOrExit(opts thermal.Options) usageSet {
-	set, err := loadUsage(opts)
-	if err == nil {
-		return set
-	}
-	if errors.Is(err, errNoData) {
-		os.Exit(printEmptyInventory(opts, opts.Report))
-	}
-	var unknown *unknownToolError
-	if errors.As(err, &unknown) {
-		os.Exit(printUnknownToken(unknown.Token))
-	}
-	printLoadError(err, opts.Verbose)
-	os.Exit(1)
-	return usageSet{}
+// usageHasActivity distinguishes a source that exists but contains no session
+// activity from a source with real data. It is the boundary between the
+// onboarding state and a zero-value report.
+func usageHasActivity(set usageSet) bool {
+	return dailyHasActivity(set.days, set.projects)
 }
 
 func printToolWarnings(toolName string, warnings []string, verbose bool) {
@@ -867,7 +872,14 @@ func runReport(opts thermal.Options) {
 		Order:       opts.Order,
 	}
 
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, opts.Report)
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 
 	rep := thermal.Aggregate(set.days, thermal.Grain(opts.Report), aggOpts, newPricer(opts))
 	rep.Tool = set.toolName
@@ -879,12 +891,22 @@ func runReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.Report
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			Report:      rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -925,7 +947,14 @@ func reportWidth() int {
 
 // runProjectReport ranks projects by token usage across tools and time.
 func runProjectReport(opts thermal.Options) {
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, "projects")
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 
 	projectOpts := thermal.ProjectOptions{
 		Since:            opts.Since,
@@ -940,12 +969,22 @@ func runProjectReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.ProjectReport
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			ProjectReport: rep,
 			GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -965,7 +1004,14 @@ func runProjectReport(opts thermal.Options) {
 // runModelReport ranks models across tools and time. Cost here is always an
 // estimate because recorded cost is not attributable to a single model.
 func runModelReport(opts thermal.Options) {
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, "models")
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 
 	modelOpts := thermal.ModelOptions{
 		Since: opts.Since,
@@ -979,12 +1025,22 @@ func runModelReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.ModelReport
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			ModelReport: rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -1000,7 +1056,14 @@ func runModelReport(opts thermal.Options) {
 
 // runMixReport shows the tool or model mix over time with switching stats.
 func runMixReport(opts thermal.Options) {
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, "mix")
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 
 	mixOpts := thermal.MixOptions{
 		Since:       opts.Since,
@@ -1024,12 +1087,22 @@ func runMixReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.MixReport
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			MixReport:   rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -1038,7 +1111,14 @@ func runMixReport(opts thermal.Options) {
 
 // runStatsReport summarises the daily distribution of tokens or cost.
 func runStatsReport(opts thermal.Options) {
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, "stats")
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 	pricer := newPricer(opts)
 
 	statsOpts := thermal.StatsOptions{
@@ -1052,12 +1132,22 @@ func runStatsReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.StatsReport
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			StatsReport: rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -1066,7 +1156,14 @@ func runStatsReport(opts thermal.Options) {
 
 // runTrendReport fits a daily trend and projects it to month end.
 func runTrendReport(opts thermal.Options) {
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData && !opts.JSON {
+		printNoData(opts, "trend")
+		if opts.RequireData {
+			requireDataExit()
+		}
+		return
+	}
 
 	trendOpts := thermal.TrendOptions{
 		Since:  opts.Since,
@@ -1079,12 +1176,22 @@ func runTrendReport(opts thermal.Options) {
 	if opts.JSON {
 		type jsonReport struct {
 			thermal.TrendReport
-			GeneratedAt string `json:"generatedAt"`
+			GeneratedAt string      `json:"generatedAt"`
+			State       string      `json:"state,omitempty"`
+			Next        *noDataNext `json:"next,omitempty"`
 		}
-		writeReportJSON(jsonReport{
+		payload := jsonReport{
 			TrendReport: rep,
 			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		})
+		}
+		if noData {
+			payload.State = "no-data"
+			payload.Next = noDataNextInfo()
+		}
+		writeReportJSON(payload)
+		if noData && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
@@ -1243,7 +1350,10 @@ func runShare(opts thermal.Options) {
 		targetTool = opts.Tool
 	}
 	opts.Tool = targetTool
-	set := loadUsageOrExit(opts)
+	set, noData := loadUsageForReport(opts)
+	if noData {
+		printShareNoData()
+	}
 	toolLabel := targetTool
 	pricer := newPricer(opts)
 	now := time.Now()

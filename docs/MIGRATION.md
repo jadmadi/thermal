@@ -23,6 +23,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Leaderboard States Its Ranking, Legend, and Cost Arithmetic](#changed-leaderboard-ranking-legend)
   - [Changed: Project and Model Totals Use Distinct-Day Denominators](#changed-total-row-semantics)
   - [Changed: Analytics Denominators and Audit Prose](#changed-analytics-prose)
+  - [Changed: No-Data Is a Successful State and JSON Keeps Its Envelope](#changed-no-data-success)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -115,6 +116,39 @@ thermal hermes weekly
 The `nous` alias continues to resolve to Hermes during the deprecation window with exit code 0.
 
 ## Upgrading to v0.22.0
+
+### Changed: No-Data Is a Successful State and JSON Keeps Its Envelope
+<a id="changed-no-data-success"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal.*(--json|\| *jq|\| *grep)' .`
+- **Detection signal**: On a machine with no agent sessions, `thermal --json` now returns `"type":"leaderboard"` with `"state":"no-data"` and exits `0`; it no longer returns `"type":"sources"` with exit `1`.
+
+**What changed and why**:
+Thermal treated "no sessions yet" as a command failure and replaced the requested JSON document with a sources inventory. That made `jq .ranking` return `null` and forced every consumer to special-case a foreign schema. Read-only reports now exit `0`, return the envelope they were asked for, and add `state:"no-data"` plus a `next` object; `thermal sources --json` remains the only `type:"sources"` producer.
+
+**Before / After**:
+```bash
+# Before: foreign envelope, exit 1
+thermal --json | jq -r .type    # sources
+
+# After: requested envelope, exit 0
+thermal --json | jq -r .type    # leaderboard
+thermal --json | jq -r .state   # no-data
+```
+
+**The fix**:
+Check the state or the empty collection, and keep using the requested keys:
+```bash
+thermal --json | jq -e '.state=="no-data" or (.results|length)>0'
+thermal sources --json | jq -e '.summary.found > 0'
+```
+Add `--require-data` when empty data must remain a non-zero exit; stdout keeps the same payload.
+
+**Escape hatch**:
+`--require-data` restores exit `1` for scripts that treat empty data as a failure. `thermal sources --json` remains the exit-0 inventory for setup checks.
+
+---
 
 ### Changed: Strict Argument Parsing and Usage Exit Codes
 <a id="changed-strict-argument-parsing"></a>

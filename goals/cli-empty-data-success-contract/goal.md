@@ -131,7 +131,8 @@ Related goals:
        "type": "leaderboard",
        "generatedAt": "2026-10-30T00:00:00Z",
        "state": "no-data",
-       "ranking": [],
+       "ranking": {"key": "streak", "order": "desc"},
+       "results": [],
        "totals": {"tokens": 0, "cost": 0, "sessions": 0},
        "unpricedModels": [],
        "next": {
@@ -219,7 +220,7 @@ Related goals:
   `No AI coding sessions found yet.` and `thermal sources`, stderr is empty,
   and stdout has <= 12 lines.
 - AC-002: `HOME=$(mktemp -d) thermal --json | jq -e '.type=="leaderboard" and
-  .state=="no-data" and (.ranking|length)==0'` exits `0`.
+  .state=="no-data" and (.results|length)==0'` exits `0`.
 - AC-003: For every report word, `--json` returns that verb's `type`, not
   `sources`, and exits `0`.
 - AC-004: `HOME=$(mktemp -d) thermal --require-data` exits `1`, stdout still

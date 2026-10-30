@@ -225,6 +225,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--fresh", Desc: "Bypass cached statusline data; live sessions always start at launch"},
 				{Name: "--stream, -f", Desc: "Stream continuous NDJSON live events (live verb)"},
 				{Name: "--json", Desc: "Output structured JSON (never launches a terminal UI)"},
+				{Name: "--require-data", Desc: "Exit 1 when a read-only report has no data"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},
 				{Name: "-V, --version", Desc: "Print version, commit, and build timestamp"},
 				{Name: "--verbose, -v", Desc: "Output diagnostic warnings to stderr"},

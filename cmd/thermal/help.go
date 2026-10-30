@@ -57,6 +57,7 @@ func baseReportFlags() []render.HelpFlag {
 		{"--until <date>", "End date (YYYY-MM-DD or YYYYMMDD)"},
 		{"--last <N>", "Last N days, weeks, or months (N >= 1)"},
 		{"--json", "Emit the JSON envelope"},
+		{"--require-data", "Exit 1 when the report has no data"},
 		{"--no-color", "Disable ANSI colors"},
 		{"--tool <name>", "Scope to one tool (canonical name or alias)"},
 		{"--db <path>", "Read one tool's data from a file or directory (requires --tool)"},

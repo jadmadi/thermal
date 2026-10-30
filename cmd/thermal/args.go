@@ -417,6 +417,7 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 	fs.BoolVar(&opts.Plain, "plain", false, "Plain text output without glyphs or icons")
 	fs.BoolVar(&opts.JSON, "json", false, "Output JSON instead of the terminal UI")
 	fs.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors")
+	fs.BoolVar(&opts.RequireData, "require-data", false, "Exit 1 when no data is found")
 	fs.BoolVar(&opts.Verbose, "verbose", false, "Enable verbose warning diagnostics on stderr")
 	fs.BoolVar(&opts.Verbose, "v", false, "Enable verbose warning diagnostics on stderr (shorthand)")
 	fs.BoolVar(&opts.Verbose, "d", false, "Enable verbose warning diagnostics on stderr (shorthand)")

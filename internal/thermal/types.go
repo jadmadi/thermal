@@ -62,6 +62,7 @@ type Options struct {
 	FlameCeilingSet bool          // whether FlameCeiling was explicitly set
 	Nerd            bool          // use Nerd Font glyphs in statusline
 	Plain           bool          // plain text output without glyphs or icons
+	RequireData     bool          // exit 1 when a read-only report has no data
 }
 
 type Summary struct {

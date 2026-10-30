@@ -73,7 +73,13 @@ func AggregateTrend(days []DailyRow, opts TrendOptions, pricer Pricer) TrendRepo
 		byDay[day.Day] += float64(day.Tokens)
 	}
 
-	rep := TrendReport{Type: "trend", Metric: metric, Estimated: estimated, MeanBasis: "calendar-day"}
+	rep := TrendReport{
+		Type:      "trend",
+		Metric:    metric,
+		Estimated: estimated,
+		MeanBasis: "calendar-day",
+		Points:    []DayValue{},
+	}
 	if len(byDay) == 0 {
 		return rep
 	}

@@ -7,7 +7,7 @@ Every `--json` surface is an object. The table below is the contract used by
 
 | Command | `type` | timestamp | payload keys |
 |---|---|---|---|
-| `thermal --json` | `leaderboard` | `generatedAt` (RFC3339 UTC) | `results`, `totals` |
+| `thermal --json` | `leaderboard` | `generatedAt` (RFC3339 UTC) | `results`, `totals`, `ranking`, `costBasis`, `unpricedModels` |
 | `thermal <tool> --json` | `tool` | `generatedAt` | `tool`, `dataPath`, `summary`, `daily` |
 | `daily` / `weekly` / `monthly` | `daily` / `weekly` / `monthly` | `generatedAt` | `data`, `totals`, `window`, `costBasis` |
 | `projects` | `projects` | `generatedAt` | `data`, `totals`, `costBasis` |
@@ -27,6 +27,20 @@ Every `--json` surface is an object. The table below is the contract used by
 `audit` and `live` keep their existing `timestamp` fields because those are the
 observation times; every other envelope uses `generatedAt`. `live --json
 --stream` is NDJSON, one object per line.
+
+## No data
+
+Every read-only report returns the envelope for the verb that was requested,
+even when no source has data. In that state:
+
+- `type` is the requested verb (`leaderboard`, `daily`, `projects`, ...).
+- Collection fields (`results`, `data`, `series`, `histogram`, ...) are `[]`,
+  not `null`.
+- Numeric totals are `0`.
+- `state` is `"no-data"` and `next` is
+  `{"inventory":"thermal sources --json","help":"thermal --help"}`.
+- The process exits `0`; `--require-data` keeps the payload and exits `1`.
+- `thermal sources --json` remains the only `type:"sources"` producer.
 
 ## Precision
 

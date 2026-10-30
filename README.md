@@ -248,11 +248,18 @@ validated once, and Thermal never silently falls back to a different window:
 
 ### First run
 
-If no agent data is found, Thermal prints a stat-only inventory of all 15
-sources with `found`, `empty`, `missing`, `unreadable`, or `wrong-shape`
-states, plus the next step. Run `thermal sources` at any time; `thermal sources
---json` returns the same 15-entry inventory for automation. The inventory never
-reads database rows, transcripts, prompts, or project names.
+If no agent data is found, Thermal prints a short onboarding block and exits
+`0`; "no sessions yet" is a state, not a failed command. The block names
+`thermal sources`, which prints the stat-only inventory of all 15 sources with
+`found`, `empty`, `missing`, `unreadable`, or `wrong-shape` states. `thermal
+sources --json` returns the same 15-entry inventory for automation. The
+inventory never reads database rows, transcripts, prompts, or project names.
+
+`thermal --json` and every report keep the envelope you asked for when there is
+no data: `type` stays the requested verb, collections are empty, and
+`state:"no-data"` plus `next` explain the situation. Add `--require-data` to
+restore the strict exit `1` for scripts that treat empty data as a failure;
+stdout keeps the same payload.
 
 Prompt integration: `thermal statusline` prints one line, or nothing and exits
 `0` when no source has data; `--json` returns `state:"no-data"` in that case.

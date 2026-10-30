@@ -162,6 +162,10 @@ func AggregateStats(days []DailyRow, opts StatsOptions, pricer Pricer) StatsRepo
 		Days:       len(activeDays),
 		CostedDays: len(costedDays),
 		MeanBasis:  "active-day",
+		Weekday:    []WeekdayStat{},
+		TopDays:    []DayValue{},
+		Outliers:   []DayValue{},
+		Histogram:  []HistogramBin{},
 	}
 	if metric == "tokens" {
 		compTotal := uncachedInput + output + reasoning + cacheRead + cacheWrite
