@@ -1,12 +1,12 @@
 # Plan: Turn every data-access failure into a named condition and a runnable next step
 
 ## Execution Steps
-- [ ] **Phase 1 — Typed condition model**: Add `DataCondition`,
+- [x] **Phase 1 — Typed condition model**: Add `DataCondition`,
   `DataAccessError`, and `classifyDataAccess` in `internal/loaders/pathcheck.go`;
   reuse the tool display-name table. Acceptance:
   `TestDataConditionClassification` covers ENOENT, EACCES, ELOOP, ENOTDIR, and
   file/dir mismatches.
-- [ ] **Phase 2 — Registry and explicit `--db` adoption**: Replace the two
+- [x] **Phase 2 — Registry and explicit `--db` adoption**: Replace the two
   `fmt.Errorf` sites in `registry.go`, extend `pathcheck.go` branches, and keep
   the existing precise `--db` messages. Acceptance:
   `TestMissingDefaultEnrichment`, `TestDBPathConditions`, and
@@ -14,15 +14,15 @@
   - Default path: display path, sources, all-tools report, `--db`.
   - Explicit path: existing message and fix, plus condition-specific fix.
   - Valid `--db` never falls back.
-- [ ] **Phase 3 — Rendering and channels**: Update `printLoadError` for the
+- [x] **Phase 3 — Rendering and channels**: Update `printLoadError` for the
   typed error, add the single `--verbose` raw line, and assert stdout empty.
   Acceptance: `TestLoadErrorChannels` and `TestVerboseRawLine` pass.
   - No stack traces, no driver dump.
   - `--json` keeps stdout valid and excludes the human fix.
-- [ ] **Phase 4 — Help examples and docs**: Add the prerequisite line or swap
+- [x] **Phase 4 — Help examples and docs**: Add the prerequisite line or swap
   the flagship example; update README and `project.jsonc`; add the gate cases.
   Acceptance: `TestHelpExamplesRunnable` and `simulated_user_gate.sh` pass.
-- [ ] **Phase 5 — Evidence and closure**: Record the condition matrix, raw
+- [x] **Phase 5 — Evidence and closure**: Record the condition matrix, raw
   outputs, and channel results in `evidence.md`; commit, certify, reconcile.
 
 ## Acceptance Command Ledger
@@ -51,7 +51,7 @@
 - Never auto-create a missing directory to turn an error into a success.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `fix(cli): name data-access conditions and offer runnable next steps
   (goals/cli-data-access-error-guidance/goal.md)`; (3) certify via

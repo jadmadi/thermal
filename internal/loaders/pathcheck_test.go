@@ -153,6 +153,73 @@ func TestValidateDBPathMuseEither(t *testing.T) {
 	}
 }
 
+func TestMissingDefaultDataError(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "nope", "opencode.db")
+	err := MissingDefaultDataError(thermal.ToolOpenCode, "OpenCode", missing, os.ErrNotExist)
+	var dbErr *DBPathError
+	if !errors.As(err, &dbErr) {
+		t.Fatalf("expected DBPathError, got %T", err)
+	}
+	if dbErr.Condition != ConditionMissing || dbErr.ToolID != "opencode" {
+		t.Fatalf("condition/tool = %q/%q", dbErr.Condition, dbErr.ToolID)
+	}
+	for _, want := range []string{"OpenCode has no data at", "thermal sources", "all tools: thermal", "--tool opencode --db <path>"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("missing %q in:\n%s", want, err)
+		}
+	}
+	if !strings.Contains(dbErr.DisplayPath, "~") && strings.Contains(missing, os.Getenv("HOME")) {
+		t.Fatalf("display path not shortened: %q", dbErr.DisplayPath)
+	}
+}
+
+func TestEnrichDefaultDataErrorReport(t *testing.T) {
+	err := MissingDefaultDataError(thermal.ToolOpenCode, "OpenCode", "/tmp/opencode.db", os.ErrNotExist)
+	enriched := EnrichDefaultDataError(err, "weekly")
+	if !strings.Contains(enriched.Error(), "all tools: thermal weekly") {
+		t.Fatalf("report not named:\n%s", enriched)
+	}
+}
+
+func TestClassifyStatErrorLoop(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a")
+	b := filepath.Join(dir, "b")
+	if err := os.Symlink(b, a); err != nil {
+		t.Skipf("symlink: %v", err)
+	}
+	if err := os.Symlink(a, b); err != nil {
+		t.Skipf("symlink: %v", err)
+	}
+	_, statErr := os.Stat(a)
+	if statErr == nil {
+		t.Skip("symlink loop resolved unexpectedly")
+	}
+	classified := classifyStatError(a, statErr)
+	if classified.Condition != ConditionLoop {
+		t.Fatalf("condition = %q, want loop (%v)", classified.Condition, statErr)
+	}
+	if !strings.Contains(classified.Message, "too many levels of symbolic links") {
+		t.Fatalf("message = %q", classified.Message)
+	}
+}
+
+func TestClassifyStatErrorNotDir(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "file")
+	if err := os.WriteFile(file, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, statErr := os.Stat(filepath.Join(file, "child"))
+	if statErr == nil {
+		t.Skip("expected ENOTDIR")
+	}
+	classified := classifyStatError(filepath.Join(file, "child"), statErr)
+	if classified.Condition != ConditionNotDir {
+		t.Fatalf("condition = %q, want not-dir (%v)", classified.Condition, statErr)
+	}
+}
+
 func TestTranslateDBError(t *testing.T) {
 	err := translateDBError(thermal.ToolOpenCode, "/tmp/db", errors.New("file is not a database (26)"))
 	var dbErr *DBPathError

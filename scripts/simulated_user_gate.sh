@@ -832,6 +832,33 @@ echo -e "\n${BOLD}10. Validation & Negative Flag Audits (Exit 2 & Helpful Messag
 run_check "Rejects --top on stats report" 2 error "${BIN_PATH}" stats --top 5
 run_check "Rejects negative --last" 2 error "${BIN_PATH}" daily --last -5
 run_check "Rejects missing zed database" 1 error "${BIN_PATH}" zed --no-color
+missing_default_err=$("${BIN_PATH}" opencode weekly --chart --no-color 2>&1 >/dev/null || true)
+if echo "${missing_default_err}" | grep -q 'OpenCode has no data at' && \
+   echo "${missing_default_err}" | grep -q 'thermal sources' && \
+   echo "${missing_default_err}" | grep -q 'thermal weekly' && \
+   echo "${missing_default_err}" | grep -q -- '--db'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} missing tool data names the condition and next commands"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} missing tool data is still a dead end"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+loop_dir=$(mktemp -d)
+ln -sfn "${loop_dir}/b" "${loop_dir}/a"
+ln -sfn "${loop_dir}/a" "${loop_dir}/b"
+loop_err=$(HOME="${TEST_HOME:-$HOME}" "${BIN_PATH}" claude --db "${loop_dir}/a" --no-color 2>&1 >/dev/null || true)
+if echo "${loop_err}" | grep -q 'too many levels of symbolic links'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} symlink loop is diagnosed as a loop"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} symlink loop is still reported as a permission problem"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+rm -rf "${loop_dir}"
 
 echo -e "\n${BOLD}11. License & Attribution Integrity Checks:${RESET}"
 if [[ ! -f "${ROOT_DIR}/LICENSE" ]]; then

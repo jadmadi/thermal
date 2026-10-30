@@ -382,8 +382,14 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (data ToolData, 
 		if p == "" {
 			return ToolData{}, fmt.Errorf("no database path configured for %s", info.Name)
 		}
-		if _, err := os.Stat(p); os.IsNotExist(err) {
-			return ToolData{}, fmt.Errorf("database not found: %s", p)
+		if _, statErr := os.Stat(p); statErr != nil {
+			if os.IsNotExist(statErr) {
+				return ToolData{}, MissingDefaultDataError(t, info.Name, p, statErr)
+			}
+			classified := classifyStatError(p, statErr)
+			classified.Tool = info.Name
+			classified.ToolID = string(t)
+			return ToolData{}, classified
 		}
 		s, d, pr, err := info.Loader(p)
 		s.Tool = info.Name
@@ -429,8 +435,14 @@ func LoadToolData(t thermal.Tool, info ToolInfo, dbPath string) (data ToolData, 
 		if dir == "" {
 			return ToolData{}, fmt.Errorf("no data directory configured for %s", info.Name)
 		}
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			return ToolData{}, fmt.Errorf("data directory not found: %s", dir)
+		if _, statErr := os.Stat(dir); statErr != nil {
+			if os.IsNotExist(statErr) {
+				return ToolData{}, MissingDefaultDataError(t, info.Name, dir, statErr)
+			}
+			classified := classifyStatError(dir, statErr)
+			classified.Tool = info.Name
+			classified.ToolID = string(t)
+			return ToolData{}, classified
 		}
 		dataPath := filepath.Join(dir, info.DataSubdir)
 		if info.DataSubdir == "" {

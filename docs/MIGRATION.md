@@ -24,6 +24,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Project and Model Totals Use Distinct-Day Denominators](#changed-total-row-semantics)
   - [Changed: Analytics Denominators and Audit Prose](#changed-analytics-prose)
   - [Changed: No-Data Is a Successful State and JSON Keeps Its Envelope](#changed-no-data-success)
+  - [Changed: Data-Access Errors Name the Condition and Next Commands](#changed-data-access-errors)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -147,6 +148,36 @@ Add `--require-data` when empty data must remain a non-zero exit; stdout keeps t
 
 **Escape hatch**:
 `--require-data` restores exit `1` for scripts that treat empty data as a failure. `thermal sources --json` remains the exit-0 inventory for setup checks.
+
+---
+
+### Changed: Data-Access Errors Name the Condition and Next Commands
+<a id="changed-data-access-errors"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'database not found|data directory not found|cannot read .*check permissions' .`
+- **Detection signal**: `thermal opencode weekly` on a machine without OpenCode now prints `thermal: OpenCode has no data at ~/.local/share/opencode/opencode.db` followed by inventory, all-tools, and `--db` lines, instead of one bare `database not found` line.
+
+**What changed and why**:
+A missing default path is now a typed data-access error that names the condition, the tool, and the display path. Symlink loops and permission failures no longer share one "check permissions" sentence: a loop points at `readlink -f`, a permission failure names the mode and `chmod`, and a wrong shape keeps its existing precise fix. Explicit `--db` errors keep their wording and never fall back to a default; `--verbose` adds one raw OS line, never a stack trace.
+
+**Before / After**:
+```bash
+# Before: one dead-end line
+thermal: database not found: /home/you/.local/share/opencode/opencode.db
+
+# After: condition, inventory, all-tools report, and override
+thermal: OpenCode has no data at ~/.local/share/opencode/opencode.db
+  inventory: thermal sources
+  all tools: thermal weekly
+  override:  thermal --tool opencode --db <path>
+```
+
+**The fix**:
+Run `thermal sources` to see which source exists, use the all-tools report, or pass the exact path with `--tool <name> --db <path>`. Scripts that parsed the old `database not found` text should match `has no data at` or rely on exit `1`.
+
+**Escape hatch**:
+Explicit `--db` validation keeps its existing messages (`--db path does not exist`, `expects a directory`, `expects <file>`), so scripts that supplied a path are unaffected.
 
 ---
 

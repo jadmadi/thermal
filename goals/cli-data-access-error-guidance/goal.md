@@ -138,8 +138,9 @@ Related goals:
    - All data-access errors: stdout empty, stderr message + fix, exit `1`.
    - `--verbose` appends one line: `thermal: verbose: <raw error>`. No stack
      trace, no driver dump.
-   - `--json` emits the existing error object for the verb, not a new schema;
-     do not print the human fix to stdout.
+   - `--json` keeps stdout empty and writes the condition, next commands, and
+     fix to stderr, matching the existing JSON-error channel contract. Do not
+     print the human fix on stdout.
    - `--no-color`/`NO_COLOR` produce no ANSI; color is never the only signal.
    - SIGINT during a slow scan remains a normal stop (owned by
      `cli-sigint-lifecycle-contract`); do not report it as a data error.
@@ -197,9 +198,9 @@ Related goals:
   `permission denied`, the mode, and a `chmod`/`ls -ld` fix (skip as root).
 - AC-007: `--verbose` adds exactly one `thermal: verbose:` line and no stack
   trace.
-- AC-008: `--json` with a missing tool emits the verb's error object on
-  stdout (or the documented JSON error envelope), exits `1`, and never prints
-  the human fix on stdout.
+- AC-008: `--json` with a missing tool exits `1` with stdout empty; the human
+  condition and next commands go to stderr, and `--verbose` adds one raw line.
+  This matches the existing JSON-error channel contract.
 - AC-009: A valid `--db` path loads even when the tool's default path is
   missing.
 - AC-010: Every help example either runs on a clean fixture or states its

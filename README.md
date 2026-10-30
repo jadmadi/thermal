@@ -261,6 +261,13 @@ no data: `type` stays the requested verb, collections are empty, and
 restore the strict exit `1` for scripts that treat empty data as a failure;
 stdout keeps the same payload.
 
+If a named tool has no data, the error names the tool and display path, then
+offers `thermal sources`, the all-tools report, and the exact `--db` override.
+Filesystem failures are specific: a symlink loop points at `readlink -f`, a
+permission failure names the mode and `chmod`, and a wrong file or directory
+shape keeps its existing precise fix. `--verbose` adds one raw OS line, never a
+stack trace.
+
 Prompt integration: `thermal statusline` prints one line, or nothing and exits
 `0` when no source has data; `--json` returns `state:"no-data"` in that case.
 In a pipe, `thermal live` writes its guidance to stderr and exits `2`; use

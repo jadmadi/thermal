@@ -157,9 +157,11 @@ func RenderHelp(noColor bool) string {
 		desc string
 	}{
 		{"thermal", "All-tool leaderboard & streak heatmap"},
-		{"thermal opencode weekly --chart", "Weekly breakdown with terminal bar chart"},
+		{"thermal weekly --chart", "Weekly bars for every installed tool"},
+		{"thermal opencode weekly --chart", "Weekly bars; requires OpenCode data (thermal sources)"},
 		{"thermal daily --help", "Scoped help for the daily report"},
 		{"thermal help daily", "Same page via the help command"},
+		{"thermal sources", "Inspect all 15 source paths and states"},
 		{"thermal stats", "Daily distribution and token composition"},
 		{"thermal audit", "Audit instruction files & MCP context tax"},
 		{"thermal changelog --top 5", "View latest new features & arguments"},

@@ -763,7 +763,7 @@ func loadUsage(opts thermal.Options) (usageSet, error) {
 	printToolConfigWarning(info, opts.Verbose)
 	data, err := loaders.LoadToolData(tool, info, opts.DBPath)
 	if err != nil {
-		return set, err
+		return set, loaders.EnrichDefaultDataError(err, opts.Report)
 	}
 	printToolWarnings(info.Name, data.Summary.Warnings, opts.Verbose)
 	set.days = data.Daily
