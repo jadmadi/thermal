@@ -52,7 +52,7 @@
   counter.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `feat(loaders): count and report skipped JSONL records
   (goals/jsonl-partial-read-observability/goal.md)`; (3) certify via

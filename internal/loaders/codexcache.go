@@ -4,9 +4,11 @@
 package loaders
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,7 +20,7 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
-const codexRolloutCacheVersion = 1
+const codexRolloutCacheVersion = 2
 
 type rolloutResult struct {
 	breakdown    *tokenBreakdown
@@ -26,22 +28,24 @@ type rolloutResult struct {
 	linesDeleted int64
 	filesTouched int64
 	warning      string
+	stats        thermal.ScanStats
 }
 
 // CodexRolloutEntry represents the cached metrics for a single rollout JSONL file.
 type CodexRolloutEntry struct {
-	Size         int64  `json:"size"`
-	ModTime      int64  `json:"modTime"`
-	Input        int64  `json:"input"`
-	Output       int64  `json:"output"`
-	Reasoning    int64  `json:"reasoning"`
-	Cache        int64  `json:"cache"`
-	HasBreakdown bool   `json:"hasBreakdown"`
-	LinesAdded   int64  `json:"linesAdded"`
-	LinesDeleted int64  `json:"linesDeleted"`
-	FilesTouched int64  `json:"filesTouched"`
-	Warning      string `json:"warning,omitempty"`
-	Offset       int64  `json:"offset,omitempty"`
+	Size         int64             `json:"size"`
+	ModTime      int64             `json:"modTime"`
+	Input        int64             `json:"input"`
+	Output       int64             `json:"output"`
+	Reasoning    int64             `json:"reasoning"`
+	Cache        int64             `json:"cache"`
+	HasBreakdown bool              `json:"hasBreakdown"`
+	LinesAdded   int64             `json:"linesAdded"`
+	LinesDeleted int64             `json:"linesDeleted"`
+	FilesTouched int64             `json:"filesTouched"`
+	Warning      string            `json:"warning,omitempty"`
+	Offset       int64             `json:"offset,omitempty"`
+	Stats        thermal.ScanStats `json:"scanStats,omitempty"`
 }
 
 // CodexRolloutCache is the persistent snapshot map for all rollouts associated with a state database.
@@ -147,6 +151,7 @@ func scanOrReuseRollout(path string, cached *CodexRolloutEntry) (rolloutResult, 
 			linesDeleted: cached.LinesDeleted,
 			filesTouched: cached.FilesTouched,
 			warning:      cached.Warning,
+			stats:        cached.Stats,
 		}, *cached, false
 	}
 
@@ -160,7 +165,7 @@ func scanOrReuseRollout(path string, cached *CodexRolloutEntry) (rolloutResult, 
 	}
 
 	// 3. Full Cold Scan
-	b, la, ld, ft, w, offset := scanRolloutFull(path)
+	b, la, ld, ft, w, offset, stats := scanRolloutFull(path)
 	entry := CodexRolloutEntry{
 		Size:         curSize,
 		ModTime:      curMod,
@@ -169,6 +174,7 @@ func scanOrReuseRollout(path string, cached *CodexRolloutEntry) (rolloutResult, 
 		FilesTouched: ft,
 		Warning:      w,
 		Offset:       offset,
+		Stats:        stats,
 	}
 	if b != nil {
 		entry.HasBreakdown = true
@@ -184,6 +190,7 @@ func scanOrReuseRollout(path string, cached *CodexRolloutEntry) (rolloutResult, 
 		linesDeleted: ld,
 		filesTouched: ft,
 		warning:      w,
+		stats:        stats,
 	}, entry, true
 }
 
@@ -248,28 +255,37 @@ func scanRolloutDelta(path string, prev CodexRolloutEntry, curSize, curMod int64
 	return rolloutResult{breakdown: last}, newEntry, true
 }
 
-func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string, int64) {
+func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string, int64, thermal.ScanStats) {
 	if _, err := os.Stat(path); err != nil {
-		return nil, 0, 0, 0, "", 0
+		return nil, 0, 0, 0, "", 0, thermal.ScanStats{}
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, 0, 0, 0, formatScanWarning(path, err), 0
+		return nil, 0, 0, 0, formatScanWarning(path, err), 0, thermal.ScanStats{}
 	}
 	defer f.Close()
 
 	scanner := newJSONLScanner(f)
 	var last *tokenBreakdown
+	var stats thermal.ScanStats
+	endsNL := fileEndsWithNewline(path)
+	lineNo, lastParseErr := 0, 0
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
+		lineNo++
+		stats.RecordsRead++
 
 		if strings.Contains(line, `"token_count"`) {
 			if tb := parseTokenCount(line); tb != nil {
 				last = tb
+			} else {
+				stats.MalformedLines++
+				stats.RecordsSkipped++
+				lastParseErr = lineNo
 			}
 		}
 	}
@@ -277,6 +293,17 @@ func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string,
 	var warning string
 	if err := scanner.Err(); err != nil {
 		warning = formatScanWarning(path, err)
+		if errors.Is(err, bufio.ErrTooLong) {
+			stats.CeilingHits++
+			stats.RecordsSkipped++
+		}
+	}
+	if !endsNL && lastParseErr == lineNo && lineNo > 0 {
+		stats.MalformedLines--
+		stats.TruncatedTails++
+	}
+	if recordWarning := formatRecordWarning("Codex", path, stats); recordWarning != "" {
+		warning = recordWarning
 	}
 
 	curOffset, _ := f.Seek(0, io.SeekCurrent)
@@ -285,7 +312,7 @@ func scanRolloutFull(path string) (*tokenBreakdown, int64, int64, int64, string,
 		curOffset = fi.Size()
 	}
 
-	return last, 0, 0, 0, warning, curOffset
+	return last, 0, 0, 0, warning, curOffset, stats
 }
 
 func parseTokenCount(line string) *tokenBreakdown {

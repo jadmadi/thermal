@@ -282,6 +282,12 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 		if res.warning != "" {
 			summary.Warnings = append(summary.Warnings, res.warning)
 		}
+		if res.stats != (thermal.ScanStats{}) {
+			if summary.ScanStats == nil {
+				summary.ScanStats = &thermal.ScanStats{}
+			}
+			summary.ScanStats.Add(res.stats)
+		}
 		summary.LinesAdded += res.linesAdded
 		summary.LinesDeleted += res.linesDeleted
 		summary.FilesTouched += res.filesTouched
@@ -434,6 +440,7 @@ func loadCodexFromStateDB(dbPath string) (thermal.Summary, []thermal.DailyRow, [
 	})
 
 	sort.Strings(summary.Warnings)
+	applyScanStats(&summary)
 	return summary, daily, projects, nil
 }
 
@@ -442,7 +449,7 @@ type tokenBreakdown struct {
 }
 
 func readLastTokenBreakdown(rolloutPath string) (*tokenBreakdown, int64, int64, int64, string) {
-	b, la, ld, ft, w, _ := scanRolloutFull(rolloutPath)
+	b, la, ld, ft, w, _, _ := scanRolloutFull(rolloutPath)
 	return b, la, ld, ft, w
 }
 
