@@ -51,7 +51,10 @@ brews:
       owner: jadmadi
       name: homebrew-tap
       branch: main
-    skip_upload: auto
+    # The workflow token is scoped to this repository and cannot write the
+    # separate tap repository; the formula is updated from checksums.txt after
+    # the release publishes.
+    skip_upload: true
     commit_author:
       name: jadmadi
       email: contact@jadmadi.net
