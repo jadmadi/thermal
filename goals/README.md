@@ -28,10 +28,10 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 
 ## Summary
 - **Total Goals**: 143
-- 🟡 **Ready to Execute (Pending)**: 6 (0 independent ⚡, 6 unblocked 🔗)
-- 🟢 **Implemented**: 137 (20 verified 📜, 29 stale ⚠️, 88 unverified)
+- 🟡 **Ready to Execute (Pending)**: 5 (0 independent ⚡, 5 unblocked 🔗)
+- 🟢 **Implemented**: 138 (21 verified 📜, 29 stale ⚠️, 88 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 142 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 626/660 completed (94%)
+- 📋 **Execution Tasks Progress**: 631/660 completed (95%)
 
 ---
 
@@ -40,7 +40,6 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
 | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`cli-terminal-output-integrity`](cli-terminal-output-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#258)` | Deps met: cli-terminal-width-adaptation, cli-leaderboard-ranking-and-legend, cli-nontty-and-statusline-output-contract | Enforce one width, colour, and sanitisation policy across every renderer — Priority: P1 (terminal trust). Thermal has several good rendering rules, but the... | `/goal goals/cli-terminal-output-integrity/goal.md` |
-| [`cli-sigint-lifecycle-contract`](cli-sigint-lifecycle-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#259)` | Deps met: cli-nontty-and-statusline-output-contract | Treat SIGINT as a normal stop for live and stream — Priority: P1 (interruption trust). Ctrl+C is the documented way out of `thermal ... | `/goal goals/cli-sigint-lifecycle-contract/goal.md` |
 | [`cli-automation-exit-and-upgrade-parity`](cli-automation-exit-and-upgrade-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#262)` | Deps met: cli-upgrade-nondestructive-safety-flags, cli-nontty-and-statusline-output-contract | Document exit codes and give upgrade global-flag parity — Priority: P1 (scripting). A wrapper that prepends `--offline` — the documented... | `/goal goals/cli-automation-exit-and-upgrade-parity/goal.md` |
 | [`cli-help-glossary-and-routing`](cli-help-glossary-and-routing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#260)` | Deps met: cli-unknown-token-diagnostics, cli-help-interception-and-scoped-help, cli-db-override-scope-and-errors | Route every unknown word to the right namespace and explain domain vocabulary — Priority: P1 (discoverability). Thermal's banner says "Ranked by current streak"... | `/goal goals/cli-help-glossary-and-routing/goal.md` |
 | [`cli-version-and-deprecation-truth`](cli-version-and-deprecation-truth/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#261)` | Deps met: cli-version-verbose-flag-contract, cli-staged-deprecation-and-upgrade | Make version output and deprecation warnings factually true — Priority: P1 (trust). The help page promises "SemVer, commit hash, and build tim... | `/goal goals/cli-version-and-deprecation-truth/goal.md` |
@@ -170,6 +169,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`cli-empty-data-success-contract`](cli-empty-data-success-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `6bd8d1c` |
 | [`cli-data-access-error-guidance`](cli-data-access-error-guidance/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `a8a3661` |
 | [`cli-window-flag-semantics`](cli-window-flag-semantics/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `aa3c643` |
+| [`cli-sigint-lifecycle-contract`](cli-sigint-lifecycle-contract/goal.md) | `🔗 Dep` | 🚢 SHIP | verified 📜 | Git Commit | `7975021` |
 | [`tui-shell-overview`](tui-shell-overview/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4d0f81a` |
 | [`purge-legacy-mit-releases`](purge-legacy-mit-releases/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `4925b76` |
 | [`contributor-onboarding`](contributor-onboarding/goal.md) | `🔗 Dep` | 🚢 SHIP | unverified | Git Commit | `e0530fe` |

@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-sigint-lifecycle-contract",
+  "certified_at": "2026-10-30T13:56:55.705308579Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-sigint-lifecycle-contract/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "79750213c169d00e004c60b968df82f73d90b267",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
