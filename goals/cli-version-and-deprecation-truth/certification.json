@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-version-and-deprecation-truth",
+  "certified_at": "2026-10-30T14:00:58.463857317Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-version-and-deprecation-truth/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "88de961cce5fbea29dc979a8ac18eda83d76357a",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
