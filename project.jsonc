@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-30-15-17",
+  "lastEdit": "26-10-30-15-24",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -83,7 +83,7 @@
     "Unified cross-agent disjoint token accounting (input, output, reasoning, cache read/write) with recorded vs estimated cost breakdown via models.dev",
     "Reasoning Effort Telemetry: cognitive intensity breakdowns across low, medium, and high reasoning tiers",
     "Context & Setup Health Audit (thermal audit): repository AGENTS.md context tax, MCP server density, local tool database file-readability checks (SQLite integrity and mmap are not assessed), and custom path checks",
-    "Live Monitor (thermal live): terminal-native zero-cloud token streaming with launch-relative session baselines and carried-in history separated from live bursts, one-second Peak/Rate buckets, metric-specific configurable flame ceilings, normalized token/step ticker columns with cost status and age/outlier markers, burst rollup with time/cost sorting and top spenders, today project/model rollups, velocity sparklines, and NDJSON export",
+    "Live Monitor (thermal live): terminal-native zero-cloud token streaming with launch-relative session baselines and carried-in history separated from live bursts, one-second Peak/Rate buckets, metric-specific configurable flame ceilings, normalized token/step ticker columns with cost status and age/outlier markers, burst rollup with time/cost sorting and top spenders, today project/model rollups, velocity sparklines, clean q/Ctrl+C exit with SIGTERM 143, and NDJSON export",
     "Instant Shell Statusline Helper (thermal statusline): prompt-composable, scope-labeled (all tools/today/top) terminal helper for tmux and shell statuslines",
     "Zero-telemetry, offline-first design using read-only SQLite mmap and delta snapshot caching (~/.cache/thermal/); measured latency evidence and scale limits in docs/PERFORMANCE.md",
     "Static daily, weekly, monthly, projects, models, mix, stats, and trend reports with JSON output",

@@ -170,7 +170,9 @@ Related goals:
 ## Acceptance Criteria
 - AC-001: PTY `thermal live`, one SIGINT -> exit `0`, no `failed`/`killed`/
   `interrupted` text, restore sequences present.
-- AC-002: Two SIGINTs 100 ms apart -> exit `130`, terminal restored.
+- AC-002: A second SIGINT while shutdown is still in progress -> exit `130`
+  with the terminal restored. If the first stop already completed, a later
+  signal does not override the clean exit `0`.
 - AC-003: `thermal live --json --stream`, SIGINT -> exit `0`, last line is
   valid JSON, no partial object.
 - AC-004: SIGTERM on Unix -> exit `143`, no failure text.

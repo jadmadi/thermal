@@ -379,6 +379,9 @@ Today total.
 thermal live
 ```
 
+Press `q` or `Ctrl+C` to stop: the monitor restores the terminal and exits `0`.
+`SIGTERM` exits `143`; a second `Ctrl+C` during a hanging shutdown exits `130`.
+
 Static commands remain the scriptable surface: `thermal`, `daily`, `weekly`,
 `monthly`, `projects`, `models`, `mix`, `stats`, and `trend`. See
 [`thermal live`](#thermal-live) for flags and JSON/NDJSON output.

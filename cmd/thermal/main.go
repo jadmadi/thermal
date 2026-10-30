@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -405,15 +406,26 @@ func validateReportFlags(opts thermal.Options) error {
 	return nil
 }
 
+var sigtermReceived atomic.Bool
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "--check-update-bg" {
 		runBackgroundUpdateCheck()
 		os.Exit(0)
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(context.Background())
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
 	defer cancel()
-	_ = ctx
+	go func() {
+		sig := <-sigCh
+		if sig == syscall.SIGTERM {
+			sigtermReceived.Store(true)
+		}
+		cancel()
+	}()
 
 	if msg := doubleDashDiagnostic(os.Args[1:]); msg != "" {
 		fmt.Fprint(os.Stderr, msg)
@@ -459,7 +471,7 @@ func main() {
 		runChangelog(opts, changelogLimit(opts))
 		return
 	case "live":
-		runLive(opts)
+		runLive(ctx, opts)
 		return
 	case "statusline", "prompt", "status":
 		opts.Report = opts.Tool
@@ -485,7 +497,7 @@ func main() {
 			runStatusline(opts)
 			return
 		case "live":
-			runLive(opts)
+			runLive(ctx, opts)
 		case "projects":
 			runProjectReport(opts)
 		case "models":
@@ -1606,7 +1618,7 @@ func (c *liveCollector) Collect() ([]thermal.ToolResult, []thermal.ProjectDay, e
 }
 
 // runLive launches the interactive real-time token burn monitor or streams NDJSON events.
-func runLive(opts thermal.Options) {
+func runLive(ctx context.Context, opts thermal.Options) {
 	pricer := newPricer(opts)
 	collector := newLiveCollector(opts, pricer)
 	pollFn := func() ([]thermal.ToolResult, []thermal.ProjectDay, error) {
@@ -1719,10 +1731,19 @@ func runLive(opts thermal.Options) {
 
 	colorful := !opts.NoColor && os.Getenv("NO_COLOR") == ""
 	model := tui.NewLiveModel(pollFn, rate, filter, colorful, opts.FlameCeiling)
-	p := tea.NewProgram(model, tea.WithFPS(10))
-	if _, err := p.Run(); err != nil {
+	p := tea.NewProgram(model, tea.WithFPS(10), tea.WithContext(ctx))
+
+	// A second interrupt is the escape hatch if cleanup hangs. The first one is
+	// handled by Bubble Tea as a normal stop.
+	stopWatchdog := installLiveSignalWatchdog()
+	defer stopWatchdog()
+
+	if _, err := p.Run(); err != nil && !isNormalLiveStop(err) {
 		fmt.Fprintf(os.Stderr, "thermal: live monitor failed: %v\n", err)
 		os.Exit(1)
+	}
+	if sigtermReceived.Load() {
+		os.Exit(143)
 	}
 }
 

@@ -207,6 +207,7 @@ var commandHelps = map[string]render.CommandHelp{
 		Summary: "Real-time token burn monitor",
 		Description: []string{
 			"Interactive monitor with burn velocity, flame intensity, rolling activity, and a recent-burst ticker. Requires a terminal; use --json or --json --stream for scripts.",
+			"Press q or Ctrl+C to stop: the monitor restores the terminal and exits 0. SIGTERM exits 143; a second interrupt during shutdown exits 130.",
 		},
 		Flags: []render.HelpFlag{
 			{"--interval <duration>", "Polling interval (default 1s)"},

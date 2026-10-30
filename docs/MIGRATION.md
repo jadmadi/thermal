@@ -26,6 +26,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: No-Data Is a Successful State and JSON Keeps Its Envelope](#changed-no-data-success)
   - [Changed: Data-Access Errors Name the Condition and Next Commands](#changed-data-access-errors)
   - [Changed: Explicit `--last` Units, Repeated-Flag Warnings, and `--` Diagnostics](#changed-window-units)
+  - [Changed: Live SIGINT Is a Clean Stop; SIGTERM Exits 143](#changed-live-signals)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -214,6 +215,34 @@ Add the unit you mean to `--last`, pass one value per scalar flag, and put flags
 
 **Escape hatch**:
 Bare `--last N` behavior is unchanged. `--since`/`--until` remain the exact-date form, and `--last` with a suffix cannot be combined with them.
+
+---
+
+### Changed: Live SIGINT Is a Clean Stop; SIGTERM Exits 143
+<a id="changed-live-signals"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal live' .` in wrappers that treat any non-zero exit as a crash.
+- **Detection signal**: After a single Ctrl+C, `thermal live` now exits `0` and prints no `live monitor failed` line; SIGTERM exits `143`.
+
+**What changed and why**:
+Bubble Tea reports a user interrupt as an error, and Thermal treated every run error as a renderer failure. The monitor now classifies interrupts and context cancellation as a normal stop, restores the alternate screen, cursor, and bracketed paste, and exits `0`. Real renderer errors still print one failure line and exit `1`; SIGTERM is tracked separately at `143`, and a second interrupt during a hanging shutdown exits `130`.
+
+**Before / After**:
+```bash
+# Before: Ctrl+C looked like a crash
+thermal: live monitor failed: program was killed: program was interrupted
+exit 1
+
+# After: Ctrl+C is a normal stop
+exit 0
+```
+
+**The fix**:
+Treat exit `0` after Ctrl+C as success. For scripts, prefer `thermal live --json` or `thermal live --json --stream`; neither depends on an interactive stop.
+
+**Escape hatch**:
+A second Ctrl+C during shutdown forces exit `130`. SIGTERM remains `143` for supervisors that use it as a stop signal.
 
 ---
 
