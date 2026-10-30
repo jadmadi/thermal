@@ -75,14 +75,42 @@ func TestRenderSourcesJSON(t *testing.T) {
 	}
 }
 
+func TestSanitizeText(t *testing.T) {
+	cases := map[string]string{
+		"new\nline":   "new\\nline",
+		"tab\there":   "tab\\there",
+		"esc\x1b[31m": `esc\x1b[31m`,
+	}
+	for in, want := range cases {
+		if got := SanitizeText(in); got != want {
+			t.Fatalf("SanitizeText(%q)=%q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestSourcesNarrowWidth(t *testing.T) {
+	SetWidth(40)
+	defer SetWidth(0)
+	items := []thermal.SourceInfo{{
+		Name: "OpenCode", DisplayPath: "~/.local/share/opencode/opencode.db",
+		State: thermal.SourceMissing, Detail: "expected file",
+	}}
+	out := RenderSources(items, true)
+	for _, line := range strings.Split(out, "\n") {
+		if len([]rune(line)) > 40 {
+			t.Fatalf("line exceeds 40 columns: %q", line)
+		}
+	}
+}
+
 func TestTruncateSourceHelpers(t *testing.T) {
-	if got := truncateLeft("abcdefghij", 6); got != "…fghij" {
-		t.Fatalf("truncateLeft=%q", got)
+	if got := truncateMiddle("abcdefghij", 6); got != "abc…ij" {
+		t.Fatalf("truncateMiddle=%q", got)
 	}
 	if got := truncateSourceRight("abcdefghij", 6); got != "abcde…" {
 		t.Fatalf("truncateSourceRight=%q", got)
 	}
-	if got := truncateLeft("short", 10); got != "short" {
-		t.Fatalf("truncateLeft short=%q", got)
+	if got := truncateMiddle("short", 10); got != "short" {
+		t.Fatalf("truncateMiddle short=%q", got)
 	}
 }

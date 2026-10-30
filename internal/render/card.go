@@ -40,8 +40,8 @@ func RenderCard(opts CardOptions) string {
 		borderColor = theme.Border
 	}
 
-	titlePlain := ansi.Strip(opts.Title)
-	rightPlain := ansi.Strip(opts.RightHeader)
+	titlePlain := SanitizeText(ansi.Strip(opts.Title))
+	rightPlain := SanitizeText(ansi.Strip(opts.RightHeader))
 	titleWidth := ansi.StringWidth(titlePlain)
 	rightWidth := ansi.StringWidth(rightPlain)
 
@@ -99,8 +99,8 @@ func RenderCard(opts CardOptions) string {
 	border := func(s string) string {
 		return borderColor.Sprint(opts.Colors, s)
 	}
-	titleStyled := titleColor.SprintBold(opts.Colors, opts.Title)
-	rightStyled := theme.TextMuted.Sprint(opts.Colors, opts.RightHeader)
+	titleStyled := titleColor.SprintBold(opts.Colors, titlePlain)
+	rightStyled := theme.TextMuted.Sprint(opts.Colors, rightPlain)
 
 	var sb strings.Builder
 

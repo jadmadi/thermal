@@ -30,6 +30,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Version Metadata and Deprecation Warnings Are Truthful](#changed-version-deprecation-truth)
   - [Changed: Exit Codes Are Documented and `upgrade` Accepts Global Flags](#changed-exit-codes-upgrade-flags)
   - [Changed: Partial JSONL Reads Are Counted and Warned](#changed-jsonl-partial-reads)
+  - [Changed: Width, Legend, Sources, and Statusline Colour Honesty](#changed-terminal-output-integrity)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -340,6 +341,36 @@ Read `skippedRecords` or the per-tool `scanStats` object when a report must be c
 
 **Escape hatch**:
 Clean payloads are byte-identical apart from omitting the new keys. Warnings never enter stdout or `--json`.
+
+---
+
+### Changed: Width, Legend, Sources, and Statusline Colour Honesty
+<a id="changed-terminal-output-integrity"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'COLUMNS=' .` in CI, cron, or wrappers; scripts parsing legend or sources rows.
+- **Detection signal**: `COLUMNS=40 thermal daily | cat` now exits `0` and renders at the 100-column pipe fallback; `NO_COLOR=1 thermal statusline` and `--plain` emit zero ANSI.
+
+**What changed and why**:
+`COLUMNS` was applied before the TTY check, so a pipe could be refused for being narrow even though the caller never had a terminal. Width now resolves from `--width`, then the real terminal, then `COLUMNS` only on a TTY, then 100. Legends wrap between marker/gloss pairs, sources keep the head and tail of a path (`~/.local/…/opencode.db`) with `file`/`dir` details, and the statusline honours `NO_COLOR`, `--plain`, and `TERM=dumb`. Control characters in paths are escaped so a newline cannot tear a frame.
+
+**Before / After**:
+```bash
+# Before: a pipe with COLUMNS=40 was refused
+COLUMNS=40 thermal daily | cat
+thermal: daily needs at least 56 columns (terminal is 40)
+exit 2
+
+# After: the pipe gets the 100-column fallback
+COLUMNS=40 thermal daily | cat
+exit 0
+```
+
+**The fix**:
+Pass `--width N` when a pipe needs a specific width; `COLUMNS` is only a TTY hint. Use `--no-color` or `NO_COLOR` for logs, and `--plain` for a colour-free statusline.
+
+**Escape hatch**:
+`--width` remains authoritative on every stream. A clean, wide terminal keeps the previous layout apart from the atomic legend wrapping and clearer source details.
 
 ---
 

@@ -298,8 +298,10 @@ In a pipe, `thermal live` writes its guidance to stderr and exits `2`; use
 
 ### Terminal width
 
-Width resolves once per invocation: `--width N` (40–240), then `COLUMNS`, then
-the terminal, then 100. Text output caps at 96 columns; `--json` ignores width.
+Width resolves once per invocation: `--width N` (40–240), then the terminal
+when stdout is a TTY, then `COLUMNS` when stdout is a TTY, then 100. A pipe
+ignores `COLUMNS`, so CI and cron should pass `--width` explicitly. Text output
+caps at 96 columns; `--json` ignores width.
 
 | Command | Minimum | Columns dropped below 80 |
 | --- | --- | --- |

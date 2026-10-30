@@ -107,7 +107,8 @@ func RenderStatusline(data StatuslineData, opts StatuslineOptions) string {
 		return ""
 	}
 
-	colors := !opts.NoColor
+	colors := !opts.NoColor && !opts.Plain &&
+		os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
 
 	// 1. Flame / Inactivity indicator
 	var icon string

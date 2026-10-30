@@ -588,7 +588,7 @@ rm -rf "${empty_ui_home}" "${empty_ui_tmp}"
 echo -e "\n${BOLD}9j. Terminal Width Contract:${RESET}"
 maxw() { awk '{ if (length > m) m = length } END { print m+0 }'; }
 set +e
-COLUMNS=50 "${BIN_PATH}" daily --no-color --offline >/dev/null 2>"${TMPDIR:-/tmp}/width-refusal.err"
+"${BIN_PATH}" --width 50 daily --no-color --offline >/dev/null 2>"${TMPDIR:-/tmp}/width-refusal.err"
 width_refusal_code=$?
 set -e
 if [[ "${width_refusal_code}" -eq 2 ]] && grep -q 'daily needs at least 56 columns' "${TMPDIR:-/tmp}/width-refusal.err"; then
@@ -602,21 +602,21 @@ else
 fi
 for spec in "50|--no-color --offline|50" "60|daily --no-color --offline|60" "60|projects --no-color --offline|60" "60|stats --no-color --offline|60" "60|--help --no-color|60" "120|--no-color --offline|120" "120|daily --no-color --offline|120"; do
     cols=${spec%%|*}; rest=${spec#*|}; cmd=${rest%|*}; want=${spec##*|}
-    max=$(COLUMNS=$cols "${BIN_PATH}" $cmd 2>/dev/null | maxw)
+    max=$("${BIN_PATH}" $cmd --width "$cols" 2>/dev/null | maxw)
     if [[ "${max}" -le "${want}" ]]; then
-        echo -e "  ${GREEN}✔ [PASS]${RESET} COLUMNS=${cols} ${cmd%% *} max=${max}"
+        echo -e "  ${GREEN}✔ [PASS]${RESET} --width=${cols} ${cmd%% *} max=${max}"
         PASSED_CHECKS=$((PASSED_CHECKS + 1))
         TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     else
-        echo -e "  ${RED}✖ [FAIL]${RESET} COLUMNS=${cols} ${cmd%% *} max=${max} > ${want}"
+        echo -e "  ${RED}✖ [FAIL]${RESET} --width=${cols} ${cmd%% *} max=${max} > ${want}"
         FAILED_CHECKS=$((FAILED_CHECKS + 1))
         TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     fi
 done
 COLUMNS=60 "${BIN_PATH}" daily --no-color --offline >"${TMPDIR:-/tmp}/width-columns.out" 2>/dev/null
-"${BIN_PATH}" --width 60 daily --no-color --offline >"${TMPDIR:-/tmp}/width-flag.out" 2>/dev/null
+"${BIN_PATH}" --width 100 daily --no-color --offline >"${TMPDIR:-/tmp}/width-flag.out" 2>/dev/null
 if cmp -s "${TMPDIR:-/tmp}/width-columns.out" "${TMPDIR:-/tmp}/width-flag.out"; then
-    echo -e "  ${GREEN}✔ [PASS]${RESET} --width 60 equals COLUMNS=60"
+    echo -e "  ${GREEN}✔ [PASS]${RESET} COLUMNS is ignored on a non-TTY pipe"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 else
@@ -681,7 +681,7 @@ else
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi
-if [[ "$(COLUMNS=80 "${BIN_PATH}" --no-color --offline | awk 'length>80' | wc -l)" -eq 0 ]]; then
+if [[ "$("${BIN_PATH}" --width 80 --no-color --offline | awk 'length>80' | wc -l)" -eq 0 ]]; then
     echo -e "  ${GREEN}✔ [PASS]${RESET} leaderboard fits 80 columns"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
@@ -888,6 +888,35 @@ if echo "${dash_err}" | grep -q 'passed after --'; then
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 else
     echo -e "  ${RED}✖ [FAIL]${RESET} -- still produces an unknown-tool message"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+offline_upgrade=$("${BIN_PATH}" upgrade --check --offline --json 2>/dev/null || true)
+if echo "${offline_upgrade}" | jq -e '.error|test("offline")' >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} upgrade --offline fails closed without an unknown flag"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} upgrade --offline did not fail closed"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+upgrade_width_err=$("${BIN_PATH}" upgrade --width 100 2>&1 >/dev/null || true)
+if echo "${upgrade_width_err}" | grep -q 'not applicable'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} upgrade rejects a known global flag with an alternative"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} upgrade still reports a known global flag as unknown"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
+if "${BIN_PATH}" --help | grep -q 'Exit Codes:' && "${BIN_PATH}" upgrade --help | grep -q 'Exit codes: 0 ok'; then
+    echo -e "  ${GREEN}✔ [PASS]${RESET} exit codes are documented in global and upgrade help"
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+else
+    echo -e "  ${RED}✖ [FAIL]${RESET} exit-code documentation missing"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 fi

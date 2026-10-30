@@ -1,7 +1,7 @@
 # Plan: Enforce one width, colour, and sanitisation policy across every renderer
 
 ## Execution Steps
-- [ ] **Phase 1 — Width resolver**: Add `ResolveWidth`/`WidthSource`, ignore
+- [x] **Phase 1 — Width resolver**: Add `ResolveWidth`/`WidthSource`, ignore
   `COLUMNS` on a non-TTY pipe, thread the source into `WidthRefusal`, and keep
   `--width` authoritative. Acceptance: `TestResolveWidthMatrix`,
   `TestNonTTYIgnoresColumns`, and `TestWidthRefusalSource` pass.
@@ -9,25 +9,25 @@
   - TTY + `COLUMNS=40` -> refusal naming the terminal.
   - `--width 40` -> refusal naming the flag.
   - JSON ignores width.
-- [ ] **Phase 2 — Legend pairs**: Introduce `LegendItem` and `WrapLegend`; move
+- [x] **Phase 2 — Legend pairs**: Introduce `LegendItem` and `WrapLegend`; move
   the streak and cost legends onto it. Acceptance: `TestLegendAtomic` at
   40/60/80/120; no dangling marker.
   - Continuation indent matches the legend column.
   - Exact marker/gloss strings are preserved.
-- [ ] **Phase 3 — Sources table and path fitting**: Add `FitPath`, responsive
+- [x] **Phase 3 — Sources table and path fitting**: Add `FitPath`, responsive
   column drop (`Detail`, then `Alias`), short detail words, and a 40-column
   one-line form. Acceptance: `TestSourcesFit40/60/80/120` and
   `TestSourcesKeepsHead` pass.
   - `~/.claude/projects/…`, never `…ed/threads/threads.db`.
   - `State` is never truncated.
-- [ ] **Phase 4 — Sanitisation and colour policy**: Add `SanitizeText` and
+- [x] **Phase 4 — Sanitisation and colour policy**: Add `SanitizeText` and
   `ColorEnabled`; apply to card titles, tables, charts, audit paths, and the
   statusline; make `--plain` imply no colour. Acceptance:
   `TestSanitizeText`, `TestFrameWithNewlinePath`, `TestColorMatrix`, and
   `TestStatuslineNoColor` pass.
   - JSON keeps raw values.
   - No ANSI under `NO_COLOR`, `--no-color`, `--plain`, `TERM=dumb`, or a pipe.
-- [ ] **Phase 5 — Gallery, docs, gate, closure**: Update the output gallery,
+- [x] **Phase 5 — Gallery, docs, gate, closure**: Update the output gallery,
   README width section, `project.jsonc`, and both gates; record evidence;
   commit, certify, reconcile.
 
@@ -58,7 +58,7 @@
 - Do not restore `colors := !opts.NoColor`; `NO_COLOR` is a hard requirement.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `fix(cli): unify width, colour, and sanitisation across renderers
   (goals/cli-terminal-output-integrity/goal.md)`; (3) certify via

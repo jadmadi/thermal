@@ -116,9 +116,19 @@ func requireCommandWidth(opts thermal.Options) {
 	if opts.JSON {
 		return
 	}
+	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && !opts.WidthSet {
+		render.SetWidth(100)
+		return
+	}
 	command, min := commandMinWidth(opts.Report, opts.Tool)
 	if width := render.TerminalWidth(); width < min {
-		fmt.Fprint(os.Stderr, render.WidthRefusal(command, min, width))
+		refusal := render.WidthRefusal(command, min, width)
+		if opts.WidthSet {
+			refusal = strings.Replace(refusal,
+				fmt.Sprintf("terminal is %d", width),
+				fmt.Sprintf("--width %d", opts.Width), 1)
+		}
+		fmt.Fprint(os.Stderr, refusal)
 		os.Exit(2)
 	}
 }

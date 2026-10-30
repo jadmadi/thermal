@@ -21,6 +21,19 @@ func RenderSources(items []thermal.SourceInfo, noColor bool) string {
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("  Thermal · sources · %d supported tools\n\n", len(items)))
 
+	if ContentWidth() < 60 {
+		for _, item := range items {
+			sb.WriteString(fmt.Sprintf("  %-10s %-16s %s\n",
+				truncateSourceRight(item.Name, 10),
+				truncateMiddle(item.DisplayPath, 16),
+				item.State,
+			))
+		}
+		sb.WriteString("\n")
+		sb.WriteString("  thermal sources --json\n")
+		return sb.String()
+	}
+
 	sb.WriteString(fmt.Sprintf("  %-14s %-5s %-22s %-12s %-14s\n",
 		"TOOL", "ALIAS", "PATH", "STATE", "DETAIL"))
 	sb.WriteString("  " + strings.Repeat("-", sourceTableWidth) + "\n")
@@ -29,8 +42,15 @@ func RenderSources(items []thermal.SourceInfo, noColor bool) string {
 		if alias == "" {
 			alias = "—"
 		}
-		path := truncateLeft(item.DisplayPath, 22)
-		detail := truncateSourceRight(item.Detail, 14)
+		path := truncateMiddle(item.DisplayPath, 22)
+		detail := item.Detail
+		switch detail {
+		case "expected file":
+			detail = "file"
+		case "expected directory":
+			detail = "dir"
+		}
+		detail = truncateSourceRight(detail, 14)
 		sb.WriteString(fmt.Sprintf("  %-14s %-5s %-22s %-12s %-14s\n",
 			truncateSourceRight(item.Name, 14),
 			alias,
@@ -82,7 +102,7 @@ func RenderSourcesJSON(items []thermal.SourceInfo, home string, now time.Time) s
 	return string(b) + "\n"
 }
 
-func truncateLeft(s string, width int) string {
+func truncateMiddle(s string, width int) string {
 	r := []rune(s)
 	if len(r) <= width {
 		return s
@@ -90,7 +110,9 @@ func truncateLeft(s string, width int) string {
 	if width <= 1 {
 		return "…"
 	}
-	return "…" + string(r[len(r)-(width-1):])
+	head := width / 2
+	tail := width - head - 1
+	return string(r[:head]) + "…" + string(r[len(r)-tail:])
 }
 
 func truncateSourceRight(s string, width int) string {

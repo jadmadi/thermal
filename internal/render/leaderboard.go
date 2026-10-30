@@ -407,10 +407,12 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 		sb.WriteString("\n")
 	}
 
-	for _, line := range WrapText("Legend: Strk = current streak · Best = longest streak · Days = active days", width-4) {
+	for _, line := range wrapLegend("Legend: ", []string{
+		"Strk = current streak", "Best = longest streak", "Days = active days",
+	}, width-4) {
 		sb.WriteString("  " + dim(line) + "\n")
 	}
-	for _, line := range WrapText("        Cost: "+CostLegendText(), width-4) {
+	for _, line := range wrapLegend("        Cost: ", strings.Split(CostLegendText(), " · "), width-4) {
 		sb.WriteString("  " + dim(line) + "\n")
 	}
 	sb.WriteString("\n")
@@ -505,4 +507,28 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	sb.WriteString("\n")
 
 	return sb.String()
+}
+
+// wrapLegend wraps between marker/gloss items so a symbol is never separated
+// from its meaning. Continuation lines align with the first item column.
+func wrapLegend(prefix string, items []string, width int) []string {
+	indent := strings.Repeat(" ", len(prefix))
+	line := prefix
+	var lines []string
+	for _, item := range items {
+		addition := item
+		if line != prefix {
+			addition = " · " + item
+		}
+		if len([]rune(line+addition)) > width && line != prefix {
+			lines = append(lines, line)
+			line = indent + item
+			continue
+		}
+		line += addition
+	}
+	if line != prefix {
+		lines = append(lines, line)
+	}
+	return lines
 }
