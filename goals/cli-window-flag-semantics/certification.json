@@ -1,0 +1,24 @@
+{
+  "goal_slug": "cli-window-flag-semantics",
+  "certified_at": "2026-10-30T12:18:48.513834099Z",
+  "certified_by": "agent",
+  "evidence_file": "/mnt/Jad/github/lab/thermal-streak/goals/cli-window-flag-semantics/evidence.md",
+  "note": "certified from review document: evidence.md",
+  "verified": true,
+  "facts_passed": 1,
+  "facts_total": 1,
+  "evidence_kind": "review_document",
+  "commit_sha": "aa3c6438cc26124fccdc846808ef28bb940b4cd6",
+  "memory_required": true,
+  "memory_verified": true,
+  "memory": {
+    "required": true,
+    "status": "verified",
+    "prime": true,
+    "recall": true,
+    "writes": true,
+    "facts": true,
+    "handoff": true,
+    "verified": true
+  }
+}
