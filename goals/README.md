@@ -27,11 +27,27 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 6. **Auto-Reconciliation**: Run `sila goals` to scan commits, mark 🟢 **Implemented**, and clear the claim lock.
 
 ## Summary
-- **Total Goals**: 134
-- 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
+- **Total Goals**: 143
+- 🟡 **Ready to Execute (Pending)**: 9 (0 independent ⚡, 9 unblocked 🔗)
 - 🟢 **Implemented**: 134 (17 verified 📜, 29 stale ⚠️, 88 unverified)
-- 🎯 **By Tier**: 1 immediate (Tier 1), 133 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 608/608 completed (100%)
+- 🎯 **By Tier**: 1 immediate (Tier 1), 142 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
+- 📋 **Execution Tasks Progress**: 608/660 completed (92%)
+
+---
+
+## 🟡 Ready to Execute (Pending Goals)
+
+| Goal Package | Tier | Mode & Sequence | Dependencies | Focus & Description | Launch Command |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| [`cli-empty-data-success-contract`](cli-empty-data-success-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#255)` | Deps met: cli-first-run-source-inventory, cli-nontty-and-statusline-output-contract | Make no-data a successful, schema-stable state across text, JSON, and statusline — Priority: P0 (activation and automation). Thermal currently treats "the user has... | `/goal goals/cli-empty-data-success-contract/goal.md` |
+| [`cli-data-access-error-guidance`](cli-data-access-error-guidance/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#256)` | Deps met: cli-first-run-source-inventory, cli-db-override-scope-and-errors | Turn every data-access failure into a named condition and a runnable next step — Priority: P1 (recovery). Thermal's explicit `--db` errors are model-quality; its... | `/goal goals/cli-data-access-error-guidance/goal.md` |
+| [`cli-window-flag-semantics`](cli-window-flag-semantics/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#257)` | Deps met: cli-argument-parser-strictness | Make window and repeated-flag semantics explicit and non-silent — Priority: P1 (correct numbers). `--last` is one flag with three meanings: `daily... | `/goal goals/cli-window-flag-semantics/goal.md` |
+| [`cli-terminal-output-integrity`](cli-terminal-output-integrity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#258)` | Deps met: cli-terminal-width-adaptation, cli-leaderboard-ranking-and-legend, cli-nontty-and-statusline-output-contract | Enforce one width, colour, and sanitisation policy across every renderer — Priority: P1 (terminal trust). Thermal has several good rendering rules, but the... | `/goal goals/cli-terminal-output-integrity/goal.md` |
+| [`cli-sigint-lifecycle-contract`](cli-sigint-lifecycle-contract/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#259)` | Deps met: cli-nontty-and-statusline-output-contract | Treat SIGINT as a normal stop for live and stream — Priority: P1 (interruption trust). Ctrl+C is the documented way out of `thermal ... | `/goal goals/cli-sigint-lifecycle-contract/goal.md` |
+| [`cli-automation-exit-and-upgrade-parity`](cli-automation-exit-and-upgrade-parity/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#262)` | Deps met: cli-upgrade-nondestructive-safety-flags, cli-nontty-and-statusline-output-contract | Document exit codes and give upgrade global-flag parity — Priority: P1 (scripting). A wrapper that prepends `--offline` — the documented... | `/goal goals/cli-automation-exit-and-upgrade-parity/goal.md` |
+| [`cli-help-glossary-and-routing`](cli-help-glossary-and-routing/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#260)` | Deps met: cli-unknown-token-diagnostics, cli-help-interception-and-scoped-help, cli-db-override-scope-and-errors | Route every unknown word to the right namespace and explain domain vocabulary — Priority: P1 (discoverability). Thermal's banner says "Ranked by current streak"... | `/goal goals/cli-help-glossary-and-routing/goal.md` |
+| [`cli-version-and-deprecation-truth`](cli-version-and-deprecation-truth/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#261)` | Deps met: cli-version-verbose-flag-contract, cli-staged-deprecation-and-upgrade | Make version output and deprecation warnings factually true — Priority: P1 (trust). The help page promises "SemVer, commit hash, and build tim... | `/goal goals/cli-version-and-deprecation-truth/goal.md` |
+| [`jsonl-partial-read-observability`](jsonl-partial-read-observability/goal.md) | `🗺️ Roadmap` | `🚢 SHIP 🔗 Ready (#263)` | Deps met: jsonl-scan-diagnostics, jsonl-line-ceilings | Make truncated and malformed JSONL records observable — Priority: P1 (data trust). A half-written final line is the most common real-wor... | `/goal goals/jsonl-partial-read-observability/goal.md` |
 
 ---
 
