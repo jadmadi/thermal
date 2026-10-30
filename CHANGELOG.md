@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0](https://github.com/jadmadi/thermal/compare/v0.21.0...v0.22.0) (2026-10-30)
+
+
+### Features
+
+* **cli:** add a glossary and namespace-aware help routing (goals/cli-help-glossary-and-routing/goal.md) ([a2dd941](https://github.com/jadmadi/thermal/commit/a2dd941a967fe471e1c6c5fb952dbe518b2012ab))
+* **cli:** add a stat-only source inventory and actionable empty state (goals/cli-first-run-source-inventory/goal.md) ([964cf9e](https://github.com/jadmadi/thermal/commit/964cf9e72158af9813033c249714bab8979a2c30))
+* **cli:** add slot-aware unknown-token diagnostics (goals/cli-unknown-token-diagnostics/goal.md) ([9903ca2](https://github.com/jadmadi/thermal/commit/9903ca2764405200a285d6e7b1f9f8a33bc0323a))
+* **cli:** honor terminal width with column drops and refusals (goals/cli-terminal-width-adaptation/goal.md) ([a936195](https://github.com/jadmadi/thermal/commit/a936195231f0264ecb36ceb2eb41bc37b187925a))
+* **cli:** intercept help globally and add scoped help pages (goals/cli-help-interception-and-scoped-help/goal.md) ([e86a107](https://github.com/jadmadi/thermal/commit/e86a1077bf01ba13a72576045eba575a2f02d303))
+* **cli:** make no-data a success state with stable JSON (goals/cli-empty-data-success-contract/goal.md) ([6bd8d1c](https://github.com/jadmadi/thermal/commit/6bd8d1cbd5b9ae7ddba02e7707ff02e734a313e8))
+* **cli:** make the leaderboard state its ranking and costs (goals/cli-leaderboard-ranking-and-legend/goal.md) ([17ab978](https://github.com/jadmadi/thermal/commit/17ab978c09c5d815bbc4689cb96e4e8f970d5b6a))
+* **loaders:** count and report skipped JSONL records (goals/jsonl-partial-read-observability/goal.md) ([3787548](https://github.com/jadmadi/thermal/commit/3787548e7dd29b1a31b884222769ed4fb6c5e768))
+* **loaders:** count Codex rollout partial reads (goals/jsonl-partial-read-observability/goal.md) ([40b2726](https://github.com/jadmadi/thermal/commit/40b2726194afafae878a9c2e1fb69e76de7742d1))
+
+
+### Bug Fixes
+
+* **changelog:** isolate embedded changelog from CWD and strip goal tokens (goals/changelog-integrity-and-cwd-isolation/goal.md) ([674bca0](https://github.com/jadmadi/thermal/commit/674bca03b3ec3e4d60b1e0f725491d3a773574eb))
+* **cli:** align non-TTY tests and diagnostics (goals/cli-nontty-and-statusline-output-contract/goal.md) ([a352e43](https://github.com/jadmadi/thermal/commit/a352e43a811eb2224935bbe2e314f34bcbe44a82))
+* **cli:** colocate --db diagnostics and tests (goals/cli-db-override-scope-and-errors/goal.md) ([4d97260](https://github.com/jadmadi/thermal/commit/4d97260b1f2c558cb12047fc1de9b8a5349b6e2a))
+* **cli:** colocate total-row helpers and tests (goals/cli-report-total-row-semantics/goal.md) ([20e2ace](https://github.com/jadmadi/thermal/commit/20e2ace9711e6a589b00888f7c49b8ef9164c6e6))
+* **cli:** document exit codes and accept global flags on upgrade (goals/cli-automation-exit-and-upgrade-parity/goal.md) ([770a13d](https://github.com/jadmadi/thermal/commit/770a13d33779f02ce96412a0b64a124c67025a0e))
+* **cli:** give -v, -V, --version, and --verbose one meaning (goals/cli-version-verbose-flag-contract/goal.md) ([743281a](https://github.com/jadmadi/thermal/commit/743281a5627c72b135e1f656f7068c5b2d452ce5))
+* **cli:** make non-TTY live and empty statusline channel-clean (goals/cli-nontty-and-statusline-output-contract/goal.md) ([80a533e](https://github.com/jadmadi/thermal/commit/80a533e96761f5e162fa8f66bb81f5eb6049e224))
+* **cli:** make project and model totals additive and explicit (goals/cli-report-total-row-semantics/goal.md) ([d39d43b](https://github.com/jadmadi/thermal/commit/d39d43b5e79ad3501d02c226275eb175ff589878))
+* **cli:** make upgrade previewable and non-destructive (goals/cli-upgrade-nondestructive-safety-flags/goal.md) ([c0e4087](https://github.com/jadmadi/thermal/commit/c0e4087c91102848873e2375ceb83a6d11f1bcfe))
+* **cli:** make version and deprecation warnings truthful (goals/cli-version-and-deprecation-truth/goal.md) ([88de961](https://github.com/jadmadi/thermal/commit/88de961cce5fbea29dc979a8ac18eda83d76357a))
+* **cli:** make window units and repeated flags explicit (goals/cli-window-flag-semantics/goal.md) ([aa3c643](https://github.com/jadmadi/thermal/commit/aa3c6438cc26124fccdc846808ef28bb940b4cd6))
+* **cli:** name data-access conditions and add next steps (goals/cli-data-access-error-guidance/goal.md) ([a8a3661](https://github.com/jadmadi/thermal/commit/a8a3661baf98a6470a5bdf9e61d22b8768b731d9))
+* **cli:** reject malformed and contradictory arguments (goals/cli-argument-parser-strictness/goal.md) ([8ebde49](https://github.com/jadmadi/thermal/commit/8ebde49ac6617d7937ffc1c32a2e210a718f093d))
+* **cli:** scope --db to one tool and translate path errors (goals/cli-db-override-scope-and-errors/goal.md) ([44d1325](https://github.com/jadmadi/thermal/commit/44d132554c98970598cb5864fb071313b8913586))
+* **cli:** treat SIGINT as a normal live stop (goals/cli-sigint-lifecycle-contract/goal.md) ([7975021](https://github.com/jadmadi/thermal/commit/79750213c169d00e004c60b968df82f73d90b267))
+* **cli:** unify the --top contract and chart remediation (goals/cli-top-flag-contract/goal.md) ([4dbf119](https://github.com/jadmadi/thermal/commit/4dbf119a53f05229e3b889a5c0bd09f67d5959ae))
+* **cli:** unify width, colour, and sanitisation across renderers (goals/cli-terminal-output-integrity/goal.md) ([c7775aa](https://github.com/jadmadi/thermal/commit/c7775aaad509e1be69e7b6a61b181ffb1b173768))
+* **gate:** isolate output_gallery_gate.sh from gate HOME and git hook env (goals/changelog-integrity-and-cwd-isolation/goal.md) ([ad8009c](https://github.com/jadmadi/thermal/commit/ad8009cbcaf0b5f5da29588a85e0f9966cbea2a7))
+
 ## [0.21.0](https://github.com/jadmadi/thermal/compare/v0.20.1...v0.21.0) (2026-10-29)
 
 ### Features
