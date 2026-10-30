@@ -151,8 +151,8 @@ func TestRunLicenseJSON(t *testing.T) {
 func TestEmitDeprecationWarning(t *testing.T) {
 	// 1. With noColor = true: plain text, no ANSI escape sequences
 	var plainBuf bytes.Buffer
-	emitDeprecationWarningTo(&plainBuf, "--license", "thermal license", "0.14.0", "deprecated-license-flag", true)
-	expectedPlain := "thermal: warning: --license is deprecated and will be removed in v0.14.0; use thermal license (see docs/MIGRATION.md#deprecated-license-flag)\n"
+	emitDeprecationWarningTo(&plainBuf, "--license", "thermal license", "", "deprecated-license-flag", true)
+	expectedPlain := "thermal: warning: --license is deprecated; use thermal license\n  details: https://jadmadi.net/project/thermal/migration#deprecated-license-flag\n"
 	if plainBuf.String() != expectedPlain {
 		t.Errorf("expected plain warning %q, got %q", expectedPlain, plainBuf.String())
 	}
@@ -161,8 +161,8 @@ func TestEmitDeprecationWarning(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 	t.Setenv("CLICOLOR_FORCE", "1")
 	var colorBuf bytes.Buffer
-	emitDeprecationWarningTo(&colorBuf, "nous", "hermes", "0.14.0", "deprecated-tool-nous", false)
-	expectedColor := "\033[33mthermal: warning:\033[0m nous is deprecated and will be removed in v0.14.0; use hermes (see docs/MIGRATION.md#deprecated-tool-nous)\n"
+	emitDeprecationWarningTo(&colorBuf, "nous", "hermes", "", "deprecated-tool-nous", false)
+	expectedColor := "\033[33mthermal: warning:\033[0m nous is deprecated; use hermes\n  details: https://jadmadi.net/project/thermal/migration#deprecated-tool-nous\n"
 	if colorBuf.String() != expectedColor {
 		t.Errorf("expected color warning %q, got %q", expectedColor, colorBuf.String())
 	}
@@ -171,8 +171,8 @@ func TestEmitDeprecationWarning(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	t.Setenv("CLICOLOR_FORCE", "")
 	var noColorEnvBuf bytes.Buffer
-	emitDeprecationWarningTo(&noColorEnvBuf, "nous", "hermes", "0.14.0", "deprecated-tool-nous", false)
-	expectedNoColorEnv := "thermal: warning: nous is deprecated and will be removed in v0.14.0; use hermes (see docs/MIGRATION.md#deprecated-tool-nous)\n"
+	emitDeprecationWarningTo(&noColorEnvBuf, "nous", "hermes", "", "deprecated-tool-nous", false)
+	expectedNoColorEnv := "thermal: warning: nous is deprecated; use hermes\n  details: https://jadmadi.net/project/thermal/migration#deprecated-tool-nous\n"
 	if noColorEnvBuf.String() != expectedNoColorEnv {
 		t.Errorf("expected plain warning under NO_COLOR=1 %q, got %q", expectedNoColorEnv, noColorEnvBuf.String())
 	}
@@ -195,7 +195,7 @@ func TestDeprecationWarningStderrWithJSONStdout(t *testing.T) {
 	os.Stderr = stderrW
 
 	// Simulate emitting deprecation warning to stderr while executing command outputting JSON to stdout
-	emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", true)
+	emitDeprecationWarning("--license", "thermal license", "", "deprecated-license-flag", true)
 	runLicense(thermal.Options{JSON: true})
 
 	_ = stdoutW.Close()

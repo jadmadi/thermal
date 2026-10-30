@@ -59,7 +59,7 @@ func TestVersionOutput(t *testing.T) {
 	if payload["type"] != "version" {
 		t.Fatalf("type=%v", payload["type"])
 	}
-	for _, key := range []string{"version", "commit", "date", "generatedAt"} {
+	for _, key := range []string{"version", "commit", "date", "generatedAt", "stamped", "semver"} {
 		if _, ok := payload[key]; !ok {
 			t.Fatalf("version JSON missing %q", key)
 		}

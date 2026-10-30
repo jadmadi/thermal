@@ -27,6 +27,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Data-Access Errors Name the Condition and Next Commands](#changed-data-access-errors)
   - [Changed: Explicit `--last` Units, Repeated-Flag Warnings, and `--` Diagnostics](#changed-window-units)
   - [Changed: Live SIGINT Is a Clean Stop; SIGTERM Exits 143](#changed-live-signals)
+  - [Changed: Version Metadata and Deprecation Warnings Are Truthful](#changed-version-deprecation-truth)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -243,6 +244,40 @@ Treat exit `0` after Ctrl+C as success. For scripts, prefer `thermal live --json
 
 **Escape hatch**:
 A second Ctrl+C during shutdown forces exit `130`. SIGTERM remains `143` for supervisors that use it as a stop signal.
+
+---
+
+### Changed: Version Metadata and Deprecation Warnings Are Truthful
+<a id="changed-version-deprecation-truth"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal (version|--version|-V)' .` or scripts parsing the version JSON.
+- **Detection signal**: An unstamped build now prints `version not stamped`, `commit: unknown`, and `built: unknown`; `version --json` adds `"stamped": false` and `"semver": ""`.
+
+**What changed and why**:
+The help page promised SemVer, commit, and build time unconditionally, while a source build omitted all three. Version output now states whether the build is stamped and prints the unknown values explicitly. Deprecation warnings no longer name the expired `v0.14.0` deadline or a repository-relative `docs/MIGRATION.md` path; they name the replacement and an absolute migration URL.
+
+**Before / After**:
+```bash
+# Before: a source build implied nothing and a warning expired in v0.14.0
+thermal version
+thermal dev (built from source)
+thermal: warning: --license is deprecated and will be removed in v0.14.0; ...
+
+# After
+thermal version
+thermal dev (built from source; version not stamped)
+  commit: unknown
+  built:  unknown
+thermal: warning: --license is deprecated; use thermal license
+  details: https://jadmadi.net/project/thermal/migration#deprecated-license-flag
+```
+
+**The fix**:
+Read `stamped` and `semver` in JSON; do not infer a release from the presence of the `version` key. Parse `thermal version` output only when `stamped` is true. Warning consumers should match `deprecated; use` rather than a version number.
+
+**Escape hatch**:
+The `--license` flag and `nous` alias still work during the deprecation window. Version JSON keeps its existing keys and adds only `stamped` and `semver`.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://jadmadi.net/schemas/project.schema.json",
   // Timestamp of the last metadata revision (Format: YY-MM-DD-HH-MM, e.g. 26-10-07-07-20)
-  "lastEdit": "26-10-30-15-24",
+  "lastEdit": "26-10-30-16-59",
 
   // Unique identifier matching the project URL slug on jadmadi.net (e.g. /project/<id>/)
   "id": "thermal",
@@ -94,7 +94,7 @@
     "Strict, position-independent CLI parsing: every flag value validated once, contradictory arguments rejected, and usage errors exit 2 with a one-line fix and example",
     "Explicit window units and honest flag diagnostics: --last accepts d/w/m suffixes, repeated scalar flags warn with the discarded value, and -- explains positional-vs-flag mistakes",
     "Side-effect-free, command-scoped help: -h/--help is intercepted anywhere, thermal help <command> matches <command> --help, and help never reads data, opens a TUI, or replaces the binary",
-    "Unambiguous identity flags: -V/--version print build metadata, -v/--verbose enable diagnostics, and -v never changes meaning by argv position",
+    "Truthful identity flags: -V/--version print build metadata with an explicit stamped/semver fallback for source builds, -v/--verbose announce diagnostics on stderr, and neither changes meaning by argv position",
     "Safe self-update: --check/--dry-run preview without downloading or mutating, --yes confirms non-interactive upgrades, --json emits one object, and failed renames leave the binary intact",
     "Scope-honest data access: missing defaults name the tool, path, inventory, all-tools report, and --db override; symlink loops, permissions, and wrong shapes get distinct fixes, and --db never falls back to a default",
     "Slot-aware unknown-token diagnostics: command typos suggest the nearest command, wrong-slot report words are named, path-like tokens point at --db, and unknown tools list valid sources",

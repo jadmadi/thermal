@@ -229,7 +229,7 @@ func RenderHelp(noColor bool) string {
 				{Name: "--json", Desc: "Output structured JSON (never launches a terminal UI)"},
 				{Name: "--require-data", Desc: "Exit 1 when a read-only report has no data"},
 				{Name: "--no-color", Desc: "Disable all ANSI escape sequences"},
-				{Name: "-V, --version", Desc: "Print version, commit, and build timestamp"},
+				{Name: "-V, --version", Desc: "Print build metadata (source builds report unknown fields)"},
 				{Name: "--verbose, -v", Desc: "Output diagnostic warnings to stderr"},
 				{Name: "-h, --help", Desc: "Show global or command-scoped help"},
 			},

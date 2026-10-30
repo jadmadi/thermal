@@ -176,8 +176,14 @@ thermal -V          # short form
 thermal --version   # long form
 ```
 
-`-v` means verbose diagnostics, not version. `thermal -v` renders the normal
-leaderboard with loader warnings; use `-V` or `--version` for build metadata.
+A source build prints `dev (built from source; version not stamped)` with
+`commit: unknown` and `built: unknown`; a release build prints its semver,
+commit, and build time. `version --json` adds `stamped` and `semver`, so a
+missing stamp is explicit rather than implied.
+
+`-v` means verbose diagnostics, not version. `thermal -v` announces
+`verbose diagnostics enabled` on stderr, then renders the normal leaderboard;
+use `-V` or `--version` for build metadata.
 
 ## Usage
 

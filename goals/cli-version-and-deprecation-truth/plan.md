@@ -1,19 +1,19 @@
 # Plan: Make version output and deprecation warnings factually true
 
 ## Execution Steps
-- [ ] **Phase 1 — Version Info and payload**: Add `Info`, `Current`, and
+- [x] **Phase 1 — Version Info and payload**: Add `Info`, `Current`, and
   `IsPast`; always print `commit`/`built`; add `stamped`/`semver` to JSON.
   Acceptance: `TestVersionPayloadMatrix` and `TestStampedBuild` pass.
-- [ ] **Phase 2 — Help truth and verbose signal**: Rewrite the version help
+- [x] **Phase 2 — Help truth and verbose signal**: Rewrite the version help
   summary/description and call `announceVerbose` once when `-v` is active.
   Acceptance: `TestVersionHelpTruth`,
   `TestVerboseAnnouncement`, and `TestVerboseJSONStdout` pass.
-- [ ] **Phase 3 — Deprecation table and guard**: Replace the inline
+- [x] **Phase 3 — Deprecation table and guard**: Replace the inline
   `0.14.0` strings with one table, absolute URLs, and a current-version guard;
   fall back to the no-version form at runtime. Acceptance:
   `TestDeprecationTruth`, `TestNoExpiredWarningVersion`, and
   `TestDeprecationRuntimeFallback` pass.
-- [ ] **Phase 4 — Docs, gate, evidence, closure**: README version section,
+- [x] **Phase 4 — Docs, gate, evidence, closure**: README version section,
   MIGRATION entries, `docs/PROMISES.md`, `project.jsonc`, gate; record
   evidence; commit, certify, reconcile.
 
@@ -42,7 +42,7 @@
 - Do not reintroduce a removal version without a current-version test.
 
 ## Phase 5 — Attribution & Registry Closure
-- [ ] **Phase 5 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 5 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `fix(cli): make version and deprecation warnings truthful
   (goals/cli-version-and-deprecation-truth/goal.md)`; (3) certify via

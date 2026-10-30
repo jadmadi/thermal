@@ -336,9 +336,10 @@ var commandHelps = map[string]render.CommandHelp{
 	"version": {
 		Title:   "version",
 		Usage:   "thermal version [options]",
-		Summary: "SemVer, commit hash, and build timestamp",
+		Summary: "Build metadata, including the source-build fallback",
 		Description: []string{
 			"Prints build metadata. Read-only; no data scan, network call, or update check.",
+			"When built without ldflags, version is \"dev\", commit and date are \"unknown\", and stamped is false.",
 		},
 		Flags: []render.HelpFlag{
 			{"--json", "Emit the version JSON object"},

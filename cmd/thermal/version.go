@@ -17,13 +17,16 @@ var errVersionRequested = errors.New("version requested")
 // versionOutput returns the text or JSON version payload. It is deterministic
 // apart from generatedAt and never touches data, pricing, caches, or network.
 func versionOutput(asJSON bool) string {
+	info := version.Current()
 	if asJSON {
 		b, err := marshalJSON(map[string]any{
 			"type":        "version",
 			"generatedAt": time.Now().UTC().Format(time.RFC3339),
-			"version":     version.String(),
-			"commit":      version.Commit,
-			"date":        version.Date,
+			"version":     info.Version,
+			"stamped":     info.Stamped,
+			"semver":      info.Semver,
+			"commit":      info.Commit,
+			"date":        info.Date,
 		})
 		if err != nil {
 			return ""
@@ -31,13 +34,9 @@ func versionOutput(asJSON bool) string {
 		return string(b) + "\n"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "thermal %s\n", version.String())
-	if version.Commit != "unknown" {
-		fmt.Fprintf(&b, "  commit: %s\n", version.Commit)
-	}
-	if version.Date != "unknown" {
-		fmt.Fprintf(&b, "  built:  %s\n", version.Date)
-	}
+	fmt.Fprintf(&b, "thermal %s\n", info.Version)
+	fmt.Fprintf(&b, "  commit: %s\n", info.Commit)
+	fmt.Fprintf(&b, "  built:  %s\n", info.Date)
 	return b.String()
 }
 

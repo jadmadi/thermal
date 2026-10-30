@@ -59,7 +59,7 @@ func parseArgs() thermal.Options {
 		os.Exit(runUpgrade(os.Args[1:], os.Stdout, os.Stderr))
 	}
 	if len(os.Args) == 2 && os.Args[1] == "--license" {
-		emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", os.Getenv("NO_COLOR") != "")
+		emitDeprecationWarning("--license", "thermal license", "", "deprecated-license-flag", os.Getenv("NO_COLOR") != "")
 		runLicense(thermal.Options{})
 		os.Exit(0)
 	}
@@ -435,14 +435,17 @@ func main() {
 	for _, warning := range repeatedFlagWarnings(os.Args[1:]) {
 		fmt.Fprintf(os.Stderr, "thermal: warning: %s\n", warning)
 	}
+	if opts.Verbose {
+		fmt.Fprintln(os.Stderr, "thermal: verbose diagnostics enabled (stderr only)")
+	}
 	requireCommandWidth(opts)
 	defer maybeCheckForUpdate(opts)
 
 	if usedLicenseFlag() {
-		emitDeprecationWarning("--license", "thermal license", "0.14.0", "deprecated-license-flag", opts.NoColor)
+		emitDeprecationWarning("--license", "thermal license", "", "deprecated-license-flag", opts.NoColor)
 	}
 	if opts.Tool == "nous" || opts.Tool == "nous-hermes" {
-		emitDeprecationWarning(opts.Tool, "hermes", "0.14.0", "deprecated-tool-nous", opts.NoColor)
+		emitDeprecationWarning(opts.Tool, "hermes", "", "deprecated-tool-nous", opts.NoColor)
 	}
 
 	// Subcommands that don't go through the normal tool flow.
@@ -845,8 +848,11 @@ func emitDeprecationWarningTo(w io.Writer, item, replacement, removalVersion, an
 		}
 	}
 
-	msg := fmt.Sprintf("%s is deprecated and will be removed in v%s; use %s (see docs/MIGRATION.md#%s)",
-		item, removalVersion, replacement, anchor)
+	msg := fmt.Sprintf("%s is deprecated; use %s", item, replacement)
+	if removalVersion != "" {
+		msg = fmt.Sprintf("%s is deprecated and will be removed in v%s; use %s", item, removalVersion, replacement)
+	}
+	msg += "\n  details: https://jadmadi.net/project/thermal/migration#" + anchor
 
 	if colorEnabled {
 		fmt.Fprintf(w, "\033[33mthermal: warning:\033[0m %s\n", msg)
