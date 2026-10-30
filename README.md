@@ -252,6 +252,19 @@ validated once, and Thermal never silently falls back to a different window:
   are identified as paths and pointed at `--db`; report words used in the tool
   slot are named as report commands.
 
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success, including a requested stop and no-data success |
+| `1` | Data, IO, or network failure |
+| `2` | Usage error, invalid value, wrong slot, or width refusal |
+| `3` | Refused non-interactive mutation (for example `upgrade` without `--yes`) |
+
+`thermal --help`, `thermal upgrade --help`, and every report page print the
+same contract. `--offline` on `upgrade` fails closed with exit `1` because
+release metadata is not cached; it is never reported as an unknown flag.
+
 ### First run
 
 If no agent data is found, Thermal prints a short onboarding block and exits

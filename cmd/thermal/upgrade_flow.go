@@ -24,7 +24,7 @@ import (
 
 // upgradeOptions is the injectable state for the upgrade command.
 type upgradeOptions struct {
-	Check, DryRun, JSON, Yes, Force, Help bool
+	Check, DryRun, JSON, Yes, Force, Help, Offline bool
 
 	Out, Err io.Writer
 	Stdin    io.Reader
@@ -156,8 +156,15 @@ func parseUpgradeArgs(args []string) (upgradeOptions, error) {
 			if err := setBool(&o.Force); err != nil {
 				return o, err
 			}
-		case "--no-color", "-v", "--verbose", "-d":
+		case "--no-color", "-v", "--verbose", "-d", "--no-update-check":
 			// Accepted global flags with no effect on upgrade.
+		case "--offline":
+			o.Offline = true
+		case "--width", "--fresh":
+			return o, &usageError{
+				Message: fmt.Sprintf("%s is not applicable to upgrade", name),
+				Fix:     "upgrade output is fixed-width; use --json for structured output",
+			}
 		default:
 			if strings.HasPrefix(a, "-") {
 				return o, &usageError{
@@ -223,6 +230,16 @@ func runUpgrade(args []string, out, errW io.Writer) int {
 }
 
 func runUpgradeWithOptions(o upgradeOptions) int {
+	if o.Offline {
+		return o.emit(upgradeResult{
+			Type:    "upgrade",
+			Action:  "error",
+			Current: strings.TrimPrefix(o.CurrentVersion, "v"),
+			Mutated: false,
+			Error:   "offline: release metadata is not cached; run thermal upgrade --check without --offline",
+		}, 1)
+	}
+
 	// Refuse a mutation before any network call when it cannot be confirmed.
 	if !o.Check && !o.DryRun && !o.Yes {
 		if o.JSON || !o.TTY {

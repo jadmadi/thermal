@@ -28,6 +28,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Explicit `--last` Units, Repeated-Flag Warnings, and `--` Diagnostics](#changed-window-units)
   - [Changed: Live SIGINT Is a Clean Stop; SIGTERM Exits 143](#changed-live-signals)
   - [Changed: Version Metadata and Deprecation Warnings Are Truthful](#changed-version-deprecation-truth)
+  - [Changed: Exit Codes Are Documented and `upgrade` Accepts Global Flags](#changed-exit-codes-upgrade-flags)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -278,6 +279,37 @@ Read `stamped` and `semver` in JSON; do not infer a release from the presence of
 
 **Escape hatch**:
 The `--license` flag and `nous` alias still work during the deprecation window. Version JSON keeps its existing keys and adds only `stamped` and `semver`.
+
+---
+
+### Changed: Exit Codes Are Documented and `upgrade` Accepts Global Flags
+<a id="changed-exit-codes-upgrade-flags"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal upgrade.*--(offline|no-update-check|width|fresh)' .` or scripts that infer exit codes.
+- **Detection signal**: `thermal upgrade --check --offline` now exits `1` with `offline: release metadata is not cached`; `thermal upgrade --width 100` exits `2` with `not applicable`, not `unknown flag`.
+
+**What changed and why**:
+`upgrade` used a private parser that called every unrecognized global flag "unknown". The command now accepts `--offline` and `--no-update-check`, fails offline closed because release metadata is not cached, and rejects `--width`/`--fresh` with an explicit alternative. The `0/1/2/3` exit contract is printed in global help, `upgrade --help`, and the README.
+
+**Before / After**:
+```bash
+# Before
+thermal upgrade --check --offline
+thermal: unknown flag for upgrade: --offline
+exit 2
+
+# After
+thermal upgrade --check --offline
+thermal: offline: release metadata is not cached; run thermal upgrade --check without --offline
+exit 1
+```
+
+**The fix**:
+Drop `--offline` from `upgrade` if you want the network check; use `--check` or `--dry-run` for non-mutating previews. Treat exit `1` as a data/network failure, `2` as usage, and `3` as a refused non-interactive mutation.
+
+**Escape hatch**:
+`--no-update-check` is accepted as a no-op on `upgrade`; `--width` and `--fresh` are not applicable and return a runnable alternative.
 
 ---
 

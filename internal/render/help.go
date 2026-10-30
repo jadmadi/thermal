@@ -220,6 +220,12 @@ func RenderHelp(noColor bool) string {
 			},
 		},
 		{
+			Title: "Exit Codes:",
+			Items: []HelpItem{
+				{Name: "0 / 1 / 2 / 3", Desc: "ok · data/IO error · usage error · refused non-interactive mutation"},
+			},
+		},
+		{
 			Title: "Global & Engine Options:",
 			Items: []HelpItem{
 				{Name: "--db <path>", Desc: "Read one tool's data from a file or directory (requires --tool)"},

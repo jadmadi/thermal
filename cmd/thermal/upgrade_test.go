@@ -14,6 +14,56 @@ import (
 	"github.com/jadmadi/thermal/internal/thermal"
 )
 
+func TestParseUpgradeGlobalFlags(t *testing.T) {
+	o, err := parseUpgradeArgs([]string{"upgrade", "--check", "--offline", "--no-update-check"})
+	if err != nil {
+		t.Fatalf("offline/no-update-check: %v", err)
+	}
+	if !o.Offline {
+		t.Fatal("--offline did not set Offline")
+	}
+
+	for _, args := range [][]string{
+		{"upgrade", "--check", "--width", "100"},
+		{"upgrade", "--fresh"},
+	} {
+		if _, err := parseUpgradeArgs(args); err == nil || !strings.Contains(err.Error(), "not applicable") {
+			t.Fatalf("%v: err=%v, want not applicable", args, err)
+		}
+	}
+	if _, err := parseUpgradeArgs([]string{"upgrade", "--bogus"}); err == nil || !strings.Contains(err.Error(), "unknown flag") {
+		t.Fatalf("bogus err=%v", err)
+	}
+}
+
+func TestUpgradeOfflineFailsClosed(t *testing.T) {
+	var out, errOut strings.Builder
+	code := runUpgradeWithOptions(upgradeOptions{
+		Offline:        true,
+		JSON:           true,
+		Out:            &out,
+		Err:            &errOut,
+		CurrentVersion: "dev",
+	})
+	if code != 1 {
+		t.Fatalf("code=%d, want 1", code)
+	}
+	if !strings.Contains(out.String(), "offline") || strings.Contains(out.String(), "unknown flag") {
+		t.Fatalf("stdout=%q", out.String())
+	}
+}
+
+func TestExitCodesHelp(t *testing.T) {
+	out, code := helpOutput("", "", "", true)
+	if code != 0 || !strings.Contains(out, "Exit Codes:") || !strings.Contains(out, "0 / 1 / 2 / 3") {
+		t.Fatalf("global help exit codes: code=%d\n%s", code, out)
+	}
+	out, code = helpOutput("upgrade", "", "", true)
+	if code != 0 || !strings.Contains(out, "Exit codes: 0 ok") {
+		t.Fatalf("upgrade help exit codes: code=%d\n%s", code, out)
+	}
+}
+
 func TestFindAsset_ExactMatching(t *testing.T) {
 	assets := []asset{
 		{Name: "thermal_0.3.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://example.com/linux_amd64"},

@@ -1,22 +1,22 @@
 # Plan: Document exit codes and give upgrade global-flag parity
 
 ## Execution Steps
-- [ ] **Phase 1 — Exit constants and help block**: Add `exit.go` constants and
+- [x] **Phase 1 — Exit constants and help block**: Add `exit.go` constants and
   `printExitCodes`; render the four-line block in global and upgrade help.
   Acceptance: `TestExitCodeHelp` and `TestExitConstants` pass.
-- [ ] **Phase 2 — Global flag disposition**: Add `FlagRule` and the matrix for
+- [x] **Phase 2 — Global flag disposition**: Add `FlagRule` and the matrix for
   upgrade; accept `--offline`/`--no-update-check`, reject `--width`/`--fresh`
   with `not applicable` + `--json`, keep `--bogus` unknown. Acceptance:
   `TestUpgradeGlobalFlags` and `TestKnownGlobalNeverUnknown` pass.
-- [ ] **Phase 3 — Offline cache path**: Add `Offline`, `Source`, and a cached
+- [x] **Phase 3 — Offline cache path**: Add `Offline`, `Source`, and a cached
   release index; fail closed with a clear message; prove zero network on a dead
   API. Acceptance: `TestOfflineUsesCache`, `TestOfflineNoCache`,
   `TestOfflineNoNetwork`.
-- [ ] **Phase 4 — Exit-code matrix and docs**: Replace magic numbers with
+- [x] **Phase 4 — Exit-code matrix and docs**: Replace magic numbers with
   constants where safe, add the canonical table to `docs/CLI-CONTRACT.md`,
   README, MIGRATION, `project.jsonc`, and the gate. Acceptance:
   `TestExitCodeMatrix` and `simulated_user_gate.sh` pass.
-- [ ] **Phase 5 — Evidence and closure**: Record the flag matrix, offline
+- [x] **Phase 5 — Evidence and closure**: Record the flag matrix, offline
   behavior, and exit-code matrix; commit, certify, reconcile.
 
 ## Acceptance Command Ledger
@@ -43,7 +43,7 @@
 - Do not add a fifth exit code for "no update available"; it is `0`.
 
 ## Phase 6 — Attribution & Registry Closure
-- [ ] **Phase 6 — Attribution & Registry Closure**: (1) check every task
+- [x] **Phase 6 — Attribution & Registry Closure**: (1) check every task
   above; (2) commit with
   `fix(cli): document exit codes and accept global flags on upgrade
   (goals/cli-automation-exit-and-upgrade-parity/goal.md)`; (3) certify via

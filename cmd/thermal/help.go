@@ -319,6 +319,7 @@ var commandHelps = map[string]render.CommandHelp{
 		Description: []string{
 			"Replaces the running binary with the latest release. --check and --dry-run never download or mutate; a mutation requires a terminal confirmation or --yes.",
 			"Non-interactive mutation without --yes exits 3. --json emits exactly one object on stdout.",
+			"Exit codes: 0 ok · 1 data/IO error · 2 usage error · 3 refused. --offline fails closed because release metadata is not cached.",
 		},
 		Flags: []render.HelpFlag{
 			{"--check", "Report current, latest, and update availability; no mutation"},
@@ -326,6 +327,8 @@ var commandHelps = map[string]render.CommandHelp{
 			{"--json", "Emit one upgrade JSON object on stdout"},
 			{"--yes", "Confirm mutation without a prompt (required for non-TTY)"},
 			{"--force", "Reinstall the same version or downgrade to the latest release"},
+			{"--offline", "Refuse without network; release metadata is not cached"},
+			{"--no-update-check", "Accepted no-op; upgrade is explicit"},
 			{"-h, --help", "Show this page without upgrading"},
 		},
 		Examples: []string{"thermal upgrade --check", "thermal upgrade --dry-run --json", "thermal upgrade --yes"},
