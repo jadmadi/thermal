@@ -29,18 +29,9 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 ## Summary
 - **Total Goals**: 144
 - 🟡 **Ready to Execute (Pending)**: 0 (0 independent ⚡, 0 unblocked 🔗)
-- 🔵 **In Progress (Claimed)**: 1
-- 🟢 **Implemented**: 143 (0 verified 📜, 143 unbound ○, 0 unverified)
+- 🟢 **Implemented**: 144 (1 verified 📜, 143 unbound ○, 0 unverified)
 - 🎯 **By Tier**: 1 immediate (Tier 1), 143 roadmap (Tier 2), 0 nice-to-have (Tier 3), 0 wont-fix (Tier 4)
-- 📋 **Execution Tasks Progress**: 660/667 completed (98%)
-
----
-
-## 🔵 In Progress (Claimed Goals)
-
-| Goal Package | Tier | Mode | Agent | Status & Note | Started |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| [`dsh-v7-turn-model-fidelity`](dsh-v7-turn-model-fidelity/goal.md) | `🗺️ Roadmap` | `⚡ Indep` | `@golang-implementer` | version 7 turn and model fidelity | 0s ago |
+- 📋 **Execution Tasks Progress**: 667/667 completed (100%)
 
 ---
 
@@ -108,6 +99,7 @@ This index tracks all goal packages under `goals/`, their execution mode (Indepe
 | [`dns-aid-discovery`](dns-aid-discovery/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `4ce6090` |
 | [`docs-parity-and-human-simulation`](docs-parity-and-human-simulation/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `6f7117f` |
 | [`dsh-loader`](dsh-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `8ed687f` |
+| [`dsh-v7-turn-model-fidelity`](dsh-v7-turn-model-fidelity/goal.md) | `⚡ Indep` | 🚢 SHIP | verified 📜 | Git Commit | `cfb7e06` |
 | [`embedded-web-dashboard`](embedded-web-dashboard/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `4777f76` |
 | [`hermes-loader`](hermes-loader/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `45060c2` |
 | [`leaderboard-slice-preallocation`](leaderboard-slice-preallocation/goal.md) | `⚡ Indep` | 🚢 SHIP | unbound ○ | Git Commit | `2a2185a` |

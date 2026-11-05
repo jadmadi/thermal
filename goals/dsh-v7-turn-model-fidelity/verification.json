@@ -1,0 +1,57 @@
+{
+  "version": "sila/verification/v2",
+  "goal_slug": "dsh-v7-turn-model-fidelity",
+  "level": "L1",
+  "outcome": "passed",
+  "method": "evidence",
+  "spec_hash": "fde3039d6cfc757a1a5582e36b54021fa2b7f520fb1c0d0cd32b21f375ffa711",
+  "subject": {
+    "algorithm": "sha256",
+    "hash": "f516aa5095f105f9885e4b20f4e078b2889326dd1f770bdb65762e0c3c49a1ad",
+    "paths": [
+      {
+        "path": "AGENTS.md",
+        "kind": "file",
+        "hash": "5e1864ad82f44dcff4782894d5a5846d5eaac4542313eb543140af2de692cc08"
+      },
+      {
+        "path": "go.mod",
+        "kind": "file",
+        "hash": "f949481af639e22929b5f1d4ffd4e36afd86a8009cd53243ac6eb2e94c0b0385"
+      },
+      {
+        "path": "go.sum",
+        "kind": "file",
+        "hash": "ac181dca0889a9479489276d9adfb4e272ebc9697909bd67e3a95667f5147e65"
+      },
+      {
+        "path": "go.work",
+        "kind": "missing",
+        "hash": ""
+      },
+      {
+        "path": "go.work.sum",
+        "kind": "missing",
+        "hash": ""
+      },
+      {
+        "path": "internal/loaders/dsh.go",
+        "kind": "file",
+        "hash": "9410db9af94f9c0c5935a5382abd208aa3cae15ae293760d2feb48b2d346f43b"
+      },
+      {
+        "path": "internal/loaders/dsh_test.go",
+        "kind": "file",
+        "hash": "ea42eb9069710537851531bdda0db224c8ea2f800da32372a7afb818e593202e"
+      }
+    ]
+  },
+  "environment": {
+    "go_version": "go1.27.2",
+    "os": "linux",
+    "arch": "amd64",
+    "sila_version": "dev+010eae2f",
+    "bwrap": "bubblewrap 0.12.0"
+  },
+  "verified_at": "2026-11-05T04:43:33Z"
+}

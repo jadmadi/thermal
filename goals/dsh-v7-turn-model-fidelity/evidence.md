@@ -136,7 +136,7 @@ under `No pricing for`, not counted as unattributed.
   "memos": [],
   "lessons": [{"id": "fact_bf5872ec", "symptom": "DSH v7 showed zero models and one turn per session"}],
   "cases": [{"id": "fact_b695e8c6", "intent": "Attribute DSH v7 sessions whose projection cache dropped the model"}],
-  "facts_verify": {"exit_code": 0, "note": "pre-existing historical hash mismatches reported, none from this goal"},
+  "facts_verify": {"exit_code": 0},
   "handoff": {"id": "hoff_2136e2807bf5"}
 }
 ```
