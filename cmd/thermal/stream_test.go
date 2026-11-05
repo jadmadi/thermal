@@ -37,7 +37,10 @@ func streamEnv(home string) []string {
 	for _, key := range []string{"GROK_HOME", "DSH_HOME", "HERMES_HOME", "CODEX_HOME", "OPENCODE_HOME", "ZED_HOME", "AGY_HOME"} {
 		env = append(env, key+"=")
 	}
-	env = append(env, "HOME="+home, "XDG_DATA_HOME="+filepath.Join(home, ".local", "share"))
+	// os.UserHomeDir reads USERPROFILE on Windows and HOME elsewhere. Both
+	// must point at the fixture, or the child sees the runner's real home and
+	// prints the no-data inventory instead of a stream.
+	env = append(env, "HOME="+home, "USERPROFILE="+home, "XDG_DATA_HOME="+filepath.Join(home, ".local", "share"))
 	return env
 }
 
