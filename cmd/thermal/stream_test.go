@@ -4,10 +4,10 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,36 +69,35 @@ func TestLiveStreamClosesOnBrokenPipe(t *testing.T) {
 		}
 	}()
 
-	type readResult struct {
-		line string
-		err  error
+	type decodeResult struct {
+		payload map[string]any
+		raw     string
+		err     error
 	}
-	readCh := make(chan readResult, 1)
+	decodeCh := make(chan decodeResult, 1)
 	go func() {
-		line, err := bufio.NewReader(stdout).ReadString('\n')
-		readCh <- readResult{line: line, err: err}
+		var raw bytes.Buffer
+		dec := json.NewDecoder(io.TeeReader(stdout, &raw))
+		var payload map[string]any
+		err := dec.Decode(&payload)
+		decodeCh <- decodeResult{payload: payload, raw: raw.String(), err: err}
 	}()
 
-	var first string
+	var first decodeResult
 	select {
-	case r := <-readCh:
-		if r.err != nil {
-			t.Fatalf("read first line: %v; stderr=%s", r.err, stderr.String())
+	case first = <-decodeCh:
+		if first.err != nil {
+			t.Fatalf("read first snapshot: %v; stderr=%s", first.err, stderr.String())
 		}
-		first = r.line
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for the first snapshot; stderr=%s", stderr.String())
 	}
 
-	var payload map[string]any
-	if err := json.Unmarshal([]byte(first), &payload); err != nil {
-		t.Fatalf("first line is not JSON: %v\n%s", err, first)
+	if first.payload["type"] != "snapshot" || first.payload["snapshot"] == nil {
+		t.Fatalf("unexpected first payload: %s", first.raw)
 	}
-	if payload["type"] != "snapshot" || payload["snapshot"] == nil {
-		t.Fatalf("unexpected first payload: %s", first)
-	}
-	if !strings.Contains(first, `"type":"snapshot"`) {
-		t.Fatalf("first line is not compact NDJSON: %s", first)
+	if !strings.Contains(first.raw, `"type":"snapshot"`) {
+		t.Fatalf("first payload is not compact NDJSON: %s", first.raw)
 	}
 
 	// Close the consumer; the next periodic snapshot write must terminate the
