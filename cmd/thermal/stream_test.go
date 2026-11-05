@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -43,6 +44,9 @@ func streamEnv(home string) []string {
 func TestLiveStreamClosesOnBrokenPipe(t *testing.T) {
 	home := streamFixtureHome(t)
 	bin := filepath.Join(t.TempDir(), "thermal-stream-test")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
 	build := exec.Command("go", "build", "-o", bin, ".")
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, out)

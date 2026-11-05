@@ -152,12 +152,12 @@ func TestInventorySummary(t *testing.T) {
 }
 
 func TestDisplayHomePath(t *testing.T) {
-	home := "/home/tester"
+	home := filepath.FromSlash("/home/tester")
 	cases := map[string]string{
-		home:                       "~",
-		home + "/.codex":           "~/.codex",
-		home + "/.local/share/zed": "~/.local/share/zed",
-		"/opt/thermal/opencode.db": "/opt/thermal/opencode.db",
+		home:                          "~",
+		filepath.Join(home, ".codex"): filepath.Join("~", ".codex"),
+		filepath.Join(home, ".local", "share", "zed"):  filepath.Join("~", ".local", "share", "zed"),
+		filepath.FromSlash("/opt/thermal/opencode.db"): filepath.FromSlash("/opt/thermal/opencode.db"),
 	}
 	for path, want := range cases {
 		if got := displayHomePath(path, home); got != want {

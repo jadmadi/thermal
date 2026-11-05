@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -22,6 +23,19 @@ func sqliteHeaderFixture(t *testing.T) string {
 		t.Fatalf("write sqlite fixture: %v", err)
 	}
 	return p
+}
+
+// canonicalTestPath resolves a temp path the same way ValidateDBPath does.
+// macOS reports /private/var for /var, and Windows reports 8.3 short names
+// such as RUNNER~1 for the runner profile, so raw temp paths differ from the
+// canonical result on those systems.
+func canonicalTestPath(t *testing.T, p string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return p
+	}
+	return resolved
 }
 
 func TestToolPathShape(t *testing.T) {
@@ -61,8 +75,9 @@ func TestValidateDBPathSQLiteFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != p {
-		t.Fatalf("got %q, want %q", got, p)
+	want := canonicalTestPath(t, p)
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }
 
@@ -118,8 +133,9 @@ func TestValidateDBPathDirectoryWithDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != p {
-		t.Fatalf("got %q, want %q", got, p)
+	want := canonicalTestPath(t, p)
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }
 
@@ -137,8 +153,9 @@ func TestValidateDBPathDirectoryTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != dir {
-		t.Fatalf("got %q, want %q", got, dir)
+	want := canonicalTestPath(t, dir)
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }
 
@@ -182,6 +199,9 @@ func TestEnrichDefaultDataErrorReport(t *testing.T) {
 }
 
 func TestClassifyStatErrorLoop(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows reports a different errno message for symlink loops")
+	}
 	dir := t.TempDir()
 	a := filepath.Join(dir, "a")
 	b := filepath.Join(dir, "b")
@@ -205,6 +225,9 @@ func TestClassifyStatErrorLoop(t *testing.T) {
 }
 
 func TestClassifyStatErrorNotDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows reports a different errno message for ENOTDIR")
+	}
 	dir := t.TempDir()
 	file := filepath.Join(dir, "file")
 	if err := os.WriteFile(file, []byte("x"), 0o644); err != nil {
@@ -300,14 +323,16 @@ func TestLoadToolDataDirectoryOverrideUsesExpectedFile(t *testing.T) {
 	if _, err := LoadToolData(thermal.ToolOpenCode, info, dir); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != expected {
-		t.Fatalf("loader path %q, want %q", gotPath, expected)
+	want := canonicalTestPath(t, expected)
+	if gotPath != want {
+		t.Fatalf("loader path %q, want %q", gotPath, want)
 	}
 }
 
 func TestConfigOverrideMissingExpectedFileWarns(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("THERMAL_CONFIG", "")
 	cfgDir := filepath.Join(home, ".config", "thermal")
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
