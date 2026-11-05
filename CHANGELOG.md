@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **loaders:** read DSH v7 turn counts and session models ([cfb7e06](https://github.com/jadmadi/thermal/commit/cfb7e0616a4019166267e70dd2e72dd3531f988a))
+
 ## [0.22.0](https://github.com/jadmadi/thermal/compare/v0.21.0...v0.22.0) (2026-10-30)
 
 
