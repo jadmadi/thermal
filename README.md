@@ -790,7 +790,7 @@ Thermal reads usage data from installed AI coding tools:
 - **Muse**: Reads the `session-index.db` session index (prompt counts, model ids, timestamps). Activity-only: the index carries no token or cost telemetry
 - **Claude**: Scans `projects/*/*.jsonl` for assistant `message.usage` token counts and model ids. No cost fields exist in transcripts
 - **Droid**: Scans `sessions/*/*.jsonl` message records for activity. Session files carry no token or cost telemetry
-- **DeepSeek (DSH)**: Reads JSON session cache files from `~/.dsh/storages/session_projcache/sessions/*.json` (and `session_projcache.json`) for fine-grained token usage (`uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`), turn counts, and model tracking. Honors `DSH_HOME`, falls back to `~/.dsh`
+- **DeepSeek (DSH)**: Reads JSON session cache files from `~/.dsh/storages/session_projcache/sessions/*.json` (and `session_projcache.json`) for fine-grained token usage (`uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`). Turn counts come from `sessionStats`, then `turnBoundary.lastTurn` for version 7 records. Models come from `modelSelection`, or, when it is absent, the first request event in `~/.dsh/sessions/*/*/session*.jsonl.zstd`. Honors `DSH_HOME`, falls back to `~/.dsh`
 - **Nous Hermes**: Reads the SQLite database from `~/.hermes/state.db` (honoring `HERMES_HOME`) for sessions, disjoint token usage (input, output, cache read/write, reasoning), cost estimates, and per-model breakdowns
 
 Loaders also record per-day token types, recorded cost, and the models used, where the source provides them. Period reports fold those day rows.

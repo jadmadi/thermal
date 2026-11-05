@@ -71,7 +71,7 @@ thermal/
 * **Grok (`grok.go`)**: Scans `<grok-home>/sessions/*/*/updates.jsonl` for deduplicated `turn_completed` events (`prompt_id` -> `turn_id` -> `_meta.eventId`); `costUsdTicks` at `1e-10` USD; subtracts cache from input and reasoning from output.
 * **Muse (`muse.go`) & Droid (`droid.go`)**: Activity-only (`~/.local/share/muse/session-index.db` prompt counts; `~/.factory/sessions/*/*.jsonl` message records).
 * **Claude (`claude.go`)**: Scans `~/.claude/projects/*/*.jsonl` for `message.usage` and model ids; Cost is 0.
-* **DeepSeek (`dsh.go`)**: Scans `~/.dsh/storages/session_projcache/sessions/*.json` + monolithic `session_projcache.json` (`DSH_HOME`), mapping `uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, and `identity.cwd`.
+* **DeepSeek (`dsh.go`)**: Scans `~/.dsh/storages/session_projcache/sessions/*.json` + monolithic `session_projcache.json` (`DSH_HOME`), mapping `uncachedInputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, and `identity.cwd`. Version 7 dropped `sessionStats` and `modelSelection`: turns take the larger of `sessionStats.val.turns` and `turnBoundary.val.lastTurn`, and a missing model is head-decoded from `request/context` (then `request/header`) in `~/.dsh/sessions/<flattened-cwd>/<id>/session*.jsonl.zstd` using the existing zstd dependency. A model switch inside a live session is not re-read, because the live source signature covers `storages` only.
 * **Nous Hermes (`hermes.go`)**: Reads `~/.hermes/state.db` (`HERMES_HOME`) `sessions` and `session_model_usage` (`cwd` -> `ProjectKey`).
 
 ---

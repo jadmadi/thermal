@@ -4,10 +4,14 @@
 package loaders
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 func TestLoadDshData_MultiSessionDir(t *testing.T) {
@@ -428,5 +432,366 @@ func TestParseDshTimestamp(t *testing.T) {
 		if ok {
 			t.Errorf("parseDshTimestamp(%v) expected false, got true", inv)
 		}
+	}
+}
+
+// dshTestCreatedAt is 2026-11-05 in the local timezone.
+const dshTestCreatedAt = int64(1793846091097)
+
+// dshV7Rows builds a version 7 projection row set. A zero value omits the
+// optional row so the tests exercise the real absence, not an empty object.
+func dshV7Rows(lastTurn int, uncachedInput int64, model string, statsTurns int) map[string]any {
+	rows := map[string]any{
+		"tokenUsage": map[string]any{
+			"val": map[string]any{
+				"totals": map[string]any{
+					"uncachedInputTokens": uncachedInput,
+					"outputTokens":        int64(10),
+					"cacheReadTokens":     int64(0),
+					"cacheWriteTokens":    int64(0),
+				},
+			},
+		},
+	}
+	if lastTurn > 0 {
+		rows["turnBoundary"] = map[string]any{"val": map[string]any{"lastTurn": lastTurn}}
+	}
+	if statsTurns > 0 {
+		rows["sessionStats"] = map[string]any{"val": map[string]any{"turns": statsTurns}}
+	}
+	if model != "" {
+		rows["modelSelection"] = map[string]any{
+			"val": map[string]any{
+				"lastUsed": map[string]any{"model": model},
+			},
+		}
+	}
+	return rows
+}
+
+func writeDshV7Projection(t *testing.T, root, id string, rows map[string]any) {
+	t.Helper()
+	dir := filepath.Join(root, "storages", "session_projcache", "sessions")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("create projection dir: %v", err)
+	}
+	payload := map[string]any{
+		"version": 7,
+		"record": map[string]any{
+			"identity": map[string]any{
+				"formatVersion": 4,
+				"createdAt":     dshTestCreatedAt,
+				"cwd":           "/home/user/repo",
+			},
+			"rows": rows,
+		},
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal projection: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, id+".json"), data, 0o644); err != nil {
+		t.Fatalf("write projection: %v", err)
+	}
+}
+
+func writeDshZstdLog(t *testing.T, root, id string, lines ...string) {
+	t.Helper()
+	dir := filepath.Join(root, "sessions", "-home-user-repo", id)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("create log dir: %v", err)
+	}
+	var buf bytes.Buffer
+	zw, err := zstd.NewWriter(&buf)
+	if err != nil {
+		t.Fatalf("zstd writer: %v", err)
+	}
+	for _, line := range lines {
+		if _, err := zw.Write([]byte(line + "\n")); err != nil {
+			t.Fatalf("zstd write: %v", err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zstd close: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "session.v4.jsonl.zstd"), buf.Bytes(), 0o644); err != nil {
+		t.Fatalf("write log: %v", err)
+	}
+}
+
+func writeRawDshLog(t *testing.T, root, id string, payload []byte) {
+	t.Helper()
+	dir := filepath.Join(root, "sessions", "-home-user-repo", id)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("create log dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "session.v4.jsonl.zstd"), payload, 0o644); err != nil {
+		t.Fatalf("write raw log: %v", err)
+	}
+}
+
+func TestLoadDshData_TurnBoundaryFallback(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-v7-turns", dshV7Rows(8, 860037, "", 0))
+
+	_, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if daily[0].Turns != 8 {
+		t.Errorf("Turns = %d, want 8 from turnBoundary.lastTurn", daily[0].Turns)
+	}
+}
+
+func TestLoadDshData_TurnBoundaryWinsOverSessionStats(t *testing.T) {
+	cases := []struct {
+		name      string
+		lastTurn  int
+		statsTurn int
+		want      int
+	}{
+		{name: "lastTurn higher", lastTurn: 5, statsTurn: 2, want: 5},
+		{name: "stats higher", lastTurn: 2, statsTurn: 5, want: 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeDshV7Projection(t, root, "s-max-turns", dshV7Rows(tc.lastTurn, 100, "", tc.statsTurn))
+
+			_, daily, _, err := LoadDshData(root)
+			if err != nil {
+				t.Fatalf("LoadDshData failed: %v", err)
+			}
+			if len(daily) != 1 {
+				t.Fatalf("expected 1 daily row, got %d", len(daily))
+			}
+			if daily[0].Turns != tc.want {
+				t.Errorf("Turns = %d, want %d", daily[0].Turns, tc.want)
+			}
+		})
+	}
+}
+
+func TestLoadDshData_TurnFallbackWithoutSources(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-no-turns", dshV7Rows(0, 500, "", 0))
+
+	_, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if daily[0].Turns != 1 {
+		t.Errorf("Turns = %d, want the one-turn fallback", daily[0].Turns)
+	}
+}
+
+func TestLoadDshData_ModelFromSessionLog(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-model", dshV7Rows(1, 1000, "", 0))
+	writeDshZstdLog(t, root, "s-model",
+		`{"type":"session","version":4,"id":"s-model"}`,
+		`{"type":"request/context","seq":2,"data":{"provider":"opencode-go","model":"DeepSeek-V4.1-Flash"}}`,
+	)
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	mt, ok := daily[0].Models["deepseek-v4.1-flash"]
+	if !ok {
+		t.Fatalf("model not attributed, got %+v", daily[0].Models)
+	}
+	if mt.Input != 1000 {
+		t.Errorf("model input = %d, want 1000", mt.Input)
+	}
+	if summary.ModelBreakdown["deepseek-v4.1-flash"] != 1 {
+		t.Errorf("ModelBreakdown = %+v, want one deepseek-v4.1-flash session", summary.ModelBreakdown)
+	}
+}
+
+func TestLoadDshData_ModelFromRequestHeader(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-header", dshV7Rows(1, 700, "", 0))
+	writeDshZstdLog(t, root, "s-header",
+		`{"type":"session","version":4,"id":"s-header"}`,
+		`{"type":"request/header","seq":3,"data":{"header":{"config":{"provider":"opencode-go","model":"deepseek-flash"}}}}`,
+	)
+
+	_, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if _, ok := daily[0].Models["deepseek-flash"]; !ok {
+		t.Errorf("header model not attributed, got %+v", daily[0].Models)
+	}
+}
+
+func TestLoadDshData_ModelSelectionSkipsLog(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-selected", dshV7Rows(1, 1000, "Atria-Dawn-Preview", 0))
+	writeRawDshLog(t, root, "s-selected", []byte("not a zstd frame"))
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(summary.Warnings) != 0 {
+		t.Errorf("modelSelection session opened its log, warnings: %v", summary.Warnings)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if _, ok := daily[0].Models["atria-dawn-preview"]; !ok {
+		t.Errorf("modelSelection model missing, got %+v", daily[0].Models)
+	}
+}
+
+func TestLoadDshData_ModelLogCorruptWarns(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-corrupt", dshV7Rows(1, 1000, "", 0))
+	writeRawDshLog(t, root, "s-corrupt", []byte("not a zstd frame"))
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if summary.LifetimeTokens != 1010 {
+		t.Errorf("LifetimeTokens = %d, want 1010 (tokens must survive a bad log)", summary.LifetimeTokens)
+	}
+	if len(daily) != 1 || daily[0].Turns != 1 {
+		t.Fatalf("expected the session to stay active, got %+v", daily)
+	}
+	if len(summary.Warnings) != 1 {
+		t.Fatalf("Warnings = %v, want exactly one decode warning", summary.Warnings)
+	}
+	if !strings.Contains(summary.Warnings[0], "session.v4.jsonl.zstd") {
+		t.Errorf("warning does not name the log: %q", summary.Warnings[0])
+	}
+}
+
+func TestLoadDshData_ModelLogMissingSilent(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-no-log", dshV7Rows(1, 1000, "", 0))
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(summary.Warnings) != 0 {
+		t.Errorf("missing log produced warnings: %v", summary.Warnings)
+	}
+	if len(daily) != 1 || len(daily[0].Models) != 0 {
+		t.Errorf("expected an unattributed session, got %+v", daily)
+	}
+}
+
+func TestLoadDshData_ModelLogWithoutRequestSilent(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-no-request", dshV7Rows(1, 1000, "", 0))
+	writeDshZstdLog(t, root, "s-no-request",
+		`{"type":"session","version":4,"id":"s-no-request"}`,
+		`{"type":"assistant/message","data":{"role":"assistant"}}`,
+	)
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(summary.Warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", summary.Warnings)
+	}
+	if len(daily) != 1 || len(daily[0].Models) != 0 {
+		t.Errorf("expected an unattributed session, got %+v", daily)
+	}
+}
+
+func TestLoadDshData_ModelLogWithoutModelSilent(t *testing.T) {
+	root := t.TempDir()
+	writeDshV7Projection(t, root, "s-no-model", dshV7Rows(1, 1000, "", 0))
+	writeDshZstdLog(t, root, "s-no-model",
+		`{"type":"request/context","seq":2,"data":{"provider":"opencode-go"}}`,
+	)
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(summary.Warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", summary.Warnings)
+	}
+	if len(daily) != 1 || len(daily[0].Models) != 0 {
+		t.Errorf("expected an unattributed session, got %+v", daily)
+	}
+}
+
+func TestLoadDshData_TurnOnlySessionCounts(t *testing.T) {
+	root := t.TempDir()
+	rows := map[string]any{
+		"turnBoundary": map[string]any{"val": map[string]any{"lastTurn": 2}},
+		"tokenUsage": map[string]any{
+			"val": map[string]any{
+				"totals": map[string]any{
+					"uncachedInputTokens": int64(0),
+					"outputTokens":        int64(0),
+				},
+			},
+		},
+	}
+	writeDshV7Projection(t, root, "s-turn-only", rows)
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if summary.Sessions != 1 {
+		t.Errorf("Sessions = %d, want 1", summary.Sessions)
+	}
+	if len(daily) != 1 {
+		t.Fatalf("expected 1 daily row, got %d", len(daily))
+	}
+	if daily[0].Turns != 2 {
+		t.Errorf("Turns = %d, want 2", daily[0].Turns)
+	}
+	if daily[0].Tokens != 0 {
+		t.Errorf("Tokens = %d, want 0", daily[0].Tokens)
+	}
+}
+
+func TestLoadDshData_ZeroTokenSessionSkipsLog(t *testing.T) {
+	root := t.TempDir()
+	rows := map[string]any{
+		"tokenUsage": map[string]any{
+			"val": map[string]any{
+				"totals": map[string]any{
+					"uncachedInputTokens": int64(0),
+					"outputTokens":        int64(0),
+				},
+			},
+		},
+	}
+	writeDshV7Projection(t, root, "s-empty", rows)
+	writeRawDshLog(t, root, "s-empty", []byte("not a zstd frame"))
+
+	summary, daily, _, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if len(summary.Warnings) != 0 {
+		t.Errorf("zero-token session opened its log, warnings: %v", summary.Warnings)
+	}
+	if len(daily) != 0 {
+		t.Errorf("expected no daily rows, got %d", len(daily))
 	}
 }

@@ -4,6 +4,7 @@
 package loaders
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/jadmadi/thermal/internal/thermal"
+	"github.com/klauspost/compress/zstd"
 )
 
 // dshSessionWrapper handles individual session files which usually enclose
@@ -41,6 +43,7 @@ type dshRows struct {
 	SessionStats   *dshSessionStatsRow   `json:"sessionStats"`
 	ModelSelection *dshModelSelectionRow `json:"modelSelection"`
 	TokenUsage     *dshTokenUsageRow     `json:"tokenUsage"`
+	TurnBoundary   *dshTurnBoundaryRow   `json:"turnBoundary"`
 }
 
 type dshSessionStatsRow struct {
@@ -72,6 +75,14 @@ type dshTokenUsageRow struct {
 
 type dshTokenUsageVal struct {
 	Totals *dshTokenTotals `json:"totals"`
+}
+
+type dshTurnBoundaryRow struct {
+	Val *dshTurnBoundaryVal `json:"val"`
+}
+
+type dshTurnBoundaryVal struct {
+	LastTurn int `json:"lastTurn"`
 }
 
 type dshTokenTotals struct {
@@ -163,6 +174,11 @@ func extractDshSession(id string, rec dshRecord) dshSessionResult {
 	if rec.Rows.SessionStats != nil && rec.Rows.SessionStats.Val != nil {
 		turns = rec.Rows.SessionStats.Val.Turns
 		durationMs = rec.Rows.SessionStats.Val.LLMMs + rec.Rows.SessionStats.Val.ToolMs
+	}
+	// Version 7 stopped writing sessionStats. turnBoundary.lastTurn carries the
+	// turn index the session UI shows, so take the larger value when both exist.
+	if tb := rec.Rows.TurnBoundary; tb != nil && tb.Val != nil && tb.Val.LastTurn > turns {
+		turns = tb.Val.LastTurn
 	}
 
 	var model string
@@ -301,6 +317,165 @@ func loadDshSingleFile(path string) ([]dshSessionResult, error) {
 	return nil, nil
 }
 
+const (
+	dshModelLogLineCap     = 2000
+	dshModelLogWorkerLimit = 16
+)
+
+// dshLogEvent is the subset of a session event needed to recover the model.
+// DeepSeek records it twice: flat on request/context and nested on
+// request/header.
+type dshLogEvent struct {
+	Type string `json:"type"`
+	Data struct {
+		Model  string `json:"model"`
+		Header struct {
+			Config struct {
+				Model string `json:"model"`
+			} `json:"config"`
+		} `json:"header"`
+	} `json:"data"`
+}
+
+// dshSessionLogPath picks the event log inside one session directory.
+func dshSessionLogPath(dir string) string {
+	preferred := filepath.Join(dir, "session.v4.jsonl.zstd")
+	if fi, err := os.Stat(preferred); err == nil && fi.Mode().IsRegular() {
+		return preferred
+	}
+	matches, err := filepath.Glob(filepath.Join(dir, "session*.jsonl.zstd"))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	sort.Strings(matches)
+	return matches[0]
+}
+
+// dshModelLogIndex maps session ids to their event log. DeepSeek stores logs
+// at sessions/<flattened-cwd>/<session-id>/session*.jsonl.zstd.
+func dshModelLogIndex(sessionsRoot string) map[string]string {
+	index := make(map[string]string)
+	workspaces, err := os.ReadDir(sessionsRoot)
+	if err != nil {
+		return index
+	}
+	for _, ws := range workspaces {
+		if !ws.IsDir() {
+			continue
+		}
+		wsDir := filepath.Join(sessionsRoot, ws.Name())
+		sessions, err := os.ReadDir(wsDir)
+		if err != nil {
+			continue
+		}
+		for _, s := range sessions {
+			if !s.IsDir() {
+				continue
+			}
+			if _, exists := index[s.Name()]; exists {
+				continue
+			}
+			if p := dshSessionLogPath(filepath.Join(wsDir, s.Name())); p != "" {
+				index[s.Name()] = p
+			}
+		}
+	}
+	return index
+}
+
+// dshModelFromLog head-decodes a session event log and returns the first model
+// recorded in a request event. It stops at the first assistant message so a log
+// without request metadata cannot stream the whole file.
+func dshModelFromLog(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	dec, err := zstd.NewReader(f)
+	if err != nil {
+		return "", err
+	}
+	defer dec.Close()
+
+	scanner := newJSONLScanner(dec)
+	for lines := 0; scanner.Scan() && lines < dshModelLogLineCap; lines++ {
+		line := scanner.Bytes()
+		if bytes.Contains(line, []byte(`"assistant/message"`)) {
+			break
+		}
+		if !bytes.Contains(line, []byte(`"request/context"`)) &&
+			!bytes.Contains(line, []byte(`"request/header"`)) {
+			continue
+		}
+		var event dshLogEvent
+		if err := json.Unmarshal(line, &event); err != nil {
+			continue
+		}
+		if event.Data.Model != "" {
+			return modelName(event.Data.Model), nil
+		}
+		if event.Data.Header.Config.Model != "" {
+			return modelName(event.Data.Header.Config.Model), nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
+// fillDshModels attributes a model to sessions whose projection carries none,
+// using the zstd event log DeepSeek writes beside the projection cache. It
+// mutates results in place and returns warnings for unreadable logs.
+func fillDshModels(sessionsRoot string, results []dshSessionResult) []string {
+	var pending []int
+	for i := range results {
+		if results[i].active && results[i].model == "" && results[i].total > 0 {
+			pending = append(pending, i)
+		}
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+	index := dshModelLogIndex(sessionsRoot)
+	if len(index) == 0 {
+		return nil
+	}
+
+	var mu sync.Mutex
+	var warnings []string
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, dshModelLogWorkerLimit)
+
+	for _, i := range pending {
+		logPath, ok := index[results[i].id]
+		if !ok {
+			continue
+		}
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(idx int, path string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			model, err := dshModelFromLog(path)
+			if err != nil {
+				mu.Lock()
+				warnings = append(warnings, formatScanWarning(path, err))
+				mu.Unlock()
+				return
+			}
+			if model != "" {
+				results[idx].model = model
+			}
+		}(i, logPath)
+	}
+	wg.Wait()
+	return warnings
+}
+
 // LoadDshData scans DeepSeek harness (dsh) session cache records.
 // It scans ~/.dsh/storages/session_projcache/sessions/*.json in parallel,
 // supplements with ~/.dsh/storages/session_projcache.json when present,
@@ -398,6 +573,12 @@ func LoadDshData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 				break
 			}
 		}
+	}
+
+	if info.IsDir() {
+		// Version 7 projections no longer carry the model; the zstd event log
+		// does. Fill only the sessions that need it.
+		summary.Warnings = append(summary.Warnings, fillDshModels(filepath.Join(dataDir, "sessions"), sessionResults)...)
 	}
 
 	if len(sessionResults) == 0 {
