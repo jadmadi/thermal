@@ -7,12 +7,12 @@
   "spec_hash": "fde3039d6cfc757a1a5582e36b54021fa2b7f520fb1c0d0cd32b21f375ffa711",
   "subject": {
     "algorithm": "sha256",
-    "hash": "f516aa5095f105f9885e4b20f4e078b2889326dd1f770bdb65762e0c3c49a1ad",
+    "hash": "0cc8d9690b34b656bbd32601592f736a535c028aee25600220045ea763d5bd45",
     "paths": [
       {
         "path": "AGENTS.md",
         "kind": "file",
-        "hash": "5e1864ad82f44dcff4782894d5a5846d5eaac4542313eb543140af2de692cc08"
+        "hash": "be6841bd0fc5cf94c0105175a1ae17e2270808e41ee880eb30d836694ed8ec6f"
       },
       {
         "path": "go.mod",
@@ -53,5 +53,6 @@
     "sila_version": "dev+010eae2f",
     "bwrap": "bubblewrap 0.12.0"
   },
-  "verified_at": "2026-11-05T04:43:33Z"
+  "previous": "870312a324b81e559ac35958d41291f2cc83a60cf4c736a58fa2be47b0faeee2",
+  "verified_at": "2026-11-05T04:44:40Z"
 }

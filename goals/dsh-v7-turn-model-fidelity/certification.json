@@ -1,6 +1,6 @@
 {
   "goal_slug": "dsh-v7-turn-model-fidelity",
-  "certified_at": "2026-11-05T04:43:33.533235102Z",
+  "certified_at": "2026-11-05T04:44:40.970133724Z",
   "certified_by": "dsh",
   "evidence_file": "goals/dsh-v7-turn-model-fidelity/evidence.md",
   "note": "certified from review document: evidence.md",
@@ -8,7 +8,7 @@
   "facts_passed": 1,
   "facts_total": 1,
   "evidence_kind": "review_document",
-  "commit_sha": "cfb7e0616a4019166267e70dd2e72dd3531f988a",
+  "commit_sha": "f5451aeabea57bb3a3323fcd7ee1c6509be66901",
   "memory_required": true,
   "memory_verified": true,
   "memory": {
