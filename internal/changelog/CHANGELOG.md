@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0](https://github.com/jadmadi/thermal/compare/v0.22.2...v0.23.0) (2026-11-06)
+
+
+### Features
+
+* **cli:** add natural-language period and project leaderboards with multi-day DSH splitting ([d131379](https://github.com/jadmadi/thermal/commit/d1313799a0c2cae0bb4c569c51cca4c2dfc1f2d9))
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/klauspost/compress to v1.20.2 for GO-2026-6865 ([e1575eb](https://github.com/jadmadi/thermal/commit/e1575eb5d22f535ebc4b4cae52d99061110ebd77))
+
 ## [0.22.2](https://github.com/jadmadi/thermal/compare/v0.22.1...v0.22.2) (2026-11-05)
 
 
