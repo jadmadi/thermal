@@ -106,6 +106,38 @@ func TestProjectKeyFallback(t *testing.T) {
 	}
 }
 
+func TestProjectKeyContainerRepoDoesNotSwallowChildProjects(t *testing.T) {
+	root := evalTempDir(t)
+	lab := filepath.Join(root, "lab")
+	sila := filepath.Join(lab, "sila")
+	silaSub := filepath.Join(sila, "cli", "cmd")
+	if err := os.MkdirAll(silaSub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(lab, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(lab, ".git", "HEAD"), []byte("ref: refs/heads/main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(lab, ".gitignore"), []byte("# multi-project container\n*\n!.sila/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sila, "project.jsonc"), []byte("{}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := ProjectKey(sila); got != sila {
+		t.Errorf("ProjectKey(%q) = %q, want %q", sila, got, sila)
+	}
+	if got := ProjectKey(silaSub); got != sila {
+		t.Errorf("ProjectKey(%q) = %q, want %q", silaSub, got, sila)
+	}
+	if got := ProjectKey(lab); got != lab {
+		t.Errorf("ProjectKey(%q) = %q, want %q", lab, got, lab)
+	}
+}
+
 func TestAggregateProjectsMergesToolsAndWindows(t *testing.T) {
 	days := []ProjectDay{
 		{Project: "/repo/a", Day: "2026-09-10", Tool: "OpenCode", Tokens: 100, Input: 100, Turns: 2, Cost: 1.5},

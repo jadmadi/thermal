@@ -795,3 +795,47 @@ func TestLoadDshData_ZeroTokenSessionSkipsLog(t *testing.T) {
 		t.Errorf("expected no daily rows, got %d", len(daily))
 	}
 }
+
+func TestLoadDshData_MultiDaySessionSplitsAcrossDays(t *testing.T) {
+	root := t.TempDir()
+	// Created on 2026-11-05 (1793846091097), updated on 2026-11-06 (1793987969627).
+	rows := dshV7Rows(5, 1000, "", 0)
+	rows["workingActivity"] = map[string]any{
+		"val": map[string]any{
+			"updatedAt": int64(1793987969627),
+		},
+	}
+	writeDshV7Projection(t, root, "s-multiday", rows)
+	writeDshZstdLog(t, root, "s-multiday",
+		`{"type":"session","version":4,"id":"s-multiday"}`,
+		`{"type":"request/context","seq":2,"data":{"provider":"opencode-go","model":"DeepSeek-V4.1-Flash"}}`,
+		`{"type":"assistant/message","time":1793846100000,"data":{"turn":1,"message":{"source":{"model":"DeepSeek-V4.1-Flash"}},"usage":{"inputTokens":400,"outputTokens":4,"cacheReadTokens":0,"cacheWriteTokens":0,"totalTokens":404}}}`,
+		`{"type":"assistant/message","time":1793980000000,"data":{"turn":2,"message":{"source":{"model":"DeepSeek-V4.1-Flash"}},"usage":{"inputTokens":600,"outputTokens":6,"cacheReadTokens":0,"cacheWriteTokens":0,"totalTokens":606}}}`,
+	)
+
+	summary, daily, projects, err := LoadDshData(root)
+	if err != nil {
+		t.Fatalf("LoadDshData failed: %v", err)
+	}
+	if summary.Sessions != 1 {
+		t.Errorf("Sessions = %d, want 1", summary.Sessions)
+	}
+	if summary.LifetimeTokens != 1010 {
+		t.Errorf("LifetimeTokens = %d, want 1010", summary.LifetimeTokens)
+	}
+	if summary.ModelBreakdown["deepseek-v4.1-flash"] != 1 {
+		t.Errorf("ModelBreakdown = %+v, want 1 session", summary.ModelBreakdown)
+	}
+	if len(daily) != 2 {
+		t.Fatalf("expected 2 daily rows across 2026-11-05 and 2026-11-06, got %d: %+v", len(daily), daily)
+	}
+	if daily[0].Day != "2026-11-05" || daily[0].Tokens != 404 {
+		t.Errorf("daily[0] = %+v, want 2026-11-05 with 404 tokens", daily[0])
+	}
+	if daily[1].Day != "2026-11-06" || daily[1].Tokens != 606 {
+		t.Errorf("daily[1] = %+v, want 2026-11-06 with 606 tokens", daily[1])
+	}
+	if len(projects) != 2 {
+		t.Fatalf("expected 2 project day rows, got %d", len(projects))
+	}
+}

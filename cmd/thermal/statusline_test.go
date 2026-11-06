@@ -43,7 +43,7 @@ func captureOutput(t *testing.T, fn func()) (string, string) {
 func isolateStatuslineHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
-	for _, key := range []string{"HOME", "USERPROFILE", "XDG_DATA_HOME", "HERMES_HOME", "DSH_HOME", "CODEX_HOME", "OPENCODE_HOME", "ZED_HOME", "AGY_HOME"} {
+	for _, key := range []string{"HOME", "USERPROFILE", "XDG_DATA_HOME", "HERMES_HOME", "DSH_HOME", "CODEX_HOME", "OPENCODE_HOME", "ZED_HOME", "AGY_HOME", "ANTIGRAVITY_APP_DATA_DIR"} {
 		t.Setenv(key, "")
 	}
 	t.Setenv("HOME", home)

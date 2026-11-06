@@ -117,15 +117,31 @@ func resolveProjectKey(path string) string {
 	if resolved, err := filepath.EvalSymlinks(clean); err == nil {
 		clean = resolved
 	}
+	var candidate string
 	for dir := clean; ; {
 		if isRepoRoot(dir) {
-			return dir
+			// If an ancestor .git directory is a multi-project container (its
+			// .gitignore has a standalone "*" line ignoring child directories),
+			// do not collapse descendant project directories into it.
+			if dir == clean || !isContainerRepoRoot(dir) {
+				return dir
+			}
+			if candidate != "" {
+				return candidate
+			}
+			return clean
+		}
+		if candidate == "" && hasProjectMarker(dir) {
+			candidate = dir
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			break
 		}
 		dir = parent
+	}
+	if candidate != "" {
+		return candidate
 	}
 	return clean
 }
@@ -143,4 +159,27 @@ func isRepoRoot(dir string) bool {
 	}
 	_, err = os.Stat(filepath.Join(dir, ".git", "HEAD"))
 	return err == nil
+}
+
+func hasProjectMarker(dir string) bool {
+	if fi, err := os.Stat(filepath.Join(dir, "project.jsonc")); err == nil && !fi.IsDir() {
+		return true
+	}
+	if fi, err := os.Stat(filepath.Join(dir, ".sila")); err == nil && fi.IsDir() {
+		return true
+	}
+	return false
+}
+
+func isContainerRepoRoot(dir string) bool {
+	b, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.TrimSpace(line) == "*" {
+			return true
+		}
+	}
+	return false
 }

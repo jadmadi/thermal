@@ -96,6 +96,8 @@ func RenderHelp(noColor bool) string {
 		{
 			Title: "Dashboards & Views:",
 			Items: []HelpItem{
+				{Name: "today", Desc: "All-tool leaderboard for today (plus yesterday, lastweek, lastmonth, lastbilling, annual)"},
+				{Name: "project <slug>", Desc: "All-tool leaderboard scoped to one project (e.g. thermal project sila)"},
 				{Name: "live", Desc: "Real-time token burn monitor with velocity, flame & sparkline"},
 				{Name: "statusline", Desc: "Instant shell statusline and prompt helper (<3ms, alias: prompt)"},
 				{Name: "share", Desc: "Generate a stateless, private URL card for your streak"},
@@ -157,6 +159,8 @@ func RenderHelp(noColor bool) string {
 		desc string
 	}{
 		{"thermal", "All-tool leaderboard & streak heatmap"},
+		{"thermal today", "Leaderboard for today (or lastweek, lastmonth, lastbilling, annual)"},
+		{"thermal project sila", "Leaderboard scoped to a single git project"},
 		{"thermal weekly --chart", "Weekly bars for every installed tool"},
 		{"thermal opencode weekly --chart", "Weekly bars; requires OpenCode data (thermal sources)"},
 		{"thermal daily --help", "Scoped help for the daily report"},

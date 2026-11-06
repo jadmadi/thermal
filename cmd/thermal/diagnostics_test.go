@@ -42,7 +42,8 @@ func TestClassifyToken(t *testing.T) {
 		suggestion       string
 		suggestIsCommand bool
 	}{
-		{"today intent", "today", slotTool, classUnknown, "daily", true},
+		{"today command", "today", slotCommand, classKnown, "", false},
+		{"tody typo", "tody", slotTool, classUnknown, "today", true},
 		{"daly typo", "daly", slotTool, classUnknown, "daily", true},
 		{"weak typo", "weak", slotTool, classUnknown, "weekly", true},
 		{"cost intent", "cost", slotTool, classUnknown, "stats", true},
@@ -74,11 +75,11 @@ func TestClassifyToken(t *testing.T) {
 }
 
 func TestRenderTokenDiagnostic(t *testing.T) {
-	today := renderTokenDiagnostic(classifyToken("today", slotTool))
-	if !strings.Contains(today, `unknown command "today"`) {
+	today := renderTokenDiagnostic(classifyToken("tody", slotTool))
+	if !strings.Contains(today, `unknown command "tody"`) {
 		t.Fatalf("missing command label:\n%s", today)
 	}
-	if !strings.Contains(today, "did you mean: thermal daily?") {
+	if !strings.Contains(today, "did you mean: thermal today?") {
 		t.Fatalf("missing suggestion:\n%s", today)
 	}
 	if strings.Contains(today, "unknown tool") {

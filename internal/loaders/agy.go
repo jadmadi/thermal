@@ -561,6 +561,7 @@ func LoadAgyData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 					}
 					byProjectDay[key] = pd
 				}
+				pd.Tokens += int64(count)
 				pd.Turns += count
 			}
 		}

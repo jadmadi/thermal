@@ -28,44 +28,46 @@ const (
 )
 
 type Options struct {
-	Tool            string
-	DBPath          string
-	Weeks           int
-	Width           int
-	WidthSet        bool
-	JSON            bool
-	Format          string // "text", "json", "md", "markdown"
-	NoColor         bool
-	Verbose         bool
-	Report          string // "", "daily", "weekly", "monthly", "projects"
-	Since           string // YYYY-MM-DD or YYYYMMDD
-	Until           string
-	Last            int
-	LastSet         bool   // whether --last was explicitly provided
-	LastUnit        string // "day", "week", or "month" when a suffix was used
-	LastExplicit    bool   // true when --last carried a d/w/m suffix
-	WindowLabel     string // explicit window label for suffix forms
-	Order           string // "asc" or "desc", default "desc"
-	Breakdown       bool
-	Chart           bool          // print bar rows under report tables
-	StartOfWeek     string        // sunday..saturday, default sunday
-	Offline         bool          // never fetch pricing, use cache only
-	NoEstimate      bool          // report stored cost only, skip pricing
-	NoUpdateCheck   bool          // disable daily automatic update check
-	Sort            string        // tokens, cost, days, recent; default tokens
-	Top             int           // project rows to print, 0 means all
-	TopSet          bool          // whether --top was explicitly provided
-	Metric          string        // tokens or cost; analytics verbs
-	By              string        // tool or model; mix verb
-	Grain           string        // day, week, month; mix verb
-	Interval        time.Duration // polling interval for live monitor (live verb, default 1s)
-	Stream          bool          // stream continuous NDJSON live events (live verb)
-	Fresh           bool          // bypass cached statusline data; live sessions always start at launch
-	FlameCeiling    float64       // live flame ceiling in active metric units per minute
-	FlameCeilingSet bool          // whether FlameCeiling was explicitly set
-	Nerd            bool          // use Nerd Font glyphs in statusline
-	Plain           bool          // plain text output without glyphs or icons
-	RequireData     bool          // exit 1 when a read-only report has no data
+	Tool              string
+	DBPath            string
+	Weeks             int
+	Width             int
+	WidthSet          bool
+	JSON              bool
+	Format            string // "text", "json", "md", "markdown"
+	NoColor           bool
+	Verbose           bool
+	Report            string // "", "daily", "weekly", "monthly", "projects"
+	Since             string // YYYY-MM-DD or YYYYMMDD
+	Until             string
+	Last              int
+	LastSet           bool   // whether --last was explicitly provided
+	LastUnit          string // "day", "week", or "month" when a suffix was used
+	LastExplicit      bool   // true when --last carried a d/w/m suffix
+	WindowLabel       string // explicit window label for suffix forms
+	Order             string // "asc" or "desc", default "desc"
+	Breakdown         bool
+	Chart             bool          // print bar rows under report tables
+	StartOfWeek       string        // sunday..saturday, default sunday
+	Offline           bool          // never fetch pricing, use cache only
+	NoEstimate        bool          // report stored cost only, skip pricing
+	NoUpdateCheck     bool          // disable daily automatic update check
+	Sort              string        // tokens, cost, days, recent; default tokens
+	Top               int           // project rows to print, 0 means all
+	TopSet            bool          // whether --top was explicitly provided
+	Metric            string        // tokens or cost; analytics verbs
+	By                string        // tool or model; mix verb
+	Grain             string        // day, week, month; mix verb
+	Interval          time.Duration // polling interval for live monitor (live verb, default 1s)
+	Stream            bool          // stream continuous NDJSON live events (live verb)
+	Fresh             bool          // bypass cached statusline data; live sessions always start at launch
+	FlameCeiling      float64       // live flame ceiling in active metric units per minute
+	FlameCeilingSet   bool          // whether FlameCeiling was explicitly set
+	Nerd              bool          // use Nerd Font glyphs in statusline
+	Plain             bool          // plain text output without glyphs or icons
+	RequireData       bool          // exit 1 when a read-only report has no data
+	ProjectFilter     string        // project slug for scoped leaderboard (e.g. "sila")
+	LeaderboardWindow string        // human-readable leaderboard scope label
 }
 
 // ScanStats counts JSONL records that were read, skipped, or dropped. The
@@ -405,6 +407,21 @@ type ProjectOptions struct {
 	Order            string
 	Now              time.Time
 	RecordedCostDays map[string]bool // tool|day pairs whose daily row already had recorded cost
+}
+
+// LeaderboardOptions controls window and project filtering for the multi-tool
+// leaderboard. When Since, Until, Last, and Project are all empty, the
+// leaderboard covers all time across all projects.
+type LeaderboardOptions struct {
+	Since            string
+	Until            string
+	Last             int
+	Project          string // canonical ProjectKey when filtering by project
+	ProjectLabel     string // human display name (e.g. "sila")
+	WindowLabel      string // e.g. "today (2026-11-06)"
+	Estimate         bool
+	RecordedCostDays map[string]bool
+	Now              time.Time
 }
 
 // ModelRow aggregates one model across tools and time. Cost is estimated from

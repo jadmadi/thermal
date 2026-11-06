@@ -15,7 +15,7 @@ import (
 
 func isolateInventoryEnv(t *testing.T) {
 	t.Helper()
-	for _, key := range []string{"HERMES_HOME", "DSH_HOME", "CODEX_HOME", "OPENCODE_HOME", "ZED_HOME", "AGY_HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME"} {
+	for _, key := range []string{"HERMES_HOME", "DSH_HOME", "CODEX_HOME", "OPENCODE_HOME", "ZED_HOME", "AGY_HOME", "ANTIGRAVITY_APP_DATA_DIR", "XDG_DATA_HOME", "XDG_CONFIG_HOME"} {
 		t.Setenv(key, "")
 	}
 }

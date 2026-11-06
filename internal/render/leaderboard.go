@@ -77,6 +77,15 @@ func fireEmoji(streak int) string {
 // adds a line stating the recorded cost total, because the Cost column only
 // ever shows what a tool recorded and a reader should not have to add it up.
 func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool, topN ...int) string {
+	return RenderLeaderboardWithWindow(results, weeks, noColor, sortKey, estimate, "all time", topN...)
+}
+
+// RenderLeaderboardWithWindow renders the multi-tool leaderboard with a
+// custom window or project scope caption in the subtitle.
+func RenderLeaderboardWithWindow(results []thermal.ToolResult, weeks int, noColor bool, sortKey string, estimate bool, windowLabel string, topN ...int) string {
+	if strings.TrimSpace(windowLabel) == "" {
+		windowLabel = "all time"
+	}
 	top := 0
 	if len(topN) > 0 {
 		top = topN[0]
@@ -174,10 +183,17 @@ func RenderLeaderboard(results []thermal.ToolResult, weeks int, noColor bool, so
 	case "cost":
 		sortLabel = "cost"
 	}
-	for _, line := range WrapText(fmt.Sprintf("Ranked by %s · all time", sortLabel), width-4) {
+	for _, line := range WrapText(fmt.Sprintf("Ranked by %s · %s", sortLabel, windowLabel), width-4) {
 		sb.WriteString("  " + dim(line) + "\n")
 	}
 	sb.WriteString("\n")
+
+	if len(tokenResults) == 0 && len(activityResults) == 0 && windowLabel != "all time" {
+		for _, line := range WrapText(fmt.Sprintf("No tool activity recorded for %s.", windowLabel), width-4) {
+			sb.WriteString("  " + dim(line) + "\n")
+		}
+		sb.WriteString("\n")
+	}
 
 	if len(tokenResults) > 0 {
 		var tokenLines []string

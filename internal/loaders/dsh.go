@@ -40,10 +40,24 @@ type dshIdentity struct {
 }
 
 type dshRows struct {
-	SessionStats   *dshSessionStatsRow   `json:"sessionStats"`
-	ModelSelection *dshModelSelectionRow `json:"modelSelection"`
-	TokenUsage     *dshTokenUsageRow     `json:"tokenUsage"`
-	TurnBoundary   *dshTurnBoundaryRow   `json:"turnBoundary"`
+	SessionStats    *dshSessionStatsRow    `json:"sessionStats"`
+	ModelSelection  *dshModelSelectionRow  `json:"modelSelection"`
+	TokenUsage      *dshTokenUsageRow      `json:"tokenUsage"`
+	TurnBoundary    *dshTurnBoundaryRow    `json:"turnBoundary"`
+	WorkingActivity *dshWorkingActivityRow `json:"workingActivity"`
+	TimeContext     *dshTimeContextRow     `json:"timeContext"`
+}
+
+type dshWorkingActivityRow struct {
+	Val *struct {
+		UpdatedAt any `json:"updatedAt"`
+	} `json:"val"`
+}
+
+type dshTimeContextRow struct {
+	Val *struct {
+		LastMessageTime any `json:"lastMessageTime"`
+	} `json:"val"`
 }
 
 type dshSessionStatsRow struct {
@@ -92,6 +106,7 @@ type dshTokenTotals struct {
 	ReasoningTokens     int64 `json:"reasoningTokens"`
 	CacheReadTokens     int64 `json:"cacheReadTokens"`
 	CacheWriteTokens    int64 `json:"cacheWriteTokens"`
+	TotalTokens         int64 `json:"totalTokens"`
 }
 
 type dshMonolith struct {
@@ -146,20 +161,22 @@ func parseDshEpoch(n int64) (time.Time, bool) {
 }
 
 type dshSessionResult struct {
-	id         string
-	day        string
-	project    string
-	model      string
-	input      int64
-	output     int64
-	cacheRead  int64
-	cacheWrite int64
-	reasoning  int64
-	total      int64
-	turns      int
-	durationMs int64
-	active     bool
-	warning    string
+	id               string
+	day              string
+	endDay           string
+	project          string
+	model            string
+	input            int64
+	output           int64
+	cacheRead        int64
+	cacheWrite       int64
+	reasoning        int64
+	total            int64
+	turns            int
+	durationMs       int64
+	active           bool
+	skipSessionCount bool
+	warning          string
 }
 
 func extractDshSession(id string, rec dshRecord) dshSessionResult {
@@ -169,11 +186,30 @@ func extractDshSession(id string, rec dshRecord) dshSessionResult {
 	}
 	day := thermal.LocalDay(t.Local())
 
+	var endT time.Time
+	if rec.Rows.WorkingActivity != nil && rec.Rows.WorkingActivity.Val != nil {
+		if ut, ok := parseDshTimestamp(rec.Rows.WorkingActivity.Val.UpdatedAt); ok && ut.After(endT) {
+			endT = ut
+		}
+	}
+	if rec.Rows.TimeContext != nil && rec.Rows.TimeContext.Val != nil {
+		if mt, ok := parseDshTimestamp(rec.Rows.TimeContext.Val.LastMessageTime); ok && mt.After(endT) {
+			endT = mt
+		}
+	}
+	var endDay string
+	if !endT.IsZero() {
+		endDay = thermal.LocalDay(endT.Local())
+	}
+
 	var turns int
 	var durationMs int64
 	if rec.Rows.SessionStats != nil && rec.Rows.SessionStats.Val != nil {
 		turns = rec.Rows.SessionStats.Val.Turns
 		durationMs = rec.Rows.SessionStats.Val.LLMMs + rec.Rows.SessionStats.Val.ToolMs
+	}
+	if durationMs == 0 && endT.After(t) {
+		durationMs = endT.Sub(t).Milliseconds()
 	}
 	// Version 7 stopped writing sessionStats. turnBoundary.lastTurn carries the
 	// turn index the session UI shows, so take the larger value when both exist.
@@ -226,6 +262,7 @@ func extractDshSession(id string, rec dshRecord) dshSessionResult {
 	return dshSessionResult{
 		id:         id,
 		day:        day,
+		endDay:     endDay,
 		project:    project,
 		model:      model,
 		input:      input,
@@ -426,26 +463,220 @@ func dshModelFromLog(path string) (string, error) {
 	return "", nil
 }
 
-// fillDshModels attributes a model to sessions whose projection carries none,
-// using the zstd event log DeepSeek writes beside the projection cache. It
-// mutates results in place and returns warnings for unreadable logs.
-func fillDshModels(sessionsRoot string, results []dshSessionResult) []string {
+type dshAssistantMessageEvent struct {
+	Time any `json:"time"`
+	Data struct {
+		Turn    int `json:"turn"`
+		Message struct {
+			Source struct {
+				Model string `json:"model"`
+			} `json:"source"`
+		} `json:"message"`
+		Usage *dshTokenTotals `json:"usage"`
+	} `json:"data"`
+}
+
+// dshDailySlicesFromLog streams a multi-day session event log and partitions
+// its token and turn usage across the calendar days on which assistant messages
+// occurred. Any positive remainder from the projection totals is reconciled
+// onto the session's final active day so lifetime totals stay exact.
+func dshDailySlicesFromLog(path string, base dshSessionResult) ([]dshSessionResult, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	dec, err := zstd.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+	defer dec.Close()
+
+	type dayBucket struct {
+		input, output, cacheRead, cacheWrite, reasoning int64
+		model                                           string
+		turns                                           map[int]struct{}
+		msgCount                                        int
+	}
+	byDay := make(map[string]*dayBucket)
+	var dayOrder []string
+	defaultModel := base.model
+
+	scanner := newJSONLScanner(dec)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if defaultModel == "" && (bytes.Contains(line, []byte(`"request/context"`)) ||
+			bytes.Contains(line, []byte(`"request/header"`))) {
+			var event dshLogEvent
+			if err := json.Unmarshal(line, &event); err == nil {
+				if event.Data.Model != "" {
+					defaultModel = modelName(event.Data.Model)
+				} else if event.Data.Header.Config.Model != "" {
+					defaultModel = modelName(event.Data.Header.Config.Model)
+				}
+			}
+			continue
+		}
+		if !bytes.Contains(line, []byte(`"assistant/message"`)) {
+			continue
+		}
+		var ev dshAssistantMessageEvent
+		if err := json.Unmarshal(line, &ev); err != nil || ev.Data.Usage == nil {
+			continue
+		}
+		evDay := base.day
+		if t, ok := parseDshTimestamp(ev.Time); ok && !t.IsZero() {
+			evDay = thermal.LocalDay(t.Local())
+		}
+		m := modelName(ev.Data.Message.Source.Model)
+		if m == "" {
+			m = defaultModel
+		}
+
+		u := ev.Data.Usage
+		cr := u.CacheReadTokens
+		cw := u.CacheWriteTokens
+		reas := u.ReasoningTokens
+		out := u.OutputTokens
+		if reas > 0 && out > reas {
+			out -= reas
+		}
+		var in int64
+		if u.UncachedInputTokens > 0 {
+			in = u.UncachedInputTokens
+		} else if u.InputTokens > 0 {
+			if u.TotalTokens > 0 && u.InputTokens+u.OutputTokens+cr+cw == u.TotalTokens {
+				in = u.InputTokens
+			} else if u.InputTokens >= cr {
+				in = u.InputTokens - cr
+			} else {
+				in = u.InputTokens
+			}
+		}
+
+		b := byDay[evDay]
+		if b == nil {
+			b = &dayBucket{turns: make(map[int]struct{})}
+			byDay[evDay] = b
+			dayOrder = append(dayOrder, evDay)
+		}
+		b.input += in
+		b.output += out
+		b.cacheRead += cr
+		b.cacheWrite += cw
+		b.reasoning += reas
+		if m != "" {
+			b.model = m
+		}
+		if ev.Data.Turn > 0 {
+			b.turns[ev.Data.Turn] = struct{}{}
+		} else {
+			b.msgCount++
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	if len(dayOrder) == 0 {
+		return nil, nil
+	}
+
+	sort.Strings(dayOrder)
+	var sumIn, sumOut, sumCR, sumCW, sumReas int64
+	for _, d := range dayOrder {
+		b := byDay[d]
+		sumIn += b.input
+		sumOut += b.output
+		sumCR += b.cacheRead
+		sumCW += b.cacheWrite
+		sumReas += b.reasoning
+	}
+
+	// Reconcile any positive projection remainder onto the latest day bucket.
+	lastBucket := byDay[dayOrder[len(dayOrder)-1]]
+	if base.input > sumIn {
+		lastBucket.input += base.input - sumIn
+	}
+	if base.output > sumOut {
+		lastBucket.output += base.output - sumOut
+	}
+	if base.cacheRead > sumCR {
+		lastBucket.cacheRead += base.cacheRead - sumCR
+	}
+	if base.cacheWrite > sumCW {
+		lastBucket.cacheWrite += base.cacheWrite - sumCW
+	}
+	if base.reasoning > sumReas {
+		lastBucket.reasoning += base.reasoning - sumReas
+	}
+
+	slices := make([]dshSessionResult, 0, len(dayOrder))
+	for i, d := range dayOrder {
+		b := byDay[d]
+		tot := b.input + b.output + b.cacheRead + b.cacheWrite + b.reasoning
+		turns := len(b.turns) + b.msgCount
+		if turns <= 0 && tot > 0 {
+			turns = 1
+		}
+		if tot == 0 && turns == 0 {
+			continue
+		}
+		m := b.model
+		if m == "" {
+			m = defaultModel
+		}
+		dur := int64(0)
+		if i == 0 {
+			dur = base.durationMs
+		}
+		slices = append(slices, dshSessionResult{
+			id:               base.id,
+			day:              d,
+			endDay:           base.endDay,
+			project:          base.project,
+			model:            m,
+			input:            b.input,
+			output:           b.output,
+			cacheRead:        b.cacheRead,
+			cacheWrite:       b.cacheWrite,
+			reasoning:        b.reasoning,
+			total:            tot,
+			turns:            turns,
+			durationMs:       dur,
+			active:           true,
+			skipSessionCount: len(slices) > 0,
+		})
+	}
+	return slices, nil
+}
+
+// fillDshModels attributes a model to sessions whose projection carries none
+// and splits multi-day sessions across their active calendar days using the
+// zstd event log DeepSeek writes beside the projection cache.
+func fillDshModels(sessionsRoot string, results []dshSessionResult) ([]dshSessionResult, []string) {
 	var pending []int
 	for i := range results {
-		if results[i].active && results[i].model == "" && results[i].total > 0 {
+		r := results[i]
+		if !r.active || r.total <= 0 {
+			continue
+		}
+		multiDay := r.endDay != "" && r.endDay != r.day
+		if r.model == "" || multiDay {
 			pending = append(pending, i)
 		}
 	}
 	if len(pending) == 0 {
-		return nil
+		return results, nil
 	}
 	index := dshModelLogIndex(sessionsRoot)
 	if len(index) == 0 {
-		return nil
+		return results, nil
 	}
 
 	var mu sync.Mutex
 	var warnings []string
+	splitSlices := make(map[int][]dshSessionResult)
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, dshModelLogWorkerLimit)
 
@@ -460,6 +691,23 @@ func fillDshModels(sessionsRoot string, results []dshSessionResult) []string {
 			defer wg.Done()
 			defer func() { <-sem }()
 
+			r := results[idx]
+			if r.endDay != "" && r.endDay != r.day {
+				slices, err := dshSplitFromLogOrModel(path, r)
+				if err != nil {
+					mu.Lock()
+					warnings = append(warnings, formatScanWarning(path, err))
+					mu.Unlock()
+					return
+				}
+				if len(slices) > 0 {
+					mu.Lock()
+					splitSlices[idx] = slices
+					mu.Unlock()
+					return
+				}
+			}
+
 			model, err := dshModelFromLog(path)
 			if err != nil {
 				mu.Lock()
@@ -473,7 +721,27 @@ func fillDshModels(sessionsRoot string, results []dshSessionResult) []string {
 		}(i, logPath)
 	}
 	wg.Wait()
-	return warnings
+
+	if len(splitSlices) == 0 {
+		return results, warnings
+	}
+	expanded := make([]dshSessionResult, 0, len(results)+len(splitSlices))
+	for i, r := range results {
+		if slices, ok := splitSlices[i]; ok {
+			expanded = append(expanded, slices...)
+		} else {
+			expanded = append(expanded, r)
+		}
+	}
+	return expanded, warnings
+}
+
+func dshSplitFromLogOrModel(path string, base dshSessionResult) ([]dshSessionResult, error) {
+	slices, err := dshDailySlicesFromLog(path, base)
+	if err != nil {
+		return nil, err
+	}
+	return slices, nil
 }
 
 // LoadDshData scans DeepSeek harness (dsh) session cache records.
@@ -577,8 +845,10 @@ func LoadDshData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 
 	if info.IsDir() {
 		// Version 7 projections no longer carry the model; the zstd event log
-		// does. Fill only the sessions that need it.
-		summary.Warnings = append(summary.Warnings, fillDshModels(filepath.Join(dataDir, "sessions"), sessionResults)...)
+		// does, and multi-day sessions split usage by message timestamp.
+		var logWarnings []string
+		sessionResults, logWarnings = fillDshModels(filepath.Join(dataDir, "sessions"), sessionResults)
+		summary.Warnings = append(summary.Warnings, logWarnings...)
 	}
 
 	if len(sessionResults) == 0 {
@@ -597,19 +867,20 @@ func LoadDshData(dataDir string) (thermal.Summary, []thermal.DailyRow, []thermal
 	modelCounts := make(map[string]int64)
 
 	for _, res := range sessionResults {
-		summary.Sessions++
-		if res.durationMs > summary.LongestSessionMs {
-			summary.LongestSessionMs = res.durationMs
+		if !res.skipSessionCount {
+			summary.Sessions++
+			if res.durationMs > summary.LongestSessionMs {
+				summary.LongestSessionMs = res.durationMs
+			}
+			if res.model != "" {
+				modelCounts[res.model]++
+			}
 		}
 		summary.InputTokens += res.input
 		summary.OutputTokens += res.output
 		summary.CacheTokens += res.cacheRead + res.cacheWrite
 		summary.ReasoningTokens += res.reasoning
 		summary.LifetimeTokens += res.total
-
-		if res.model != "" {
-			modelCounts[res.model]++
-		}
 
 		agg := byDay[res.day]
 		if agg == nil {

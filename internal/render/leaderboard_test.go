@@ -309,3 +309,18 @@ func TestCostMarkersShared(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderLeaderboardWithWindow(t *testing.T) {
+	results := []thermal.ToolResult{
+		{Tool: thermal.ToolOpenCode, Name: "OpenCode", CurrentStreak: 2, TotalActivity: 5000, Summary: thermal.Summary{Cost: 1.50}},
+	}
+	out := RenderLeaderboardWithWindow(results, 52, true, "cost", true, "project sila · last month (2026-03)")
+	if !strings.Contains(out, "Ranked by cost · project sila · last month (2026-03)") {
+		t.Fatalf("expected custom window caption, got:\n%s", out)
+	}
+
+	emptyOut := RenderLeaderboardWithWindow(nil, 52, true, "", true, "today (2026-04-15)")
+	if !strings.Contains(emptyOut, "No tool activity recorded for today (2026-04-15).") {
+		t.Fatalf("expected empty window note, got:\n%s", emptyOut)
+	}
+}
