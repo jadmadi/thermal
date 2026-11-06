@@ -7,22 +7,131 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
-// IsPeriodPreset reports whether token is a natural-language period preset
-// recognized by the CLI.
 func IsPeriodPreset(token string) bool {
-	switch strings.ToLower(strings.TrimSpace(token)) {
-	case "today", "yesterday",
-		"lastweek", "last-week", "thisweek", "this-week",
-		"lastmonth", "last-month", "thismonth", "this-month",
-		"lastbilling", "last-billing", "billing", "thisbilling", "this-billing",
-		"annual", "year", "ytd":
-		return true
+	_, _, ok := ConsumePeriodPhrase([]string{token})
+	return ok
+}
+
+func ConsumePeriodPhrase(tokens []string) (canon string, consumed int, ok bool) {
+	if len(tokens) == 0 {
+		return "", 0, false
 	}
-	return false
+	t0 := strings.ToLower(strings.TrimSpace(tokens[0]))
+	if t0 == "" {
+		return "", 0, false
+	}
+	if len(tokens) >= 3 {
+		t1 := strings.ToLower(strings.TrimSpace(tokens[1]))
+		t2 := strings.ToLower(strings.TrimSpace(tokens[2]))
+		if t0 == "last" || t0 == "past" {
+			if n, err := strconv.Atoi(t1); err == nil && n >= 1 && n <= 3650 {
+				switch t2 {
+				case "day", "days", "d":
+					return fmt.Sprintf("%dd", n), 3, true
+				case "week", "weeks", "w":
+					return fmt.Sprintf("%dw", n), 3, true
+				case "month", "months", "m":
+					return fmt.Sprintf("%dm", n), 3, true
+				}
+			}
+		}
+	}
+	if len(tokens) >= 2 {
+		t1 := strings.ToLower(strings.TrimSpace(tokens[1]))
+		switch t0 {
+		case "this":
+			switch t1 {
+			case "week":
+				return "thisweek", 2, true
+			case "month":
+				return "thismonth", 2, true
+			case "billing":
+				return "billing", 2, true
+			case "year":
+				return "annual", 2, true
+			}
+		case "last", "past":
+			switch t1 {
+			case "week":
+				return "lastweek", 2, true
+			case "month":
+				return "lastmonth", 2, true
+			case "billing":
+				return "lastbilling", 2, true
+			case "year":
+				return "lastyear", 2, true
+			}
+			if unitTok, ok := parseCompactPeriodToken(t1); ok {
+				return unitTok, 2, true
+			}
+		case "prev", "previous":
+			switch t1 {
+			case "week":
+				return "prevweek", 2, true
+			case "month":
+				return "prevmonth", 2, true
+			case "billing":
+				return "lastbilling", 2, true
+			case "year":
+				return "lastyear", 2, true
+			}
+		}
+		if n, err := strconv.Atoi(t0); err == nil && n >= 1 && n <= 3650 {
+			switch t1 {
+			case "day", "days":
+				return fmt.Sprintf("%dd", n), 2, true
+			case "week", "weeks":
+				return fmt.Sprintf("%dw", n), 2, true
+			case "month", "months":
+				return fmt.Sprintf("%dm", n), 2, true
+			}
+		}
+	}
+	switch t0 {
+	case "today", "yesterday",
+		"lastweek", "last-week", "pastweek", "past-week",
+		"prevweek", "prev-week", "previousweek", "previous-week",
+		"thisweek", "this-week",
+		"lastmonth", "last-month", "pastmonth", "past-month",
+		"prevmonth", "prev-month", "previousmonth", "previous-month",
+		"thismonth", "this-month",
+		"lastbilling", "last-billing", "prevbilling", "prev-billing",
+		"billing", "thisbilling", "this-billing",
+		"annual", "year", "ytd", "thisyear", "this-year",
+		"lastyear", "last-year", "prevyear", "prev-year":
+		return t0, 1, true
+	}
+	if unitTok, ok := parseCompactPeriodToken(t0); ok {
+		return unitTok, 1, true
+	}
+	return "", 0, false
+}
+
+func parseCompactPeriodToken(s string) (string, bool) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	for _, pfx := range []string{"last-", "last", "past-", "past"} {
+		if strings.HasPrefix(s, pfx) && len(s) > len(pfx) {
+			s = s[len(pfx):]
+			break
+		}
+	}
+	if len(s) < 2 {
+		return "", false
+	}
+	unit := s[len(s)-1]
+	if unit != 'd' && unit != 'w' && unit != 'm' {
+		return "", false
+	}
+	n, err := strconv.Atoi(s[:len(s)-1])
+	if err != nil || n < 1 || n > 3650 {
+		return "", false
+	}
+	return fmt.Sprintf("%d%c", n, unit), true
 }
 
 // ResolvePeriodPreset maps a natural-language period token to a start date,
@@ -34,35 +143,46 @@ func ResolvePeriodPreset(token string, now time.Time, startOfWeek time.Weekday) 
 	cur := midnight(now)
 	todayStr := cur.Format("2006-01-02")
 
-	switch strings.ToLower(strings.TrimSpace(token)) {
+	t := strings.ToLower(strings.TrimSpace(token))
+	if canon, _, matched := ConsumePeriodPhrase(strings.Fields(t)); matched {
+		t = canon
+	}
+
+	switch t {
 	case "today":
 		return todayStr, todayStr, fmt.Sprintf("today (%s)", todayStr), true
 	case "yesterday":
 		y := cur.AddDate(0, 0, -1).Format("2006-01-02")
 		return y, y, fmt.Sprintf("yesterday (%s)", y), true
-	case "lastweek", "last-week":
+	case "lastweek", "last-week", "pastweek", "past-week":
+		s := cur.AddDate(0, 0, -6).Format("2006-01-02")
+		return s, todayStr, fmt.Sprintf("last week (%s to %s)", s, todayStr), true
+	case "prevweek", "prev-week", "previousweek", "previous-week":
 		thisWeekStart := WeekStart(cur, startOfWeek)
 		prevStart := thisWeekStart.AddDate(0, 0, -7)
 		prevEnd := thisWeekStart.AddDate(0, 0, -1)
 		s := prevStart.Format("2006-01-02")
 		u := prevEnd.Format("2006-01-02")
-		return s, u, fmt.Sprintf("last week (%s to %s)", s, u), true
+		return s, u, fmt.Sprintf("previous week (%s to %s)", s, u), true
 	case "thisweek", "this-week":
 		thisWeekStart := WeekStart(cur, startOfWeek)
 		s := thisWeekStart.Format("2006-01-02")
 		return s, todayStr, fmt.Sprintf("this week (%s to %s)", s, todayStr), true
-	case "lastmonth", "last-month":
+	case "lastmonth", "last-month", "pastmonth", "past-month":
+		s := cur.AddDate(0, 0, -29).Format("2006-01-02")
+		return s, todayStr, fmt.Sprintf("last month (%s to %s)", s, todayStr), true
+	case "prevmonth", "prev-month", "previousmonth", "previous-month":
 		firstThisMonth := time.Date(cur.Year(), cur.Month(), 1, 0, 0, 0, 0, cur.Location())
 		lastPrevMonth := firstThisMonth.AddDate(0, 0, -1)
 		firstPrevMonth := time.Date(lastPrevMonth.Year(), lastPrevMonth.Month(), 1, 0, 0, 0, 0, cur.Location())
 		s := firstPrevMonth.Format("2006-01-02")
 		u := lastPrevMonth.Format("2006-01-02")
-		return s, u, fmt.Sprintf("last month (%s)", firstPrevMonth.Format("2006-01")), true
+		return s, u, fmt.Sprintf("previous month (%s)", firstPrevMonth.Format("2006-01")), true
 	case "thismonth", "this-month":
 		firstThisMonth := time.Date(cur.Year(), cur.Month(), 1, 0, 0, 0, 0, cur.Location())
 		s := firstThisMonth.Format("2006-01-02")
 		return s, todayStr, fmt.Sprintf("this month (%s)", firstThisMonth.Format("2006-01")), true
-	case "lastbilling", "last-billing":
+	case "lastbilling", "last-billing", "prevbilling", "prev-billing":
 		firstThisMonth := time.Date(cur.Year(), cur.Month(), 1, 0, 0, 0, 0, cur.Location())
 		lastPrevMonth := firstThisMonth.AddDate(0, 0, -1)
 		firstPrevMonth := time.Date(lastPrevMonth.Year(), lastPrevMonth.Month(), 1, 0, 0, 0, 0, cur.Location())
@@ -75,10 +195,42 @@ func ResolvePeriodPreset(token string, now time.Time, startOfWeek time.Weekday) 
 		s := firstThisMonth.Format("2006-01-02")
 		u := lastThisMonth.Format("2006-01-02")
 		return s, u, fmt.Sprintf("billing (%s to %s)", s, u), true
-	case "annual", "year", "ytd":
+	case "annual", "year", "ytd", "thisyear", "this-year":
 		firstYear := time.Date(cur.Year(), time.January, 1, 0, 0, 0, 0, cur.Location())
 		s := firstYear.Format("2006-01-02")
 		return s, todayStr, fmt.Sprintf("annual (%d YTD)", cur.Year()), true
+	case "lastyear", "last-year", "prevyear", "prev-year":
+		prevY := cur.Year() - 1
+		s := fmt.Sprintf("%04d-01-01", prevY)
+		u := fmt.Sprintf("%04d-12-31", prevY)
+		return s, u, fmt.Sprintf("last year (%d)", prevY), true
+	}
+
+	if unitTok, ok := parseCompactPeriodToken(t); ok {
+		unit := unitTok[len(unitTok)-1]
+		n, _ := strconv.Atoi(unitTok[:len(unitTok)-1])
+		switch unit {
+		case 'd':
+			s := cur.AddDate(0, 0, -(n - 1)).Format("2006-01-02")
+			if n == 1 {
+				return todayStr, todayStr, fmt.Sprintf("today (%s)", todayStr), true
+			}
+			return s, todayStr, fmt.Sprintf("last %d days (%s to %s)", n, s, todayStr), true
+		case 'w':
+			days := 7 * n
+			s := cur.AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+			if n == 1 {
+				return s, todayStr, fmt.Sprintf("last 1 week (%s to %s)", s, todayStr), true
+			}
+			return s, todayStr, fmt.Sprintf("last %d weeks (%s to %s)", n, s, todayStr), true
+		case 'm':
+			days := 30 * n
+			s := cur.AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+			if n == 1 {
+				return s, todayStr, fmt.Sprintf("last 1 month (%s to %s)", s, todayStr), true
+			}
+			return s, todayStr, fmt.Sprintf("last %d months (%s to %s)", n, s, todayStr), true
+		}
 	}
 	return "", "", "", false
 }
