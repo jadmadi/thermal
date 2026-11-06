@@ -32,6 +32,7 @@ Thermal follows Semantic Versioning (`vMAJOR.MINOR.PATCH`). In accordance with o
   - [Changed: Partial JSONL Reads Are Counted and Warned](#changed-jsonl-partial-reads)
   - [Changed: Width, Legend, Sources, and Statusline Colour Honesty](#changed-terminal-output-integrity)
   - [Changed: Help Glossary and Namespace Routing](#changed-help-glossary-routing)
+  - [Added: Natural-Language Period and Project Leaderboards](#added-scoped-leaderboards)
 - [Upgrading to v0.20.1](#upgrading-to-v0201)
   - [Changed: Renamed `command-code` Canonical Display Name to `CMD`](#changed-rename-command-code-to-cmd)
 - [Upgrading to v0.20.2](#upgrading-to-v0202)
@@ -855,6 +856,46 @@ thermal trend --json | jq '{meanBasis, activeDays, band: .projection.bandMethod}
 
 **Escape hatch**:
 The underlying values are unchanged; only the denominator labels and prose are new. `--json` carries the machine-readable basis.
+
+---
+
+### Added: Natural-Language Period and Project Leaderboards
+<a id="added-scoped-leaderboards"></a>
+
+**Affected if**:
+- **Search pattern**: `grep -rnE 'thermal[[:space:]]+(today|yesterday|lastweek|lastmonth|lastbilling|annual|project)[[:space:]]' .`
+- **Detection signal**: `thermal today`, `thermal yesterday`, `thermal lastweek`, `thermal lastmonth`, `thermal lastbilling`, `thermal annual`, and `thermal project <slug>` now exit 0 and render the multi-tool `Token Warriors` and `Activity Hunters` leaderboard scoped to that window or project instead of exiting 2 with `thermal: unknown command "today"`.
+
+**What changed and why**:
+Previously, `today`, `yesterday`, and `project` were treated as unknown commands that exited 2 and suggested `thermal daily` or `thermal projects`. Users wanted the same ranked multi-tool leaderboard (`Token Warriors` and `Activity Hunters`, streaks, active days, tokens, cost breakdown, and unpriced model disclosures) filtered to natural-language time windows (`today`, `yesterday`, `lastweek`, `thisweek`, `lastmonth`, `thismonth`, `lastbilling`, `billing`, `annual`, `year`, `ytd`) or a specific git project (`thermal project <slug>`). These tokens are now first-class leaderboard commands and can be combined (for example `thermal project sila lastmonth`).
+
+**Before / After**:
+```bash
+# Before: exited 2 as an unknown command
+$ thermal today
+thermal: unknown command "today"
+  did you mean: thermal daily?
+
+# After: renders the multi-tool leaderboard scoped to the window or project
+$ thermal today
+$ thermal lastweek
+$ thermal lastmonth
+$ thermal lastbilling
+$ thermal annual
+$ thermal project sila
+$ thermal project sila lastmonth
+```
+
+**The fix**:
+Run any natural-language period preset or `thermal project <slug>` directly to view the scoped leaderboard, or pass `--json` for structured output:
+```bash
+thermal today
+thermal lastmonth --sort cost
+thermal project sila --json
+```
+
+**Escape hatch**:
+Bare `thermal` continues to render the all-time leaderboard with `"window": "all-time"`, and `thermal daily`, `thermal weekly`, `thermal monthly`, and `thermal projects` remain unchanged.
 
 ---
 

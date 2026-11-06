@@ -16,7 +16,7 @@ import (
 
 // devinCacheVersion bumps whenever the cached snapshot shape changes, so an
 // old cache file is ignored instead of decoded into stale zero fields.
-const devinCacheVersion = 6
+const devinCacheVersion = 7
 
 // DevinCache is a disk-backed snapshot of the expensive message_nodes
 // aggregation. Invalidation is keyed on canonical source database identity,

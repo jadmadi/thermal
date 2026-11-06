@@ -33,7 +33,9 @@ func TestResolveHelpTarget(t *testing.T) {
 		{"help tool", []string{"help", "opencode"}, "", "opencode", "", true},
 		{"unknown help", []string{"help", "nope"}, "", "", "nope", true},
 		{"unknown with flag", []string{"nope", "--help"}, "", "", "nope", true},
-		{"typo command", []string{"today", "--help"}, "", "", "today", true},
+		{"today command", []string{"today", "--help"}, "today", "", "", true},
+		{"project command", []string{"project", "--help"}, "project", "", "", true},
+		{"typo command", []string{"tody", "--help"}, "", "", "tody", true},
 		{"retired", []string{"dashboard", "--help"}, "dashboard", "", "", true},
 		{"statusline alias prompt", []string{"prompt", "--help"}, "prompt", "", "", true},
 		{"statusline alias status", []string{"status", "--help"}, "status", "", "", true},
@@ -56,7 +58,7 @@ func TestResolveHelpTarget(t *testing.T) {
 }
 
 func TestHelpPagesFitEightyColumns(t *testing.T) {
-	verbs := []string{"daily", "weekly", "monthly", "projects", "models", "stats", "mix", "trend", "live", "statusline", "share", "audit", "changelog", "upgrade", "version", "license", "help"}
+	verbs := []string{"daily", "weekly", "monthly", "projects", "models", "stats", "mix", "trend", "live", "statusline", "share", "audit", "changelog", "upgrade", "version", "license", "help", "today", "lastweek", "lastmonth", "lastbilling", "annual", "project"}
 	for _, verb := range verbs {
 		t.Run(verb, func(t *testing.T) {
 			out, code := helpOutput(verb, "", "", true)
@@ -147,11 +149,11 @@ func TestGlossaryHelp(t *testing.T) {
 }
 
 func TestHelpUnknownAndRetired(t *testing.T) {
-	unknown, code := helpOutput("", "", "today", true)
+	unknown, code := helpOutput("", "", "tody", true)
 	if code != 2 {
 		t.Fatalf("unknown help code=%d", code)
 	}
-	if !strings.Contains(unknown, `unknown command "today"`) || !strings.Contains(unknown, "did you mean: thermal daily?") {
+	if !strings.Contains(unknown, `unknown command "tody"`) || !strings.Contains(unknown, "did you mean: thermal today?") {
 		t.Fatalf("unknown help missing suggestion:\n%s", unknown)
 	}
 	if strings.Contains(unknown, "unknown tool") {

@@ -374,13 +374,19 @@ else
 fi
 
 echo -e "\n${BOLD}9f. Unknown-Token Diagnostics:${RESET}"
-run_check "Typo command" 2 error "${BIN_PATH}" today
+run_check "Typo command" 2 error "${BIN_PATH}" tody
 run_check "Wrong-slot report" 2 error "${BIN_PATH}" stats weekly
 run_check "Path token" 2 error "${BIN_PATH}" projects /tmp
 run_check "Unknown tool" 2 error "${BIN_PATH}" --tool nope
 run_check "Valid tool still works" 0 text "${BIN_PATH}" agy --no-color
-typo_out=$("${BIN_PATH}" today 2>&1 >/dev/null || true)
-if echo "${typo_out}" | grep -q 'did you mean: thermal daily?' && ! echo "${typo_out}" | grep -q 'unknown tool'; then
+run_check "Today leaderboard" 0 text "${BIN_PATH}" today --no-color
+run_check "Lastweek leaderboard" 0 text "${BIN_PATH}" lastweek --no-color
+run_check "Lastmonth leaderboard" 0 text "${BIN_PATH}" lastmonth --no-color
+run_check "Lastbilling leaderboard" 0 text "${BIN_PATH}" lastbilling --no-color
+run_check "Annual leaderboard" 0 text "${BIN_PATH}" annual --no-color
+run_check "Project missing slug" 2 error "${BIN_PATH}" project
+typo_out=$("${BIN_PATH}" tody 2>&1 >/dev/null || true)
+if echo "${typo_out}" | grep -q 'did you mean: thermal today?' && ! echo "${typo_out}" | grep -q 'unknown tool'; then
     echo -e "  ${GREEN}✔ [PASS]${RESET} typo is labeled as a command with a suggestion"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))

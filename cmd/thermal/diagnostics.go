@@ -74,6 +74,7 @@ var diagnosticCommandNames = []string{
 	"daily", "weekly", "monthly", "projects", "models", "stats", "mix", "trend",
 	"live", "statusline", "prompt", "status", "share", "sources", "audit", "changelog",
 	"upgrade", "version", "license", "help",
+	"today", "yesterday", "lastweek", "thisweek", "lastmonth", "thismonth", "lastbilling", "billing", "annual", "project",
 }
 
 var diagnosticToolNames = func() []string {
@@ -100,6 +101,9 @@ var diagnosticToolList = func() string {
 
 func isKnownCommandToken(t string) bool {
 	if _, ok := commandHelps[t]; ok {
+		return true
+	}
+	if periodHelpCanonical(t) != "" {
 		return true
 	}
 	if isReportWord(t) {

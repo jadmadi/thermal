@@ -370,6 +370,116 @@ var commandHelps = map[string]render.CommandHelp{
 		JSON:     "keys: type, name, author, license, covenant, commercial_licensing",
 		Related:  []string{"thermal version", "thermal audit"},
 	},
+	"today": {
+		Title:   "today",
+		Usage:   "thermal today [options]",
+		Summary: "All-tool leaderboard scoped to today",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard filtered to today's local sessions. Alias: yesterday.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--offline", Desc: "Use cached models.dev pricing only"},
+			{Name: "--json", Desc: "Emit the scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal today", "thermal yesterday", "thermal today --sort cost"},
+		JSON:     "keys: type, generatedAt, window, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal lastweek", "thermal lastmonth", "thermal daily"},
+	},
+	"lastweek": {
+		Title:   "lastweek",
+		Usage:   "thermal lastweek [options]",
+		Summary: "All-tool leaderboard for the previous week",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard for the completed previous calendar week. Use thisweek for the current week to date.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--start-of-week <day>", Desc: "Week start day: sunday-saturday (default: sunday)"},
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--json", Desc: "Emit the scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal lastweek", "thermal thisweek", "thermal lastweek --start-of-week monday"},
+		JSON:     "keys: type, generatedAt, window, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal today", "thermal lastmonth", "thermal weekly"},
+	},
+	"lastmonth": {
+		Title:   "lastmonth",
+		Usage:   "thermal lastmonth [options]",
+		Summary: "All-tool leaderboard for the previous month",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard for the completed previous calendar month (01 through month end). Use thismonth for the current month to date.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--json", Desc: "Emit the scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal lastmonth", "thermal thismonth", "thermal lastmonth --sort cost"},
+		JSON:     "keys: type, generatedAt, window, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal lastbilling", "thermal annual", "thermal monthly"},
+	},
+	"lastbilling": {
+		Title:   "lastbilling",
+		Usage:   "thermal lastbilling [options]",
+		Summary: "Leaderboard for the previous billing cycle",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard for the previous calendar billing cycle (day 01 through the last day of the previous month). Use billing for the current month cycle.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--json", Desc: "Emit the scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal lastbilling", "thermal billing", "thermal lastbilling --sort cost"},
+		JSON:     "keys: type, generatedAt, window, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal lastmonth", "thermal annual", "thermal monthly"},
+	},
+	"annual": {
+		Title:   "annual",
+		Usage:   "thermal annual [options]",
+		Summary: "All-tool leaderboard for the year to date",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard from January 1 of the current year through today. Aliases: year, ytd.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--json", Desc: "Emit the scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal annual", "thermal ytd", "thermal annual --sort tokens"},
+		JSON:     "keys: type, generatedAt, window, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal lastmonth", "thermal monthly", "thermal stats"},
+	},
+	"project": {
+		Title:   "project",
+		Usage:   "thermal project <slug> [period] [options]",
+		Summary: "All-tool leaderboard scoped to a single project",
+		Description: []string{
+			"Renders the Token Warriors and Activity Hunters leaderboard filtered to one git repository or project slug. Combine with a period preset (such as today, lastweek, lastmonth, lastbilling, or annual) to narrow the window.",
+		},
+		Flags: []render.HelpFlag{
+			{Name: "--sort <field>", Desc: "Rank by streak (default), tokens, or cost"},
+			{Name: "--top <N>", Desc: "Show only the top N tools in each table"},
+			{Name: "--no-estimate", Desc: "Recorded cost only; disable models.dev pricing estimates"},
+			{Name: "--json", Desc: "Emit the project-scoped leaderboard JSON object"},
+			{Name: "-h, --help", Desc: "Show this page"},
+		},
+		Examples: []string{"thermal project sila", "thermal project sila lastmonth", "thermal project sila --sort cost"},
+		JSON:     "keys: type, generatedAt, window, project, ranking, costBasis, unpricedModels, results, totals",
+		Related:  []string{"thermal projects", "thermal today", "thermal lastmonth"},
+	},
 }
 
 func helpHelpPage() render.CommandHelp {
@@ -447,18 +557,16 @@ var retiredHelp = map[string]string{
 }
 
 var helpSynonyms = map[string]string{
-	"today":     "daily",
-	"yesterday": "daily",
-	"week":      "weekly",
-	"weak":      "weekly",
-	"month":     "monthly",
-	"repo":      "projects",
-	"project":   "projects",
-	"model":     "models",
-	"cost":      "stats",
-	"spend":     "stats",
-	"status":    "statusline",
-	"prompt":    "statusline",
+	"tody":   "today",
+	"week":   "weekly",
+	"weak":   "weekly",
+	"month":  "monthly",
+	"repo":   "projects",
+	"model":  "models",
+	"cost":   "stats",
+	"spend":  "stats",
+	"status": "statusline",
+	"prompt": "statusline",
 }
 
 var helpCandidates = func() []string {
@@ -466,6 +574,7 @@ var helpCandidates = func() []string {
 		"daily", "weekly", "monthly", "projects", "models", "stats", "mix", "trend",
 		"live", "statusline", "share", "audit", "changelog", "upgrade", "version",
 		"license", "help", "prompt", "status",
+		"today", "yesterday", "lastweek", "thisweek", "lastmonth", "thismonth", "lastbilling", "billing", "annual", "project",
 	}
 	for _, e := range toolHelpEntries {
 		names = append(names, e.Canonical)
@@ -544,6 +653,9 @@ func resolveHelpTarget(args []string) (verb, tool, unknown string, help bool) {
 		return p0, tool, "", true
 	}
 	if _, ok := commandHelps[p0]; ok {
+		return p0, "", "", true
+	}
+	if periodHelpCanonical(p0) != "" {
 		return p0, "", "", true
 	}
 	if _, ok := findToolEntry(p0); ok {
@@ -675,6 +787,9 @@ func helpOutput(verb, tool, unknown string, noColor bool) (string, int) {
 	if verb == "prompt" || verb == "status" {
 		alias = verb
 		pageName = "statusline"
+	} else if canon := periodHelpCanonical(verb); canon != "" && canon != verb {
+		alias = verb
+		pageName = canon
 	}
 	page, ok := commandHelps[pageName]
 	if !ok {
@@ -684,10 +799,26 @@ func helpOutput(verb, tool, unknown string, noColor bool) (string, int) {
 		page = scopeHelpPage(page, tool)
 	}
 	if alias != "" {
-		page.Usage = strings.Replace(page.Usage, "thermal statusline", "thermal "+alias, 1)
+		page.Usage = strings.Replace(page.Usage, "thermal "+pageName, "thermal "+alias, 1)
 		page.Note = "Alias: " + alias
 	}
 	return render.RenderCommandHelp(page), 0
+}
+
+func periodHelpCanonical(token string) string {
+	switch strings.ToLower(strings.TrimSpace(token)) {
+	case "today", "yesterday":
+		return "today"
+	case "lastweek", "last-week", "thisweek", "this-week":
+		return "lastweek"
+	case "lastmonth", "last-month", "thismonth", "this-month":
+		return "lastmonth"
+	case "lastbilling", "last-billing", "billing", "thisbilling", "this-billing":
+		return "lastbilling"
+	case "annual", "year", "ytd":
+		return "annual"
+	}
+	return ""
 }
 
 func printHelpFor(verb, tool, unknown string, noColor bool) int {

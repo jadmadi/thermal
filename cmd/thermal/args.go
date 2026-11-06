@@ -567,12 +567,90 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 		opts.JSON = true
 	}
 
+	var presetToken string
 	if len(positionals) > 0 {
 		for _, p := range positionals {
 			if strings.TrimSpace(p) == "" {
 				return opts, &usageError{Message: "empty argument is not a command or tool"}
 			}
 		}
+		var remaining []string
+		for i := 0; i < len(positionals); i++ {
+			p := positionals[i]
+			if strings.EqualFold(p, "project") {
+				if opts.ProjectFilter != "" {
+					return opts, &usageError{Message: fmt.Sprintf("unexpected argument %q", p), Example: "thermal project sila"}
+				}
+				if i+1 >= len(positionals) {
+					return opts, &usageError{
+						Message: "project needs a project name",
+						Example: "thermal project sila",
+					}
+				}
+				opts.ProjectFilter = positionals[i+1]
+				i++
+				continue
+			}
+			if thermal.IsPeriodPreset(p) {
+				if presetToken != "" {
+					return opts, &usageError{
+						Message: fmt.Sprintf("conflicting period presets %q and %q", presetToken, p),
+						Example: "thermal " + strings.ToLower(presetToken),
+					}
+				}
+				presetToken = p
+				continue
+			}
+			remaining = append(remaining, p)
+		}
+		positionals = remaining
+	}
+
+	if opts.ProjectFilter != "" {
+		if len(positionals) > 0 {
+			return opts, &usageError{
+				Message: fmt.Sprintf("unexpected argument %q", positionals[0]),
+				Example: "thermal project " + opts.ProjectFilter,
+			}
+		}
+		if present["tool"] && !strings.EqualFold(opts.Tool, "all") {
+			return opts, &usageError{
+				Message: "--tool does not apply to thermal project; thermal project ranks all tools for one project",
+				Example: "thermal project " + opts.ProjectFilter,
+			}
+		}
+	}
+	if presetToken != "" {
+		if len(positionals) > 0 {
+			return opts, &usageError{
+				Message: fmt.Sprintf("unexpected argument %q", positionals[0]),
+				Example: "thermal " + strings.ToLower(presetToken),
+			}
+		}
+		if present["tool"] && !strings.EqualFold(opts.Tool, "all") {
+			return opts, &usageError{
+				Message: fmt.Sprintf("--tool does not apply to thermal %s; use thermal %s daily for a single tool", strings.ToLower(presetToken), opts.Tool),
+				Example: "thermal " + strings.ToLower(presetToken),
+			}
+		}
+		if opts.Since != "" || opts.Until != "" || lastRaw != "" {
+			return opts, &usageError{
+				Message: fmt.Sprintf("%s cannot be combined with --since, --until, or --last", strings.ToLower(presetToken)),
+				Example: "thermal " + strings.ToLower(presetToken),
+			}
+		}
+		wday, ok := thermal.ParseWeekday(opts.StartOfWeek)
+		if !ok {
+			wday = time.Sunday
+		}
+		since, until, label, _ := thermal.ResolvePeriodPreset(presetToken, time.Now(), wday)
+		opts.Since = since
+		opts.Until = until
+		opts.WindowLabel = label
+		opts.LeaderboardWindow = label
+	}
+
+	if len(positionals) > 0 {
 		if len(positionals) > 2 {
 			return opts, &usageError{Message: fmt.Sprintf("unexpected argument %q", positionals[2])}
 		}
@@ -631,6 +709,14 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 				opts.WindowLabel = fmt.Sprintf("last %d months", n)
 			}
 			opts.Last = 0
+		}
+	}
+
+	if opts.ProjectFilter != "" {
+		if opts.WindowLabel != "" {
+			opts.LeaderboardWindow = fmt.Sprintf("project %s · %s", opts.ProjectFilter, opts.WindowLabel)
+		} else {
+			opts.LeaderboardWindow = fmt.Sprintf("project %s · all time", opts.ProjectFilter)
 		}
 	}
 

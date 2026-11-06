@@ -221,3 +221,43 @@ func TestDeprecationWarningStderrWithJSONStdout(t *testing.T) {
 		t.Errorf("expected payload name thermal, got %v", payload["name"])
 	}
 }
+
+func TestParseArgsScopedLeaderboard(t *testing.T) {
+	for _, preset := range []string{"today", "yesterday", "lastweek", "lastmonth", "lastbilling", "annual"} {
+		opts, err := parseArgsFrom([]string{preset})
+		if err != nil {
+			t.Fatalf("parseArgsFrom(%q) error = %v", preset, err)
+		}
+		if opts.Report != "" || opts.Tool != "all" || opts.Since == "" || opts.Until == "" || opts.LeaderboardWindow == "" {
+			t.Fatalf("parseArgsFrom(%q) = %+v", preset, opts)
+		}
+	}
+
+	projOpts, err := parseArgsFrom([]string{"project", "sila"})
+	if err != nil {
+		t.Fatalf("parseArgsFrom(project sila) error = %v", err)
+	}
+	if projOpts.ProjectFilter != "sila" || projOpts.LeaderboardWindow != "project sila · all time" {
+		t.Fatalf("parseArgsFrom(project sila) = %+v", projOpts)
+	}
+
+	combOpts, err := parseArgsFrom([]string{"project", "sila", "lastmonth"})
+	if err != nil {
+		t.Fatalf("parseArgsFrom(project sila lastmonth) error = %v", err)
+	}
+	if combOpts.ProjectFilter != "sila" || combOpts.Since == "" || !strings.Contains(combOpts.LeaderboardWindow, "project sila · last month") {
+		t.Fatalf("parseArgsFrom(project sila lastmonth) = %+v", combOpts)
+	}
+
+	// Negative cases
+	for _, bad := range [][]string{
+		{"project"},
+		{"today", "lastweek"},
+		{"today", "--since", "2026-01-01"},
+		{"project", "sila", "extra"},
+	} {
+		if _, err := parseArgsFrom(bad); err == nil {
+			t.Errorf("parseArgsFrom(%v) expected error, got nil", bad)
+		}
+	}
+}

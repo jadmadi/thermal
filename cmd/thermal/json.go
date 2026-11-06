@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/jadmadi/thermal/internal/thermal"
@@ -93,6 +94,10 @@ func leaderboardJSONPayload(results []thermal.ToolResult, now time.Time, topN ..
 }
 
 func leaderboardJSONPayloadWithMeta(results []thermal.ToolResult, now time.Time, sortKey string, estimate bool, top int) map[string]interface{} {
+	return leaderboardJSONPayloadScoped(results, now, sortKey, estimate, top, "", "")
+}
+
+func leaderboardJSONPayloadScoped(results []thermal.ToolResult, now time.Time, sortKey string, estimate bool, top int, windowLabel, project string) map[string]interface{} {
 	if sortKey == "" {
 		sortKey = "streak"
 	}
@@ -155,10 +160,14 @@ func leaderboardJSONPayloadWithMeta(results []thermal.ToolResult, now time.Time,
 		shown = recorded
 	}
 	rankingOrder := "desc"
-	return map[string]interface{}{
+	win := "all-time"
+	if strings.TrimSpace(windowLabel) != "" && windowLabel != "all time" {
+		win = windowLabel
+	}
+	out := map[string]interface{}{
 		"type":        "leaderboard",
 		"generatedAt": now.UTC().Format(time.RFC3339),
-		"window":      "all-time",
+		"window":      win,
 		"ranking": map[string]any{
 			"key":   sortKey,
 			"order": rankingOrder,
@@ -173,6 +182,10 @@ func leaderboardJSONPayloadWithMeta(results []thermal.ToolResult, now time.Time,
 		"results":        display,
 		"totals":         totals,
 	}
+	if project != "" {
+		out["project"] = project
+	}
+	return out
 }
 
 func round4(v float64) float64 {

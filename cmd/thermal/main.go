@@ -314,9 +314,9 @@ func validateReportFlags(opts thermal.Options) error {
 		}
 		// --no-estimate and --offline also apply to the leaderboard, which is
 		// the one place a reader compares recorded cost against reports.
-		if opts.Since != "" || opts.Until != "" || opts.Last != 0 ||
-			opts.Breakdown || opts.Chart ||
-			opts.Order != "desc" || opts.StartOfWeek != "sunday" {
+		isScopedLeaderboard := opts.LeaderboardWindow != "" || opts.ProjectFilter != ""
+		if opts.Breakdown || opts.Chart || opts.Order != "desc" ||
+			(!isScopedLeaderboard && (opts.Since != "" || opts.Until != "" || opts.Last != 0 || opts.StartOfWeek != "sunday")) {
 			return fmt.Errorf("report options (--since, --until, --last, --breakdown, --chart, --order, --start-of-week) need a report command: daily, weekly, monthly, projects, or models")
 		}
 		return nil
@@ -543,7 +543,8 @@ func main() {
 
 	if opts.Tool == "all" {
 		tools := loaders.AllTools()
-		var results []thermal.ToolResult
+		var loadedResults []thermal.ToolResult
+		var allProjects []thermal.ProjectDay
 		pricer := newPricer(opts)
 
 		for _, t := range allToolOrder {
@@ -564,55 +565,59 @@ func main() {
 			if !dailyHasActivity(data.Daily, data.Projects) {
 				continue
 			}
-
-			var estCost float64
-			var toolMissing []string
-			var toolUnattr int64
-			if pricer != nil && !opts.NoEstimate {
-				for _, d := range data.Daily {
-					if d.Cost == 0 && d.Tokens > 0 {
-						if len(d.Models) == 0 {
-							toolUnattr += d.Tokens
-						} else {
-							c, missing := pricer.PriceDay(d)
-							estCost += c
-							for _, m := range missing {
-								if !containsString(toolMissing, m) {
-									toolMissing = append(toolMissing, m)
-								}
-							}
-						}
-					}
-				}
+			for i := range data.Projects {
+				data.Projects[i].Tool = info.Name
 			}
-
-			activeDays := make(map[string]bool)
-			for _, d := range data.Daily {
-				if d.Turns > 0 {
-					activeDays[d.Day] = true
-				}
-			}
-			current, longest := thermal.ComputeStreaks(activeDays)
-
-			results = append(results, thermal.ToolResult{
-				Tool:               t,
-				Name:               info.Name,
-				Summary:            data.Summary,
-				Daily:              data.Daily,
-				CurrentStreak:      current,
-				LongestStreak:      longest,
-				ActiveDays:         len(activeDays),
-				TotalActivity:      data.Summary.LifetimeTokens,
-				DataPath:           data.Path,
-				EstimatedCost:      estCost,
-				MissingPricing:     toolMissing,
-				UnattributedTokens: toolUnattr,
+			allProjects = append(allProjects, data.Projects...)
+			loadedResults = append(loadedResults, thermal.ToolResult{
+				Tool:     t,
+				Name:     info.Name,
+				Summary:  data.Summary,
+				Daily:    data.Daily,
+				DataPath: data.Path,
 			})
 		}
 
-		if len(results) == 0 {
+		var matchedProjectKeys []string
+		var projectDisplayName string
+		if opts.ProjectFilter != "" {
+			keys, disp, suggestions, ok := thermal.ResolveProjectScope(opts.ProjectFilter, allProjects)
+			if !ok {
+				fmt.Fprintf(os.Stderr, "thermal: unknown project %q\n", opts.ProjectFilter)
+				if len(suggestions) == 1 {
+					fmt.Fprintf(os.Stderr, "  did you mean: thermal project %s\n", suggestions[0])
+				} else if len(suggestions) > 1 {
+					fmt.Fprintf(os.Stderr, "  known projects: %s\n", strings.Join(suggestions, ", "))
+				}
+				fmt.Fprintln(os.Stderr, "  see all projects: thermal projects")
+				os.Exit(2)
+			}
+			matchedProjectKeys = keys
+			projectDisplayName = disp
+			if opts.WindowLabel != "" {
+				opts.LeaderboardWindow = fmt.Sprintf("project %s · %s", projectDisplayName, opts.WindowLabel)
+			} else if opts.Since != "" || opts.Until != "" {
+				opts.LeaderboardWindow = fmt.Sprintf("project %s · %s", projectDisplayName, strings.TrimSpace(opts.Since+" to "+opts.Until))
+			} else {
+				opts.LeaderboardWindow = fmt.Sprintf("project %s · all time", projectDisplayName)
+			}
+		}
+
+		results := thermal.BuildLeaderboardResults(loadedResults, allProjects, thermal.LeaderboardOptions{
+			Since:            opts.Since,
+			Until:            opts.Until,
+			Last:             opts.Last,
+			Project:          strings.Join(matchedProjectKeys, "\x00"),
+			WindowLabel:      opts.LeaderboardWindow,
+			Estimate:         !opts.NoEstimate,
+			Now:              time.Now(),
+			RecordedCostDays: thermal.RecordedCostDaysForResults(loadedResults),
+		}, pricer)
+
+		isScoped := opts.LeaderboardWindow != "" || opts.ProjectFilter != ""
+		if len(results) == 0 && (!isScoped || len(loadedResults) == 0) {
 			if opts.JSON {
-				payload := markNoDataPayload(leaderboardJSONPayloadWithMeta(nil, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top))
+				payload := markNoDataPayload(leaderboardJSONPayloadScoped(nil, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top, opts.LeaderboardWindow, projectDisplayName))
 				writeJSON(payload)
 				if opts.RequireData {
 					requireDataExit()
@@ -627,11 +632,17 @@ func main() {
 		}
 
 		if opts.JSON {
-			writeJSON(leaderboardJSONPayloadWithMeta(results, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top))
+			writeJSON(leaderboardJSONPayloadScoped(results, time.Now(), opts.Sort, !opts.NoEstimate, opts.Top, opts.LeaderboardWindow, projectDisplayName))
+			if len(results) == 0 && opts.RequireData {
+				requireDataExit()
+			}
 			return
 		}
 
-		fmt.Print(render.RenderLeaderboard(results, opts.Weeks, opts.NoColor, opts.Sort, !opts.NoEstimate, opts.Top))
+		fmt.Print(render.RenderLeaderboardWithWindow(results, opts.Weeks, opts.NoColor, opts.Sort, !opts.NoEstimate, opts.LeaderboardWindow, opts.Top))
+		if len(results) == 0 && opts.RequireData {
+			requireDataExit()
+		}
 		return
 	}
 
