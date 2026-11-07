@@ -591,14 +591,16 @@ func parseArgsFrom(args []string) (thermal.Options, error) {
 				i++
 				continue
 			}
-			if thermal.IsPeriodPreset(p) {
+			if canon, consumed, ok := thermal.ConsumePeriodPhrase(positionals[i:]); ok {
+				rawPhrase := strings.Join(positionals[i:i+consumed], " ")
 				if presetToken != "" {
 					return opts, &usageError{
-						Message: fmt.Sprintf("conflicting period presets %q and %q", presetToken, p),
+						Message: fmt.Sprintf("conflicting period presets %q and %q", presetToken, rawPhrase),
 						Example: "thermal " + strings.ToLower(presetToken),
 					}
 				}
-				presetToken = p
+				presetToken = canon
+				i += consumed - 1
 				continue
 			}
 			remaining = append(remaining, p)

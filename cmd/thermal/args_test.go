@@ -249,6 +249,24 @@ func TestParseArgsScopedLeaderboard(t *testing.T) {
 		t.Fatalf("parseArgsFrom(project sila lastmonth) = %+v", combOpts)
 	}
 
+	for _, multi := range [][]string{
+		{"project", "fs-relay", "this", "week"},
+		{"project", "fs-relay", "last", "7", "days"},
+		{"project", "fs-relay", "7d"},
+		{"this", "week"},
+		{"last", "7", "days"},
+		{"last", "30", "days"},
+		{"7", "days"},
+	} {
+		mOpts, err := parseArgsFrom(multi)
+		if err != nil {
+			t.Fatalf("parseArgsFrom(%v) error = %v", multi, err)
+		}
+		if mOpts.Since == "" || mOpts.Until == "" || mOpts.LeaderboardWindow == "" {
+			t.Fatalf("parseArgsFrom(%v) = %+v", multi, mOpts)
+		}
+	}
+
 	// Negative cases
 	for _, bad := range [][]string{
 		{"project"},
