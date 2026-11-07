@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0](https://github.com/jadmadi/thermal/compare/v0.23.0...v0.24.0) (2026-11-07)
+
+
+### Features
+
+* **cli:** support multi-word period phrases and rolling lastweek/lastmonth windows ([5432532](https://github.com/jadmadi/thermal/commit/5432532e27ef6f279ec556c89cb1bfdbaeea9029))
+* **cli:** support multi-word period phrases and rolling lastweek/lastmonth windows ([58931d3](https://github.com/jadmadi/thermal/commit/58931d3533264d15e01ed43e17fd1f24e2809d85))
+
 ## [0.23.0](https://github.com/jadmadi/thermal/compare/v0.22.2...v0.23.0) (2026-11-06)
 
 
